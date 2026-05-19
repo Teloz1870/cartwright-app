@@ -39,8 +39,6 @@ pnpm-debug.log*
 .superpowers/
 skills-lock.json
 
-# Changesets-generated
-.changeset/*.md
-!.changeset/README.md
-!.changeset/config.json
+# Changesets snapshot dir only — changeset .md files MUST be tracked
+.changeset/snapshot/
 .vercel
