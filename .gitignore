@@ -43,3 +43,4 @@ skills-lock.json
 .changeset/*.md
 !.changeset/README.md
 !.changeset/config.json
+.vercel
