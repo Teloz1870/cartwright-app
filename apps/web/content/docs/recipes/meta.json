@@ -1,0 +1,10 @@
+{
+  "title": "Recipes",
+  "pages": [
+    "custom-theme",
+    "new-industry-template",
+    "stripe-test-mode",
+    "ai-prompt-tuning",
+    "sentry-resend-setup"
+  ]
+}

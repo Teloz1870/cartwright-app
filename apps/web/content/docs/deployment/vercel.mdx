@@ -1,0 +1,75 @@
+---
+title: Deploying to Vercel
+description: Step-by-step guide to deploying Cartwright on Vercel.
+---
+
+Cartwright forks usually deploy to Vercel with Turso for production storage.
+
+1. Link the project.
+
+```bash
+vercel link
+vercel env pull .env.local
+```
+
+For a fresh single-package fork, leave the Vercel root directory at the repository root. In a monorepo deployment, set Root Directory to the app package that contains the Cartwright Next.js app. Vercel should auto-detect Next.js.
+
+2. Create Turso credentials.
+
+```bash
+turso db create my-shop-db
+turso db tokens create my-shop-db
+```
+
+Set these in Vercel Production:
+
+```bash
+TURSO_DATABASE_URL="libsql://my-shop-db.turso.io"
+TURSO_AUTH_TOKEN="..."
+DATABASE_URL="file:./dev.db"
+AUTH_SECRET="..."
+NEXT_PUBLIC_APP_URL="https://my-shop.vercel.app"
+```
+
+<Callout type="warn">
+Some Turso setups provide an HTTPS URL with the auth token appended. If your deploy uses `DATABASE_URL` directly for Turso tooling, it must be the HTTPS URL with the auth token included. Runtime Cartwright code prefers `TURSO_DATABASE_URL` plus `TURSO_AUTH_TOKEN`.
+</Callout>
+
+3. Add optional production integrations.
+
+Use Vercel env vars or `/admin/integrations` for Stripe, Resend, Anthropic, Gemini, Sentry, and Vercel Blob. Required baseline env vars are database credentials, `AUTH_SECRET`, and `NEXT_PUBLIC_APP_URL`. For EU shops, prefer the Vercel region closest to users and database; `fra1` is the practical default for EU deployments.
+
+4. Run migrations against the production database.
+
+<Tabs items={['SQLite','Turso']}>
+  <Tab value="SQLite">
+
+```bash
+npx prisma migrate deploy
+```
+
+  </Tab>
+  <Tab value="Turso">
+
+```bash
+TURSO_DATABASE_URL="libsql://my-shop-db.turso.io" \
+TURSO_AUTH_TOKEN="..." \
+npx prisma migrate deploy
+```
+
+  </Tab>
+</Tabs>
+
+5. Deploy.
+
+```bash
+vercel --prod
+```
+
+<Callout type="warn">
+If your first production deploy fails with a libSQL handshake error, the most common cause is invisible whitespace in `TURSO_AUTH_TOKEN`. Vercel's UI has historically accepted zero-width characters via clipboard paste. `lib/db.ts` strips non-printable ASCII defensively, but it is faster to paste the token through a plain-text editor before adding it to Vercel.
+</Callout>
+
+6. Verify the deploy.
+
+After Vercel reports success, hit `https://my-shop.vercel.app/api/mcp` with no Authorization header. You should get a JSON intro listing the shop's tool surface. If you get a 500, check the deploy logs for `cleanEnv` warnings (token whitespace) or `Adapter` errors (Prisma libSQL client misconfiguration).

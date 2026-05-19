@@ -1,0 +1,9 @@
+{
+  "title": "Configuration",
+  "pages": [
+    "env-vars",
+    "brand-config",
+    "feature-flags",
+    "secrets-management"
+  ]
+}

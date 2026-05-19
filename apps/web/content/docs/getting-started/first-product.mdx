@@ -1,0 +1,18 @@
+---
+title: Your First Product
+description: Creating a category, adding a product, uploading images, and publishing.
+---
+
+Create a category before creating a product. The product form requires `categoryId`, and the category page depends on category slugs for storefront routing.
+
+In admin, go to `/admin/kategorier` and add a category with a name and slug. Optional fields include short description, hero image, hero video, SEO title, SEO description, long category body, and FAQ JSON. Images and videos can be pasted as URLs or uploaded through the admin upload control.
+
+Then go to `/admin/produkter/nyt`. The product form writes through `createProduct` in `app/admin/actions.ts`. Required fields are name, slug, price in kroner, stock, category, images, and description. The server action stores `priceDkk` in øre, parses image URLs from comma- or newline-separated input, and stores them as a JSON array string in `Product.images`.
+
+Images use the same Vercel Blob upload path as categories. The upload endpoint is `/api/admin/upload`, requires admin auth, accepts JPEG, PNG, WebP, and MP4, enforces size limits, validates magic bytes, and returns a public Blob URL. Product images are appended to the image list before save.
+
+Set `featured` if the product should appear in featured storefront sections. Optional legacy fields `frameColor`, `lensColor`, and `brand` remain for eyewear-style catalogs. For other industries, use the `attributes` JSON field for domain-specific specs such as material, weight, height, width, or origin.
+
+<Callout type="warn">
+The current source does not sync Stripe Product or Price IDs from the product admin action. Checkout uses Stripe PaymentIntents against the order total when Stripe keys are configured. If your fork needs Stripe catalog objects, add that sync inside the admin product action boundary and store the resulting IDs explicitly.
+</Callout>

@@ -1,0 +1,68 @@
+---
+title: FAQ
+description: Frequently asked questions about Cartwright.
+---
+
+## Is Cartwright open source?
+
+The CLI, `create-cartwright`, and this docs site are MIT and public. The commerce template repo is currently private early access.
+
+The CLI fetches a public sanitized template mirror, so you do not need a GitHub token to scaffold a shop today.
+
+The intent is to make the template public after the first production milestones are met.
+
+## What does it cost?
+
+Cartwright has no platform fee and no per-order tax. You pay the services you choose.
+
+Typical costs are Vercel hosting, Turso or Postgres, Stripe processing, Resend email, Blob storage, and Anthropic or Gemini if you enable AI.
+
+Owning the code also means owning maintenance time.
+
+## Can I migrate from Shopify?
+
+There is no finished one-click migration tool yet. It is planned after the early template contract stabilizes.
+
+Today you scaffold Cartwright, import products and customers with scripts, verify checkout, then move DNS.
+
+Stripe customer IDs are the useful link key when preserving customer/payment relationships.
+
+## How does it compare to Medusa, Saleor, or next-forge?
+
+Medusa and Saleor are commerce engines. You bring or build the frontend.
+
+Cartwright is a full shop: storefront, admin, database, checkout, API routes, and AI tooling in one Next.js app.
+
+next-forge is a SaaS starter. Cartwright applies that starter-kit discipline to commerce.
+
+## Do I need Next.js expertise?
+
+You need to read TypeScript and run a Next.js dev server. That is the real floor.
+
+The setup wizard handles store identity, theme values, first category, and key entry. It reduces environment-file work.
+
+Anything beyond setup is normal app ownership: routes, server actions, Prisma, deployments, and tests.
+
+## What does the AI actually do?
+
+The admin includes helpers for product copy, category SEO, theme palette generation, and catalog workflows.
+
+The storefront assistant uses `/api/assistant/chat` and returns a graceful error when Anthropic is missing.
+
+The MCP endpoint exposes scoped tools so external agents can act on the shop through APIs you control.
+
+## Where do I get support?
+
+Use Discord for community support and implementation questions.
+
+Use GitHub Issues on `cartwright-app` for docs and CLI bugs.
+
+Paid setup help is available by email at `hello@cartwright.app`.
+
+## When is 1.0?
+
+1.0 means the template contract is stable enough that minor updates should not break forks.
+
+The current public answer is 8-12 weeks after the first dogfood shop ships.
+
+Until then, expect manual upgrade work and careful migration review.
