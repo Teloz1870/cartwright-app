@@ -32,7 +32,7 @@ export function LivePreview() {
               <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
               <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
               <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
-              <div className="ml-3 flex-1 rounded-md bg-cw-paper dark:bg-cw-ink border border-cw-stone-200 dark:border-cw-stone-800 px-2.5 py-1 text-[11px] font-mono text-cw-stone-500">
+              <div className="ml-3 flex-1 rounded-md bg-cw-paper dark:bg-cw-ink border border-cw-stone-200 dark:border-cw-stone-800 px-2.5 py-1 text-[11px] font-mono text-cw-stone-500 dark:text-cw-stone-400">
                 demo.cartwright.app/produkter
               </div>
             </div>

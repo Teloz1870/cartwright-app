@@ -9,9 +9,12 @@ export const gitConfig = {
   branch: 'main',
 };
 
+// `discord` points at the GitHub repo until a Discord server exists — keeps it
+// an external URL so Next.js does not RSC-prefetch a same-origin redirect
+// (which fails CORS). Swap to the invite URL once the server is created.
 export const social = {
   github: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-  discord: 'https://cartwright.app/discord',
+  discord: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   npm: 'https://www.npmjs.com/package/create-cartwright',
 };
 

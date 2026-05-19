@@ -1,5 +1,4 @@
 import { Section, SectionHeader } from '@/components/landing/section';
-import { cn } from '@/lib/cn';
 
 const features = [
   {
@@ -61,13 +60,10 @@ export function FeatureGrid() {
         description="Every box below is shipping code — wired, typed, and verified. Not a marketing page promise."
       />
       <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-200 dark:bg-cw-stone-800 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f, idx) => (
+        {features.map((f) => (
           <div
             key={f.title}
-            className={cn(
-              'bg-cw-paper dark:bg-cw-stone-900/40 p-6 transition-colors hover:bg-cw-stone-50 dark:hover:bg-cw-stone-900',
-              idx % 2 === 0 && 'sm:[&]:bg-cw-paper',
-            )}
+            className="bg-cw-paper dark:bg-cw-stone-900/40 p-6 transition-colors hover:bg-cw-stone-50 dark:hover:bg-cw-stone-900"
           >
             <div className="flex items-center gap-2">
               <span className="size-1.5 rounded-full bg-cw-terracotta" />
