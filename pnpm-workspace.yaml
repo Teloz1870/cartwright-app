@@ -4,6 +4,13 @@ packages:
 
 allowBuilds:
   esbuild: true
+  sharp: true
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - fumadocs-core@16.8.12
+  - fumadocs-mdx@15.0.7
+  - fumadocs-ui@16.8.12
 
 # pnpm v11+ requires explicit approval for packages with build-scripts.
 onlyBuiltDependencies:
