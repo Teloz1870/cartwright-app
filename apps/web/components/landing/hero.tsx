@@ -52,7 +52,7 @@ export function Hero() {
             )}
           </div>
 
-          <p className="mt-6 text-xs text-cw-stone-500 dark:text-cw-stone-500 font-mono">
+          <p className="mt-6 text-xs text-cw-stone-500 dark:text-cw-stone-400 font-mono">
             MIT · Next.js 16 · Tailwind v4 · Prisma · Stripe
           </p>
         </div>
