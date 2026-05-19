@@ -1,0 +1,54 @@
+---
+title: Email (Resend)
+description: Transactional email via Resend with a dev-only file-preview fallback.
+---
+
+Cartwright sends transactional email through Resend. The mailer lives in `lib/mailer/` (the directory) with `lib/mailer/resend.ts` as the Resend-specific adapter. Templates render HTML server-side using palette values mirrored into `brand.config.ts:emailColors` (Stripe Elements + email clients both need hardcoded palette since they cannot read your CSS variables).
+
+## Templates shipped
+
+- **Order confirmation** — sent on successful Stripe webhook.
+- **Magic link** — sent by NextAuth on sign-in.
+
+Additional templates (order shipped, refund processed, etc.) are scaffolded but require per-fork wiring. Check `lib/mailer/templates/` for the current shipped set.
+
+<Callout type="info">
+The exact template inventory and naming may differ slightly between cartwright versions. Always read `ls lib/mailer/` in your fork to confirm what is actually present before promising a customer template behaviour.
+</Callout>
+
+## Dev fallback
+
+Without `RESEND_API_KEY`, the mailer writes every outbound email to `.mail-previews/` as an HTML file. The path is `.mail-previews/<timestamp>-<template>.html`. Open in a browser to inspect rendering or grab a magic link without leaving local dev.
+
+The fallback is silent — no warning printed unless you opt in. Production deploys should always have a real key + verified domain to avoid receipts going nowhere.
+
+## Resend domain setup
+
+To send from a custom domain (e.g. `noreply@my-shop.com`):
+
+<Steps>
+
+1. In the Resend dashboard, add your domain.
+2. Add the SPF and DKIM records Resend gives you to your DNS provider.
+3. Wait for DNS propagation (usually under 30 minutes).
+4. Verify the domain in Resend. Send a test email through the dashboard.
+5. Set `RESEND_API_KEY` in Vercel (Production scope).
+6. Update `brand.config.ts:emails.from` and `emails.fromName` to match the verified sender.
+
+</Steps>
+
+If `emails.from` does not match a verified Resend sender, Resend rejects the send with a clear API error. The shop's order flow still completes — the order is created, payment is captured — but the customer does not receive a receipt. Watch Sentry (if configured) for these errors during the first day of production traffic.
+
+## From-address coordination
+
+Two places need to agree on the from-address:
+
+1. `brand.config.ts:emails.from` — what cartwright reads when calling the mailer.
+2. Resend's verified senders — what Resend allows.
+
+They drift apart easily during forks. The setup wizard in `/admin/setup` is the place to align them; for env-only operators, set `RESEND_FROM_EMAIL` if your fork supports it.
+
+<Cards>
+  <Card title="Recipe: Sentry + Resend setup" href="/docs/recipes/sentry-resend-setup" />
+  <Card title="Auth (magic link)" href="/docs/features/auth-magiclink" />
+</Cards>

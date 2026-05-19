@@ -1,0 +1,119 @@
+---
+title: Recipe — New industry template
+description: Add a new seed-data template so future forks can scaffold into your niche.
+---
+
+Industry templates ship as folders under `industry-templates/<slug>/` with a seed-data module and an optional prompt module. They let `npx prisma db seed` populate a fresh fork with sample categories + products that look like a real shop, not a stock-photo scaffold.
+
+This recipe walks through adding a template for an "eyewear" niche. Substitute your slug.
+
+## Steps
+
+<Steps>
+
+1. **Create the folder.**
+
+```bash
+mkdir -p industry-templates/eyewear
+```
+
+2. **Add seed-data.ts.** Define `CATEGORIES` and `PRODUCTS` arrays matching the Prisma schema.
+
+```ts
+// industry-templates/eyewear/seed-data.ts
+import type { SeedCategory, SeedProduct } from '../types';
+
+export const CATEGORIES: SeedCategory[] = [
+  {
+    name: 'Sunglasses',
+    slug: 'sunglasses',
+    description: 'Polarised + UV-blocking frames',
+    heroImage: 'https://images.unsplash.com/photo-...',
+  },
+  {
+    name: 'Optical frames',
+    slug: 'optical',
+    description: 'Prescription-ready frames',
+  },
+];
+
+export const PRODUCTS: SeedProduct[] = [
+  {
+    name: 'Aviator Classic',
+    slug: 'aviator-classic',
+    categorySlug: 'sunglasses',
+    description: 'Timeless metal-frame aviators with polarised lenses.',
+    priceOere: 199900,       // 1999 DKK
+    inStock: 25,
+    featured: true,
+    images: ['https://images.unsplash.com/photo-...'],
+  },
+  // ... 10-15 products is a good demo size
+];
+```
+
+3. **Register in the index.** Open `industry-templates/index.ts` and add your slug to the `TEMPLATES` map.
+
+```ts
+import * as generic from './generic/seed-data';
+import * as eyewear from './eyewear/seed-data';
+
+export const TEMPLATES = {
+  generic,
+  eyewear,
+} as const;
+
+export type TemplateSlug = keyof typeof TEMPLATES;
+```
+
+4. **Point your fork at it.** In `brand.config.ts`:
+
+```ts
+industryTemplate: 'eyewear',
+```
+
+5. **Seed a fresh database.**
+
+```bash
+rm prisma/dev.db   # destructive — only for local dev
+npx prisma migrate deploy
+npx prisma db seed
+pnpm dev
+```
+
+6. **(Optional) Add an industry prompt.** If the storefront chat should know it sells eyewear specifically — different vocabulary, different recommendation logic — create `lib/ai/prompts/eyewear.ts` exporting `SYSTEM_PROMPT` and (optionally) `OPERATOR_SYSTEM_PROMPT`. Then in `brand.config.ts`:
+
+```ts
+ai: {
+  enabled: true,
+  promptModule: 'eyewear',     // matches the file name
+  assistantLabel: 'Eyewear specialist',
+  assistantOpenText: 'Ask the eyewear specialist',
+},
+```
+
+</Steps>
+
+## Image sourcing
+
+Unsplash is the path of least resistance for demos. The `images.search_unsplash` admin AI tool can find category-appropriate photos quickly. Watch the Unsplash license — credit-required images need attribution in your footer or page-specific. For demo-only seeds with no production traffic, Unsplash + `?w=` query sizing is fine.
+
+## Verification
+
+- `/admin` shows your seeded products under `/admin/produkter`.
+- Storefront landing surfaces featured products.
+- `/kategori/sunglasses` (or your slug) renders with hero, description, and product cards.
+- Storefront AI chat (if enabled) responds with niche-aware language if you added a prompt module.
+
+<Callout type="info">
+The current `IndustryTemplate` shape does not include theme defaults or AI-prompt configuration directly. Theme selection still happens via `app/globals.css` import + `brand.config.ts:industryTemplate`; prompt selection via `brand.config.ts:ai.promptModule`. Future versions may bundle these into the template registry for tighter coupling.
+</Callout>
+
+## Sharing back to cartwright
+
+If your industry template is general enough that other forks would benefit — and not tied to your specific brand assets — consider opening a PR against `Teloz1870/cartwright` once the template repo flips to public. Generic enough means: no brand-specific copy, image URLs that are clearly placeholders, and product names that read as illustrative not real.
+
+<Cards>
+  <Card title="Architecture: industry templates" href="/docs/architecture/industry-templates" />
+  <Card title="Recipe: custom theme" href="/docs/recipes/custom-theme" />
+</Cards>

@@ -1,0 +1,73 @@
+---
+title: Checkout (Stripe)
+description: Stripe Payment Element, webhook reconciliation, and the no-key mock-fallback.
+---
+
+Cartwright integrates Stripe via the Payment Element on `/checkout`, a webhook handler at `/api/webhook/stripe`, and a nightly reconciliation cron at `/api/cron/reconcile-stripe`. Keys can live in env or — preferred — in the database via `/admin/integrations`.
+
+## DB-first key strategy
+
+Stripe secrets are stored AES-256-GCM-encrypted in `IntegrationSettings` (Prisma). The runtime looks there first and falls back to `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` env vars.
+
+The benefit: rotating keys, switching between test and live mode, and onboarding a new admin do not require an env update + redeploy. The admin UI is the source of truth.
+
+## Mock fallback
+
+If no Stripe keys are configured at all, checkout still works. The order is created with status `paid_mock`, no charge happens, and the customer sees a success page that explicitly says this is a dev order. This is the default experience right after `pnpm dev` against a fresh fork — you can validate the full order flow before touching real Stripe.
+
+<Callout type="warn">
+The mock fallback is intentionally permissive in development. Production deploys must have real Stripe keys configured (env or DB) — otherwise every order would be a free order. Cartwright does not block deploy without keys; it is your responsibility to verify.
+</Callout>
+
+## Test mode quick check
+
+<Tabs items={['Card', '3DS required']}>
+  <Tab value="Card">
+
+```text
+Card:     4242 4242 4242 4242
+Expiry:   any future date
+CVC:      any 3 digits
+ZIP:      any
+```
+
+  </Tab>
+  <Tab value="3DS required">
+
+```text
+Card:     4000 0025 0000 3155
+Expiry:   any future date
+CVC:      any 3 digits
+ZIP:      any
+```
+
+Stripe forces a 3-D Secure challenge on this card. Useful for verifying the redirect flow handles authentication correctly.
+
+  </Tab>
+</Tabs>
+
+## Webhook flow
+
+`app/api/webhook/stripe/route.ts` validates the Stripe signature against `STRIPE_WEBHOOK_SECRET`, then dispatches by event type:
+
+- `payment_intent.succeeded` → finalize order, send receipt email, clear cart cookie.
+- `payment_intent.payment_failed` → mark order as failed, no email.
+- `charge.refunded` → mark order/items refunded, send refund-confirmation email if amount fully refunded.
+- Others are logged via the audit table and ignored.
+
+Idempotency is keyed off `paymentIntent.id` so retried webhooks do not duplicate emails or refund state.
+
+## Reconciliation cron
+
+`/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders that are in `pending` state, asks Stripe what actually happened, and corrects the order state. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
+
+The cron is protected by `CRON_SECRET` — generated with `openssl rand -hex 32` and set in env. Vercel Cron sends the secret automatically when invoking your route.
+
+## Elements appearance
+
+Stripe Elements render in a same-origin iframe and cannot read your CSS variables. `brand.config.ts:stripeAppearance` mirrors a small subset of the palette — primary color, background, text, danger, border-radius. Sync it manually with `themes/<slug>.css` after a palette change.
+
+<Cards>
+  <Card title="Recipe: Stripe test mode" href="/docs/recipes/stripe-test-mode" />
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+</Cards>

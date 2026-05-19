@@ -1,0 +1,88 @@
+---
+title: Contributing
+description: How to contribute to cartwright today and what will change when the template flips to public.
+---
+
+Cartwright is split across two repositories. Understanding which one you are contributing to is the first step.
+
+- **`Teloz1870/cartwright-app`** (public, this site) — the docs site and the `create-cartwright` CLI. Open for PRs from anyone today.
+- **`Teloz1870/cartwright`** (private, the template) — the actual Next.js + Prisma + Stripe + MCP commerce template. Currently invite-only access. Will flip to public when the milestones below are met.
+
+Most contributions land in `cartwright-app`. Once the template flips, the same workflow applies to both.
+
+## Quick start
+
+<Steps>
+
+1. **Fork `cartwright-app`** on GitHub.
+
+2. **Clone and install.**
+
+```bash
+gh repo clone <your-username>/cartwright-app
+cd cartwright-app
+pnpm install
+```
+
+3. **Pick where you are contributing.**
+
+   - Docs improvement → edit `apps/web/content/docs/<slug>.mdx`.
+   - CLI feature or bugfix → `apps/cli/src/`.
+   - Site UI or component → `apps/web/components/`.
+   - Shared types or schema → `packages/shared/`.
+
+4. **Verify locally.**
+
+```bash
+cd apps/web && pnpm typecheck && pnpm build
+# or for CLI work:
+cd apps/cli && pnpm build
+```
+
+   Both must pass clean.
+
+5. **Open a PR** with a Conventional Commits subject (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`). The PR description should explain *why* — the diff already shows *what*.
+
+</Steps>
+
+## Style conventions
+
+- **Docs tone** matches existing pages: dev-tool aesthetic, no marketing-speak, honest about what is shipped vs planned, English. 200-600 words per page.
+- **MDX components** are globally available — do not import them. Use `<Callout>`, `<Tabs>` + `<Tab>`, `<Steps>`, `<Card>`/`<Cards>`, `<Mermaid>`.
+- **Code-fence languages** — Shiki ships a known list. Use `bash`, `ts`, `tsx`, `json`, `prisma`, `sql`. **Avoid `env`** (use `bash`).
+- **No emojis** in docs body or commit messages.
+
+## Releases (Changesets)
+
+`cartwright-app` has `@changesets/cli` installed for the eventual `create-cartwright` npm publishing flow. Until the CLI hits its first beta release, changeset files are optional; afterwards, CLI-affecting PRs need a `.changeset/<random>.md` describing the change.
+
+<Callout type="info">
+Until `create-cartwright` is published to npm, the `.changeset/` directory may not exist at the root. The release workflow will create it on first use. This is a deferred-until-needed setup.
+</Callout>
+
+## Reporting issues
+
+- **Bugs in the docs site** → GitHub Issues on `cartwright-app`.
+- **Bugs in `create-cartwright` CLI** → GitHub Issues on `cartwright-app` (same repo).
+- **Security issues** → Do not open a public issue. Email security@cartwright.app per [SECURITY.md](https://github.com/Teloz1870/cartwright-app/blob/main/SECURITY.md).
+
+## When the template repo flips to public
+
+The `Teloz1870/cartwright` private template will become public after these milestones:
+
+1. Solbrillen.dk live in production for at least 30 days with paying customers.
+2. Eyewear-specific schema (frame/lens color fields) isolated behind an adapter pattern.
+3. All user-facing strings migrated to `messages/en.json` + `messages/da.json` (next-intl).
+4. The storefront-Stripe architecture gap closed or explicitly documented with a workaround.
+5. At least one user other than the original maintainer has completed `create-cartwright` end-to-end without support.
+
+Expect 4-8 weeks after Solbrillen launch. Until then, the public mirror at `Teloz1870/cartwright-template` is what the CLI fetches from — sanitized snapshots published on each release tag.
+
+## Code of conduct
+
+This project follows the [Contributor Covenant v2.1](https://github.com/Teloz1870/cartwright-app/blob/main/CODE_OF_CONDUCT.md). Be kind, assume good intent, and never make a contributor feel unwelcome.
+
+<Cards>
+  <Card title="Roadmap" href="/docs/roadmap" />
+  <Card title="FAQ" href="/docs/faq" />
+</Cards>

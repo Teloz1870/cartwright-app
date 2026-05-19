@@ -1,0 +1,49 @@
+---
+title: Image upload (Vercel Blob)
+description: Admin image uploads via Vercel Blob and the fallback to externally-hosted URLs.
+---
+
+Admin product and category images upload through `app/api/admin/upload/route.ts`, which writes to Vercel Blob. The route runs server-side: the admin form posts the file, the server validates and stores it, then returns the public URL.
+
+## How it works
+
+The route uses Vercel's `@vercel/blob` SDK with a `put()` call. The token comes from `BLOB_READ_WRITE_TOKEN` (auto-provisioned when you add Vercel Blob to a project) or from `IntegrationSettings`. The route enforces:
+
+- File-type allowlist (jpg, png, webp).
+- Max size limit (configurable; current default in source).
+- Authenticated admin session — `requireAdmin()` runs first.
+
+The returned URL is stored on the corresponding Prisma column (`Product.images`, `Category.heroImage`, etc.).
+
+## Why server-side `put()` not signed URLs
+
+A signed-URL flow would let the browser upload directly to Blob and skip the server. Cartwright chose the server-side path because:
+
+- The admin already authenticates via cookie session. No extra token plumbing.
+- Upload size is small (admin product photos, not user-generated content).
+- Server-side `put()` lets the route resize/validate before persisting.
+
+If your fork pushes a lot of large uploads, switching to signed-URL flow is a localised change to that one route.
+
+<Callout type="info">
+Cartwright does not currently ship a generated image-variants pipeline. `lib/images.ts` re-exports brand fallback URLs and helper functions but does not produce thumbnails or responsive variants — `next/image` handles responsive sizing at render time instead.
+</Callout>
+
+## External URL fallback
+
+Not every fork wants Vercel Blob. The schema accepts any URL, including:
+
+- Unsplash links (with the `&w=` query for sizing) — used heavily by the `generic` seed data.
+- External CDNs you own (S3 + CloudFront, Cloudflare R2, etc.).
+- Direct vendor URLs (Shopify CDN, Etsy, etc.) for catalog sync scenarios.
+
+`next.config.ts:images.remotePatterns` whitelists which hosts `next/image` will optimise. Forks adding a new image host edit that array.
+
+## `images.search_unsplash` tool
+
+Admin AI has access to an Unsplash image-search tool. It requires `UNSPLASH_ACCESS_KEY` in env (free dev tier: 50 req/hour). Without the key, the tool returns a friendly error and the AI surfaces the limitation in chat.
+
+<Cards>
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+  <Card title="Env vars" href="/docs/configuration/env-vars" />
+</Cards>

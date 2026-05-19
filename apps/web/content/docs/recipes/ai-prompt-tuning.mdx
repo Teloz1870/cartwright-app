@@ -1,0 +1,81 @@
+---
+title: Recipe — AI prompt tuning
+description: Customise the storefront chat and admin AI personas for your shop's voice.
+---
+
+Cartwright ships a `generic` prompt module that produces neutral, helpful product recommendations. Your fork probably wants something more specific — vocabulary that matches your industry, recommendation logic that respects your catalog quirks, a brand voice that sounds like you.
+
+This recipe shows how to override the prompts without forking the AI layer.
+
+## Steps
+
+<Steps>
+
+1. **Create your prompt module.** Inside `lib/ai/prompts/`, copy `generic.ts` to your industry slug and edit.
+
+```bash
+cp lib/ai/prompts/generic.ts lib/ai/prompts/eyewear.ts
+```
+
+2. **Edit the system prompt.** The module exports `SYSTEM_PROMPT` and (optionally) `OPERATOR_SYSTEM_PROMPT`.
+
+```ts
+// lib/ai/prompts/eyewear.ts
+export const SYSTEM_PROMPT = `You are the in-house optician for {{storeName}}.
+You help customers pick frames that fit their face shape, prescription needs,
+and lifestyle. You always reference real products from the catalog using the
+products.search tool — never invent SKUs.
+
+Tone: friendly but expert. Brief by default; expand only when the customer
+asks for detail. Never recommend a frame that is out of stock.`;
+
+export const OPERATOR_SYSTEM_PROMPT = `You are assisting the shop operator in
+the admin panel. You can use write-capable tools (products.update, orders.update_status)
+when explicitly asked. Always confirm destructive actions before executing.`;
+```
+
+3. **Point your fork at the new module.** In `brand.config.ts`:
+
+```ts
+ai: {
+  enabled: true,
+  promptModule: 'eyewear',          // matches lib/ai/prompts/eyewear.ts
+  assistantLabel: 'Frame specialist',
+  assistantOpenText: 'Ask the frame specialist',
+},
+```
+
+4. **Test from the storefront.** Open the AI FAB on the landing page. Ask "Got any aviators in black?" — the assistant should call `products.search` and respond with frames from your catalog using the new voice.
+
+5. **Test from admin.** Visit `/admin/ai` (or wherever your fork exposes the admin chat). Ask "What products are low on stock?" — the operator prompt should govern this conversation.
+
+</Steps>
+
+## Prompt-writing patterns that work
+
+- **Reference the brand by template.** `{{storeName}}` and similar placeholders get filled at render time from `brand.config.ts`. Use them — your prompt should not hardcode the shop name.
+- **Constrain tool use, not creativity.** "Always use products.search before recommending" works. "Be helpful" does not constrain anything.
+- **Forbid hallucination explicitly.** "Never invent SKUs or product names. If a search returns no results, say so." This single line eliminates most of the embarrassing failure modes.
+- **Set a default brevity.** "Brief by default, expand only when asked." Otherwise the model defaults to multi-paragraph responses that customers do not read.
+- **Pre-write the tone.** One concrete sentence that captures the voice ("Friendly but expert. Never breezy.") works better than abstract adjectives.
+
+## Token-cost discipline
+
+The storefront chat runs on customer traffic. A 500-word system prompt times a million customer messages is real money. Trim the prompt aggressively after the first week of production:
+
+- Cut backstory the model does not need.
+- Cut redundant constraints (the second "never hallucinate" is wasted).
+- Move shop-specific facts (return policy, shipping windows) into tool descriptions instead of the system prompt, so they only get loaded when relevant.
+
+<Callout type="tip">
+Set up a Sentry breadcrumb that records token counts per chat session. You will notice quickly if a prompt change blows the budget.
+</Callout>
+
+## Generators that use a different path
+
+`lib/ai/category-seo-generator.ts` and `lib/ai/product-seo-generator.ts` do not share the storefront chat's prompt module. They have their own prompts inline in the generator file. To customise SEO generation voice, edit those files directly. The pattern is the same — keep the prompt short, reference brand fields by template, forbid hallucination.
+
+<Cards>
+  <Card title="Feature: AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="brand.config.ts" href="/docs/architecture/brand-config" />
+</Cards>

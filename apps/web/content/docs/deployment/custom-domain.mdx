@@ -1,0 +1,76 @@
+---
+title: Custom Domain
+description: Adding a custom domain to your Cartwright Vercel deployment — DNS records, www redirect, and canonical URL configuration.
+---
+
+After your initial deploy to Vercel, the app runs on a `*.vercel.app` subdomain. Pointing a custom domain at it requires three things: adding the domain to the Vercel project, creating DNS records with your registrar, and updating `NEXT_PUBLIC_APP_URL` to match the new canonical host.
+
+## Steps
+
+<Steps>
+
+1. Buy a domain from your registrar of choice and make sure you have access to its DNS settings.
+
+2. In Vercel, open the project and go to **Settings → Domains**. Enter your domain (`your-shop.com`). Add both the apex domain and the `www` subdomain.
+
+3. Create DNS records at your registrar:
+
+   **Apex domain (`@` record):**
+   ```bash
+   Type: A
+   Host: @
+   Value: 76.76.21.21
+   TTL: automatic (or 3600)
+   ```
+
+   **www subdomain:**
+   ```bash
+   Type: CNAME
+   Host: www
+   Value: cname.vercel-dns.com
+   TTL: automatic (or 3600)
+   ```
+
+4. Wait for DNS propagation. This typically takes a few minutes with most registrars, but can take up to 48 hours in the worst case. Vercel's domain UI shows a green checkmark when it has verified the records.
+
+5. In Vercel **Settings → Domains**, configure the www-to-apex redirect. Set the primary domain to `your-shop.com` and enable the 308 redirect from `www.your-shop.com` to the apex. This prevents duplicate-content indexing.
+
+6. Update `NEXT_PUBLIC_APP_URL` in Vercel to match the canonical host:
+
+   ```bash
+   NEXT_PUBLIC_APP_URL="https://your-shop.com"
+   ```
+
+   Also update `brand.url` and `brand.domain` in `brand.config.ts` to keep them in sync:
+
+   ```bash
+   domain: "your-shop.com",
+   url: "https://your-shop.com",
+   ```
+
+   Trigger a new production deploy after these changes so the updated URL is baked into static metadata.
+
+</Steps>
+
+## SSL
+
+Vercel provisions a TLS certificate automatically via Let's Encrypt once DNS records are verified. No manual certificate management is needed. HTTPS is enforced by default — Vercel redirects HTTP to HTTPS at the edge.
+
+## Verify
+
+After DNS propagates and the certificate provisions:
+
+```bash
+curl -I https://your-shop.com/api/mcp
+# HTTP/2 200
+
+curl -I https://www.your-shop.com
+# HTTP/1.1 308 Permanent Redirect
+# Location: https://your-shop.com/
+```
+
+The MCP introspection endpoint at `/api/mcp` (no auth required for GET) is a quick smoke test that the app is running and the database connection is healthy.
+
+<Callout type="info">
+If you use Vercel's nameservers instead of your registrar's (by pointing `NS` records at Vercel), you can manage DNS entirely from the Vercel dashboard. This is optional but simplifies the setup for teams already in the Vercel ecosystem.
+</Callout>

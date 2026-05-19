@@ -1,0 +1,166 @@
+---
+title: brand.config.ts schema
+description: Field-by-field reference for the brand configuration object.
+---
+
+`brand.config.ts` is the compile-time source of truth for everything brand-specific. This page documents every field. For the design rationale, see [Architecture: brand.config.ts](/docs/architecture/brand-config).
+
+The exported type is `Brand = typeof brand`, so all fields are statically typed and the shape below is the literal current export.
+
+## Identity
+
+```ts
+storeName: string         // "Cartwright Demo Store"
+storeSlug: string         // "cartwright-demo" — used as DB seed key + MCP server identifier
+domain: string            // "example.com" — apex domain without protocol
+url: string               // "https://example.com" — full canonical URL
+tagline: string           // shop tagline shown in marketing
+industryTemplate: string  // "generic" — selects industry-templates/<slug>/
+```
+
+## Contact
+
+```ts
+emails: {
+  from: string         // "noreply@example.com" — must match a Resend verified sender
+  fromName: string     // display name shown before <from>
+  support: string      // customer-support address
+  admin: string        // admin/internal notifications
+}
+```
+
+## SEO / metadata
+
+```ts
+metadata: {
+  title: string            // default <title> for pages without override
+  description: string      // default meta description
+  socialImageUrl: string   // OG + Twitter card image path
+}
+```
+
+## AI behaviour
+
+```ts
+ai: {
+  enabled: boolean              // master switch — false ships a shop with no AI surface
+  promptModule: string          // matches lib/ai/prompts/<name>.ts (defaults to "generic")
+  assistantLabel: string        // aria-label / header text
+  assistantOpenText: string     // FAB button text
+}
+```
+
+## Feature flags
+
+```ts
+features: {
+  tryOn: boolean       // AR virtual try-on (eyewear-specific) — false in upstream
+  aiStylist: boolean   // storefront AI assistant FAB
+  newsletter: boolean  // footer newsletter section
+  mcpPublic: boolean   // expose /api/mcp + /api/v1/tools publicly
+}
+```
+
+## Commerce policies
+
+```ts
+policies: {
+  shippingFreeThresholdDkk: number  // in øre — value above which shipping is free
+  shippingDefaultDkk: number        // in øre — default shipping cost
+  returnDays: number                // return window in days
+  currency: string                  // ISO-4217 — "DKK", "EUR", "USD", etc.
+}
+```
+
+All monetary values in cartwright are in **smallest currency unit** (øre for DKK, cents for USD/EUR) to avoid floating-point math.
+
+## Footer copy
+
+```ts
+footer: {
+  tagline: string
+  disclaimer: string
+  copyrightYear: number
+}
+```
+
+## Image defaults
+
+```ts
+images: {
+  hero: string                                        // landing hero fallback
+  lifestyle: string                                   // generic lifestyle photo fallback
+  scenic: string                                      // wide scenic fallback
+  categoryFallbacks: Record<string, string>           // per-category-slug → URL
+}
+```
+
+When a `Category.heroImage` is null in the database, the storefront falls back to `categoryFallbacks[slug]`, then `images.hero` if no per-slug fallback exists.
+
+## Stripe Elements appearance
+
+```ts
+stripeAppearance: {
+  colorPrimary: string     // hex
+  colorBackground: string  // hex
+  colorText: string        // hex
+  colorDanger: string      // hex
+  fontFamily: string
+  borderRadius: string     // CSS dimension, e.g. "10px"
+}
+```
+
+Stripe Elements render in a same-origin iframe and cannot read your CSS variables. Sync these manually with `themes/<slug>.css` after a palette change.
+
+## UI labels
+
+```ts
+uiLabels: {
+  searchPlaceholder: string
+  searchAria: string
+  allProductsLink: string
+  newsletterHeading: string
+  newsletterSubtext: string
+  tryOnHeading: string
+  tryOnSubtext: string
+  aiStylistFallbackHeading: string
+  aiStylistPlaceholder: string
+  notFoundProductsLink: string
+  productsPageHeading: string
+  heroSubtagline: string
+  heroCta: string
+  categoryAllProductsBreadcrumb: string
+  productCardOriginBadge: string
+  trustBadgesPrimary: string
+  pitchSectionHeading: string
+  pitchSectionBody: string
+}
+```
+
+<Callout type="info">
+Upstream cartwright ships these strings in Danish. Translating this block is the most common first task on a new fork. Full `next-intl` adoption with `messages/en.json` + `messages/da.json` is on the roadmap and will eventually replace this block.
+</Callout>
+
+## Email palette
+
+```ts
+emailColors: {
+  accent: string   // hex
+  cream: string
+  sand: string
+  ink: string
+  muted: string
+  success: string
+}
+```
+
+Mirrored from `themes/<slug>.css` because email clients cannot read CSS variables. Sync manually after palette changes.
+
+## Runtime overrides
+
+Some fields can be overridden at runtime via the `BrandingSettings` Prisma model — typically `storeName`, contact emails, and integration keys. The setup wizard at `/admin/setup` writes to that table. Fields not in `BrandingSettings` are compile-time only.
+
+<Cards>
+  <Card title="Architecture: brand.config.ts" href="/docs/architecture/brand-config" />
+  <Card title="Configuration: brand.config.ts" href="/docs/configuration/brand-config" />
+</Cards>

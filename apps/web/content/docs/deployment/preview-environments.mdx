@@ -1,0 +1,68 @@
+---
+title: Preview Environments
+description: How Vercel preview deploys work for Cartwright — env var scoping, database strategy, Stripe test mode, and what to avoid.
+---
+
+Vercel automatically creates a preview deployment for every pull request and every push to a non-production branch. Each preview gets its own unique URL (`https://my-shop-git-feature-branch-<org>.vercel.app`). This is useful for reviewing UI changes, testing admin flows, and sharing work-in-progress with stakeholders.
+
+## Environment variable scoping
+
+Vercel distinguishes three env var scopes: **Production**, **Preview**, and **Development**. A variable set to Production only is not present in preview deployments.
+
+For Cartwright, the practical split is:
+
+| Variable | Production | Preview |
+|---|---|---|
+| `TURSO_DATABASE_URL` | Production Turso DB | Shared dev DB or per-branch DB (your choice — see below) |
+| `TURSO_AUTH_TOKEN` | Production token | Token for the preview DB |
+| `AUTH_SECRET` | Production secret | Can reuse the same value or generate separately |
+| `NEXT_PUBLIC_APP_URL` | `https://your-shop.com` | Vercel sets this automatically for previews |
+| `STRIPE_SECRET_KEY` | `sk_live_...` | `sk_test_...` — always use test mode in previews |
+| `STRIPE_PUBLISHABLE_KEY` | `pk_live_...` | `pk_test_...` |
+
+In the Vercel dashboard, go to **Settings → Environment Variables**, add a variable, and use the checkboxes to scope it to Preview only.
+
+## Database strategy for previews
+
+There is no single right answer. Two common approaches:
+
+<Tabs items={['Shared dev DB', 'Per-branch DB']}>
+  <Tab value="Shared dev DB">
+
+Point `TURSO_DATABASE_URL` (Preview scope) at a shared non-production Turso database. All preview deploys share the same data. Simple to set up, but concurrent PRs can interfere with each other's test data.
+
+```bash
+# In Vercel → Settings → Environment Variables → Preview scope
+TURSO_DATABASE_URL="libsql://my-shop-dev.turso.io"
+TURSO_AUTH_TOKEN="<dev token>"
+```
+
+  </Tab>
+  <Tab value="Per-branch DB">
+
+Create a separate Turso database per branch using Turso's CLI or API in a GitHub Actions workflow. More isolation, more overhead. Appropriate if you have automated tests that mutate data or multiple developers working on competing features simultaneously.
+
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Do not run `npx prisma db seed` against a shared preview database. The seed script deletes all existing data before inserting (`deleteMany` on every model). Running it against a shared DB will wipe data for everyone using that environment. See [Migrations](/docs/deployment/migrations) for the full footgun warning.
+</Callout>
+
+## Stripe in test mode
+
+Preview environments should always use Stripe test-mode keys (`sk_test_` / `pk_test_`). Test-mode webhooks require a separate webhook endpoint registered in the Stripe dashboard pointing at the preview URL — or you can skip webhook testing in previews and only test the payment flow.
+
+Cartwright's mock checkout (no Stripe keys at all) is another option for previews where you only need to verify UI, not payment processing.
+
+## Password protection
+
+Vercel allows password-protecting preview deployments in **Settings → Deployment Protection**. This prevents public access to work-in-progress deploys that might contain unreleased content or admin functionality.
+
+## Preview URL comment bot
+
+When a pull request is opened against a Vercel-connected repository, Vercel's GitHub bot posts a comment with the preview URL. This comment updates on each new commit to the branch. No additional configuration is needed — it is enabled by default for connected repositories.
+
+<Callout type="info">
+The preview URL changes per-commit (`...vercel.app` with a hash). Share the branch-stable URL (without the commit hash) for sustained review during a PR's lifetime.
+</Callout>
