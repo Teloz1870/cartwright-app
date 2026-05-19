@@ -39,7 +39,7 @@ export function Accordion({
               <span
                 aria-hidden
                 className={cn(
-                  'shrink-0 text-cw-stone-400 transition-transform duration-200',
+                  'shrink-0 text-cw-stone-500 dark:text-cw-stone-400 transition-transform duration-200',
                   isOpen && 'rotate-45 text-cw-terracotta',
                 )}
               >

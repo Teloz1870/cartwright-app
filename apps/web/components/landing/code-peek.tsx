@@ -93,7 +93,7 @@ export function CodePeek() {
                 'relative font-mono text-xs px-3 py-3 transition-colors',
                 active === t.key
                   ? 'text-cw-stone-50'
-                  : 'text-cw-stone-500 hover:text-cw-stone-300',
+                  : 'text-cw-stone-400 hover:text-cw-stone-200',
               )}
             >
               {t.label}

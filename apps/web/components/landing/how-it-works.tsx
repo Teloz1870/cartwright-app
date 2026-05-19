@@ -35,7 +35,7 @@ export function HowItWorks() {
             key={step.n}
             className="bg-cw-paper dark:bg-cw-stone-900/40 p-6 flex flex-col"
           >
-            <span className="font-mono text-xs text-cw-stone-400">
+            <span className="font-mono text-xs text-cw-stone-500 dark:text-cw-stone-400">
               step {step.n}
             </span>
             <h3 className="mt-3 text-lg font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
