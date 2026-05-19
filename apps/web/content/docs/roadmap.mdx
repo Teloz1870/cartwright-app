@@ -1,0 +1,50 @@
+---
+title: Roadmap
+description: Honest near-term plans, what is exploring vs committed, and what cartwright will not do.
+---
+
+Cartwright is v0.1 today. The roadmap is intentionally short. Items are marked `[committed]`, `[exploring]`, or `[planned]` so readers can tell production-ready from "we are not even sure we want this."
+
+## Now (v0.1 → v0.2)
+
+- **`create-cartwright` CLI on npm** `[committed]` — dogfooded on three platforms (Mac, Linux, WSL), then `npm publish create-cartwright@0.1.0-beta`.
+- **More industry templates** `[committed]` — at minimum `eyewear` and one home-goods category beyond `generic`.
+- **`demo.cartwright.app` live** `[committed]` — a real cartwright shop running in Stripe test mode with nightly DB reset. The single most important conversion asset for visitors.
+- **Auto-rendered `/changelog`** `[committed]` — pulls cartwright's CHANGELOG.md at build time and renders.
+- **`next-intl` adoption** `[committed]` — `messages/en.json` + `messages/da.json` everywhere customer-facing strings exist today.
+- **Video walkthrough** `[exploring]` — 5-minute screencast from `npx create-cartwright` to first sale. Probably v0.2; depends on bandwidth.
+
+## Soon (v0.2 → v1.0)
+
+- **Cartwright template public** `[planned, gated]` — flip when the [contributing milestones](/docs/contributing) are met. Expected 4-8 weeks after Solbrillen.dk launch.
+- **Shopify migration recipe** `[planned]` — a documented path for forks bringing existing catalogs and customers. Stripe customer ID is the link key; products + customers import scripts to be shipped as `scripts/migrate-shopify.ts`.
+- **API auto-reference** `[planned]` — generate the `/docs/api/mcp-tools` page from `lib/tools/registry.ts` at build time instead of hand-maintaining it. The current page will drift; this fixes it.
+- **Algolia search option** `[exploring]` — current Orama-based search is enough for v0.1, but larger catalogs (1000+ products) will want Algolia. Optional integration, not a default.
+- **Multi-tenant docs** `[exploring]` — fork-specific docs hosted on subpaths or via the CLI. Mostly a "would be nice" — unclear if there is real demand.
+
+## Maybe later
+
+- **Marketplace integrations** `[exploring]` — Klaviyo for email/SMS, Mailchimp, Pipedream-style webhook chaining. Probably built as MCP-tool plugins rather than core.
+- **Headless CMS adapter** `[exploring]` — Sanity / Contentful / Storyblok for the admin Sider CRUD. Likely a separate package, not core cartwright.
+- **B2B / wholesale module** `[exploring]` — tiered pricing, NET-30 invoicing, bulk-order workflows. Big surface, only worth building if a paying user funds it.
+- **EDI** `[exploring]` — only relevant for shops integrating with traditional retail. Unlikely unless a specific fork pulls.
+
+## What cartwright will not do
+
+These are explicit non-goals. Listing them here so contributors do not propose them and operators do not expect them.
+
+- **No SaaS hosting offering.** Cartwright is a template you run. There will not be a `cartwright.app/hosting` paid plan, an "enterprise" tier, or a managed multi-tenant version.
+- **No per-order pricing.** The license is MIT. Every transaction on a cartwright fork is yours. We are not building affiliate-style hooks or volume reporting back to Teloz.
+- **No closed-source feature gating.** Everything that lands in `Teloz1870/cartwright-app` is MIT. The template, when it flips, will be the same. There will not be a "Pro" branch with paywalled features.
+- **No mandatory telemetry.** Cartwright forks do not phone home. The MCP introspection surface exists for *external* AI agents to discover *your* tool surface, not for cartwright to discover your traffic.
+
+## How to influence this
+
+- Open an issue on `Teloz1870/cartwright-app` with the use case.
+- Discuss in Discord — the synchronous channel is the best place for "is this even a real demand?" conversations.
+- Ship it yourself in a fork and document the integration; recipes get pulled upstream when they generalise.
+
+<Cards>
+  <Card title="Contributing" href="/docs/contributing" />
+  <Card title="FAQ" href="/docs/faq" />
+</Cards>

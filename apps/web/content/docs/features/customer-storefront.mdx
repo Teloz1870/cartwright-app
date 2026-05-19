@@ -1,0 +1,49 @@
+---
+title: Customer storefront
+description: The customer-facing routes that make up the shop and the rendering model behind them.
+---
+
+The customer storefront covers the routes a shopper actually sees. In upstream cartwright the URL segments are in Danish; forks rename them as part of the first content pass.
+
+## Route map
+
+- **`/`** — Landing. Hero, featured categories, trust band, AI stylist FAB (if `brand.config.ts:features.aiStylist` is on).
+- **`/produkter`** — All products. Filterable list.
+- **`/kategori/[slug]`** — Category-scoped product list with hero, description, FAQ block, and optional video.
+- **`/produkt/[slug]`** — Product detail. Images, copy, price, variants, add-to-cart, related products.
+- **`/kurv`** — Cart. Editable line items, shipping calculator, discount code field.
+- **`/checkout`** — Stripe Payment Element + address form + delivery selection.
+- **`/ordre/[id]`** — Order confirmation. Linkable for receipts.
+- **`/konto`** — Account hub. Sign in with magic link, view orders, manage addresses.
+- **`/info/[slug]`** — CMS-style static pages rendered from the admin Sider CRUD.
+
+## Rendering model
+
+Cartwright uses Next.js App Router. Pages are React Server Components by default; interactive surfaces (cart, checkout, AI chat) are client components nested under server pages.
+
+- Product, category, and content pages are SSR + cached. Cache invalidation triggers on admin writes via `revalidatePath` in the corresponding server actions.
+- The cart is cookie-backed (server-readable) for unauthenticated browsers; merged into the customer record on sign-in.
+- The AI stylist FAB is a client component that opens a `/api/assistant/chat` stream; nothing on the storefront ships AI to the bundle if the feature flag is off.
+
+## Layout composition
+
+`app/layout.tsx` wraps everything: header, footer, fonts, theme. Category pages have a `app/kategori/layout.tsx` shell that re-uses the same chrome but injects category-specific OG and JSON-LD scaffolding.
+
+`brand.config.ts:uiLabels` provides every customer-facing string. A fork typically translates that block (it is currently Danish) before changing any component code.
+
+## Cart cookie + shipping
+
+Anonymous shoppers get a `cart_id` cookie; the cart row in Prisma is keyed off it. When a shopper signs in via magic link, the unauthenticated cart merges into the customer's row. `lib/shipping-cookie.ts` stores the chosen shipping method between visits.
+
+<Callout type="info">
+The cart is server-readable so it can survive page reloads and render hydration-free. The trade-off: every cart mutation is a server action, not a client-side optimistic update. That keeps Stripe-side totals trustworthy.
+</Callout>
+
+## Performance posture
+
+Category and product pages prerender at deploy time when possible. Cart and checkout are dynamic. Images go through `next/image` with `images.remotePatterns` covering Unsplash, the Vercel Blob domain, and any external CDN you wire into `brand.config.ts:images`.
+
+<Cards>
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="Checkout (Stripe)" href="/docs/features/checkout-stripe" />
+</Cards>

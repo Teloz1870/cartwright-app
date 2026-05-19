@@ -1,0 +1,56 @@
+---
+title: AI assistant
+description: The storefront chat assistant, its model, and how it shares the tool registry with MCP.
+---
+
+Every Cartwright shop has a chat assistant available to customers from a floating button on the storefront. It is wired to `app/api/assistant/chat/route.ts` and powered by Anthropic Claude.
+
+## Model
+
+The default model is **Claude Haiku 4.5** (`claude-haiku-4-5`), configured in `lib/ai/client.ts`. Haiku is the right pick for storefront chat: cheap, fast, capable enough to orchestrate tool calls and produce honest product recommendations.
+
+Swapping providers or models is a one-file change. The client uses Vercel's AI SDK, so anywhere you can plug `ai-sdk/openai`, `ai-sdk/google`, or another provider, the storefront chat will follow.
+
+<Callout type="tip">
+For heavier reasoning workloads (e.g. admin-side content generation), point a different module at Claude Sonnet or Opus. Haiku stays on the customer chat path where speed matters more than depth.
+</Callout>
+
+## Key management
+
+`getAnthropicApiKey()` reads from two places, in order:
+
+1. `IntegrationSettings.id=1` in the database — set via `/admin/integrations`, encrypted with AES-256-GCM.
+2. `process.env.ANTHROPIC_API_KEY` as fallback for local dev.
+
+A 30-second in-process cache prevents repeated DB lookups on chat bursts. Admin changes propagate within that window.
+
+If no key is configured anywhere, the chat endpoint returns `503` and the storefront FAB shows a graceful "AI is unavailable right now" state.
+
+## Tool surface
+
+The assistant calls into the same `lib/tools/registry.ts` that MCP and the REST endpoint at `/api/v1/tools` use. Storefront chat sessions get a JWT with restricted scopes — typically `catalog:read` and `cart:write` — so even a jailbroken prompt cannot reach admin-CRUD tools.
+
+The tool list the chat sees is filtered by scope at registry-call time. Tools the session does not have scope for are simply not exposed.
+
+## Streaming
+
+Responses stream via Vercel AI SDK's `streamText`. The storefront component reads the stream token-by-token. Tool calls within a stream are surfaced as structured events; the UI can render "Looking up products..." indicators while a tool runs.
+
+## What runs on Gemini instead
+
+Cartwright also integrates Google Gemini, but **not** for storefront chat. `lib/ai/gemini.ts` is used for:
+
+- Image composition / reference-image-driven generation (`composeWithReferenceImages`).
+- Theme color extraction (image → palette suggestions in the admin theme generator).
+- Category content generation (`lib/ai/category-seo-generator.ts`).
+
+The clear split: Anthropic for conversational and tool-orchestrating workloads, Gemini for image-aware generation tasks.
+
+## Disabling
+
+Set `brand.config.ts:ai.enabled = false` to ship a shop with no AI surface. The FAB disappears, the route returns 410 Gone, and the bundle drops the chat client component entirely.
+
+<Cards>
+  <Card title="Architecture: tool registry" href="/docs/architecture/tool-registry" />
+  <Card title="Recipe: AI prompt tuning" href="/docs/recipes/ai-prompt-tuning" />
+</Cards>

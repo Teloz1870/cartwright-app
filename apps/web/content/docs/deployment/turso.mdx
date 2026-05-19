@@ -1,0 +1,88 @@
+---
+title: Setting Up Turso
+description: Creating a Turso database, generating credentials, and connecting Cartwright via the libSQL Prisma adapter.
+---
+
+Cartwright uses [Turso](https://turso.tech) for production storage. Turso is a hosted libSQL service — it is SQLite-compatible at the wire level, which is why Prisma's schema provider stays `sqlite` while the runtime adapter is `@prisma/adapter-libsql`.
+
+## Why libSQL
+
+Local development uses a plain SQLite file (`file:./dev.db`). The Prisma schema, migrations, and query syntax are identical for both environments. `lib/db.ts` selects the adapter at runtime based on which env vars are present:
+
+```bash
+# When TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set → libSQL adapter → Turso
+# Otherwise → standard Prisma SQLite client → local file
+```
+
+This means you can develop offline, run migrations against a file, and promote the same migration history to Turso without schema changes.
+
+## Create the database
+
+```bash
+turso db create my-shop-db
+turso db tokens create my-shop-db
+```
+
+The `tokens create` command returns a JWT. Copy it — you will not see it again from the CLI.
+
+Retrieve the database URL:
+
+```bash
+turso db show my-shop-db --url
+# → libsql://my-shop-db-<org>.turso.io
+```
+
+## Set credentials in Vercel
+
+In Vercel project settings under **Environment Variables**, add these to the **Production** scope:
+
+```bash
+TURSO_DATABASE_URL="libsql://my-shop-db-<org>.turso.io"
+TURSO_AUTH_TOKEN="eyJhbGci..."
+DATABASE_URL="file:./dev.db"
+```
+
+`DATABASE_URL` must remain set. The Prisma CLI uses it for offline schema generation (`prisma generate`, `prisma migrate dev`). The runtime never reads it when `TURSO_*` is present.
+
+<Callout type="warn">
+`TURSO_AUTH_TOKEN` is a long base64 string. Vercel's environment variable UI has historically accepted zero-width characters via clipboard paste. `lib/db.ts` strips non-printable ASCII defensively, but a malformed token will cause a libSQL handshake failure at connection time. Paste through a plain-text editor before adding to Vercel. Full details in [Deploying to Vercel](/docs/deployment/vercel).
+</Callout>
+
+## Run migrations against Turso
+
+After setting credentials, run the migration deploy against the production database before the first production deploy (or after any schema change):
+
+<Tabs items={['Local CLI', 'Vercel Build Command']}>
+  <Tab value="Local CLI">
+
+```bash
+TURSO_DATABASE_URL="libsql://my-shop-db-<org>.turso.io" \
+TURSO_AUTH_TOKEN="..." \
+npx prisma migrate deploy
+```
+
+  </Tab>
+  <Tab value="Vercel Build Command">
+
+```bash
+# In Vercel project settings → Build Command
+npx prisma migrate deploy && next build
+```
+
+Vercel will use the production env vars it has for the scope. Migrations run before `next build` on every deploy — only pending migrations are applied.
+
+  </Tab>
+</Tabs>
+
+## Migration workflow
+
+| Environment | Schema generation | Migration |
+|---|---|---|
+| Local dev | `DATABASE_URL=file:./dev.db npx prisma migrate dev` | Creates migration files + applies to local file |
+| Production | Env vars set in Vercel | `npx prisma migrate deploy` applies pending migrations to Turso |
+
+Never run `prisma migrate dev` against Turso. That command creates and destroys a shadow database, which does not work reliably against a hosted libSQL endpoint. Use `migrate dev` only against a local SQLite file, then deploy the resulting migration files.
+
+## Replication
+
+Turso supports read replicas for low-latency reads in additional regions. Cartwright does not configure replicas in the current source. If you need replicas, the `@prisma/adapter-libsql` package supports a `syncUrl` and `syncInterval` option for embedded replica mode — this is an advanced configuration outside the scope of the default Cartwright setup.

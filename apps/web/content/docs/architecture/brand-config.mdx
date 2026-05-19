@@ -1,0 +1,51 @@
+---
+title: Brand Config
+description: How compile-time store identity, contact details, and runtime brand overrides work.
+---
+
+`brand.config.ts` is Cartwright's compile-time brand contract. It exports a single `brand` object and a `Brand` type. The file is intentionally pure data: no `lib/`, `components/`, or runtime imports, because many app routes import brand defaults and circular dependencies would be easy to create.
+
+The identity section defines the store name, slug, domain, public URL, tagline, and `industryTemplate`. The contact section defines transactional sender details, support email, and admin email. Other sections cover metadata, AI labels, feature flags, policies, fallback images, Stripe Elements colors, UI labels, footer copy, and email colors.
+
+```ts
+export const brand = {
+  storeName: "Northline Eyewear",
+  storeSlug: "northline-eyewear",
+  domain: "northline.example",
+  url: "https://northline.example",
+  tagline: "Prescription-ready frames for daily wear",
+  industryTemplate: "eyewear",
+  emails: {
+    from: "noreply@northline.example",
+    fromName: "Northline Eyewear",
+    support: "support@northline.example",
+    admin: "admin@northline.example",
+  },
+} as const;
+```
+
+`industryTemplate` selects seed data. `prisma/seed.ts` reads `BrandingSettings.industryTemplate` first when it exists, otherwise falls back to `brand.industryTemplate`, then calls `getIndustryTemplate()`. The selected template provides categories, pages, products, and optional category SEO content.
+
+After setup, runtime values can override part of the compile-time config through the `BrandingSettings` row. `lib/brand.ts` loads `id: 1`, merges nullable database fields over `brand.config` defaults, adds `source: "db" | "fallback"`, and caches the result for 30 seconds.
+
+```ts
+await prisma.brandingSettings.upsert({
+  where: { id: 1 },
+  update: {
+    storeName: "Northline Copenhagen",
+    tagline: "Frames adjusted in store",
+    emailSupport: "hello@northline.example",
+    industryTemplate: "eyewear",
+  },
+  create: {
+    id: 1,
+    storeName: "Northline Copenhagen",
+    heroImage: "https://images.unsplash.com/photo-1509695507497-903c140c43b0?w=1600",
+    announcement: "Free adjustments in store this week",
+  },
+});
+```
+
+Hot-path components such as metadata, header, footer, and feature-flag mounting may still import `brand` directly. Admin and setup flows that need post-setup changes use `getBrand()` instead.
+
+See also [Themes and tokens](/docs/architecture/themes-tokens) and [Industry templates](/docs/architecture/industry-templates).

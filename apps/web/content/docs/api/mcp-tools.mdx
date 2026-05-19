@@ -1,0 +1,187 @@
+---
+title: MCP tools
+description: The full tool surface available via /api/mcp and /api/v1/tools.
+---
+
+Cartwright exposes 36 tools across 12 domains. Every tool can be called by an external AI agent (MCP at `/api/mcp`), a REST client (`/api/v1/tools`), the storefront chat assistant, or the admin AI — all funneled through the same `lib/tools/registry.ts`.
+
+This page is a reference catalogue. For the validation pipeline and audit-log behaviour see [Architecture: tool registry](/docs/architecture/tool-registry).
+
+## Authentication
+
+All MCP and REST calls require a bearer token from an API key created in `/admin/api-keys`. Each key carries an explicit list of scopes; tools verify scope before executing.
+
+```bash
+curl https://my-shop.com/api/mcp \
+  -H "Authorization: Bearer sb_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"method":"tools/list"}'
+```
+
+For the strict input/output JSON Schema for each tool, hit `GET /api/v1/tools` (it serializes Zod schemas via `zodToJsonSchema`).
+
+## Scopes catalogue
+
+Scopes are defined in `lib/scopes.ts`. 19 scopes total across the read/write split:
+
+```text
+products:read, products:write
+categories:read, categories:write
+pages:read, pages:write
+discounts:read, discounts:write
+orders:read, orders:write
+settings:read, settings:write
+audit:read, audit:revert
+analytics:read
+marketing:write
+catalog:read   ← read-only catalog access for storefront chat
+cart:write     ← cart mutations for storefront chat
+customer:read  ← customer lookup for cart/account context
+```
+
+`*` exists as a wildcard for admin UI keys. Never grant it to a storefront chat session.
+
+<Callout type="info">
+Several product/category read tools require `catalog:read` rather than `products:read` or `categories:read`. The latter scopes exist for symmetry but are not currently required by any registered tool. When granting a key, prefer `catalog:read` for storefront/agent reads.
+</Callout>
+
+## Tool catalogue
+
+<Tabs items={['products', 'categories', 'orders', 'discounts', 'pages', 'settings', 'analytics', 'marketing', 'audit', 'images', 'address', 'cart + customer']}>
+  <Tab value="products">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `products.search` | `catalog:read` | skip |
+| `products.get` | `catalog:read` | skip |
+| `products.create` | `products:write` | yes |
+| `products.update` | `products:write` | yes |
+| `products.delete` | `products:write` | yes |
+| `products.attach_image` | `products:write` | yes |
+
+  </Tab>
+  <Tab value="categories">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `categories.list` | `catalog:read` | skip |
+| `categories.upsert` | `categories:write` | yes |
+| `categories.delete` | `categories:write` | yes |
+
+  </Tab>
+  <Tab value="orders">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `orders.list` | `orders:read` | skip |
+| `orders.get` | `orders:read` | skip |
+| `orders.create` | `orders:write` | yes |
+| `orders.update_status` | `orders:write` | yes |
+
+  </Tab>
+  <Tab value="discounts">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `discounts.list` | `discounts:read` | skip |
+| `discounts.create` | `discounts:write` | yes |
+| `discounts.toggle` | `discounts:write` | yes |
+| `discounts.try_apply` | `cart:write` | yes |
+
+  </Tab>
+  <Tab value="pages">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `pages.list` | `pages:read` | skip |
+| `pages.upsert` | `pages:write` | yes |
+| `pages.delete` | `pages:write` | yes |
+
+  </Tab>
+  <Tab value="settings">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `settings.get` | `settings:read` | skip |
+| `settings.update_branding` | `settings:write` | yes |
+| `settings.update_shipping` | `settings:write` | yes |
+
+  </Tab>
+  <Tab value="analytics">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `analytics.summary` | `analytics:read` | skip |
+
+  </Tab>
+  <Tab value="marketing">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `marketing.create_campaign` | `marketing:write` | yes |
+
+  </Tab>
+  <Tab value="audit">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `audit.list` | `audit:read` | skip |
+| `audit.revert` | `audit:revert` | yes |
+
+  </Tab>
+  <Tab value="images">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `images.search_unsplash` | `products:write` | skip |
+
+Requires `UNSPLASH_ACCESS_KEY` env. Falls back gracefully if absent.
+
+  </Tab>
+  <Tab value="address">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `address.autocomplete` | `catalog:read` | skip |
+
+  </Tab>
+  <Tab value="cart + customer">
+
+| Tool | Scope | Audit |
+|---|---|---|
+| `cart.add` | `cart:write` | skip |
+| `cart.update_quantity` | `cart:write` | skip |
+| `cart.remove` | `cart:write` | skip |
+| `cart.get_summary` | `cart:write` | skip |
+| `customer.lookup_by_email` | `customer:read` | skip |
+| `customer.lookup_by_phone` | `customer:read` | skip |
+| `user.get_last_shipping` | `customer:read` | skip |
+
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Cart and customer tools assume a storefront chat session with a cookie-based customer context. An API-key-only call with `cart:write` scope will accept the call but operate on an empty session — you usually want these tools called by the chat assistant, not directly by an external agent.
+</Callout>
+
+## Example: invoke from an external agent
+
+```bash
+curl https://my-shop.com/api/mcp \
+  -H "Authorization: Bearer sb_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "products.search",
+      "arguments": { "q": "aviator", "limit": 5 }
+    }
+  }'
+```
+
+For the exact response envelope and JSON Schema of each tool's `inputSchema`, query `GET /api/v1/tools` against your shop.
+
+<Cards>
+  <Card title="Architecture: MCP server" href="/docs/architecture/mcp-server" />
+  <Card title="Architecture: tool registry" href="/docs/architecture/tool-registry" />
+</Cards>

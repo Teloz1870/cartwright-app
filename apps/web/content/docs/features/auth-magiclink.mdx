@@ -1,0 +1,51 @@
+---
+title: Auth (magic link)
+description: NextAuth v5 with Resend magic link plus an optional password-credentials provider.
+---
+
+Cartwright uses NextAuth v5 (Auth.js) configured in `lib/auth.ts` + `lib/auth.config.ts`. The default sign-in path is a magic link emailed via Resend. A credentials provider is also wired, used by accounts that opted to set a password.
+
+## Magic link flow
+
+1. Customer enters email on `/konto`.
+2. Server generates a single-use token, persists it (typically in a `VerificationToken` table), and sends a link via Resend.
+3. Customer clicks the link → token is consumed → session is established (JWT strategy).
+4. Anonymous cart is merged into the customer record on first authenticated request.
+
+`AUTH_SECRET` must be set (generate with `npx auth secret` or `openssl rand -hex 32`). It is used to sign the JWT session token. **Rotating `AUTH_SECRET` invalidates every active session** — customers and admins will need to sign in again.
+
+## Resend is optional
+
+If `RESEND_API_KEY` is not configured, the magic-link mailer falls back to writing each outbound email to `.mail-previews/` as a local HTML file. Open it in a browser, copy the link, paste in the URL bar — same effect, no network. This is the recommended local-dev path.
+
+<Callout type="info">
+The dev fallback is `.mail-previews/` HTML files — not a `console.log` of the raw link. Watch that folder on first sign-in attempt in local dev.
+</Callout>
+
+## Admin vs customer
+
+Admin status is a boolean column on the `User` model. There is no separate admin auth flow — admins sign in the same way, and `lib/admin.ts:requireAdmin()` checks the session for the admin claim before letting any `/admin/*` route render.
+
+This is intentional: you cannot accidentally create an "admin via OAuth" bypass. The only path to admin is a manual flip of the column, normally done by the first admin during setup wizard, or via Prisma Studio in pre-launch.
+
+## Credentials provider
+
+A credentials provider is also configured for users who set a password during onboarding (`User.passwordHash`). It is rarely the default path for customers but provides a fallback when email is unreliable (corporate spam filters, offline demos, etc.).
+
+The provider hashes with a standard bcrypt/argon2-equivalent setup in `lib/auth/` — see source for the exact algorithm currently in use.
+
+## Session shape
+
+The JWT carries `userId`, `email`, `isAdmin`, and a short-lived expiration. Refresh happens via NextAuth's normal middleware path. No refresh-token rotation is implemented because magic links re-issue cheaply.
+
+## Production checklist
+
+- `AUTH_SECRET` set to a strong random value.
+- `RESEND_API_KEY` configured and the Resend sending domain verified (SPF + DKIM).
+- `brand.config.ts:emails.from` matches a verified Resend sender.
+- `NEXT_PUBLIC_APP_URL` matches your canonical host — magic links use it for the callback URL.
+
+<Cards>
+  <Card title="Email (Resend)" href="/docs/features/email-resend" />
+  <Card title="Secrets management" href="/docs/configuration/secrets-management" />
+</Cards>

@@ -1,0 +1,48 @@
+---
+title: Admin panels
+description: The 12 admin routes that run a Cartwright shop and what each one does.
+---
+
+`/admin/*` is the operator surface. The layout enforces `requireAdmin()` at the top and redirects fresh forks to `/admin/setup` when the database has no products and `BrandingSettings.setupComplete` is false.
+
+The route names are currently in Danish in upstream cartwright (a holdover from the project's origin). `/admin/produkter` is products, `/admin/ordrer` is orders, etc. Forks typically rename the URL segments at the same time as their first content pass.
+
+<Callout type="info">
+Full i18n migration (next-intl with `en` + `da` resource files) is on the roadmap. Until then, English-only forks rename the URL segments locally.
+</Callout>
+
+## Catalog
+
+- **`/admin/produkter`** — Product CRUD. List, create, edit, archive. Images upload via `/api/admin/upload` (Vercel Blob).
+- **`/admin/kategorier`** — Category CRUD including hero image/video, SEO copy, and the optional `descriptionLong` rich-text block.
+
+## Orders & promotions
+
+- **`/admin/ordrer`** — Order list + detail. Status transitions, refunds, customer lookup, Stripe reference.
+- **`/admin/rabatkoder`** — Discount codes. Percentage / fixed-amount / free shipping. Per-code redemption caps.
+- **`/admin/kunder`** — Customer list + per-customer order history.
+
+## Content
+
+- **`/admin/sider`** — Static pages CRUD (about, FAQ, terms, etc.) rendered through `app/info/`.
+- **`/admin/mails`** — Email template editor. The actual rendering happens through `lib/mailer/` at send time.
+
+## System
+
+- **`/admin/audit`** — Audit log viewer. Every write tool that doesn't set `skipAudit: true` lands here. Filter by tool name, actor, time range.
+- **`/admin/ai`** — Admin-side AI tools: SEO copy generation, theme suggestion, image search.
+- **`/admin/api-keys`** — API key CRUD with scope-checkbox UI. Hashed with `AUTH_SECRET` HMAC pepper. Plain key shown ONCE on creation.
+- **`/admin/integrations`** — Stripe, Resend, Anthropic, Gemini, Vercel Blob secrets. DB-stored, AES-256-GCM encrypted at rest, decrypted at runtime.
+- **`/admin/setup`** — One-time wizard for fresh forks. Identity, first admin user, integrations, finalize.
+- **`/admin/setup-guide`** — Reference guide accessible after setup completes, for re-checking onboarding steps.
+
+## Access control
+
+`requireAdmin()` from `lib/admin.ts` runs at the layout level. It checks the NextAuth session for an `isAdmin` claim. Unauthenticated → redirect to sign-in. Authenticated but not admin → 404 (deliberate, not 403 — we do not advertise that the path exists).
+
+The admin AI surface (`/admin/ai` + `/admin/integrations` AI keys) operates under the same session check. There is no separate admin API key — admins use server-side actions on cookied sessions.
+
+<Cards>
+  <Card title="API keys + scopes" href="/docs/architecture/tool-registry" />
+  <Card title="Setup wizard" href="/docs/getting-started/setup-wizard" />
+</Cards>

@@ -1,0 +1,71 @@
+---
+title: Migrations
+description: Running Prisma migrations safely in Cartwright — local dev flow, production deploy against Turso, rollback strategy, and the seed footgun.
+---
+
+Cartwright uses standard Prisma migrations. The schema provider is `sqlite` (Turso is SQLite-compatible), so migration files are plain SQL and work against both local files and Turso without modification.
+
+## Local development
+
+```bash
+# After editing prisma/schema.prisma
+npx prisma migrate dev --name describe-your-change
+```
+
+`migrate dev` creates a new migration file in `prisma/migrations/`, applies it to your local `DATABASE_URL` (the SQLite file), and regenerates the Prisma client. It also manages a shadow database for drift detection — locally this is a second temporary SQLite file, which is fine.
+
+Never point `DATABASE_URL` at a Turso endpoint and run `migrate dev`. The shadow database workflow does not work reliably against a hosted libSQL endpoint. Keep `DATABASE_URL=file:./dev.db` for all local development.
+
+## Production deploy against Turso
+
+```bash
+TURSO_DATABASE_URL="libsql://my-shop-db-<org>.turso.io" \
+TURSO_AUTH_TOKEN="..." \
+npx prisma migrate deploy
+```
+
+`migrate deploy` applies only pending migrations (those not recorded in `_prisma_migrations`) without creating a shadow database. It is safe to run against Turso.
+
+The recommended approach is to include this in the Vercel build command:
+
+```bash
+npx prisma migrate deploy && next build
+```
+
+This runs migrations before every build. Only pending migrations are applied — if the database is already up to date, the command is a no-op.
+
+## Rollback strategy
+
+Cartwright is forward-only. There is no built-in rollback mechanism. Prisma does not generate rollback SQL for SQLite migrations.
+
+In practice, rollback options are:
+
+1. **Turso point-in-time restore** — Turso supports PITR (point-in-time restore) for databases. If a migration causes data loss, restore to a snapshot taken before the migration ran.
+2. **Write a forward migration** that undoes the schema change — add back a dropped column, rename back a renamed table. This is the only option if PITR is unavailable.
+3. **Redeploy the previous application version** — if the schema change is additive (new nullable column), the previous app version will still work against the new schema.
+
+Document rollback intent for each migration in the migration file's SQL comment before merging. This is not enforced by tooling but is the only reliable recovery path in a forward-only system.
+
+## Data migration scripts
+
+The `scripts/` directory in the repository root currently contains one file:
+
+- `fork-smoke.sh` — a smoke-test script for verifying a fresh fork boots correctly. It is not a data migration.
+
+There are no data migration scripts in the current source. If you need to backfill data for a schema change (e.g., populate a new non-nullable column for existing rows), write a one-off script in `scripts/` and run it manually against the production database before or after deploying the migration, depending on whether the application needs the data to be present before or after the schema change.
+
+## The seed footgun
+
+<Callout type="warn">
+`npx prisma db seed` reads credentials from `.env`, not from shell environment variables. If you have `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` set in `.env` (which is common after initial setup), running `prisma db seed` locally will target your production Turso database even if you unset those variables in the shell with `unset TURSO_DATABASE_URL`.
+
+The seed script (`prisma/seed.ts`) calls `deleteMany` on every model before inserting fresh data. Running it against a populated production database deletes all orders, products, categories, users, and carts.
+
+Safe local seeding options:
+
+1. Comment out `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `.env` before running `prisma db seed`. Restore them afterward.
+2. Add a guard in `prisma/seed.ts` that exits early if `NODE_ENV` is `production` or if the Turso URL points at a non-development database.
+3. Keep Turso credentials only in `.env.local` (which Prisma CLI does not read) and keep `.env` with only `DATABASE_URL=file:./dev.db`.
+</Callout>
+
+Option 3 is the cleanest long-term setup for a local development environment where you want to seed frequently. `.env.local` is read by Next.js at runtime but not by the Prisma CLI, so your app connects to Turso while `prisma db seed` stays on the local file.

@@ -1,0 +1,103 @@
+---
+title: Recipe — Stripe in test mode
+description: Get end-to-end Stripe checkout working in test mode before going live.
+---
+
+A full Stripe test loop in cartwright is: Stripe test keys configured → webhook listening → a 4242 card placed through the storefront → the order appearing in `/admin/ordrer` with the test charge linked. About 15 minutes if you have a Stripe account already.
+
+## Steps
+
+<Steps>
+
+1. **Get test keys from Stripe.** Stripe dashboard → Developers → API keys → Reveal test keys. Copy:
+
+   - `sk_test_...` (secret key)
+   - `pk_test_...` (publishable key)
+
+2. **Configure in `/admin/integrations`** (recommended path — DB-stored, encrypted).
+
+   Visit `http://localhost:3000/admin/integrations`. Paste both keys. Save. The secret key is encrypted AES-256-GCM at rest; the publishable key is plaintext but is a public value anyway.
+
+   <Callout type="tip">
+   Prefer this over env vars. DB-first means switching between test and live is a few clicks, not an env update + redeploy. And you don't accidentally commit a `.env` with live keys.
+   </Callout>
+
+   *Alternative — env vars for headless setups:*
+
+   ```bash
+   STRIPE_SECRET_KEY="sk_test_..."
+   STRIPE_PUBLISHABLE_KEY="pk_test_..."
+   ```
+
+3. **Forward webhooks to your local dev server.** Install the Stripe CLI if you have not yet (`brew install stripe/stripe-cli/stripe`). Then:
+
+   ```bash
+   stripe login
+   stripe listen --forward-to localhost:3000/api/webhook/stripe
+   ```
+
+   The CLI prints a `whsec_...` value. Copy it. This is your local webhook signing secret.
+
+4. **Wire the webhook secret.** Back in `/admin/integrations`, paste `whsec_...` as the Stripe webhook secret. (Or set `STRIPE_WEBHOOK_SECRET` env var.) Keep the `stripe listen` process running while you test.
+
+5. **Place a test order.** In the storefront:
+
+   - Add a product to the cart.
+   - Go to `/checkout`.
+   - Use test card `4242 4242 4242 4242`, any future expiry, any CVC, any postal code.
+   - Complete.
+
+6. **Verify the loop end-to-end.**
+
+   - Storefront shows the success page with an order ID.
+   - The `stripe listen` terminal shows `payment_intent.succeeded` forwarded with a 200 response from `/api/webhook/stripe`.
+   - `/admin/ordrer` shows the new order linked to the Stripe Payment Intent.
+   - If `RESEND_API_KEY` is set: a receipt email arrives. If not: check `.mail-previews/` for the HTML preview file.
+
+</Steps>
+
+## Edge cases worth testing
+
+<Tabs items={['3DS challenge', 'Declined card', 'Webhook offline']}>
+  <Tab value="3DS challenge">
+
+```text
+Card: 4000 0025 0000 3155
+```
+
+Stripe forces a 3-D Secure authentication challenge. Verify your redirect flow handles `/checkout/return` correctly.
+
+  </Tab>
+  <Tab value="Declined card">
+
+```text
+Card: 4000 0000 0000 0002
+```
+
+Card declines. Storefront should show an error and keep the customer on the checkout page with the cart preserved.
+
+  </Tab>
+  <Tab value="Webhook offline">
+
+Stop the `stripe listen` process mid-test. Place an order. The Payment Element succeeds, but the webhook never reaches you. The order will sit in `pending`. The reconcile-stripe cron — or a manual call to it — should sweep it up.
+
+  </Tab>
+</Tabs>
+
+## Production switch
+
+To flip to live mode:
+
+1. In Stripe dashboard, get live keys (`sk_live_...`, `pk_live_...`).
+2. Set up a real webhook endpoint in the Stripe dashboard pointing at `https://your-shop.com/api/webhook/stripe`. Grab its signing secret.
+3. Update `/admin/integrations` with the three live values (secret, publishable, webhook secret).
+4. Place a real order with a real card. Refund yourself.
+
+<Callout type="warn">
+Never put live keys in `.env` files committed to git. Use Vercel project env vars (Production scope) or `/admin/integrations` DB storage.
+</Callout>
+
+<Cards>
+  <Card title="Feature: checkout (Stripe)" href="/docs/features/checkout-stripe" />
+  <Card title="Secrets management" href="/docs/configuration/secrets-management" />
+</Cards>

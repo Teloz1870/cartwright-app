@@ -1,0 +1,57 @@
+---
+title: Environment Variables
+description: Complete reference for every environment variable Cartwright reads at build time and runtime.
+---
+
+Cartwright reads environment variables in two places: the Next.js server runtime and the Prisma CLI (for migrations and seeding). The minimal set needed to boot is three variables. Everything else enables optional integrations that can also be configured through `/admin/integrations`.
+
+## Required
+
+These must be set before the app will start cleanly.
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `DATABASE_URL` | Prisma CLI target — always `file:./dev.db` for local dev; keep set to file path even in production (runtime uses Turso via adapter instead) | `file:./dev.db` |
+| `TURSO_DATABASE_URL` | Turso endpoint for runtime queries via `@prisma/adapter-libsql`. When absent, Prisma falls back to `DATABASE_URL` (local SQLite). | `libsql://my-shop-db.turso.io` |
+| `TURSO_AUTH_TOKEN` | Turso auth token. `lib/db.ts` strips non-printable ASCII from this value before use. | `eyJhbGci...` |
+| `AUTH_SECRET` | Auth.js session secret. Also used as the Key Encryption Key (KEK) for AES-256-GCM encryption of integration secrets in `IntegrationSettings`. | generate with `npx auth secret` |
+| `NEXT_PUBLIC_APP_URL` | Canonical URL for the deployed app. Used in Open Graph metadata, email links, and CSRF checks. Must match the actual host including protocol. | `https://my-shop.vercel.app` |
+
+<Callout type="warn">
+Turso tokens are long base64 strings. Vercel's environment variable UI has historically accepted zero-width characters via clipboard paste. If your deploy fails with a libSQL handshake error, see [Deploying to Vercel](/docs/deployment/vercel) — the full explanation and workaround are documented there.
+</Callout>
+
+## Optional integrations
+
+These variables are read at runtime as a fallback when the corresponding key is not set in `IntegrationSettings` (the DB-encrypted row). Most operators should use `/admin/integrations` instead of env vars — the admin UI encrypts the key at rest with AES-256-GCM and avoids a redeploy when rotating.
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Powers storefront AI chat at `/api/assistant/chat`. Without this, the chat endpoint returns 503 and the storefront FAB shows a graceful error. | `sk-ant-api03-...` |
+| `UNSPLASH_ACCESS_KEY` | Allows the admin AI assistant to search and suggest product images. Without this, the `images.search_unsplash` tool is disabled. | `Client-ID abc123` |
+| `STRIPE_SECRET_KEY` | Stripe server-side key. Without this, checkout runs in mock mode (orders are recorded but no charge is made). | `sk_live_...` |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe client-side key embedded in the Stripe Elements component. | `pk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | Validates incoming webhook events from Stripe at `/api/webhook/stripe`. | `whsec_...` |
+| `RESEND_API_KEY` | Resend email delivery. Without this, transactional mail is logged to console (dev mode behavior). | `re_...` |
+| `SENTRY_DSN` | Server-side Sentry DSN for error tracking. Silent without it. | `https://abc@o123.ingest.sentry.io/456` |
+| `NEXT_PUBLIC_SENTRY_DSN` | Client-side Sentry DSN. Bundled into the browser JS. | `https://abc@o123.ingest.sentry.io/456` |
+| `SENTRY_ORG` | Sentry org slug for source-map upload during build. | `my-org` |
+| `SENTRY_PROJECT` | Sentry project slug for source-map upload during build. | `my-shop` |
+| `SENTRY_AUTH_TOKEN` | Token for Sentry CLI source-map upload. Generate with `project:releases` + `org:read` scopes. | `sntrys_...` |
+| `CRON_SECRET` | Vercel Cron auth token for `/api/cron/reconcile-stripe`. Generate with `openssl rand -hex 32`. | `a3f8b2...` |
+
+## Build-time
+
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_APP_URL` | Also build-time — baked into static metadata at build. |
+
+There is no `SKIP_ENV_VALIDATION` variable in the current source. Cartwright reads env values lazily at runtime rather than validating them eagerly at build time.
+
+## DB-first vs env
+
+Stripe, Resend, Anthropic, and Gemini keys can be stored encrypted in the `IntegrationSettings` database row via `/admin/integrations`. The lookup order is: DB value → env var fallback → feature disabled. If both are set, the DB value wins.
+
+<Callout type="info">
+`UNSPLASH_ACCESS_KEY` and `CRON_SECRET` are env-only — there is no admin UI for them.
+</Callout>

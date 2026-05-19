@@ -1,0 +1,35 @@
+---
+title: MCP Server
+description: How the Streamable HTTP MCP endpoint authenticates and dispatches tool calls.
+---
+
+`app/api/mcp/route.ts` exposes Cartwright tools through the Model Context Protocol using the Streamable HTTP transport. The route is intentionally thin: authenticate the request, build a fresh server, register every tool from the registry, and delegate execution back to `invokeTool`.
+
+The endpoint runs in `nodejs` runtime and is marked `force-dynamic`. For every authenticated request, `buildMcpServer()` constructs a new `McpServer` with `name: brand.storeSlug` and version `0.2.0`. There is no long-lived server instance shared across requests.
+
+```ts
+const transport = new WebStandardStreamableHTTPServerTransport({
+  sessionIdGenerator: undefined,
+  enableJsonResponse: true,
+});
+```
+
+`sessionIdGenerator: undefined` puts the transport in stateless mode. Each request carries its own bearer token, re-runs authentication, and rebuilds the MCP tool registration. That matches serverless deployment better than relying on cross-request session state. `enableJsonResponse: true` keeps responses compatible with clients that prefer JSON over event-stream framing for simple calls.
+
+Authentication comes from `lib/api-auth.ts`. `authenticateApiKey()` extracts `Authorization: Bearer sb_live_...`, verifies the prefix, hashes the plaintext key with HMAC-SHA256 using `AUTH_SECRET` as a server-side pepper, and looks up the hash in Prisma. A valid key becomes an `ApiKeyActor` with database-backed scopes.
+
+MCP registration deliberately uses a loose SDK-facing schema:
+
+```ts
+inputSchema: { args: z.any().optional() }
+```
+
+The real input schemas stay in the registry. The MCP handler unwraps `input.args`, calls `invokeTool(tool.name, args, ctx, actor.scopes)`, and returns either formatted JSON text or an MCP error response. That keeps MCP and REST behavior on the same validation and scope path.
+
+<Callout type="info">
+`GET /api/mcp` without an Authorization header is a public introspection surface by design. It returns a human-readable JSON payload with `howToConnect`, `publicCatalog`, `manifest`, and changelog links instead of a bare 401.
+</Callout>
+
+Authenticated `GET`, `POST`, and `DELETE` all flow through the same `handle()` function. The method difference is transport-level; the security boundary is still the bearer key plus per-tool scope enforcement.
+
+Next: [Tool registry](/docs/architecture/tool-registry).

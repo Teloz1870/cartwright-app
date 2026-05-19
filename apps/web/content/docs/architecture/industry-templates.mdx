@@ -1,0 +1,57 @@
+---
+title: Industry Templates
+description: How seed-data templates are registered and selected for a Cartwright fork.
+---
+
+Industry templates live under `industry-templates/<slug>/`. They are seed-data modules, not runtime commerce engines. `industry-templates/index.ts` imports each template, registers it in the `TEMPLATES` map, exposes `getIndustryTemplate(slug)`, and derives `INDUSTRY_TEMPLATE_OPTIONS` for setup, scripts, and tests.
+
+The shipped registry currently contains one template:
+
+```ts
+const TEMPLATES: Record<string, IndustryTemplate> = {
+  generic: genericTemplate,
+};
+```
+
+`getIndustryTemplate()` returns `genericTemplate` when the slug is missing or unknown. That fallback is useful for fresh forks, but it also means a typo in `brand.industryTemplate` will silently seed generic demo content.
+
+<Callout type="info">
+The source comments still mention older examples such as eyewear for historical context, but the current checked registry only ships and registers `generic`.
+</Callout>
+
+The `IndustryTemplate` type exports `label`, `description`, `categories`, `pages`, `products`, and optional `categorySeo`. A seed product includes name, slug, description, price in øre, image URLs, stock, category slug, optional `featured`, and optional eyewear-origin fields `frameColor`, `lensColor`, and `brand`. Comments note that non-eyewear forks can leave those fields undefined and use structured product attributes elsewhere.
+
+<Callout type="info">
+The current `IndustryTemplate` interface does not yet include AI prompt presets or theme defaults. Those are adjacent fork concerns today: prompts are selected from `brand.ai.promptModule`, and runtime palette values live in `BrandingSettings.themeJson`.
+</Callout>
+
+The generic template contains two categories, four pages, and six placeholder products. `prisma/seed.ts` creates categories first, merges optional category SEO by slug, writes pages, then creates products by resolving each product's `categorySlug` against the created categories.
+
+<Steps>
+
+1. Copy the generic folder.
+
+```bash
+cp -R industry-templates/generic industry-templates/eyewear
+```
+
+2. Edit `industry-templates/eyewear/seed-data.ts` so it exports an `IndustryTemplate` with real categories, pages, products, and optional `categorySeo`.
+
+3. Register the template in `industry-templates/index.ts`.
+
+```ts
+import { eyewearTemplate } from "./eyewear/seed-data";
+
+const TEMPLATES: Record<string, IndustryTemplate> = {
+  generic: genericTemplate,
+  eyewear: eyewearTemplate,
+};
+```
+
+4. Set `brand.industryTemplate = "eyewear"` in `brand.config.ts`, or choose the template through setup so `BrandingSettings.industryTemplate` overrides the default during seeding.
+
+5. Run the seed script against the intended database and inspect the created categories, pages, and products before deploying.
+
+</Steps>
+
+A fuller walkthrough belongs at /docs/recipes/new-industry-template; that recipe is not written yet.

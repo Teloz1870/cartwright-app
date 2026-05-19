@@ -1,0 +1,50 @@
+---
+title: SEO automation
+description: sitemap, robots, structured data, OG images, and AI-assisted category/product copy.
+---
+
+Cartwright ships the search-engine boring stuff so a fork does not have to think about it on day one.
+
+## sitemap.ts and robots.ts
+
+`app/sitemap.ts` returns the URL list at build time — landing, all product pages, all category pages, and any pages in the admin Sider CRUD. `app/robots.ts` returns a permissive `robots.txt` with the sitemap URL.
+
+Both files read from Prisma at request time (or build time, depending on cache config). New products added through the admin appear in the sitemap automatically on next revalidation.
+
+## Structured data (JSON-LD)
+
+The components layer ships `components/JsonLd.tsx` for product- and category-level structured data. Whether each page actually emits JSON-LD depends on the route — verify in your fork by viewing source on a product page.
+
+<Callout type="info">
+Audit your fork's structured-data output before launch. `components/JsonLd.tsx` exists but is not injected on every relevant page in upstream cartwright. Adding a `<JsonLd ... />` to `app/produkt/[slug]/page.tsx` is a one-line change with measurable SEO impact.
+</Callout>
+
+## OG images
+
+Next.js supports OG image generation via `app/og/route.tsx` patterns (Satori + `next/og` `ImageResponse`). Upstream cartwright does not currently ship a dedicated OG image route — pages fall back to `brand.config.ts:metadata.socialImageUrl` (a static asset).
+
+For a launch-ready fork, add `app/og/route.tsx` that reads from the URL slug, looks up the product/category in Prisma, and renders a branded card. The `cartwright-app` repo (this docs site) ships a working OG route at `apps/web/app/og/docs/[...slug]/route.tsx` as a reference implementation.
+
+## AI-assisted copy generation
+
+Two flows in `lib/ai/`:
+
+- `lib/ai/category-seo-generator.ts` — generates category descriptions, meta-titles, meta-descriptions, and the long-form `descriptionLong` block. Uses Anthropic by default (despite the file name suggesting otherwise — verify with your fork).
+- `lib/ai/product-seo-generator.ts` — equivalent for products.
+
+Both are exposed in `/admin/ai` as buttons next to the relevant form fields. The flow: click "Generate", the admin AI calls the generator with product/category data + brand context, the result lands in the form, you edit, then save.
+
+<Callout type="tip">
+Always edit AI-generated copy before publishing. The generators are good at structure (length, keyword density, schema-shape) but bland on voice. Two minutes of human editing dramatically improves both customer perception and search ranking.
+</Callout>
+
+## Metadata pattern
+
+Every page that needs custom metadata exports `generateMetadata` (or static `metadata`) from its `page.tsx`. The pattern: read from Prisma + `brand.config.ts`, compose title/description with the shop's metadata defaults as fallback, return.
+
+The `cartwright-app` repo's docs pages are a useful reference — every MDX page picks up its frontmatter `title:` and `description:` and Fumadocs surfaces them as OG metadata automatically.
+
+<Cards>
+  <Card title="brand.config.ts" href="/docs/architecture/brand-config" />
+  <Card title="Recipe: AI prompt tuning" href="/docs/recipes/ai-prompt-tuning" />
+</Cards>

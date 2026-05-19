@@ -1,0 +1,102 @@
+---
+title: Recipe — Custom theme
+description: Generate a brand palette, wire it into themes/, and sync the email + Stripe mirrors.
+---
+
+You want your fork to stop looking like cartwright's neutral default and look like your brand. This recipe takes you from "pick a primary color" to "every surface reads from your tokens" in about 30 minutes.
+
+## Before you start
+
+- A fork of cartwright with `pnpm dev` running.
+- One source of inspiration: a brand-palette guide, a hero photo, or just a primary hex you already know.
+- A contrast checker open (WebAIM or any browser devtool) — palette work without contrast verification ships accessibility bugs.
+
+## Steps
+
+<Steps>
+
+1. **Copy the base theme.**
+
+```bash
+cp themes/generic.css themes/my-shop.css
+```
+
+2. **Edit the token ramp.** Open `themes/my-shop.css`. Replace the `--color-sol-*` values with your brand. Keep the variable names — the codebase references them by name everywhere.
+
+```css
+@theme {
+  --color-sol-accent: #d97757;   /* primary CTA / price / accent */
+  --color-sol-sun:    #e8b339;   /* secondary accent — use sparingly */
+  --color-sol-cream:  #fdf5f1;   /* warm offwhite — sidebar / cards */
+  --color-sol-ink:    #1a1a1a;   /* headings / body */
+  --color-sol-muted:  #7d6f63;   /* secondary text */
+}
+```
+
+3. **Swap the import.** In `app/globals.css`:
+
+```css
+@import "tailwindcss";
+@import "../themes/my-shop.css"; /* was: ../themes/generic.css */
+```
+
+4. **Sync the email palette.** Open `brand.config.ts:emailColors`. Mirror the hex values from your theme. Email clients cannot read CSS variables, so this is a manual copy.
+
+```ts
+emailColors: {
+  accent: '#d97757',
+  cream:  '#fdf5f1',
+  sand:   '#f5ebde',
+  ink:    '#1a1a1a',
+  muted:  '#7d6f63',
+  success:'#2d7d4e',
+},
+```
+
+5. **Sync Stripe Elements.** `brand.config.ts:stripeAppearance` is rendered inside Stripe's iframe — same constraint, manual copy.
+
+```ts
+stripeAppearance: {
+  colorPrimary: '#d97757',
+  colorBackground: '#ffffff',
+  colorText: '#1a1a1a',
+  colorDanger: '#dc2626',
+  borderRadius: '10px',
+},
+```
+
+6. **Run the dev server. Inspect every surface.** Storefront landing, category, product, cart, checkout, account, admin. Watch for white-on-yellow, dark-on-dark, and any place a hardcoded color slipped past the token migration.
+
+```bash
+pnpm dev
+```
+
+7. **Run the contrast check.** Every CTA, every link, every form input. WCAG AA = 4.5:1 for body text, 3:1 for large text and UI components. The terracotta `#d97757` example above passes AA against `#1a1a1a` but fails against `#fdf5f1` — adjust before you ship.
+
+</Steps>
+
+## What you do NOT need to do
+
+- Edit Tailwind config. The `@theme {}` block in your CSS file is the config.
+- Touch component files. They reference tokens by name.
+- Rebuild caches. Turbopack picks up CSS changes in dev. Production builds will pick them up at deploy time.
+
+## Optional: Gemini-assisted palette
+
+`lib/ai/theme-generator.ts` is wired to let admin AI suggest palettes from a reference image. The current implementation accepts an image and returns palette suggestions — not pixel-perfect extraction. Treat the output as a starting point, not the final palette.
+
+<Callout type="tip">
+Skip the AI step on your first theme. Most brands have an existing primary color and accent; manual is faster than prompting. The AI path is most useful when you have a hero photo but no brand guidelines yet.
+</Callout>
+
+## Verification
+
+- Cartwright admin `/admin` looks branded (header, buttons, links).
+- Storefront landing reads correctly in dark mode (Fumadocs ships a toggle; cartwright forks usually do not — verify your fork's stance).
+- Email previews in `.mail-previews/` render with your new colors (trigger a magic link to test).
+- Stripe Elements on `/checkout` match the rest of the page (palette + border-radius).
+
+<Cards>
+  <Card title="Architecture: themes & tokens" href="/docs/architecture/themes-tokens" />
+  <Card title="Recipe: new industry template" href="/docs/recipes/new-industry-template" />
+</Cards>

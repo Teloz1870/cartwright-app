@@ -1,0 +1,40 @@
+---
+title: Tool Registry
+description: How Cartwright defines, validates, authorizes, and exposes AI-callable tools.
+---
+
+`lib/tools/registry.ts` is the one table of contents for Cartwright tools. It imports domain arrays such as `productsTools`, `ordersTools`, `settingsTools`, and `auditTools`, flattens them into `ALL_TOOLS`, and builds a `Map` keyed by canonical tool name. Duplicate names fail at module load.
+
+Each tool is a `ToolDefinition` from `lib/tools/types.ts`: `name`, `description`, required `scope`, Zod `input`, async `handler`, and optional `revertible` or `skipAudit` flags. The handler receives already parsed args plus `ToolCtx`, which can carry actor, request id, IP, user agent, cookies, and user id.
+
+```ts
+import { z } from "zod";
+import { defineTool } from "@/lib/tools/types";
+
+const getInput = z.object({
+  slug: z.string().min(1),
+});
+
+export const getProduct = defineTool({
+  name: "products.get",
+  description: "Fetch one product by slug.",
+  scope: "catalog:read",
+  input: getInput,
+  skipAudit: true,
+  handler: async (args) => {
+    return prisma.product.findFirst({
+      where: { slug: args.slug, deletedAt: null },
+    });
+  },
+});
+```
+
+`invokeTool(name, args, ctx, granted)` is the central dispatcher. It looks up the tool, checks `hasScope(granted, tool.scope)`, runs `tool.input.safeParse(args)`, and calls the handler. Failures are normalized to `404`, `403`, `422`, or `500` shaped results, so callers do not need to catch arbitrary exceptions.
+
+<Callout type="tip">
+Use `skipAudit: true` on read-only tools such as `products.search`, `products.get`, and `settings.get`. In the current implementation, the flag documents intent; audit rows are written by write handlers that explicitly wrap work in `withAudit()`.
+</Callout>
+
+Audit logging is not performed directly inside `invokeTool`. Write tools call `withAudit()` from `lib/audit.ts` around the mutation, passing the actor, tool name, args, optional before-state, IP, and user agent. `withAudit()` records both success and failure and redacts sensitive keys before writing.
+
+The same registry powers both external surfaces. `/api/mcp` registers every tool with the MCP SDK and delegates calls to `invokeTool`. `/api/v1/tools` exposes a public manifest, and `/api/v1/tools/[name]` uses `requireApiScope()` before calling the same dispatcher.

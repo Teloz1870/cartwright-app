@@ -1,0 +1,68 @@
+---
+title: Feature Flags
+description: How Cartwright feature flags work today — brand.config.ts boolean switches and what each controls.
+---
+
+Cartwright uses a static feature-flag system driven by `brand.config.ts`. Flags are TypeScript booleans evaluated at build time (and at server-component render time for SSR). There is no runtime flag service, no database `FeatureFlag` model, and no percentage-rollout mechanism in the current codebase.
+
+<Callout type="info">
+The system is brand-config-driven. Runtime overrides per user or per session are not currently implemented. If you need dynamic flags, the practical path today is to store a boolean in `BrandingSettings` (editable via `/admin/integrations`) and read it from there in server components.
+</Callout>
+
+## Current flags
+
+All flags live under `brand.features` in `brand.config.ts`:
+
+```bash
+features: {
+  tryOn: false,
+  aiStylist: true,
+  newsletter: true,
+  mcpPublic: true,
+},
+```
+
+| Flag | Default | What it controls |
+|---|---|---|
+| `tryOn` | `false` | AR virtual try-on UI (eyewear-specific). When `false`, the try-on section is not rendered anywhere in the storefront. Set to `true` only in eyewear forks that have the try-on component wired up. |
+| `aiStylist` | `true` | The floating AI assistant button (FAB) and slide-in panel on the storefront. When `false`, the component is not mounted. The `/api/assistant/chat` route still exists regardless. |
+| `newsletter` | `true` | Newsletter signup section in the footer. When `false`, the section is omitted from the footer layout. |
+| `mcpPublic` | `true` | Whether `/api/mcp` and `/api/v1/tools` are accessible without authentication. When `true`, `GET /api/mcp` returns a public introspection JSON. Tool invocations still require a valid API key and scope regardless of this flag. |
+
+## Changing a flag
+
+Edit `brand.config.ts` and redeploy. No database migration needed.
+
+```bash
+# Disable the AI stylist for a non-AI fork
+features: {
+  tryOn: false,
+  aiStylist: false,
+  newsletter: true,
+  mcpPublic: false,
+},
+```
+
+Because `brand.config.ts` is a compile-time module, the flag value is baked into the server-component tree at build time. There is no hot-reload for flag changes in production — a new deploy is required.
+
+## Adding a flag
+
+Add a new key to the `features` object:
+
+```bash
+features: {
+  // existing flags
+  tryOn: false,
+  aiStylist: true,
+  newsletter: true,
+  mcpPublic: true,
+  // new flag
+  loyaltyPoints: false,
+},
+```
+
+TypeScript will enforce that every consumer of `brand.features` handles the new key. The `Brand` type is derived via `typeof brand`, so it updates automatically.
+
+## Relationship to BrandingSettings
+
+The `BrandingSettings` database model (written by the setup wizard and editable via `/admin/integrations`) does not currently include a features column. `brand.config.ts` is the only source for feature flags. If you want per-deploy overrides without code changes, the closest approximation is using Vercel environment variables to switch between two `brand.config.ts` presets at build time via conditional logic — but this is not a pattern Cartwright ships out of the box.

@@ -1,0 +1,96 @@
+---
+title: Editing brand.config.ts
+description: Step-by-step guide to customizing Cartwright for your shop — store identity, emails, policies, feature flags, and UI labels.
+---
+
+`brand.config.ts` at the repository root is the first file you touch when forking Cartwright. It is a pure-data TypeScript module with no runtime imports. Editing it and redeploying is all that is needed for most brand customizations.
+
+For the design rationale behind the structure, see [Architecture: brand.config.ts](/docs/architecture/brand-config). This page is about the how, not the why.
+
+## Identity
+
+```bash
+# brand.config.ts — identity block
+storeName: "Cartwright Demo Store",
+storeSlug: "cartwright-demo",
+domain: "example.com",
+url: "https://example.com",
+tagline: "A configurable commerce template",
+```
+
+Change `storeName` and `storeSlug` first. `storeSlug` is used as the MCP server identifier (`brand.storeSlug` at `/api/mcp`) — keep it URL-safe, lowercase, no spaces.
+
+`url` must match `NEXT_PUBLIC_APP_URL` exactly, including protocol. Mismatches cause Open Graph metadata to reference the wrong host.
+
+`industryTemplate` selects the seed-data module from `industry-templates/`. The default is `"generic"`. Do not change this after you have run `prisma db seed` against a populated production database.
+
+## Emails
+
+```bash
+# Before
+emails: {
+  from: "noreply@example.com",
+  fromName: "Cartwright Demo Store",
+  support: "support@example.com",
+  admin: "admin@example.com",
+},
+
+# After
+emails: {
+  from: "noreply@solbrillen.dk",
+  fromName: "Solbrillen",
+  support: "hej@solbrillen.dk",
+  admin: "ops@solbrillen.dk",
+},
+```
+
+`from` must be a domain verified in your Resend account, or transactional mail will be rejected. The `support` and `admin` addresses appear in email templates and are not validated at runtime.
+
+## Currency and policies
+
+```bash
+# Before
+policies: {
+  shippingFreeThresholdDkk: 49900,   // 499 DKK
+  shippingDefaultDkk: 4900,          // 49 DKK
+  returnDays: 30,
+  currency: "DKK",
+},
+
+# After — EUR shop
+policies: {
+  shippingFreeThresholdDkk: 5000,    // 50 EUR (field name is a misnomer for non-DKK forks)
+  shippingDefaultDkk: 499,           // 4.99 EUR
+  returnDays: 14,
+  currency: "EUR",
+},
+```
+
+The field names `shippingFreeThresholdDkk` and `shippingDefaultDkk` are legacy; the values are stored in øre/cents regardless of currency. Update `currency` to the ISO-4217 code for your shop and adjust the Stripe Elements appearance block to match your locale.
+
+## Stripe Elements appearance
+
+Stripe Elements renders in an iframe and cannot read CSS custom properties from the parent document. If you change your palette in `themes/<slug>.css`, you must also update `stripeAppearance` manually:
+
+```bash
+stripeAppearance: {
+  colorPrimary: "#1e3f5a",
+  colorBackground: "#ffffff",
+  colorText: "#1a1a1a",
+  colorDanger: "#dc2626",
+  borderRadius: "10px",
+},
+```
+
+## UI labels
+
+`uiLabels` contains every user-facing string that varies by domain vertical. For a fence shop, `searchPlaceholder` should say "Søg hegn…" not "Søg produkter…". Change these strings rather than hunting through component files.
+
+<Callout type="warn">
+Common pitfalls:
+
+- **Changing `domain` without updating `NEXT_PUBLIC_APP_URL`** — Open Graph and canonical tags will reference the wrong host.
+- **Changing `industryTemplate` after seeding** — The seed script uses this field to select which categories and products to create. Changing it does not automatically re-seed; you must run `prisma migrate reset` and seed again locally.
+- **Forgetting `emailColors`** — HTML emails use a separate color palette defined in `emailColors`. It does not inherit from `themes/<slug>.css`. Sync it manually when you change the palette.
+- **Editing `brand.config.ts` vs `BrandingSettings`** — The setup wizard writes some values (store name, tagline, domain) to the `BrandingSettings` database row. Runtime code reads `BrandingSettings` first and falls back to `brand.config.ts`. After running the wizard, changes to `brand.config.ts` identity fields may be shadowed until you clear or update `BrandingSettings`.
+</Callout>

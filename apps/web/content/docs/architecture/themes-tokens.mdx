@@ -1,0 +1,63 @@
+---
+title: Themes and Tokens
+description: How CSS theme files, Tailwind v4 tokens, and runtime palette overrides interact.
+---
+
+Cartwright theme files live under `themes/<slug>.css`. The current app imports `themes/generic.css` from `app/globals.css`, after `@import "tailwindcss"`. The same globals file also adds `@source "../themes"` so Tailwind's content detection sees utilities declared near theme code.
+
+The theme file uses Tailwind v4's `@theme` block. CSS custom properties declared there become Tailwind utility tokens, so `--color-sol-accent` backs classes such as `bg-sol-accent`, and `--shadow-sol-card` backs shadow utilities. The generic theme also defines custom `@utility` presets such as `sol-card-base`, `sol-card-elevated`, and glass variants.
+
+<Tabs items={['terracotta','blue','green']}>
+  <Tab value="terracotta">
+
+```bash
+@theme {
+  --color-sol-accent: #9f4f36;
+  --color-sol-accent-deep: #5f2d22;
+  --color-sol-cream: #f7efe8;
+  --color-sol-sand: #ead8ca;
+  --color-sol-ink: #201715;
+  --color-sol-muted: #76615a;
+}
+```
+
+  </Tab>
+  <Tab value="blue">
+
+```bash
+@theme {
+  --color-sol-accent: #1e3f5a;
+  --color-sol-accent-deep: #0f2438;
+  --color-sol-cream: #f4efe6;
+  --color-sol-sand: #e8e1d3;
+  --color-sol-ink: #1a1a1a;
+  --color-sol-muted: #726d62;
+}
+```
+
+  </Tab>
+  <Tab value="green">
+
+```bash
+@theme {
+  --color-sol-accent: #2f5d45;
+  --color-sol-accent-deep: #193426;
+  --color-sol-cream: #f2f4ec;
+  --color-sol-sand: #dfe6d6;
+  --color-sol-ink: #182019;
+  --color-sol-muted: #657064;
+}
+```
+
+  </Tab>
+</Tabs>
+
+Runtime palette overrides are narrower than full theme files. `lib/theme.ts` validates six hex values from `BrandingSettings.themeJson`, converts them into a `:root` CSS string, and `app/layout.tsx` injects that string in `<style id="brand-theme-override">`. Glass tokens, shadows, radii, and utility presets remain in the CSS file.
+
+Light and dark treatment is token-driven rather than a separate dark-mode file. The generic theme includes light surface tokens, dark glass tokens, navy accent depth, and overlay values. Components choose the appropriate token or utility for the surface they render on.
+
+<Callout type="warn">
+Tailwind v4 has shown inconsistent parsing for percentage gradient stops such as `from-X% via-Y% to-Z%`. Use arbitrary values or inline gradients, for example `from-[0%] via-[40%] to-[70%]`, when exact stop positions matter.
+</Callout>
+
+The `--color-sol-*` prefix is historical from the eyewear origin. Source comments treat `sol` as "primary brand color"; a rename to `--color-brand-*` is deferred because it would touch many class names.

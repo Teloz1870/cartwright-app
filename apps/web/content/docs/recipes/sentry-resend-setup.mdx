@@ -1,0 +1,89 @@
+---
+title: Recipe — Sentry + Resend setup
+description: Wire production error tracking and transactional email together in one sitting.
+---
+
+These two integrations belong in the same recipe because both are critical-day-one and both are no-ops without configuration. A production cartwright deploy without Sentry is flying blind; without Resend you cannot send receipts.
+
+## Sentry
+
+<Steps>
+
+1. **Create a Sentry project.** sentry.io → Create Project → Next.js platform → name it after your shop.
+
+2. **Copy the DSN.** Sentry shows you a `https://<key>@o<org>.ingest.sentry.io/<project>` URL. You need this twice: as the **server DSN** (private) and the **client DSN** (public).
+
+   For most setups the two values are the same DSN string — Sentry's UI may show a distinct "public" DSN under the project's client SDK config.
+
+3. **Set the env vars in Vercel (Production scope only).**
+
+   ```bash
+   SENTRY_DSN="https://...@...ingest.sentry.io/..."
+   NEXT_PUBLIC_SENTRY_DSN="https://...@...ingest.sentry.io/..."
+   ```
+
+   <Callout type="tip">
+   Skip Preview-scope Sentry. Preview deploys generate noise — every PR sends test errors to the same project, drowning real production signal.
+   </Callout>
+
+4. **Wire source-map upload.** Cartwright reads `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` during build to upload sourcemaps. Generate the token at sentry.io → Settings → Auth Tokens with scopes `project:releases` + `org:read`.
+
+   ```bash
+   SENTRY_ORG="my-org"
+   SENTRY_PROJECT="my-shop"
+   SENTRY_AUTH_TOKEN="sntrys_..."
+   ```
+
+   Set these in Vercel Production env. They are build-time only.
+
+5. **Verify error capture.** Deploy. Trigger a real error path (a non-existent product slug works) and watch Sentry's Issues page. The error should land within seconds, with sourcemap-resolved stack frames.
+
+</Steps>
+
+<Callout type="info">
+Cartwright does not ship a dedicated `/api/sentry-test-error` route. Validate by triggering a real error (404 path, intentionally bad checkout input, etc.) rather than expecting a test endpoint.
+</Callout>
+
+### Sentry sample-rate tuning
+
+For a small shop, leaving `tracesSampleRate` at `1.0` is fine — Sentry's free tier handles hobby traffic without trouble. Once you cross ~10k orders/month, drop it to `0.1` (10%) in `instrumentation-client.ts` and `sentry.server.config.ts`. Errors are always 100%; only performance traces sample.
+
+## Resend
+
+<Steps>
+
+1. **Create a Resend account** at resend.com. The free tier ships 3000 emails/month — fine for most cartwright shops.
+
+2. **Add and verify your domain.** Resend dashboard → Domains → Add Domain. Resend gives you SPF and DKIM records.
+
+3. **Add the DNS records** at your domain registrar (Porkbun, Cloudflare, etc.). The records are TXT entries. Save and wait for propagation — usually under 30 minutes.
+
+4. **Verify in Resend.** Click "Verify" in the Resend dashboard. It re-checks DNS and flips the domain to verified.
+
+5. **Send a test email** from the Resend dashboard to your inbox. If it lands, your sender reputation is intact.
+
+6. **Generate an API key.** Resend dashboard → API Keys → Create. Restrict it to "Sending access" only.
+
+7. **Set the env var in Vercel (Production).**
+
+   ```bash
+   RESEND_API_KEY="re_..."
+   ```
+
+8. **Align the from-address.** In `brand.config.ts:emails.from` and `emails.fromName`, set values that match a verified Resend sender. Mismatches cause silent send failures — the order completes, but the receipt never arrives.
+
+9. **Trigger a real customer email.** Place a test order in Stripe test mode (see [Stripe test mode recipe](/docs/recipes/stripe-test-mode)). The receipt template should render with your palette and the customer should receive it within a few seconds.
+
+</Steps>
+
+## What good looks like after this recipe
+
+- Sentry shows your deploy as a release. Any 500-level error in the next hour lands in Issues with a sourcemap-resolved trace.
+- A test order generates a receipt email that reaches a real inbox, not a spam folder, with `Authentication-Results: pass` in the headers.
+- `brand.config.ts:emails.from` is identical to a Resend verified sender.
+
+<Cards>
+  <Card title="Feature: email (Resend)" href="/docs/features/email-resend" />
+  <Card title="Recipe: Stripe test mode" href="/docs/recipes/stripe-test-mode" />
+  <Card title="Secrets management" href="/docs/configuration/secrets-management" />
+</Cards>
