@@ -1,0 +1,24 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "introduction",
+    "why-cartwright",
+    "---Getting started---",
+    "getting-started",
+    "---Architecture---",
+    "architecture",
+    "---Features---",
+    "features",
+    "---Configuration---",
+    "configuration",
+    "---Deployment---",
+    "deployment",
+    "---Recipes---",
+    "recipes",
+    "---API reference---",
+    "api",
+    "---Reference---",
+    "faq",
+    "roadmap"
+  ]
+}

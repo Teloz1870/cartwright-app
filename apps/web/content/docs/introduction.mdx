@@ -1,0 +1,20 @@
+---
+title: Introduction
+description: What Cartwright is, what it isn't, and who it's for.
+---
+
+Cartwright is an AI-first commerce template for teams that want to own the shop instead of renting one. The private template is a Next.js 16 app with Prisma, Stripe checkout, Auth.js, admin CRUD, Vercel Blob uploads, Resend email, Sentry hooks, and an MCP server at `/api/mcp`.
+
+The public surface is `create-cartwright`, an MIT-licensed CLI that scaffolds a sanitized template snapshot. The template repo is currently private early access. The CLI and this docs site are public. The intended operating model is simple: scaffold a shop, fork it per brand, deploy it to Vercel, and keep the code.
+
+Cartwright is not a hosted commerce SaaS. There is no control panel running on Cartwright infrastructure and no per-order platform fee. It is also not only a backend engine. The storefront, admin, checkout, data model, integrations, and AI tool layer live in one codebase.
+
+The template is built for teams that can read TypeScript, run Next.js locally, and maintain a production app. You do not need to design a catalog, checkout, admin panel, and AI tool registry from zero. You do need to own deployments, environment variables, database migrations, incident response, and custom business logic.
+
+The AI angle is structural, not decorative. Cartwright ships with an MCP endpoint, API keys for external agents, audit logging for tool calls, admin helpers for product/category content, and storefront assistant routes. You decide which tools are exposed and which scopes they require.
+
+<Cards>
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+  <Card title="Why Cartwright" href="/docs/why-cartwright" />
+  <Card title="Architecture Overview" href="/docs/architecture/overview" />
+</Cards>

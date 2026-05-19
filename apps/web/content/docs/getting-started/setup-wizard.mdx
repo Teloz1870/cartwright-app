@@ -1,0 +1,32 @@
+---
+title: Setup Wizard
+description: What the /admin/setup wizard configures and how to complete it.
+---
+
+`/admin/setup` is a five-step admin flow for fresh forks. The admin layout redirects there automatically when setup is incomplete and the product table is empty. `/admin/setup` and `/admin/integrations` are whitelisted so you can always reach keys and setup screens directly.
+
+<Steps>
+
+1. Set store identity.
+
+The brand step writes `BrandingSettings` values: `storeName`, top announcement, optional tagline, domain, support email, and `industryTemplate`. Empty optional fields keep the `brand.config.ts` defaults.
+
+2. Set the theme palette.
+
+The theme step stores a JSON palette on `BrandingSettings.themeJson`. It accepts six hex tokens: `accent`, `accentDeep`, `cream`, `sand`, `ink`, and `muted`. If Gemini is configured, the wizard can generate a palette from a brand description; otherwise you can enter values manually.
+
+3. Add AI configuration.
+
+The setup wizard accepts an Anthropic API key. Empty means skip. The admin integrations page can also store Anthropic and Gemini keys later.
+
+4. Create the first category.
+
+The category step upserts by slug and stores `name`, `slug`, and optional `heroImage`. The image field can be filled with a URL or via the admin upload component, which uploads to Vercel Blob through `/api/admin/upload`.
+
+5. Finish setup.
+
+The final action marks `BrandingSettings.setupComplete = true` and redirects to `/admin`.
+
+</Steps>
+
+Production integrations live in `/admin/integrations`: Stripe secret, publishable, and webhook keys; Resend API key; Anthropic; and Gemini. Those keys are DB-first with `.env` fallback. Integration actions encrypt secrets at rest with AES-256-GCM using `AUTH_SECRET` as the key-encryption input, so production key rotation does not require redeploying the app.

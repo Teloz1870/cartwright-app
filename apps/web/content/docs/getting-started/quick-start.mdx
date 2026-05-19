@@ -1,0 +1,62 @@
+---
+title: Quick Start
+description: Get a Cartwright store running in five minutes.
+---
+
+<Steps>
+
+1. Scaffold the shop.
+
+<Tabs items={['npm','pnpm','bun']}>
+  <Tab value="npm">
+
+```bash
+npx create-cartwright@latest my-shop
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm dlx create-cartwright@latest my-shop
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bunx create-cartwright@latest my-shop
+```
+
+  </Tab>
+</Tabs>
+
+The CLI downloads the public sanitized template mirror, creates `.env.local` from `.env.example`, optionally initializes git, and installs dependencies with the detected package manager.
+Node.js 22 or newer is required by the public monorepo.
+
+2. Start the dev server.
+
+```bash
+cd my-shop
+pnpm dev
+```
+
+If you chose another package manager during scaffolding, use that one for `dev`. The template's package scripts are standard Next.js scripts, so `npm run dev` and `bun run dev` work when those package managers installed the dependencies.
+
+3. Open the setup wizard.
+
+Visit:
+
+```bash
+http://localhost:3000/admin/setup
+```
+
+The admin layout automatically redirects fresh forks to `/admin/setup` when setup is not complete and the product table is empty. Existing stores with products are not blocked.
+
+</Steps>
+
+<Callout type="tip">
+Have Stripe, Anthropic, Gemini, Resend, and Vercel Blob keys nearby if you want to configure production integrations in the first pass. You can skip most of them and add keys later in `/admin/integrations`.
+</Callout>
+
+Next: [Setup Wizard](/docs/getting-started/setup-wizard).

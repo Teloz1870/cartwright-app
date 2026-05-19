@@ -1,0 +1,11 @@
+{
+  "title": "Architecture",
+  "pages": [
+    "overview",
+    "mcp-server",
+    "tool-registry",
+    "brand-config",
+    "themes-tokens",
+    "industry-templates"
+  ]
+}

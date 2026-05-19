@@ -1,0 +1,50 @@
+---
+title: Local Development
+description: Running Cartwright locally with Prisma, seed data, and the dev server.
+---
+
+Cartwright runs as a normal Next.js app. The private template uses Prisma with a SQLite schema. Runtime database access goes through `lib/db.ts`: if `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, Prisma uses the libSQL adapter; otherwise it falls back to local SQLite via `DATABASE_URL`.
+
+<Tabs items={['SQLite','Turso']}>
+  <Tab value="SQLite">
+
+```bash
+DATABASE_URL="file:./dev.db"
+AUTH_SECRET="replace-with-a-random-secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+```bash
+cp .env.example .env
+npx prisma migrate deploy
+npx prisma db seed
+pnpm dev
+```
+
+  </Tab>
+  <Tab value="Turso">
+
+```bash
+DATABASE_URL="file:./dev.db"
+TURSO_DATABASE_URL="libsql://your-db.turso.io"
+TURSO_AUTH_TOKEN="your-token"
+AUTH_SECRET="replace-with-a-random-secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+```bash
+npx prisma migrate deploy
+npx prisma db seed
+pnpm dev
+```
+
+  </Tab>
+</Tabs>
+
+The dev server is `next dev`. If port `3000` is already in use, Next.js will prompt or choose another port depending on your local version. Use the URL printed by the command.
+
+The setup wizard is data-gated. `lib/setup-wizard.ts` shows it when `BrandingSettings.setupComplete` is false and the product count is zero. That lets fresh forks go through `/admin/setup` automatically without locking existing shops that already have products.
+
+<Callout type="warn">
+Do not run `npx prisma db seed` against a Turso production database unless it is fresh and disposable. The deploy guide notes that the seed script clears tables before inserting data. A real footgun: `npx prisma db seed` can still read Turso credentials from `.env`, even if you tried to unset variables in the shell.
+</Callout>

@@ -1,0 +1,22 @@
+---
+title: Why Cartwright
+description: How Cartwright compares to Shopify, Medusa, Saleor, and next-forge — and when not to use it.
+---
+
+Cartwright exists for shops that want a full codebase, not a platform account.
+
+Shopify is the right default if you want managed commerce and accept SaaS constraints. You get a mature admin, hosting, payments, apps, and support. You also accept lock-in, platform rules, app-chain complexity, and limited control over the core runtime. Cartwright flips that tradeoff: you own the app, database, checkout flow, admin, and source.
+
+Medusa and Saleor are commerce engines. They are strong choices when you want a dedicated backend and are happy to bring or build the frontend. Cartwright is a complete shop template. It includes the storefront, admin, data model, checkout integration, AI assistant, MCP endpoint, and deployment recipe in the same Next.js app.
+
+next-forge is a SaaS starter. It solves a different shape of problem: accounts, billing, emails, and application scaffolding. Cartwright takes the same "opinionated spine" idea and applies it to commerce: products, categories, carts, orders, Stripe checkout, admin media uploads, and commerce-specific AI workflows.
+
+The main tradeoff is maintenance. Cartwright gives you code ownership, but ownership includes upgrades, bug fixes, integration drift, migrations, observability, and security. There is no commerce-specific support contract baked into the template. Community and paid setup help exist, but this is not a managed platform.
+
+## When NOT to pick Cartwright
+
+Do not pick Cartwright if you want zero ops. Shopify or another hosted tool is usually better when uptime, checkout, apps, tax, and hosting should be somebody else's problem.
+
+Do not pick it if your team has no JavaScript or TypeScript capacity. The setup wizard removes some environment-file work, but production customization is still normal Next.js work.
+
+Do not pick it if you need EDI, advanced B2B pricing, marketplace multi-tenancy, complex ERP sync, or multiple storefront tenants out of the box. Cartwright can be extended, but those are projects, not checkboxes.

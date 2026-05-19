@@ -1,0 +1,10 @@
+{
+  "title": "Deployment",
+  "pages": [
+    "vercel",
+    "turso",
+    "custom-domain",
+    "preview-environments",
+    "migrations"
+  ]
+}

@@ -1,0 +1,36 @@
+---
+title: CLI Options
+description: All flags accepted by create-cartwright.
+---
+
+`create-cartwright` is the public scaffolder for Cartwright shops. In the current `v0.1.0-beta` source it parses these flags:
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--yes`, `-y` | `false` | Skip prompts and use defaults. Defaults are project name from the positional argument, Turso database choice, AI enabled, detected package manager, install enabled, and git enabled. |
+| `--template <name>` | `generic` | Industry template selector. The current public CLI accepts the value, but the template source ships only `generic` in v0.1. |
+| `--pm <pnpm\|npm\|yarn\|bun>` | auto-detect | Override the package manager used for dependency install. |
+| `--no-install` | `false` | Skip dependency installation after the template is downloaded. |
+| `--no-git` | `false` | Skip `git init`, `git add -A`, and the initial commit. |
+
+```bash
+npx create-cartwright@latest my-shop --yes --template=generic --pm=pnpm
+```
+
+The interactive prompts ask for database choice and whether AI commerce features should be included. With `--yes`, the CLI selects Turso and enables AI.
+
+<Callout type="warn">
+The current public CLI source does not parse `--db`, `--ai`, or `--no-ai` yet. If you pass them today, Node's `parseArgs` rejects the unknown options. Use the prompts or `--yes` defaults until those flags land.
+</Callout>
+
+The documented non-interactive target contract is:
+
+```bash
+npx create-cartwright@latest my-shop --yes --db=turso --ai
+```
+
+Use that form only after checking the installed CLI version supports it:
+
+```bash
+npx create-cartwright@latest --help
+```

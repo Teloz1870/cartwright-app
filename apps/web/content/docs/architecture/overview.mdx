@@ -1,0 +1,120 @@
+---
+title: Architecture overview
+description: How the pieces of a Cartwright app fit together.
+---
+
+Cartwright is a single Next.js App Router commerce app. The storefront, admin, API routes, Prisma schema, AI tools, and brand configuration live in one repository so a fork can be deployed and changed without a separate commerce backend.
+
+## Runtime topology
+
+The Next.js 16 app hosts three audiences from a single deploy: the customer storefront (`/`, `/produkt/[slug]`, `/kurv`, `/checkout`), the admin panel (`/admin/*` including `setup`, `produkter`, `integrations`, `api-keys`), and the AI-agent surface at `/api/mcp` plus the public manifest at `/api/v1/tools`. All three paths funnel through the same `lib/tools/registry.ts` and `lib/db.ts` Prisma client, so admin actions, storefront chat, and external MCP calls are governed by the same scope checks and audit log.
+
+External services are all optional with graceful no-op fallbacks. Stripe runs in mock-checkout mode without keys; Resend prints to console in dev; Sentry is silent without DSN; Anthropic and Gemini keys can be set per-shop via `/admin/integrations` and are decrypted at runtime from `IntegrationSettings`. Prisma uses the libSQL adapter to talk to Turso in production and falls back to local SQLite if `TURSO_DATABASE_URL` is unset.
+
+<Mermaid chart={`
+flowchart TD
+  subgraph CF["Customer-facing"]
+    Store["Storefront / /produkt /kurv /checkout"]
+    Chat["AI Stylist FAB /api/assistant/chat"]
+  end
+
+  subgraph AF["Admin-facing"]
+    Admin["Admin Panel /admin/*"]
+    MCP["MCP Endpoint /api/mcp + /api/v1/tools"]
+  end
+
+  subgraph Core["Cartwright (Next.js 16 App Router)"]
+    Registry["Tool Registry lib/tools/registry.ts"]
+    Prisma["Prisma Client lib/db.ts"]
+  end
+
+  subgraph EX["External services"]
+    DB[("Turso libSQL / SQLite fallback")]
+    Anthropic["Anthropic claude-haiku-4-5"]
+    Gemini["Google Gemini 2.5-flash-image"]
+    Stripe["Stripe Payment + Webhook"]
+    Blob["Vercel Blob image upload"]
+    Resend["Resend email"]
+    Sentry["Sentry monitoring"]
+  end
+
+  Store -->|server actions| Registry
+  Chat -->|tool calls| Registry
+  Admin -->|CRUD + actions| Registry
+  MCP -->|invokeTool + scope check| Registry
+  Registry -->|queries| Prisma
+  Prisma -->|libSQL adapter| DB
+
+  Chat -->|chat + tools| Anthropic
+  Admin -->|SEO + theme gen| Gemini
+  Store -->|Payment Element| Stripe
+  Stripe -->|/api/webhook/stripe| Core
+  Admin -->|product images| Blob
+  Core -->|transactional mail| Resend
+  Core -.->|errors| Sentry
+`} />
+
+## MCP tool-call flow
+
+An external AI client (Claude Desktop, Codex, your own agent) calls a tool against a Cartwright shop by sending a Streamable HTTP POST to `/api/mcp` with `Authorization: Bearer sb_live_...`. `authenticateApiKey` (in `lib/api-auth.ts`) HMAC-SHA256-hashes the key with `AUTH_SECRET` as pepper, looks it up in Prisma, and returns an `ApiKeyActor` with its scopes. The route then builds a per-request `McpServer` and registers every tool from `listTools()` as a pass-through `z.any()` schema — the real Zod validation happens inside `invokeTool`.
+
+When the client invokes `products.search`, the MCP handler delegates to `invokeTool(name, args, ctx, actor.scopes)`. The registry verifies the tool's required scope (`catalog:read`) is granted, runs the proper Zod parse, executes the handler against Prisma (which queries Turso via the libSQL adapter), and returns `{ ok: true, result }`. The MCP transport wraps that as `content: [{ type: "text", text: JSON.stringify(...) }]` and streams it back. Read-only tools like `products.search` set `skipAudit: true` so they do not pollute the audit log.
+
+<Mermaid chart={`
+sequenceDiagram
+  participant Agent as AI Agent (Claude Desktop)
+  participant MCP as /api/mcp route
+  participant Auth as authenticateApiKey
+  participant Reg as Tool Registry
+  participant Tool as products.search
+  participant DB as Prisma + Turso
+
+  Agent->>MCP: POST /api/mcp + Bearer token
+  MCP->>Auth: validate bearer
+  Auth->>DB: lookup hashed key
+  DB-->>Auth: ApiKey + scopes
+  Auth-->>MCP: ApiKeyActor
+
+  Note over MCP: buildMcpServer registers all tools via listTools()
+
+  Agent->>MCP: tools/call products.search
+  MCP->>Reg: invokeTool(name, args, ctx, scopes)
+  Reg->>Reg: hasScope(catalog:read) + Zod parse
+  Reg->>Tool: handler(args, ctx)
+  Tool->>DB: prisma.product.findMany(where)
+  DB-->>Tool: rows
+  Tool-->>Reg: { products: [...] }
+  Reg-->>MCP: { ok: true, result }
+  MCP-->>Agent: content text/JSON
+`} />
+
+## Where each surface lives
+
+`app/` contains App Router pages and layouts. Storefront routes cover the home page, category pages, product pages, cart, checkout, account creation/login, and order history.
+
+`app/admin/` is the back office. The current source ships routes for `produkter`, `kategorier`, `kunder`, `ordrer`, `rabatkoder`, `mails`, `sider`, `audit`, `ai`, `api-keys`, `integrations`, `setup`, and `setup-guide`. The admin layout enforces `requireAdmin()` and redirects fresh forks to `/admin/setup` when the database is empty.
+
+`app/api/` exposes operational endpoints. The source includes `admin/chat`, `admin/upload`, `assistant/chat`, `auth/[...nextauth]`, `cron/reconcile-stripe`, `mcp`, `v1/tools`, and `webhook/stripe`. The MCP endpoint and `/api/v1/tools` both sit on top of the same tool registry and API-key scope checks.
+
+`lib/db.ts` creates the Prisma client. If `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` exist, it uses `@prisma/adapter-libsql`; otherwise it falls back to normal SQLite using `DATABASE_URL`. The Prisma schema still uses the SQLite provider because Turso is libSQL-compatible.
+
+`brand.config.ts` is the compile-time source of truth for store identity, domain, emails, metadata, AI labels, feature flags, policies, image defaults, Stripe Elements appearance, and UI labels. Runtime `BrandingSettings` can override some brand values after setup.
+
+`themes/<slug>.css` contains the visual token palette. The template currently ships `themes/generic.css`.
+
+`industry-templates/` holds seed-data modules. The template ships `generic`; forks can add domain-specific templates and register them in `industry-templates/index.ts`.
+
+## Things to know that the diagrams don't show
+
+- **The MCP endpoint is stateless.** `sessionIdGenerator` is `undefined` and `enableJsonResponse` is `true`. Each call re-runs `authenticateApiKey` and rebuilds `McpServer`. This is deliberate for Vercel serverless — do not expect MCP session-state semantics.
+- **`GET /api/mcp` is a public introspection surface** (not a 401). It returns a human-readable JSON intro with `howToConnect` configuration so journalists, agents, and devs can discover the shop's tool surface without a key.
+- **MCP tool schemas are registered with the SDK as `z.any()`** and validated inside `invokeTool`. The same validators are reused by the REST endpoint at `/api/v1/tools`, which surfaces them via `zodToJsonSchema`. That is why MCP auto-discovery shows loose schemas while REST shows strict ones — single validation path, two transports.
+- **`lib/db.ts` strips non-printable ASCII from Turso env values.** Vercel's UI has historically allowed zero-width characters via clipboard paste; if your deploy fails with a libSQL handshake error, paste your `TURSO_AUTH_TOKEN` through a plain-text editor first.
+- **AI defaults split by use-case.** Storefront chat uses Anthropic `claude-haiku-4-5` (`lib/ai/client.ts`). Gemini handles image/theme/SEO generation (`gemini-2.5-flash-image`). Both keys live encrypted (AES-256-GCM) in `IntegrationSettings` with a 30-second in-process cache.
+- **The MCP server identifies itself as `brand.storeSlug`** at version `0.2.0`. Forks that diverge should bump that version themselves.
+
+<Cards>
+  <Card title="MCP server" href="/docs/architecture/mcp-server" />
+  <Card title="Tool registry" href="/docs/architecture/tool-registry" />
+  <Card title="Brand config" href="/docs/architecture/brand-config" />
+</Cards>
