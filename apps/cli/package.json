@@ -1,0 +1,58 @@
+{
+  "name": "create-cartwright",
+  "version": "0.1.0",
+  "description": "Scaffolder for AI-first webshops powered by Cartwright",
+  "keywords": [
+    "cartwright",
+    "nextjs",
+    "scaffolder",
+    "starter",
+    "template",
+    "ecommerce",
+    "ai",
+    "mcp",
+    "stripe"
+  ],
+  "type": "module",
+  "bin": {
+    "create-cartwright": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings=0",
+    "test": "echo 'TODO: vitest'",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "giget": "^1.2.5",
+    "picocolors": "^1.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Teloz1870/cartwright-app.git",
+    "directory": "apps/cli"
+  },
+  "homepage": "https://cartwright.app",
+  "bugs": "https://github.com/Teloz1870/cartwright-app/issues"
+}

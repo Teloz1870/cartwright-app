@@ -1,0 +1,21 @@
+name: 📚 Docs improvement
+description: Typo, clarification, or missing content
+labels: [docs, needs-triage]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page?
+      placeholder: e.g. /docs/getting-started/quick-start
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix (optional)
