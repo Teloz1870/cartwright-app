@@ -1,5 +1,6 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
+import { contactEmail } from '@/lib/shared';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -56,7 +57,11 @@ export default function PrivacyPage() {
           Contact
         </h2>
         <p className="mt-3 text-cw-stone-700 dark:text-cw-stone-300">
-          Questions about this policy: hello@cartwright.app.
+          Questions about this policy:{' '}
+          <a href={`mailto:${contactEmail}`} className="text-cw-terracotta">
+            {contactEmail}
+          </a>
+          .
         </p>
       </main>
     </HomeLayout>

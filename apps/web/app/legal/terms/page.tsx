@@ -1,5 +1,6 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
+import { contactEmail } from '@/lib/shared';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -79,7 +80,11 @@ export default function TermsPage() {
           Contact
         </h2>
         <p className="mt-3 text-cw-stone-700 dark:text-cw-stone-300">
-          Questions about these terms: hello@cartwright.app.
+          Questions about these terms:{' '}
+          <a href={`mailto:${contactEmail}`} className="text-cw-terracotta">
+            {contactEmail}
+          </a>
+          .
         </p>
       </main>
     </HomeLayout>

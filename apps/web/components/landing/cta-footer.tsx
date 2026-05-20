@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Wordmark } from '@/components/wordmark';
 import { ButtonLink } from '@/components/ui/button';
-import { isGithubPublic, social } from '@/lib/shared';
+import { contactEmail, isGithubPublic, social } from '@/lib/shared';
 
 const docsCols = [
   {
@@ -28,6 +28,7 @@ const docsCols = [
       { label: 'Discord', href: social.discord },
       { label: 'GitHub', href: social.github },
       { label: 'npm', href: social.npm },
+      { label: 'Contact', href: `mailto:${contactEmail}` },
       { label: 'Security', href: '/security' },
     ],
   },

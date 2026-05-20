@@ -20,3 +20,7 @@ export const social = {
 
 export const isGithubPublic =
   process.env.NEXT_PUBLIC_GITHUB_PUBLIC === 'true';
+
+// Public contact address — single source of truth for footer, legal pages,
+// and the support FAQ. Update here to change it everywhere.
+export const contactEmail = 'km@teloz.net';
