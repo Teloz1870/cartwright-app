@@ -287,6 +287,10 @@ async function run(): Promise<void> {
     databaseNote(database),
     aiHint,
     "",
+    pc.bold("Going to production?"),
+    pc.dim("  Deploy, custom domain, and email — the Go Live guide has the path:"),
+    pc.dim("  https://cartwright.app/docs/deployment/go-live"),
+    "",
     pc.dim("Docs:    https://cartwright.app/docs/getting-started/quick-start"),
     pc.dim("Mirror:  https://github.com/Teloz1870/cartwright-template"),
   ]

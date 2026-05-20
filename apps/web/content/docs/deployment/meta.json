@@ -1,6 +1,7 @@
 {
   "title": "Deployment",
   "pages": [
+    "go-live",
     "vercel",
     "turso",
     "custom-domain",

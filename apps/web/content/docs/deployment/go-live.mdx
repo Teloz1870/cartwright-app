@@ -1,0 +1,38 @@
+---
+title: Go Live
+description: The full path from a scaffolded Cartwright shop to a live store on your own domain.
+---
+
+You have a shop running on `localhost`. Going live is four steps: deploy it, point a domain at it, verify your email domain, then check it over. Each step has its own guide — this page is the map.
+
+The admin **setup runbook** at `/admin/integrations` tracks the same checklist inside your shop, including a **Deployment og domæne** section, so you can tick it off as you go.
+
+## 1. Deploy
+
+Push the shop to a host. Vercel is the default — it auto-detects Next.js and wires cron jobs and the AI gateway into the deploy.
+
+→ [Deploying to Vercel](/docs/deployment/vercel)
+
+## 2. Add a custom domain
+
+A fresh deploy lives on a `*.vercel.app` URL. Point your own domain at it (DNS records + automatic SSL), then update `NEXT_PUBLIC_APP_URL` so links, Open Graph tags and canonical URLs all resolve to the real host.
+
+→ [Custom domain](/docs/deployment/custom-domain)
+
+## 3. Verify your email domain
+
+Transactional mail — receipts, magic-link sign-in, order updates — sends through Resend. Until the sending domain is verified (SPF + DKIM), production mail is rejected: the order completes but the customer never receives the receipt.
+
+→ [Email via Resend](/docs/features/email-resend)
+
+## 4. Verify the shop
+
+<Callout type="info">
+Once the domain is live, walk the runbook at `/admin/integrations` — it flags any missing Stripe, email, monitoring or deployment step before real customers hit them.
+</Callout>
+
+- Hit `/api/mcp` with no `Authorization` header — you should get the JSON tool-surface intro.
+- Place a test order end to end with the Stripe test card `4242 4242 4242 4242`.
+- Confirm the receipt email arrives.
+
+That is a live Cartwright shop — on your own domain, owned end to end.
