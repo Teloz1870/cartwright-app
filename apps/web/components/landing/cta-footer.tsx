@@ -64,50 +64,56 @@ export function CtaFooter() {
         </div>
       </section>
 
-      <footer className="bg-cw-stone-50 dark:bg-cw-stone-900/30 border-b border-cw-stone-200 dark:border-cw-stone-800">
-        <div className="mx-auto max-w-6xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div>
-            <Wordmark />
-            <p className="mt-3 max-w-sm text-sm text-cw-stone-500 dark:text-cw-stone-400">
-              The AI-first webshop template you actually own. Built by Teloz.
-              Released under MIT.
-            </p>
-          </div>
-          {docsCols.map((col) => (
-            <div key={col.heading}>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-stone-500 dark:text-cw-stone-400">
-                {col.heading}
-              </p>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {col.links.map((l) => (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className="text-cw-stone-700 dark:text-cw-stone-300 hover:text-cw-terracotta transition-colors"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 border-t border-cw-stone-200 dark:border-cw-stone-800 text-xs text-cw-stone-500 dark:text-cw-stone-400">
-          <span>© {new Date().getFullYear()} Teloz. MIT licensed.</span>
-          <div className="flex items-center gap-4">
-            <Link href="/legal/privacy" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
-              Privacy
-            </Link>
-            <Link href="/legal/terms" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
-              Terms
-            </Link>
-            <Link href="/security" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
-              Security
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className="bg-cw-stone-50 dark:bg-cw-stone-900/30 border-b border-cw-stone-200 dark:border-cw-stone-800">
+      <div className="mx-auto max-w-6xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <div>
+          <Wordmark />
+          <p className="mt-3 max-w-sm text-sm text-cw-stone-500 dark:text-cw-stone-400">
+            The AI-first webshop template you actually own. Built by Teloz.
+            Released under MIT.
+          </p>
+        </div>
+        {docsCols.map((col) => (
+          <div key={col.heading}>
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-stone-500 dark:text-cw-stone-400">
+              {col.heading}
+            </p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {col.links.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="text-cw-stone-700 dark:text-cw-stone-300 hover:text-cw-terracotta transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 border-t border-cw-stone-200 dark:border-cw-stone-800 text-xs text-cw-stone-500 dark:text-cw-stone-400">
+        <span>© {new Date().getFullYear()} Teloz. MIT licensed.</span>
+        <div className="flex items-center gap-4">
+          <Link href="/legal/privacy" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
+            Privacy
+          </Link>
+          <Link href="/legal/terms" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
+            Terms
+          </Link>
+          <Link href="/security" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
+            Security
+          </Link>
+        </div>
+      </div>
+    </footer>
   );
 }
