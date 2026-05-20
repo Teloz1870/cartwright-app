@@ -31,7 +31,7 @@ const features = [
   },
   {
     title: 'SEO automation',
-    body: 'sitemap.xml, robots.txt, OG-images via Satori, JSON-LD product schema.',
+    body: 'sitemap.xml, robots.txt, OG-images via Satori, JSON-LD, and /llms.txt for LLM crawlers.',
   },
   {
     title: 'Email via Resend',

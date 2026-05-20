@@ -2,6 +2,7 @@ import { Hero } from '@/components/landing/hero';
 import { ValueProps } from '@/components/landing/value-props';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { FeatureGrid } from '@/components/landing/feature-grid';
+import { AgentSurface } from '@/components/landing/agent-surface';
 import { StackGrid } from '@/components/landing/stack-grid';
 import { LivePreview } from '@/components/landing/live-preview';
 import { CodePeek } from '@/components/landing/code-peek';
@@ -51,6 +52,7 @@ export default function HomePage() {
       <ValueProps />
       <HowItWorks />
       <FeatureGrid />
+      <AgentSurface />
       <StackGrid />
       <LivePreview />
       <CodePeek />
