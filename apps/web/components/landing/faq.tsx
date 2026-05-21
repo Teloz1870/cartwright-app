@@ -1,5 +1,6 @@
 import { Section, SectionHeader } from '@/components/landing/section';
 import { Accordion } from '@/components/ui/accordion';
+import { contactEmail } from '@/lib/shared';
 
 const items = [
   {
@@ -36,7 +37,16 @@ const items = [
   },
   {
     q: 'Where do I get support?',
-    a: 'Discord for community support. GitHub Issues on cartwright-app for docs/CLI bugs. Paid setup help is available — email hello@cartwright.app.',
+    a: (
+      <>
+        Discord for community support. GitHub Issues on cartwright-app for
+        docs/CLI bugs. Paid setup help is available — email{' '}
+        <a href={`mailto:${contactEmail}`} className="text-cw-terracotta">
+          {contactEmail}
+        </a>
+        .
+      </>
+    ),
   },
   {
     q: 'When is 1.0?',
