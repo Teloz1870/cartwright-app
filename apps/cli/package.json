@@ -15,7 +15,7 @@
   ],
   "type": "module",
   "bin": {
-    "create-cartwright": "./dist/index.js"
+    "create-cartwright": "dist/index.js"
   },
   "files": [
     "dist",
@@ -50,7 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Teloz1870/cartwright-app.git",
+    "url": "git+https://github.com/Teloz1870/cartwright-app.git",
     "directory": "apps/cli"
   },
   "homepage": "https://cartwright.app",
