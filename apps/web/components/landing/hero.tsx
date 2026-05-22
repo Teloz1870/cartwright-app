@@ -11,7 +11,7 @@ export function Hero() {
         <div className="flex flex-col items-center text-center">
           <Badge tone="terracotta" className="mb-6">
             <span className="size-1.5 rounded-full bg-cw-terracotta" />
-            v0.1 beta · open early access
+            v0.1 beta
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
             The AI-first webshop template{' '}
@@ -46,8 +46,8 @@ export function Hero() {
                 View on GitHub
               </ButtonLink>
             ) : (
-              <ButtonLink href={social.discord} variant="outline" size="lg">
-                Join early access
+              <ButtonLink href={`mailto:${contactEmail}?subject=Cartwright%20Setup%20Help`} variant="outline" size="lg">
+                Need setup help?
               </ButtonLink>
             )}
           </div>
