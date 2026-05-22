@@ -29,7 +29,7 @@ const tiers = [
   {
     name: 'Concierge Setup',
     description: 'We set up your entire stack and hand over the keys.',
-    price: '€499',
+    price: '€249',
     icon: Zap,
     popular: true,
     features: [
@@ -46,7 +46,7 @@ const tiers = [
   {
     name: 'Managed Hosting',
     description: 'Focus on selling. We handle the tech and servers.',
-    price: '€99/mo',
+    price: '€49/mo',
     icon: ShieldCheck,
     features: [
       'Everything in Concierge, plus:',
@@ -112,9 +112,14 @@ export default function ServicesPage() {
                 <div className={`p-3 rounded-2xl ${tier.popular ? 'bg-cw-terracotta/10 text-cw-terracotta' : 'bg-cw-stone-100 dark:bg-cw-stone-800 text-cw-stone-600 dark:text-cw-stone-400'}`}>
                   <tier.icon className="size-6" />
                 </div>
-                <h3 className="text-xl font-semibold text-cw-stone-900 dark:text-cw-stone-50">
-                  {tier.name}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                    {tier.name}
+                  </h3>
+                  {tier.name !== 'DIY' && (
+                    <span className="text-xs font-medium text-cw-terracotta">Early Bird Offer</span>
+                  )}
+                </div>
               </div>
               
               <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400 min-h-[40px]">
