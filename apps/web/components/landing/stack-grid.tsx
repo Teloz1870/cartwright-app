@@ -22,6 +22,7 @@ const stack = [
   'Vitest',
   'Playwright',
   'ESLint 10',
+  'Upstash',
   'PostCSS',
   'Satori',
   'next/og',
