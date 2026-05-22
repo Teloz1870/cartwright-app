@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -57,6 +57,14 @@ export function tryGitInit(targetDir: string): boolean {
 
 export function tryInstall(targetDir: string, pm: PackageManager): boolean {
   try {
+    // Remove conflicting lockfiles from the template before installing
+    const lockfiles = ["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lockb"];
+    for (const lockfile of lockfiles) {
+      const lockPath = join(targetDir, lockfile);
+      if (existsSync(lockPath)) {
+        unlinkSync(lockPath);
+      }
+    }
     execSync(`${pm} install`, { cwd: targetDir, stdio: "ignore" });
     return true;
   } catch {

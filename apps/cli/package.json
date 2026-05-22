@@ -1,6 +1,6 @@
 {
   "name": "create-cartwright",
-  "version": "0.1.0",
+  "version": "2.0.0-beta.1",
   "description": "Scaffolder for AI-first webshops powered by Cartwright",
   "keywords": [
     "cartwright",
