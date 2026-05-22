@@ -29,6 +29,12 @@ const featureMatrix = [
       { name: 'Ongoing Email Support', diy: false, concierge: '14 Days', managed: true },
       { name: 'Free Minor Upgrades', diy: false, concierge: false, managed: true },
     ]
+  },
+  {
+    category: 'Premium Features',
+    features: [
+      { name: 'AI Cinematic Video Banners', diy: 'BYOK', concierge: 'BYOK', managed: true },
+    ]
   }
 ];
 

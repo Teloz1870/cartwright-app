@@ -21,6 +21,7 @@ const tiers = [
       'Scaffold via CLI wizard',
       'Full source code ownership',
       'Community Discord support',
+      'AI Video Banners (Bring Your Own API Key)'
     ],
     cta: 'Read the docs',
     href: '/docs/getting-started/quick-start',
@@ -54,6 +55,7 @@ const tiers = [
       'Automated database backups',
       'Ongoing email support',
       'Free minor version upgrades',
+      'Magic 1-click AI Cinematic Video Banners'
     ],
     cta: 'Subscribe to Managed',
     href: `mailto:${contactEmail}?subject=Managed%20Hosting%20Inquiry`,
