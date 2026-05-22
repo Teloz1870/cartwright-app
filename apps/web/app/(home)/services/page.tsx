@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { contactEmail } from '@/lib/shared';
 import { CheckIcon, Zap, ShieldCheck, Wrench } from 'lucide-react';
+import { ComparisonTable } from '@/components/landing/comparison-table';
+import { FeatureMatrix } from '@/components/landing/feature-matrix';
 
 export const metadata = {
   title: 'Services & Pricing',
@@ -27,7 +29,7 @@ const tiers = [
   {
     name: 'Concierge Setup',
     description: 'We set up your entire stack and hand over the keys.',
-    price: '€249',
+    price: '€499',
     icon: Zap,
     popular: true,
     features: [
@@ -44,7 +46,7 @@ const tiers = [
   {
     name: 'Managed Hosting',
     description: 'Focus on selling. We handle the tech and servers.',
-    price: '€49/mo',
+    price: '€99/mo',
     icon: ShieldCheck,
     features: [
       'Everything in Concierge, plus:',
@@ -145,6 +147,10 @@ export default function ServicesPage() {
             </div>
           ))}
         </div>
+
+        <ComparisonTable />
+        
+        <FeatureMatrix />
       </div>
     </main>
   );
