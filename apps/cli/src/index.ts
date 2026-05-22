@@ -23,6 +23,7 @@ import {
   isCancel,
   spinner,
   note,
+  password,
 } from "@clack/prompts";
 import { downloadTemplate } from "giget";
 import pc from "picocolors";
@@ -46,6 +47,10 @@ import {
   tryInstall,
   databaseNote
 } from "./scaffold";
+import { resolveKeyMode } from "./key-step";
+import { runInterview } from "./interview";
+import { summarizeBuild } from "./approve";
+import { injectBriefFiles } from "./inject";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -71,6 +76,7 @@ async function run(): Promise<void> {
       db: { type: "string" },
       ai: { type: "boolean" },
       "no-ai": { type: "boolean" },
+      "ai-gen": { type: "boolean" },
       ref: { type: "string" },
       pm: { type: "string" },
       "no-install": { type: "boolean" },
@@ -79,7 +85,7 @@ async function run(): Promise<void> {
   });
 
   intro(
-    `${pc.bgYellow(pc.black(" create-cartwright "))} ${pc.dim("v0.1.0-beta")}`,
+    `${pc.bgYellow(pc.black(" create-cartwright "))} ${pc.dim("v2.0.0-beta")}`,
   );
 
   // ── Project name ────────────────────────────────────────────────────────
@@ -140,6 +146,48 @@ async function run(): Promise<void> {
           }),
         ));
 
+  // ── AI Generation (V2) ───────────────────────────────────────────────────
+  let generatedBrief = undefined;
+  let storeSlugOverride = undefined;
+  let storeNameOverride = undefined;
+
+  const useAiGen = values["ai-gen"] ?? (values.yes ? false : exitOnCancel(
+    await confirm({
+      message: "Vil du prøve den nye AI-scaffolder (v2)? (Kræver Gemini API Key)",
+      initialValue: true,
+    })
+  ));
+
+  if (useAiGen) {
+    const keyMode = await resolveKeyMode({
+      getEnvKey: () => process.env.GEMINI_API_KEY,
+      promptKey: async () => exitOnCancel(await password({ message: "Indtast Gemini API Key:" })),
+      confirmManual: async () => exitOnCancel(await confirm({ message: "Key fejlede. Fortsæt med manuel scaffold (v1)?", initialValue: true }))
+    });
+
+    if (keyMode.type === "key") {
+      const initialPrompt = exitOnCancel(await text({ message: "Hvad slags butik vil du bygge?" }));
+      
+      generatedBrief = await runInterview({
+        apiKey: keyMode.key,
+        initialPrompt,
+        askUser: async (q) => exitOnCancel(await text({ message: pc.cyan("AI:") + " " + q })),
+        logMsg: (msg) => console.log(pc.dim(msg))
+      });
+
+      console.log("\n" + summarizeBuild(generatedBrief) + "\n");
+      const ok = exitOnCancel(await confirm({ message: "Ser dette rigtigt ud? (Klar til at bygge)", initialValue: true }));
+      
+      if (!ok) {
+        cancel("Afbrudt af bruger.");
+        process.exit(0);
+      }
+      
+      storeSlugOverride = generatedBrief.slug;
+      storeNameOverride = generatedBrief.storeName;
+    }
+  }
+
   // ── Tooling defaults ────────────────────────────────────────────────────
   const detected = detectPackageManager();
   const packageManager =
@@ -149,9 +197,12 @@ async function run(): Promise<void> {
   const templateRef = values.ref ?? DEFAULT_REF;
 
   // ── Pre-flight ──────────────────────────────────────────────────────────
-  const targetDir = resolve(process.cwd(), projectName);
+  const finalSlug = storeSlugOverride ?? projectName;
+  const finalProjectName = storeNameOverride ?? projectName;
+  const targetDir = resolve(process.cwd(), finalSlug);
+  
   if (existsSync(targetDir)) {
-    cancel(`Directory "${projectName}" already exists.`);
+    cancel(`Directory "${finalSlug}" already exists.`);
     process.exit(1);
   }
 
@@ -173,7 +224,14 @@ async function run(): Promise<void> {
   // ── Customise the scaffold ──────────────────────────────────────────────
   const authSecret = generateAuthSecret();
   patchEnvLocal(targetDir, authSecret);
-  patchBrandConfig(targetDir, projectName);
+  
+  if (generatedBrief) {
+    injectBriefFiles(targetDir, generatedBrief);
+    // patchBrandConfig vil nu bruge briefets værdier (som vi gav videre via finalSlug)
+    patchBrandConfig(targetDir, finalSlug); 
+  } else {
+    patchBrandConfig(targetDir, finalProjectName);
+  }
 
   // ── Git init ────────────────────────────────────────────────────────────
   if (initGit) {
@@ -209,12 +267,13 @@ async function run(): Promise<void> {
 
   const lines = [
     pc.green("✓") +
-      ` Created ${pc.bold(projectName)} at ${pc.dim(targetDir)}`,
+      ` Created ${pc.bold(finalProjectName)} at ${pc.dim(targetDir)}`,
     pc.green("✓") + ` AUTH_SECRET generated and written to .env.local`,
     pc.green("✓") + ` brand.config.ts patched (storeName + storeSlug)`,
+    generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     "",
     pc.bold("Next steps:"),
-    `  cd ${projectName}`,
+    `  cd ${finalSlug}`,
     `  npx prisma migrate deploy   ${pc.dim("# create / sync the DB schema")}`,
     `  npx prisma db seed          ${pc.dim("# seed demo products + categories")}`,
     `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
