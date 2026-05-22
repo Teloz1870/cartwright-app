@@ -46,7 +46,7 @@ export function Hero() {
                 View on GitHub
               </ButtonLink>
             ) : (
-              <ButtonLink href={`mailto:${contactEmail}?subject=Cartwright%20Setup%20Help`} variant="outline" size="lg">
+              <ButtonLink href="/services" variant="outline" size="lg">
                 Need setup help?
               </ButtonLink>
             )}

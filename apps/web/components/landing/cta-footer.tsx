@@ -62,7 +62,7 @@ export function CtaFooter() {
               {isGithubPublic ? 'Star on GitHub' : 'Join the Discord'}
             </ButtonLink>
             <ButtonLink
-              href={`mailto:${contactEmail}?subject=Cartwright%20Setup%20Help`}
+              href="/services"
               variant="outline"
               size="lg"
             >

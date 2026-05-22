@@ -10,6 +10,7 @@ export function baseOptions(): BaseLayoutProps {
     },
     links: [
       { text: 'Docs', url: '/docs' },
+      { text: 'Services', url: '/services' },
       { text: 'Showcase', url: '/showcase' },
       { text: 'Changelog', url: '/changelog' },
     ],
