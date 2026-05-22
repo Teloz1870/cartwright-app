@@ -19,6 +19,7 @@ features: {
   aiStylist: true,
   newsletter: true,
   mcpPublic: true,
+  acpCheckout: true,
 },
 ```
 
@@ -28,6 +29,7 @@ features: {
 | `aiStylist` | `true` | The floating AI assistant button (FAB) and slide-in panel on the storefront. When `false`, the component is not mounted. The `/api/assistant/chat` route still exists regardless. |
 | `newsletter` | `true` | Newsletter signup section in the footer. When `false`, the section is omitted from the footer layout. |
 | `mcpPublic` | `true` | Whether `/api/mcp` and `/api/v1/tools` are accessible without authentication. When `true`, `GET /api/mcp` returns a public introspection JSON. Tool invocations still require a valid API key and scope regardless of this flag. |
+| `acpCheckout` | `true` | Agentic Commerce Protocol: If enabled, AI agents (acting via ACP) can construct an order flow and request checkout creation via `/api/v1/checkout/create`. |
 
 ## Changing a flag
 
@@ -40,6 +42,7 @@ features: {
   aiStylist: false,
   newsletter: true,
   mcpPublic: false,
+  acpCheckout: false,
 },
 ```
 
@@ -56,6 +59,7 @@ features: {
   aiStylist: true,
   newsletter: true,
   mcpPublic: true,
+  acpCheckout: true,
   // new flag
   loyaltyPoints: false,
 },

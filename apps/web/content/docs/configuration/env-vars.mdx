@@ -39,6 +39,8 @@ These variables are read at runtime as a fallback when the corresponding key is 
 | `SENTRY_PROJECT` | Sentry project slug for source-map upload during build. | `my-shop` |
 | `SENTRY_AUTH_TOKEN` | Token for Sentry CLI source-map upload. Generate with `project:releases` + `org:read` scopes. | `sntrys_...` |
 | `CRON_SECRET` | Vercel Cron auth token for `/api/cron/reconcile-stripe`. Generate with `openssl rand -hex 32`. | `a3f8b2...` |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL for rate limiting `/api` routes (e.g. AI assistant, MCP). | `https://eu1-....upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST Token for rate limiting. Without this and the URL, rate limiting is disabled. | `AYaL...` |
 
 ## Build-time
 

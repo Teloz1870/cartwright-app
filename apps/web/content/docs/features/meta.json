@@ -8,6 +8,7 @@
     "auth-magiclink",
     "image-upload-blob",
     "email-resend",
-    "seo-automation"
+    "seo-automation",
+    "api-rate-limiting"
   ]
 }

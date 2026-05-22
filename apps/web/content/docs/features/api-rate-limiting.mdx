@@ -1,0 +1,32 @@
+---
+title: API Rate Limiting
+description: Protect your storefront API and MCP endpoints from abuse using Upstash Redis.
+---
+
+Cartwright includes built-in rate limiting for all `/api` routes (including the storefront AI assistant chat and MCP tool endpoints) to prevent abuse and manage costs.
+
+The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) and runs in the Next.js Edge Middleware.
+
+## Setup
+
+1. **Create an Upstash Database**
+   Go to [Upstash](https://console.upstash.com/) and create a free Redis database.
+
+2. **Configure Environment Variables**
+   Add the following variables to your `.env.local` (and your production environment like Vercel):
+   ```env
+   UPSTASH_REDIS_REST_URL="https://eu1-....upstash.io"
+   UPSTASH_REDIS_REST_TOKEN="AYaL..."
+   ```
+
+## How it works
+
+The `middleware.ts` file intercepts all requests to `/api/*`. If the Upstash environment variables are present, it initializes the rate limiter.
+
+- **Limit:** 30 requests per 10 seconds per IP address.
+- **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the rate limiter is bypassed so the app doesn't crash.
+- **Headers:** When rate-limited, the API returns a `429 Too Many Requests` status with standard `X-RateLimit-*` headers indicating when the limit resets.
+
+## Customizing the Limits
+
+If you need different limits for different endpoints, you can modify `middleware.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`.
