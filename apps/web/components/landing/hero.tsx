@@ -1,7 +1,7 @@
 import { ButtonLink } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CopyCommand } from '@/components/landing/copy-command';
-import { isGithubPublic, social } from '@/lib/shared';
+import { isGithubPublic, social, contactEmail } from '@/lib/shared';
 
 export function Hero() {
   return (
