@@ -278,6 +278,107 @@ export default function ShowcasePage() {
         </Section>
 
         <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
+          <SectionHeader
+            eyebrow="Website mode"
+            title="Teloz — B2B without the webshop"
+            description="Not every business needs a shopping cart. Teloz demonstrates Cartwright's Website Mode — e-commerce disabled, lead generation enabled. A sleek B2B agency site with WebGL animations, BentoGrid showcase, and contact forms instead of product pages."
+          />
+          <div className="mt-12 grid gap-12 lg:grid-cols-[1.25fr_1fr] items-start">
+            <div>
+              <div className="relative">
+                <div
+                  className={`rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-paper dark:bg-cw-stone-900 shadow-2xl shadow-cw-stone-900/10 overflow-hidden`}
+                >
+                  <div className="flex items-center gap-2 border-b border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-100/60 dark:bg-cw-stone-900 px-4 py-2.5">
+                    <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
+                    <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
+                    <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
+                    <div className="ml-3 flex-1 rounded-md bg-cw-paper dark:bg-cw-ink border border-cw-stone-200 dark:border-cw-stone-800 px-2.5 py-1 text-[11px] font-mono text-cw-stone-500 dark:text-cw-stone-400">
+                      teloz-showcase.vercel.app
+                    </div>
+                  </div>
+                  <div className="aspect-video bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+                    <div className="text-center px-8">
+                      <p className="text-amber-400 font-mono text-xs tracking-widest uppercase mb-2">Live Preview</p>
+                      <p className="text-white text-2xl font-bold">Teloz — B2B Excellence</p>
+                      <p className="text-white/50 text-sm mt-2">Website Mode · No E-commerce · Pure Lead Generation</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-hidden
+                  className="absolute -inset-6 -z-10 bg-gradient-to-tr from-amber-500/0 via-amber-500/10 to-cw-oker/10 blur-3xl"
+                />
+              </div>
+            </div>
+
+            <Card>
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+                The build
+              </p>
+              <ul className="mt-4 space-y-3.5">
+                <li className="flex gap-3">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                  <div>
+                    <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                      Cartwright Website Mode
+                    </p>
+                    <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                      E-commerce disabled. No products, no cart, no checkout — just pure B2B presence.
+                    </p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                  <div>
+                    <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                      WebGL Liquid Canvas
+                    </p>
+                    <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                      Interactive fluid background that responds to mouse movement. Premium visual impact.
+                    </p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                  <div>
+                    <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                      BentoGrid technology showcase
+                    </p>
+                    <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                      Animated feature cards with spring physics, replacing the product grid.
+                    </p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                  <div>
+                    <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                      Lead generation focus
+                    </p>
+                    <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                      Contact forms and service descriptions instead of shopping carts.
+                    </p>
+                  </div>
+                </li>
+              </ul>
+              <div className="mt-6 border-t border-cw-stone-200 dark:border-cw-stone-800" />
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <ButtonLink
+                  href="https://teloz-showcase.vercel.app"
+                  size="lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Visit the live site
+                  <ExternalArrow />
+                </ButtonLink>
+              </div>
+            </Card>
+          </div>
+        </Section>
+
+        <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
           <div className="rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-paper dark:bg-cw-stone-900/40 p-8 sm:p-10 text-center">
             <div className="max-w-2xl mx-auto">
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
