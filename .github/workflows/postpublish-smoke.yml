@@ -1,0 +1,130 @@
+name: Post-publish smoke
+
+# Runs after the Release workflow publishes a new create-cartwright to npm
+# (or manually via workflow_dispatch). Waits for npm to propagate, then
+# scaffolds a throwaway project with `npx create-cartwright@latest` and
+# asserts the scaffold is structurally correct — brand.config patched,
+# AUTH_SECRET generated, no forbidden files present.
+#
+# If this workflow fails after a release, customers are now hitting a broken
+# scaffold. Use the rollback playbook in
+# cartwright-private/internal-docs/mirror-setup.md.
+
+on:
+  workflow_run:
+    workflows: ["Release create-cartwright"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postpublish-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    # Skip auto-run if the upstream workflow failed (no new publish to test).
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Wait for npm propagation
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo "Waiting 90s for npm to propagate the newly-published version..."
+          sleep 90
+
+      - name: Resolve published version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(npm view create-cartwright version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "→ Will test create-cartwright@$VERSION"
+
+      - name: Scaffold smoke project
+        run: |
+          set -euo pipefail
+          cd /tmp
+          rm -rf smoke-test
+          npx --yes "create-cartwright@${{ steps.version.outputs.version }}" smoke-test \
+            --yes \
+            --db=sqlite \
+            --no-ai \
+            --no-install \
+            --no-git \
+            --ref=stable
+          test -d smoke-test || (echo "::error::Scaffold directory not created"; exit 1)
+          echo "✓ scaffold completed"
+
+      - name: Assert scaffold integrity
+        run: |
+          set -euo pipefail
+          cd /tmp/smoke-test
+
+          # Core files must exist
+          for f in brand.config.ts package.json prisma/schema.prisma .env.local; do
+            test -f "$f" || { echo "::error::Missing core file: $f"; exit 1; }
+          done
+
+          # Brand config must be patched with the project name
+          grep -q 'storeSlug: "smoke-test"' brand.config.ts \
+            || { echo "::error::storeSlug not patched in brand.config.ts"; cat brand.config.ts | head -20; exit 1; }
+
+          # AUTH_SECRET must be generated (not empty placeholder)
+          AUTH_LINE=$(grep '^AUTH_SECRET=' .env.local || true)
+          if [ -z "$AUTH_LINE" ] || [ "$AUTH_LINE" = "AUTH_SECRET=" ] || [ "$AUTH_LINE" = 'AUTH_SECRET=""' ]; then
+            echo "::error::AUTH_SECRET not generated or empty: '$AUTH_LINE'"
+            exit 1
+          fi
+
+          # Forbidden files must NOT have leaked into the scaffold.
+          # These are internal-only files in cartwright-private that should
+          # have been stripped by .github/sync-excludes.txt.
+          LEAKED=$(find . -type f \( \
+              -name '.mcp.json' -o \
+              -name 'i18nexus.json' -o \
+              -name '.env.bak' -o \
+              -name '.env.demo' -o \
+              -name '.env.demo.pulled' -o \
+              -name 'check_branding.js' -o \
+              -name 'migrate_turso.js' -o \
+              -name 'CLAUDE.md' -o \
+              -name 'vercel_logs.txt' \
+          \) -print)
+          if [ -n "$LEAKED" ]; then
+            echo "::error::Forbidden files leaked into customer scaffold:"
+            echo "$LEAKED"
+            exit 1
+          fi
+
+          # Sanity: scaffold should have substantial content
+          COUNT=$(find . -type f | wc -l | tr -d ' ')
+          if [ "$COUNT" -lt 50 ]; then
+            echo "::error::Scaffold too small: $COUNT files (expected >50)"
+            exit 1
+          fi
+
+          echo "✓ scaffold integrity verified ($COUNT files)"
+
+      - name: Summary
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          {
+            echo "### Post-publish smoke: ${STATUS}"
+            echo ""
+            echo "- Tested: \`create-cartwright@${{ steps.version.outputs.version }}\`"
+            echo "- Scaffold: \`/tmp/smoke-test\` (--yes --db=sqlite --no-ai --no-install --no-git)"
+            if [ "$STATUS" = "success" ]; then
+              echo "- Verified: brand.config patched, AUTH_SECRET set, no leaked files"
+            else
+              echo "- ⚠️ Action: see job log for failure detail. Customers running \`npx create-cartwright\` may be hitting this. Consider rollback (see cartwright-private/internal-docs/mirror-setup.md)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
