@@ -53,13 +53,15 @@ jobs:
           set -euo pipefail
           cd /tmp
           rm -rf smoke-test
+          # Don't pass --ref — let the CLI use its built-in DEFAULT_REF.
+          # That's exactly what real customers running `npx create-cartwright`
+          # without args get, so it's the most representative test.
           npx --yes "create-cartwright@${{ steps.version.outputs.version }}" smoke-test \
             --yes \
             --db=sqlite \
             --no-ai \
             --no-install \
-            --no-git \
-            --ref=stable
+            --no-git
           test -d smoke-test || (echo "::error::Scaffold directory not created"; exit 1)
           echo "✓ scaffold completed"
 
