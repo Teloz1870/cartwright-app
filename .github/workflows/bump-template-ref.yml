@@ -1,0 +1,142 @@
+name: Bump template ref
+
+# Watches Teloz1870/cartwright-template for new tagged releases and opens a PR
+# bumping DEFAULT_REF in apps/cli/src/index.ts so the next CLI publish picks
+# them up. Three triggers:
+#
+#   • repository_dispatch (type: template-released) — fired by
+#     cartwright-private/.github/workflows/sync-to-mirror.yml when a tag is
+#     mirrored. Near-instant: PR appears within ~1 min of tag push.
+#   • workflow_dispatch — manual button in the Actions UI for testing.
+#   • schedule (daily) — safety-net in case the repository_dispatch is missed
+#     (PAT misconfigured, GitHub API hiccup, etc).
+#
+# When triggered, the workflow:
+#   1. Resolves the latest tag on cartwright-template via `gh release view`.
+#      Falls back to scanning git tags if no GitHub Release exists.
+#   2. Compares to the DEFAULT_REF currently in apps/cli/src/index.ts.
+#   3. If different: sed the new value into index.ts, add a Changeset, and
+#      open a PR via peter-evans/create-pull-request. Merging that PR triggers
+#      the existing Release workflow which publishes a new patch to npm.
+#   4. If equal: log "no bump needed" and exit cleanly.
+
+on:
+  repository_dispatch:
+    types: [template-released]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'  # 06:17 UTC daily, ~07:17 CET in winter
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bump-template-ref
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve latest template tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Try the latest GitHub Release first; fall back to git tag scan.
+          LATEST=$(gh release view --repo Teloz1870/cartwright-template --json tagName --jq .tagName 2>/dev/null || true)
+          if [ -z "$LATEST" ]; then
+            LATEST=$(gh api repos/Teloz1870/cartwright-template/tags --jq '[.[].name | select(startswith("v"))] | first // empty')
+          fi
+          if [ -z "$LATEST" ]; then
+            echo "::error::Could not resolve any tag on cartwright-template"
+            exit 1
+          fi
+          CURRENT=$(grep -E '^const DEFAULT_REF =' apps/cli/src/index.ts | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ -z "$CURRENT" ]; then
+            echo "::error::Could not find DEFAULT_REF in apps/cli/src/index.ts"
+            exit 1
+          fi
+          echo "latest=$LATEST"   >> "$GITHUB_OUTPUT"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "→ no bump needed (DEFAULT_REF=$CURRENT, latest=$LATEST)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "→ bumping DEFAULT_REF: $CURRENT → $LATEST"
+          fi
+
+      - name: Patch DEFAULT_REF
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          LATEST: ${{ steps.resolve.outputs.latest }}
+        run: |
+          set -euo pipefail
+          # Escape regex specials in tag (semver dots etc.) — sed treats . as literal in the
+          # replacement string, so only the search pattern needs care. The search is anchored
+          # so we're not at risk of matching anything else.
+          sed -i -E 's|^const DEFAULT_REF = "[^"]+";|const DEFAULT_REF = "'"$LATEST"'";|' \
+            apps/cli/src/index.ts
+          # Sanity check the substitution actually happened:
+          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/index.ts
+
+      - name: Add changeset
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          LATEST: ${{ steps.resolve.outputs.latest }}
+          CURRENT: ${{ steps.resolve.outputs.current }}
+        run: |
+          set -euo pipefail
+          mkdir -p .changeset
+          # Slugify the tag for the filename (replace non-alnum with -):
+          SLUG=$(echo "$LATEST" | tr -c 'A-Za-z0-9' '-')
+          cat > ".changeset/template-bump-${SLUG}.md" <<EOF
+          ---
+          "create-cartwright": patch
+          ---
+          Bump default template ref to ${LATEST} (was ${CURRENT}).
+          EOF
+
+      - name: Open PR
+        if: steps.resolve.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: bot/template-${{ steps.resolve.outputs.latest }}
+          title: "chore(cli): bump template ref → ${{ steps.resolve.outputs.latest }}"
+          commit-message: "chore(cli): bump template ref → ${{ steps.resolve.outputs.latest }}"
+          body: |
+            Picked up a new release on [`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template/releases/tag/${{ steps.resolve.outputs.latest }}).
+
+            - **Was:** `${{ steps.resolve.outputs.current }}`
+            - **Now:** `${{ steps.resolve.outputs.latest }}`
+
+            When this PR merges, the existing Changesets release workflow will publish a new `create-cartwright` patch version on npm pointing at the new template.
+
+            _Generated automatically by `.github/workflows/bump-template-ref.yml`._
+          delete-branch: true
+          add-paths: |
+            apps/cli/src/index.ts
+            .changeset/template-bump-*.md
+
+      - name: Summary
+        run: |
+          {
+            if [ "${{ steps.resolve.outputs.skip }}" = "true" ]; then
+              echo "### No bump needed"
+              echo ""
+              echo "- DEFAULT_REF: \`${{ steps.resolve.outputs.current }}\`"
+              echo "- Latest template tag: \`${{ steps.resolve.outputs.latest }}\`"
+              echo "- Status: in sync ✓"
+            else
+              echo "### Opened bump PR"
+              echo ""
+              echo "- Was: \`${{ steps.resolve.outputs.current }}\`"
+              echo "- Now: \`${{ steps.resolve.outputs.latest }}\`"
+              echo "- Branch: \`bot/template-${{ steps.resolve.outputs.latest }}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

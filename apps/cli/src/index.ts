@@ -5,9 +5,14 @@
  * Usage:
  *   npx create-cartwright@latest [name] [--yes]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
- *                                [--ref=<tag-or-branch>]
+ *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--pm=pnpm|npm|yarn|bun]
  *                                [--no-install] [--no-git]
+ *
+ * Channels:
+ *   --ref stable (default) → latest tagged template release
+ *   --ref next             → bleeding-edge main branch from cartwright-private
+ *   --ref vX.Y.Z           → pin to a specific historical tag
  *
  * Pulls a sanitised snapshot of cartwright-template via giget, generates a
  * fresh AUTH_SECRET, injects the project name into brand.config.ts, and
@@ -34,7 +39,21 @@ import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
+
+// Default channel resolves to the latest tag mirrored from cartwright-private.
+// Bump together with a Changeset whenever a new template tag goes out —
+// .github/workflows/bump-template-ref.yml does this automatically by opening
+// a PR when it sees a newer tag on the public mirror.
 const DEFAULT_REF = "v0.1.0-beta";
+
+// Channel aliases the user can pass via --ref.
+//   stable → DEFAULT_REF (latest tag — what default `npx create-cartwright` uses)
+//   next   → bleeding-edge branch on the mirror, updated on every push to
+//            cartwright-private/main. Not recommended for production scaffolds.
+const REF_ALIASES: Record<string, string> = {
+  stable: DEFAULT_REF,
+  next: "next",
+};
 
 import {
   type Database,
@@ -194,7 +213,8 @@ async function run(): Promise<void> {
     (values.pm as PackageManager | undefined) ?? detected;
   const installDeps = !values["no-install"];
   const initGit = !values["no-git"];
-  const templateRef = values.ref ?? DEFAULT_REF;
+  const requestedRef = values.ref ?? "stable";
+  const templateRef = REF_ALIASES[requestedRef] ?? requestedRef;
 
   // ── Pre-flight ──────────────────────────────────────────────────────────
   const finalSlug = storeSlugOverride ?? projectName;
@@ -208,13 +228,17 @@ async function run(): Promise<void> {
 
   // ── Template fetch ──────────────────────────────────────────────────────
   const fetchSpinner = spinner();
-  fetchSpinner.start(`Fetching cartwright template (${templateRef})…`);
+  const refDisplay =
+    requestedRef === templateRef
+      ? templateRef
+      : `${requestedRef} → ${templateRef}`;
+  fetchSpinner.start(`Fetching cartwright template (${refDisplay})…`);
   try {
     await downloadTemplate(`${TEMPLATE_REPO}#${templateRef}`, {
       dir: targetDir,
       force: false,
     });
-    fetchSpinner.stop(pc.green(`Template downloaded (${templateRef}).`));
+    fetchSpinner.stop(pc.green(`Template downloaded (${refDisplay}).`));
   } catch (err) {
     fetchSpinner.stop(pc.red("Template fetch failed."));
     console.error(err);
