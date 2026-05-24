@@ -7,6 +7,95 @@ import pc from "picocolors";
 export type Database = "turso" | "postgres" | "sqlite";
 export type PackageManager = "pnpm" | "npm" | "yarn" | "bun";
 
+/**
+ * Industry templates the CLI knows about. Each maps to:
+ *   - the seed-data slug in industry-templates/<slug>/seed-data.ts
+ *   - a set of default brand.mode + brand.features values
+ *
+ * Customers can still override any field after scaffold by editing
+ * brand.config.ts directly. These are starting points, not constraints.
+ */
+export type TemplateSlug =
+  | "website-corporate"
+  | "coffee"
+  | "sunglasses"
+  | "agent-marketplace"
+  | "generic";
+
+export const TEMPLATE_SLUGS: ReadonlyArray<TemplateSlug> = [
+  "website-corporate",
+  "coffee",
+  "sunglasses",
+  "agent-marketplace",
+  "generic",
+];
+
+/**
+ * Per-template defaults written into brand.config.ts after download.
+ * Keys mirror brand.config.ts shape (mode + features.*).
+ */
+export type TemplateDefaults = {
+  mode: "website" | "webshop" | "agent-marketplace";
+  features: {
+    webshop: boolean;
+    acp: boolean;
+    a2a: boolean;
+    adminAgenticDashboard: boolean;
+  };
+};
+
+export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>> = {
+  "website-corporate": {
+    mode: "website",
+    features: {
+      webshop: false,
+      acp: false,
+      a2a: false,
+      adminAgenticDashboard: false,
+    },
+  },
+  coffee: {
+    mode: "webshop",
+    features: {
+      webshop: true,
+      acp: false,
+      a2a: false,
+      adminAgenticDashboard: false,
+    },
+  },
+  sunglasses: {
+    mode: "webshop",
+    features: {
+      webshop: true,
+      acp: false,
+      a2a: false,
+      adminAgenticDashboard: false,
+    },
+  },
+  "agent-marketplace": {
+    mode: "agent-marketplace",
+    features: {
+      webshop: false,
+      acp: true,
+      a2a: true,
+      adminAgenticDashboard: true,
+    },
+  },
+  generic: {
+    mode: "webshop",
+    features: {
+      webshop: true,
+      acp: false,
+      a2a: false,
+      adminAgenticDashboard: false,
+    },
+  },
+};
+
+export function isTemplateSlug(value: unknown): value is TemplateSlug {
+  return typeof value === "string" && TEMPLATE_SLUGS.includes(value as TemplateSlug);
+}
+
 export function detectPackageManager(): PackageManager {
   const ua = process.env.npm_config_user_agent ?? "";
   if (ua.startsWith("pnpm")) return "pnpm";
@@ -41,6 +130,48 @@ export function patchBrandConfigContent(original: string, projectName: string): 
   return original
     .replace(/storeName:\s*"[^"]*"/, `storeName: "${titleCase(projectName)}"`)
     .replace(/storeSlug:\s*"[^"]*"/, `storeSlug: "${projectName}"`);
+}
+
+/**
+ * Apply the per-template defaults to a brand.config.ts source string.
+ * Patches:
+ *   - industryTemplate: "<slug>"
+ *   - mode: "<mode>"
+ *   - features.webshop, features.acp, features.a2a, features.adminAgenticDashboard
+ *
+ * The replacements are regex-anchored to the exact field shape produced by
+ * the upstream brand.config.ts. If that shape ever changes the regexes here
+ * will silently no-op (no replacement) — the corresponding unit test catches
+ * that case.
+ */
+export function patchBrandConfigForTemplate(
+  original: string,
+  template: TemplateSlug,
+): string {
+  const defaults = TEMPLATE_DEFAULTS[template];
+  let out = original;
+
+  // industryTemplate: "xxx"   (single-line)
+  out = out.replace(
+    /industryTemplate:\s*"[^"]*"/,
+    `industryTemplate: "${template}"`,
+  );
+
+  // mode: "xxx" as "website" | "webshop" | "agent-marketplace"
+  // We replace just the literal value inside the leading quotes, preserving
+  // the `as ...` type assertion if present.
+  out = out.replace(
+    /mode:\s*"(?:website|webshop|agent-marketplace)"/,
+    `mode: "${defaults.mode}"`,
+  );
+
+  // features.webshop|acp|a2a|adminAgenticDashboard: <bool>
+  for (const [key, value] of Object.entries(defaults.features)) {
+    const re = new RegExp(`(${key}:\\s*)(?:true|false)`, "g");
+    out = out.replace(re, `$1${value}`);
+  }
+
+  return out;
 }
 
 export function tryGitInit(targetDir: string): boolean {

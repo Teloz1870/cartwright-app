@@ -6,6 +6,7 @@
  *   npx create-cartwright@latest [name] [--yes]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
+ *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
  *                                [--pm=pnpm|npm|yarn|bun]
  *                                [--no-install] [--no-git]
  *
@@ -13,6 +14,13 @@
  *   --ref stable (default) → latest tagged template release
  *   --ref next             → bleeding-edge main branch from cartwright-private
  *   --ref vX.Y.Z           → pin to a specific historical tag
+ *
+ * Templates (sets brand.mode + brand.features defaults in brand.config.ts):
+ *   --template generic (default)        → webshop mode, no A2A
+ *   --template website-corporate        → website mode (no shop catalogue)
+ *   --template coffee                   → webshop mode, coffee seed data
+ *   --template sunglasses               → webshop mode, legacy eyewear fields
+ *   --template agent-marketplace        → A2A mode, no shop GUI, A-JWT endpoints on
  *
  * Pulls a sanitised snapshot of cartwright-template via giget, generates a
  * fresh AUTH_SECRET, injects the project name into brand.config.ts, and
@@ -58,10 +66,14 @@ const REF_ALIASES: Record<string, string> = {
 import {
   type Database,
   type PackageManager,
+  type TemplateSlug,
+  TEMPLATE_SLUGS,
   detectPackageManager,
   generateAuthSecret,
   patchEnvLocal,
   patchBrandConfigContent,
+  patchBrandConfigForTemplate,
+  isTemplateSlug,
   tryGitInit,
   tryInstall,
   databaseNote
@@ -87,6 +99,22 @@ function patchBrandConfig(targetDir: string, projectName: string): void {
   if (patched !== original) writeFileSync(path, patched);
 }
 
+/**
+ * Apply per-template defaults to brand.config.ts. Called after the basic
+ * name/slug patch. Idempotent — safe to call even if the template fields
+ * already match (the regex replacements no-op).
+ */
+function applyTemplateDefaults(
+  targetDir: string,
+  template: TemplateSlug,
+): void {
+  const path = join(targetDir, "brand.config.ts");
+  if (!existsSync(path)) return;
+  const original = readFileSync(path, "utf8");
+  const patched = patchBrandConfigForTemplate(original, template);
+  if (patched !== original) writeFileSync(path, patched);
+}
+
 async function run(): Promise<void> {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
@@ -98,10 +126,26 @@ async function run(): Promise<void> {
       "ai-gen": { type: "boolean" },
       ref: { type: "string" },
       pm: { type: "string" },
+      template: { type: "string" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
     },
   });
+
+  // Validate --template if provided. Default is "generic" (full webshop
+  // scaffold matching pre-Phase-2 behaviour).
+  let templateSlug: TemplateSlug = "generic";
+  if (values.template !== undefined) {
+    if (!isTemplateSlug(values.template)) {
+      console.error(
+        pc.red(
+          `Invalid --template "${values.template}". Choose one of: ${TEMPLATE_SLUGS.join(", ")}`,
+        ),
+      );
+      process.exit(1);
+    }
+    templateSlug = values.template;
+  }
 
   intro(
     `${pc.bgYellow(pc.black(" create-cartwright "))} ${pc.dim("v2.0.0-beta")}`,
@@ -248,13 +292,25 @@ async function run(): Promise<void> {
   // ── Customise the scaffold ──────────────────────────────────────────────
   const authSecret = generateAuthSecret();
   patchEnvLocal(targetDir, authSecret);
-  
+
   if (generatedBrief) {
     injectBriefFiles(targetDir, generatedBrief);
     // patchBrandConfig vil nu bruge briefets værdier (som vi gav videre via finalSlug)
-    patchBrandConfig(targetDir, finalSlug); 
+    patchBrandConfig(targetDir, finalSlug);
   } else {
     patchBrandConfig(targetDir, finalProjectName);
+  }
+
+  // Apply per-template defaults (mode, features, industryTemplate) AFTER
+  // the basic name/slug patch so the regex-based replacements act on a
+  // known shape. Always run — for `--template generic` (the default) the
+  // patches are no-ops on a generic-defaulted brand.config.
+  applyTemplateDefaults(targetDir, templateSlug);
+  if (templateSlug !== "generic") {
+    note(
+      `Template: ${pc.bold(templateSlug)} — applied mode + features defaults to brand.config.ts`,
+      "info",
+    );
   }
 
   // ── Git init ────────────────────────────────────────────────────────────
