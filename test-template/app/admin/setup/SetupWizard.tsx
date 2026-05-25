@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveBrandStep,
@@ -10,8 +10,16 @@ import {
   saveThemeStep,
   generateThemeAction,
 } from "./actions";
+import { listOllamaModelsAction } from "@/app/admin/integrations/actions";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { INDUSTRY_TEMPLATE_OPTIONS } from "@/industry-templates";
+
+type AiChoice = "cloud" | "local" | "skip";
+type OllamaCheck =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "running"; latencyMs: number; modelCount: number }
+  | { kind: "not-running"; error: string };
 
 type StepId = "brand" | "theme" | "ai" | "category" | "done";
 
@@ -104,7 +112,12 @@ export default function SetupWizard({
   const [themeGenerating, setThemeGenerating] = useState(false);
 
   // AI-step state
+  const [aiChoice, setAiChoice] = useState<AiChoice>("cloud");
   const [anthropicKey, setAnthropicKey] = useState("");
+  const [localAiEndpoint, setLocalAiEndpoint] = useState(
+    "http://localhost:11434/v1",
+  );
+  const [ollamaCheck, setOllamaCheck] = useState<OllamaCheck>({ kind: "idle" });
 
   // Category-step state
   const [catName, setCatName] = useState("");
@@ -181,7 +194,9 @@ export default function SetupWizard({
   function handleSaveAi() {
     setError(null);
     const fd = new FormData();
+    fd.set("aiChoice", aiChoice);
     fd.set("anthropicApiKey", anthropicKey);
+    fd.set("localAiEndpoint", localAiEndpoint);
     startTransition(() => {
       void (async () => {
         const result = await saveAiStep(fd);
@@ -190,6 +205,28 @@ export default function SetupWizard({
       })();
     });
   }
+
+  async function probeOllama() {
+    setOllamaCheck({ kind: "checking" });
+    const r = await listOllamaModelsAction(localAiEndpoint);
+    if (r.ok) {
+      setOllamaCheck({
+        kind: "running",
+        latencyMs: r.latencyMs,
+        modelCount: r.models.length,
+      });
+    } else {
+      setOllamaCheck({ kind: "not-running", error: r.error });
+    }
+  }
+
+  // Probe Ollama automatisk når brugeren skifter til "Lokal AI"
+  useEffect(() => {
+    if (step === "ai" && aiChoice === "local" && ollamaCheck.kind === "idle") {
+      void probeOllama();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, aiChoice]);
 
   function handleCreateCategory() {
     setError(null);
@@ -551,71 +588,153 @@ export default function SetupWizard({
             <div>
               <h2 className="text-xl font-black text-sol-ink">AI &amp; features</h2>
               <p className="mt-1 text-sm text-sol-muted">
-                AI-magic-knapper (generér kategori-tekst, produkt-beskrivelse,
-                MCP-server, storefront-chat) kræver en Anthropic API-key. Spring
-                over hvis du vil tilføje den senere.
-              </p>
-            </div>
-            <div>
-              <label htmlFor="anthropicApiKey" className={labelClass}>
-                Anthropic API-key (valgfri)
-              </label>
-              <input
-                id="anthropicApiKey"
-                type="password"
-                value={anthropicKey}
-                onChange={(e) => setAnthropicKey(e.target.value)}
-                className={inputClass}
-                placeholder="sk-ant-..."
-                autoComplete="off"
-              />
-              <p className="mt-1 text-xs text-sol-muted">
-                Krypteres lokalt før gem. Få en key på{" "}
-                <a
-                  href="https://console.anthropic.com/"
-                  className="underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  console.anthropic.com
-                </a>
-                .
+                Hvor skal admin-copilot, AI-stylist og generér-knapperne hente
+                deres model? Du kan altid skifte senere i /admin/integrations.
               </p>
             </div>
 
-            {/* Local-AI plan Fase 2.3: hint om lokal AI som privacy-first
-                alternativ. Detalje-konfiguration sker i /admin/integrations
-                så wizarden forbliver kort — det vigtigste er at admin ved
-                at muligheden findes. */}
-            <div className="rounded-lg border border-sol-ink/10 bg-sol-cream/40 p-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-sol-ink">
-                ✨ Lokal AI (valgfri)
-              </h3>
-              <p className="mt-1 text-xs text-sol-muted">
-                Vi anbefaler Anthropic for kvalitet i starten. Når du har testet
-                kvaliteten kan du skifte til{" "}
-                <strong className="font-bold text-sol-ink">
-                  lokal Gemma via Ollama
-                </strong>{" "}
-                — gratis, privat, ingen cloud-roundtrip. Konfigureres i{" "}
-                <a
-                  href="/admin/integrations"
-                  className="font-bold text-sol-accent underline"
+            {/* Choice-radios */}
+            <div className="grid gap-2">
+              {(
+                [
+                  {
+                    value: "cloud" as const,
+                    title: "☁️ Cloud (Anthropic Claude)",
+                    desc: "Bedste kvalitet og hurtigst latency (~400ms). Koster $0.001-0.005 per chat. Anbefalet til at starte.",
+                  },
+                  {
+                    value: "local" as const,
+                    title: "🔒 Lokal AI (Gemma 4 via Ollama)",
+                    desc: "Gratis, privat, ingen cloud-roundtrip. Kører på din egen Mac. Kræver Ollama installeret + ~10GB diskplads.",
+                  },
+                  {
+                    value: "skip" as const,
+                    title: "⏭️ Spring over",
+                    desc: "Konfigurér senere i /admin/integrations. Storefront virker uden AI; kun copilot-features er deaktiveret.",
+                  },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 transition ${
+                    aiChoice === opt.value
+                      ? "border-sol-accent bg-sol-accent/5"
+                      : "border-sol-ink/10 bg-white hover:border-sol-ink/20"
+                  }`}
                 >
-                  /admin/integrations
-                </a>{" "}
-                under "AI provider", eller læs guiden på{" "}
-                <a
-                  href="https://cartwright.app/docs/ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-sol-accent underline"
-                >
-                  cartwright.app/docs/ai
-                </a>
-                .
-              </p>
+                  <input
+                    type="radio"
+                    name="aiChoice"
+                    checked={aiChoice === opt.value}
+                    onChange={() => setAiChoice(opt.value)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-black text-sol-ink">
+                      {opt.title}
+                    </div>
+                    <p className="mt-0.5 text-xs text-sol-muted">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
             </div>
+
+            {/* Cloud-branch: Anthropic key */}
+            {aiChoice === "cloud" && (
+              <div>
+                <label htmlFor="anthropicApiKey" className={labelClass}>
+                  Anthropic API-key (valgfri — kan tilføjes senere)
+                </label>
+                <input
+                  id="anthropicApiKey"
+                  type="password"
+                  value={anthropicKey}
+                  onChange={(e) => setAnthropicKey(e.target.value)}
+                  className={inputClass}
+                  placeholder="sk-ant-..."
+                  autoComplete="off"
+                />
+                <p className="mt-1 text-xs text-sol-muted">
+                  Krypteres lokalt før gem. Få en key på{" "}
+                  <a
+                    href="https://console.anthropic.com/"
+                    className="underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    console.anthropic.com
+                  </a>
+                  . Tom = spring over.
+                </p>
+              </div>
+            )}
+
+            {/* Local-branch: Ollama status check */}
+            {aiChoice === "local" && (
+              <div className="space-y-3 rounded-lg border border-sol-ink/10 bg-sol-cream/40 p-4">
+                <div>
+                  <label htmlFor="localAiEndpoint" className={labelClass}>
+                    Ollama endpoint
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="localAiEndpoint"
+                      type="text"
+                      value={localAiEndpoint}
+                      onChange={(e) => {
+                        setLocalAiEndpoint(e.target.value);
+                        setOllamaCheck({ kind: "idle" });
+                      }}
+                      className={inputClass}
+                      placeholder="http://localhost:11434/v1"
+                      spellCheck={false}
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void probeOllama()}
+                      disabled={ollamaCheck.kind === "checking"}
+                      className="rounded-full border border-sol-ink/15 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wider text-sol-ink transition hover:bg-sol-accent hover:text-white hover:border-sol-accent disabled:opacity-50"
+                    >
+                      {ollamaCheck.kind === "checking" ? "Tjekker…" : "Tjek"}
+                    </button>
+                  </div>
+                </div>
+
+                {ollamaCheck.kind === "running" && (
+                  <div className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-900">
+                    ✓ Ollama kører ({ollamaCheck.latencyMs}ms) —{" "}
+                    {ollamaCheck.modelCount > 0
+                      ? `${ollamaCheck.modelCount} model${ollamaCheck.modelCount === 1 ? "" : "ler"} fundet.`
+                      : "ingen modeller endnu — du pulle gemma4:e4b næste step."}
+                    <br />
+                    <span className="text-green-800">
+                      Næste: gå til /admin/integrations og klik &ldquo;Pull this
+                      model&rdquo; på Anbefalet-kortet.
+                    </span>
+                  </div>
+                )}
+
+                {ollamaCheck.kind === "not-running" && (
+                  <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    ⚠️ Ollama svarer ikke endnu.
+                    <br />
+                    <strong>macOS:</strong>{" "}
+                    <code className="rounded bg-amber-100 px-1.5 py-0.5">
+                      brew install ollama
+                    </code>{" "}
+                    →{" "}
+                    <code className="rounded bg-amber-100 px-1.5 py-0.5">
+                      brew services start ollama
+                    </code>
+                    <br />
+                    Du kan stadig springe videre — vi gemmer dit valg og du
+                    konfigurerer modellen i /admin/integrations når Ollama er
+                    klar.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

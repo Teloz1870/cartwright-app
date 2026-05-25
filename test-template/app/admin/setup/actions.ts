@@ -96,26 +96,58 @@ export async function saveBrandStep(formData: FormData): Promise<ActionResult> {
 }
 
 const aiSchema = z.object({
+  aiChoice: z.enum(["cloud", "local", "skip"]).default("cloud"),
   anthropicApiKey: z.string().trim().optional(),
+  localAiEndpoint: z.string().trim().optional(),
 });
 
 export async function saveAiStep(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
   const parsed = aiSchema.safeParse({
+    aiChoice: formData.get("aiChoice") ?? "cloud",
     anthropicApiKey: formData.get("anthropicApiKey") ?? "",
+    localAiEndpoint: formData.get("localAiEndpoint") ?? "",
   });
   if (!parsed.success) {
     return { ok: false, error: "Ugyldig key" };
   }
-  // Tom key = "spring over" (admin kan altid tilføje senere via /admin/integrations).
-  const key = parsed.data.anthropicApiKey?.trim();
-  if (key) {
+  const { aiChoice, anthropicApiKey, localAiEndpoint } = parsed.data;
+
+  // Cloud-path: gem evt. Anthropic-key. Tom key = "spring over"
+  // (admin kan altid tilføje senere via /admin/integrations).
+  if (aiChoice === "cloud") {
+    const key = anthropicApiKey?.trim();
+    if (key) {
+      await prisma.integrationSettings.upsert({
+        where: { id: 1 },
+        update: { anthropicApiKey: key, aiProvider: "anthropic" },
+        create: { id: 1, anthropicApiKey: key, aiProvider: "anthropic" },
+      });
+    } else {
+      await prisma.integrationSettings.upsert({
+        where: { id: 1 },
+        update: { aiProvider: "anthropic" },
+        create: { id: 1, aiProvider: "anthropic" },
+      });
+    }
+  }
+
+  // Local-path: sæt provider + endpoint. localAiModel forbliver tom indtil
+  // admin pull'er en model via /admin/integrations's "Pull this model"-knap.
+  if (aiChoice === "local") {
+    const endpoint = localAiEndpoint?.trim() || "http://localhost:11434/v1";
     await prisma.integrationSettings.upsert({
       where: { id: 1 },
-      update: { anthropicApiKey: key },
-      create: { id: 1, anthropicApiKey: key },
+      update: { aiProvider: "local", localAiEndpoint: endpoint },
+      create: {
+        id: 1,
+        aiProvider: "local",
+        localAiEndpoint: endpoint,
+      },
     });
   }
+
+  // Skip-path: ingen DB-write (admin kan altid konfigurere senere).
   revalidatePath("/admin/setup");
   return { ok: true };
 }
