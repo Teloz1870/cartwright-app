@@ -128,6 +128,16 @@ export const adminChatRateLimiter = createRateLimiter("admin-chat", {
   refillRate: 1 / 3, // 1 token hvert 3. sekund = 20 chats / minut sustained
 });
 
+/**
+ * Voice-token mint endpoint. Hver token åbner en Google-WS-session der koster
+ * penge per minut, så lav capacity holder cost forudsigelig selv hvis en bot
+ * spammer. Per-IP keyed (vi har ikke session-cookie endnu når token mintes).
+ */
+export const voiceTokenLimiter = createRateLimiter("voice-token", {
+  capacity: 3,
+  refillRate: 1 / 1200, // 1 token hver 20 min sustained, burst 3
+});
+
 export const magicLinkPerEmailLimiter = createRateLimiter("magic-link-email", {
   capacity: 3,
   refillRate: 1 / 1200,

@@ -10,12 +10,14 @@ import { getAuditContext } from "@/lib/audit-context";
  *   apikey:<id>             — ekstern AI-klient (Claude Desktop, etc.)
  *   user:<id>               — admin via web-UI (Auth.js session)
  *   storefront-chat:<sid>   — kunde-chat på storefront
+ *   storefront-voice:<sid>  — kunde-voice-session (Gemini Live)
  *   system:<task>           — baggrund-jobs (embedding-rebuild, seed)
  */
 export type AuditActor =
   | `apikey:${string}`             // ekstern AI/REST-klient
   | `user:${string}`               // admin via web-UI server actions
   | `storefront-chat:${string}`    // kunde-chat på storefront
+  | `storefront-voice:${string}`   // kunde-voice-session (Gemini Live)
   | `operator-chat:${string}`      // admin-chat i /admin/ai (skelnes fra user: så /admin/audit kan filtrere)
   | `system:${string}`;            // baggrund-jobs
 

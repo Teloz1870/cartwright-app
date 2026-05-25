@@ -20,6 +20,7 @@
     "@ai-sdk/openai-compatible": "^1.0.45",
     "@ai-sdk/react": "^3.0.184",
     "@auth/prisma-adapter": "^2.11.1",
+    "@google/genai": "^1.27.0",
     "@libsql/client": "^0.17.3",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/adapter-libsql": "^6.19.3",
