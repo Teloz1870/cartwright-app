@@ -56,7 +56,10 @@ export type ProductGenerationInput = {
 export async function generateProductSEO(
   input: ProductGenerationInput,
 ): Promise<ProductSeoResult> {
-  const model = await chatModel();
+  // Local-AI plan: intent="vibe" → altid Anthropic. SEO-generation kræver
+  // structured output (description + attributes-JSON) som vi ikke lader
+  // local-modeller tage stilling til i v1.
+  const model = await chatModel("vibe");
 
   const policies = brand.policies;
   const policiesText = `gratis fragt over ${policies.shippingFreeThresholdDkk / 100} kr, ${policies.returnDays} dages returret`;

@@ -7,6 +7,7 @@ import {
   sendTestResendEmailAction,
 } from "./actions";
 import { brand } from "@/brand.config";
+import ExplainButton from "@/components/admin/ExplainButton";
 
 type Props = {
   initial: { isSet: boolean; preview: string | null };
@@ -208,9 +209,20 @@ export default function ResendKeyForm({ initial }: Props) {
             </p>
           )}
           {testResult?.kind === "error" && (
-            <p className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-bold text-red-700">
-              {testResult.message}
-            </p>
+            <div className="mt-3 flex flex-wrap items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm">
+              <p className="flex-1 min-w-0 font-bold text-red-700">
+                {testResult.message}
+              </p>
+              <ExplainButton
+                variant="pill"
+                contextType="error-message"
+                contextData={{
+                  action: `Sende test-mail til ${testTo} via Resend`,
+                  message: testResult.message,
+                  context: `From-adresse: ${brand.emails.fromName} <${brand.emails.from}> · Domain: ${brand.domain}`,
+                }}
+              />
+            </div>
           )}
         </div>
       )}

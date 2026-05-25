@@ -335,9 +335,18 @@ model AuditLog {
   userAgent  String?
   createdAt  DateTime @default(now())
 
+  // Local-AI plan: provider/model/modality tracker hvor AI-kaldet kom fra.
+  // Voice-planen sætter modality="voice" + sessionMinutes; Local-AI sætter
+  // provider/model. Eksisterende rows har NULL = "ukendt" (pre-tracking).
+  provider       String? // "anthropic" | "local" | "google" | NULL
+  model          String? // fx "claude-haiku-4-5" | "gemma3:12b" | "gemini-2.5-flash-live"
+  modality       String? // "text" | "voice" | NULL (default "text" for nye text-rows)
+  sessionMinutes Float? // kun for voice-sessions — minutter brugt i denne session
+
   @@index([createdAt])
   @@index([tool])
   @@index([actor])
+  @@index([provider])
 }
 
 // Typed singleton-settings — én række per type med fixed id = 1.
@@ -416,6 +425,26 @@ model IntegrationSettings {
   // Phase 5: JSON-array af manuelle production-checklist item IDs som admin
   // har markeret færdige i /admin/integrations setup-guiden.
   setupChecklist String?
+
+  // Local-AI plan: provider-agnostisk chatModel routing.
+  // aiProvider styrer hvilken model chatModel(intent="chat"|"generation")
+  // returnerer. "vibe" intent tvinges altid til anthropic (high-stakes
+  // structured output). Local kører via @ai-sdk/openai-compatible mod
+  // localAiEndpoint (typisk http://localhost:11434/v1 for Ollama).
+  // Auto = forsøg local; fallback til anthropic on-error.
+  aiProvider           String? @default("anthropic") // "anthropic" | "local" | "auto"
+  anthropicModel       String? @default("claude-haiku-4-5")
+  localAiEndpoint      String? // plaintext URL, ikke krypteret (ikke secret)
+  localAiModel         String? // fx "gemma3:12b"
+  localAiFallbackMode  String? @default("on-error") // "off" | "on-error" | "after-3-failures"
+  lastDegradedAt       DateTime? // sidste gang local fejlede og auto-fallback skiftede
+  lastModelDetectedAt  DateTime? // for capability-cache invalidation
+  /**
+   * Cost-accounting JSON (Fase 3.3): per-dag per-provider call counter.
+   * Format: { "2026-05-25": { "anthropic": 142, "local": 89 }, ... }
+   * Beskytter mod surprise-bills når auto-fallback er aktiv.
+   */
+  aiUsageJson          String?
 
   updatedAt DateTime @updatedAt
 }

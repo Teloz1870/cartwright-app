@@ -3,14 +3,16 @@ import { randomUUID } from "node:crypto";
 import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
 import { z } from "zod";
 import {
-  chatModel,
-  getAnthropicApiKey,
+  chatModelResolved,
+  filterToolsForCapability,
   ADMIN_TOOL_ALLOWLIST,
   ADMIN_MAX_TOOL_CALLS_PER_SESSION,
   CONFIRM_REQUIRED,
   isAdminTool,
 } from "@/lib/ai/client";
 import { OPERATOR_SYSTEM_PROMPT } from "@/lib/ai/operator-prompt";
+import { OPERATOR_SYSTEM_PROMPT_COMPACT } from "@/lib/ai/prompts/operator-compact";
+import { buildSetupContext } from "@/lib/ai/copilot-context";
 import { getTool, invokeTool } from "@/lib/tools/registry";
 import { ADMIN_CHAT_SCOPES } from "@/lib/scopes";
 import { prisma } from "@/lib/db";
@@ -22,10 +24,14 @@ import {
   stripConfirm,
 } from "@/lib/confirmation-tokens";
 import { redactSensitive } from "@/lib/audit";
+import { withAuditContext } from "@/lib/audit-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120; // admin workflows kan være længere end customer chat
+// Local-AI plan: hævet fra 120s → 180s. Local Gemma 3 12B kan tage 30-60s for
+// første message med 10+ tool-schemas; Vercel-deploy med Anthropic er stadig
+// snappy. Customers på Vercel-hobby har 60s hard limit — dokumenteret i docs.
+export const maxDuration = 180;
 
 /**
  * Operatør-chat-endpoint. Lever bag Auth.js requireAdmin-guard. Sender SSE-
@@ -77,13 +83,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 4. API-key tjek
-  const apiKey = await getAnthropicApiKey();
-  if (!apiKey) {
+  // 4. Resolver provider/model. chatModelResolved kaster hvis konfigurationen
+  // er ufuldstændig (fx provider=local uden endpoint, eller ingen Anthropic-key
+  // når provider=anthropic). Vi vil gerne fange den fejl og returnere en pæn
+  // 503 i stedet for at lade streamText eksplodere.
+  let resolved: Awaited<ReturnType<typeof chatModelResolved>>;
+  try {
+    resolved = await chatModelResolved("chat");
+  } catch (err) {
     return Response.json(
       {
         error:
-          "Operatør-AI er ikke konfigureret. Gå til /admin/integrations for at tilføje en Anthropic API-key.",
+          err instanceof Error
+            ? err.message
+            : "Operatør-AI er ikke konfigureret. Gå til /admin/integrations.",
       },
       { status: 503 },
     );
@@ -189,48 +202,84 @@ export async function POST(request: NextRequest) {
     return result.ok ? result.result : { error: result.error };
   }
 
+  // Local-AI plan (Fase 1.4): cap tool-listen baseret på modellens capability-
+  // tier. Gemma 3 4B → 10 read-only tools; 12B → +3 low-risk writes; 27B+ → alle 37.
+  // Anthropic-modeller har capability="all", så ingenting filtreres væk for cloud.
+  const allowedToolNames = filterToolsForCapability(
+    ADMIN_TOOL_ALLOWLIST,
+    resolved.capabilities,
+  );
+
   // Anthropic API kræver tool-navne der matcher /^[a-zA-Z0-9_-]{1,128}$/.
   // Vores registry bruger "domain.verb" — vi konverterer "." → "_" når vi
   // registrerer med AI SDK og oversætter tilbage i executor. Reverse-lookup
   // bruger en pre-bygget map så vi ikke gætter på ambiguous navne.
   const apiNameToRegistryName: Record<string, string> = {};
-  for (const registryName of ADMIN_TOOL_ALLOWLIST) {
+  for (const registryName of allowedToolNames) {
     apiNameToRegistryName[registryName.replace(/\./g, "_")] = registryName;
   }
 
   // Byg tool-table — én entry per tool i allowlist (med api-safe navne)
   const aiTools = Object.fromEntries(
-    ADMIN_TOOL_ALLOWLIST.map((registryName) => {
-      const reg = getTool(registryName);
-      if (!reg) return [registryName, undefined];
-      const apiName = registryName.replace(/\./g, "_");
-      return [
-        apiName,
-        tool({
-          description: reg.description,
-          inputSchema: reg.input as unknown as z.ZodObject<z.ZodRawShape>,
-          execute: (args: unknown) =>
-            executeAdminTool(apiNameToRegistryName[apiName] ?? apiName, args),
-        }),
-      ];
-    }).filter(([, v]) => v !== undefined),
+    allowedToolNames
+      .map((registryName) => {
+        const reg = getTool(registryName);
+        if (!reg) return [registryName, undefined];
+        const apiName = registryName.replace(/\./g, "_");
+        return [
+          apiName,
+          tool({
+            description: reg.description,
+            inputSchema: reg.input as unknown as z.ZodObject<z.ZodRawShape>,
+            execute: (args: unknown) =>
+              executeAdminTool(apiNameToRegistryName[apiName] ?? apiName, args),
+          }),
+        ];
+      })
+      .filter(([, v]) => v !== undefined),
   ) as Record<string, ReturnType<typeof tool>>;
 
   const modelMessages = await convertToModelMessages(messages);
-  const model = await chatModel();
 
-  const result = streamText({
-    model,
-    system: OPERATOR_SYSTEM_PROMPT,
-    messages: modelMessages,
-    tools: aiTools,
-    stopWhen: stepCountIs(ADMIN_MAX_TOOL_CALLS_PER_SESSION),
-    onError({ error }) {
-      console.error("[admin/chat] streamText error:", error);
+  // Local-AI plan (Fase 1.5): switch til compact-prompt for små modeller så vi
+  // har plads til tool-schemas + messages i Gemma 3 4B's 8k context.
+  const basePrompt =
+    resolved.capabilities.maxTokens < 16384
+      ? OPERATOR_SYSTEM_PROMPT_COMPACT
+      : OPERATOR_SYSTEM_PROMPT;
+
+  // Local-AI plan (Fase 2.2): injicér current setup-state så copilot kan
+  // svare "hvad mangler jeg?" uden at skulle kalde tools. Tilføjes ovenpå
+  // base-prompt så directive-rækkefølgen forbliver intakt.
+  const setupContext = await buildSetupContext();
+  const systemPrompt = `${basePrompt}\n\n${setupContext}`;
+
+  // Local-AI plan: wrap streamText i withAuditContext så alle tool-calls
+  // under denne session får provider+model stamps på deres audit-rows.
+  // AsyncLocalStorage propagerer gennem streamText's async tool.execute callbacks.
+  return withAuditContext(
+    {
+      provider: resolved.provider,
+      model: resolved.model,
+      modality: "text",
     },
-  });
-
-  return result.toUIMessageStreamResponse();
+    () => {
+      const result = streamText({
+        model: resolved.handle,
+        system: systemPrompt,
+        messages: modelMessages,
+        tools: aiTools,
+        stopWhen: stepCountIs(ADMIN_MAX_TOOL_CALLS_PER_SESSION),
+        onError({ error }) {
+          console.error(
+            `[admin/chat] streamText error (provider=${resolved.provider} model=${resolved.model}):`,
+            error,
+          );
+        },
+      });
+      return result.toUIMessageStreamResponse();
+    },
+  );
 }
 
 /**

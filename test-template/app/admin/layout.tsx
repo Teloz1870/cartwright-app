@@ -8,7 +8,9 @@ import {
 } from "@/lib/setup-wizard";
 import AdminChatLauncher from "@/components/admin/AdminChatLauncher";
 import AdminNavLink from "@/components/admin/AdminNavLink";
+import AiStatusPill from "@/components/admin/AiStatusPill";
 import SetupWarningBar from "@/components/admin/SetupWarningBar";
+import { getInitialAiStatus } from "@/lib/ai/status";
 
 const navLinks = [
   { href: "/admin", label: "Dashboard" },
@@ -41,6 +43,10 @@ export default async function AdminLayout({
       redirect("/admin/setup");
     }
   }
+
+  // Local-AI plan Fase 1.9: AI status pill — load initial state server-side.
+  // Klient-komponent poller selv ny status efter mount via health-endpoint.
+  const aiStatus = await getInitialAiStatus();
 
   return (
     <div className="min-h-screen bg-sol-cream text-sol-ink md:flex">
@@ -96,6 +102,10 @@ export default async function AdminLayout({
 
       {/* Global ⌘K-launcher — fixed positioned, vises på alle /admin/* sider */}
       <AdminChatLauncher />
+
+      {/* Local-AI plan: status-pill nederst-højre, viser hvor AI'en kører.
+          Poller /api/admin/ai/health hver 30s for live latency. */}
+      <AiStatusPill initial={aiStatus} healthEndpoint="/api/admin/ai/health" />
     </div>
   );
 }

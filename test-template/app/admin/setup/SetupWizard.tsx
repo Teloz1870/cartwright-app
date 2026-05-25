@@ -582,6 +582,40 @@ export default function SetupWizard({
                 .
               </p>
             </div>
+
+            {/* Local-AI plan Fase 2.3: hint om lokal AI som privacy-first
+                alternativ. Detalje-konfiguration sker i /admin/integrations
+                så wizarden forbliver kort — det vigtigste er at admin ved
+                at muligheden findes. */}
+            <div className="rounded-lg border border-sol-ink/10 bg-sol-cream/40 p-4">
+              <h3 className="text-sm font-black uppercase tracking-widest text-sol-ink">
+                ✨ Lokal AI (valgfri)
+              </h3>
+              <p className="mt-1 text-xs text-sol-muted">
+                Vi anbefaler Anthropic for kvalitet i starten. Når du har testet
+                kvaliteten kan du skifte til{" "}
+                <strong className="font-bold text-sol-ink">
+                  lokal Gemma via Ollama
+                </strong>{" "}
+                — gratis, privat, ingen cloud-roundtrip. Konfigureres i{" "}
+                <a
+                  href="/admin/integrations"
+                  className="font-bold text-sol-accent underline"
+                >
+                  /admin/integrations
+                </a>{" "}
+                under "AI provider", eller læs guiden på{" "}
+                <a
+                  href="https://cartwright.app/docs/ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-sol-accent underline"
+                >
+                  cartwright.app/docs/ai
+                </a>
+                .
+              </p>
+            </div>
           </div>
         )}
 

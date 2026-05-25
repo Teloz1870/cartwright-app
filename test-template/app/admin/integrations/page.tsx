@@ -2,6 +2,7 @@ import {
   getIntegrationStatus,
   getStripeStatus,
   getResendStatus,
+  getAiSettingsForUi,
 } from "./actions";
 import { getSetupStatus } from "@/lib/setup-status";
 import { getBrand } from "@/lib/brand";
@@ -10,20 +11,28 @@ import GeminiKeyForm from "./GeminiKeyForm";
 import StripeKeyForm from "./StripeKeyForm";
 import ResendKeyForm from "./ResendKeyForm";
 import EmailDomainPanel from "./EmailDomainPanel";
+import LocalAiForm from "./LocalAiForm";
 import SetupRunbook from "./SetupRunbook";
 import SetupTabs from "./SetupTabs";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminIntegrationsPage() {
-  const [{ anthropic, gemini }, stripe, resend, setupStatus, brandData] =
-    await Promise.all([
-      getIntegrationStatus(),
-      getStripeStatus(),
-      getResendStatus(),
-      getSetupStatus(),
-      getBrand(),
-    ]);
+  const [
+    { anthropic, gemini },
+    stripe,
+    resend,
+    setupStatus,
+    brandData,
+    aiSettings,
+  ] = await Promise.all([
+    getIntegrationStatus(),
+    getStripeStatus(),
+    getResendStatus(),
+    getSetupStatus(),
+    getBrand(),
+    getAiSettingsForUi(),
+  ]);
 
   // Vis kun rigtige værdier (ikke compile-time placeholder "example.com")
   const realDomain =
@@ -42,18 +51,44 @@ export default async function AdminIntegrationsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-black text-sol-ink">Integrationer</h1>
-        <p className="mt-2 max-w-2xl text-sm font-medium text-sol-muted">
-          Tilslut eksterne tjenester der ikke kører lokalt. Keys gemmes i
-          databasen så ændringer slår igennem instant uden at restarte
-          serveren.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-black text-sol-ink">Integrationer</h1>
+          <p className="mt-2 max-w-2xl text-sm font-medium text-sol-muted">
+            Tilslut eksterne tjenester der ikke kører lokalt. Keys gemmes i
+            databasen så ændringer slår igennem instant uden at restarte
+            serveren.
+          </p>
+        </div>
+        <a
+          href="/admin/integrations/ai-test"
+          className="shrink-0 rounded-full border border-sol-accent bg-sol-accent/5 px-4 py-2 text-xs font-black uppercase tracking-wider text-sol-accent transition hover:bg-sol-accent hover:text-white"
+        >
+          AI-test →
+        </a>
       </header>
 
       <SetupTabs
         keys={
           <div className="flex flex-col gap-8">
+            <section className="rounded-2xl border border-sol-accent/30 bg-white p-6 shadow-sm">
+              <div className="mb-5">
+                <h2 className="text-lg font-black text-sol-ink">
+                  AI provider
+                </h2>
+                <p className="mt-1 text-sm text-sol-muted">
+                  Vælg hvor admin-copilot, AI-stylist og explain-knapper skal
+                  hente deres model. Skift mellem cloud (Anthropic) og lokal
+                  (Ollama/Gemma) uden code-deploy.{" "}
+                  <strong className="text-sol-ink">
+                    Theme/SEO-generators bruger altid Anthropic
+                  </strong>{" "}
+                  (structured output kræver høj kvalitet).
+                </p>
+              </div>
+              <LocalAiForm initial={aiSettings} />
+            </section>
+
             <section className="rounded-2xl border border-sol-ink/10 bg-white p-6 shadow-sm">
               <div className="mb-5">
                 <h2 className="text-lg font-black text-sol-ink">

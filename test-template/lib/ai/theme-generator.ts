@@ -35,7 +35,11 @@ export type GeneratedTheme = ThemePalette & { rationale: string };
 export async function generateThemePalette(
   brandDescription: string,
 ): Promise<GeneratedTheme> {
-  const model = await chatModel();
+  // Local-AI plan: intent="vibe" tvinger altid Anthropic for theme-generation.
+  // Local-modeller (Gemma 3) er ikke pålidelige nok til structured output med
+  // 7-felt Zod-schema + hex-regex-validering. En fejlende theme breaker
+  // brand-setup-wizarden.
+  const model = await chatModel("vibe");
 
   const { object } = await generateObject({
     model,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { getAuditContext } from "@/lib/audit-context";
 
 /**
  * Audit-actor som typed prefix-string. Læses og parses i /changelog.
@@ -171,8 +172,20 @@ async function writeAuditEntry(entry: AuditEntry): Promise<void> {
   // Audit-skrivning må aldrig fejle hele requesten. Hvis DB er nede er det
   // sandsynligvis et større problem, men handler-resultatet er stadig
   // værdifuldt for brugeren. Vi logger fejlen til console.
+  //
+  // Local-AI plan: stamps også provider/model/modality fra AsyncLocalStorage
+  // context hvis sat. Default modality="text" — kun voice-flowet sætter "voice".
+  const ctx = getAuditContext();
   try {
-    await prisma.auditLog.create({ data: entry });
+    await prisma.auditLog.create({
+      data: {
+        ...entry,
+        provider: ctx?.provider ?? null,
+        model: ctx?.model ?? null,
+        modality: ctx?.modality ?? "text",
+        sessionMinutes: ctx?.sessionMinutes ?? null,
+      },
+    });
   } catch (err) {
     console.error("[audit] Failed to write audit entry:", err, entry);
   }

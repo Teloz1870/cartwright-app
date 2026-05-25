@@ -1,10 +1,22 @@
 "use server";
 
+import { generateText } from "ai";
 import { Resend } from "resend";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
-import { invalidateApiKeyCache } from "@/lib/ai/client";
+import {
+  invalidateApiKeyCache,
+  chatModelResolved,
+  getModelCapabilities,
+  type ChatIntent,
+} from "@/lib/ai/client";
+import {
+  getAiSettings,
+  invalidateAiSettingsCache,
+  type AiProvider,
+  type LocalAiFallbackMode,
+} from "@/lib/ai/settings";
 import {
   getGoogleGeminiApiKey,
   invalidateGeminiKeyCache,
@@ -546,4 +558,252 @@ function maskGenericKey(key: string): string {
 function maskGeminiKey(key: string): string {
   if (key.length < 8) return "•".repeat(key.length);
   return `${key.slice(0, 4)}...${key.slice(-4)}`;
+}
+
+// ── Local-AI plan: AI provider config + Ollama-integration ──────────────────
+
+const VALID_PROVIDERS = ["anthropic", "local", "auto"] as const;
+const VALID_FALLBACK_MODES = ["off", "on-error", "after-3-failures"] as const;
+
+function isValidProvider(v: unknown): v is AiProvider {
+  return typeof v === "string" && (VALID_PROVIDERS as readonly string[]).includes(v);
+}
+
+function isValidFallbackMode(v: unknown): v is LocalAiFallbackMode {
+  return (
+    typeof v === "string" && (VALID_FALLBACK_MODES as readonly string[]).includes(v)
+  );
+}
+
+/**
+ * Hent nuværende AI-settings til UI-rendering. Returnerer en serialiserbar
+ * shape uden secrets (apiKey vises kun som boolean configured-flag).
+ */
+export async function getAiSettingsForUi() {
+  await requireAdmin();
+  const s = await getAiSettings();
+  return {
+    provider: s.provider,
+    anthropicModel: s.anthropicModel,
+    localAiEndpoint: s.localAiEndpoint,
+    localAiModel: s.localAiModel,
+    localAiFallbackMode: s.localAiFallbackMode,
+    anthropicConfigured: s.anthropicConfigured,
+    localConfigured: s.localConfigured,
+    lastDegradedAt: s.lastDegradedAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * Gem ny AI provider config. Validerer alle felter; tomme strenge bliver til
+ * NULL i DB så getAiSettings() falder tilbage til env/defaults.
+ */
+export async function setAiSettingsAction(
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+
+  const provider = String(formData.get("provider") ?? "").trim();
+  const anthropicModel = String(formData.get("anthropicModel") ?? "").trim();
+  const localAiEndpoint = String(formData.get("localAiEndpoint") ?? "").trim();
+  const localAiModel = String(formData.get("localAiModel") ?? "").trim();
+  const localAiFallbackMode = String(
+    formData.get("localAiFallbackMode") ?? "",
+  ).trim();
+
+  if (!isValidProvider(provider)) {
+    return { ok: false, error: "Ugyldig provider (skal være anthropic/local/auto)" };
+  }
+  if (anthropicModel && (anthropicModel.length > 80 || !/^[a-z0-9._-]+$/i.test(anthropicModel))) {
+    return { ok: false, error: "Ugyldigt Anthropic model-id" };
+  }
+  if (localAiEndpoint) {
+    try {
+      const url = new URL(localAiEndpoint);
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        return { ok: false, error: "Endpoint skal være http:// eller https://" };
+      }
+    } catch {
+      return { ok: false, error: "Ugyldig endpoint-URL" };
+    }
+  }
+  if (localAiModel && (localAiModel.length > 80 || !/^[a-z0-9._:-]+$/i.test(localAiModel))) {
+    return { ok: false, error: "Ugyldigt local model-id (kun a-z, 0-9, . _ - :)" };
+  }
+  if (localAiFallbackMode && !isValidFallbackMode(localAiFallbackMode)) {
+    return { ok: false, error: "Ugyldig fallback-mode" };
+  }
+  if (provider === "local" && (!localAiEndpoint || !localAiModel)) {
+    return {
+      ok: false,
+      error:
+        "Provider=local kræver både endpoint og model. Konfigurer dem først eller vælg auto/anthropic.",
+    };
+  }
+
+  await prisma.integrationSettings.upsert({
+    where: { id: 1 },
+    update: {
+      aiProvider: provider,
+      anthropicModel: anthropicModel || null,
+      localAiEndpoint: localAiEndpoint || null,
+      localAiModel: localAiModel || null,
+      localAiFallbackMode: localAiFallbackMode || null,
+    },
+    create: {
+      id: 1,
+      aiProvider: provider,
+      anthropicModel: anthropicModel || null,
+      localAiEndpoint: localAiEndpoint || null,
+      localAiModel: localAiModel || null,
+      localAiFallbackMode: localAiFallbackMode || null,
+    },
+  });
+
+  invalidateAiSettingsCache();
+  invalidateSetupStatusCache();
+  revalidatePath("/admin/integrations");
+  return { ok: true };
+}
+
+/**
+ * Liste modeller tilgængelige på Ollama-endpointet. Tester samtidig at
+ * endpointet er online. Returnerer model-navne + capability-tier så UI'et
+ * kan vise hvilke modeller der har hvilken tool-cap (read-only/low-risk/all).
+ */
+export async function listOllamaModelsAction(
+  endpoint: string,
+): Promise<
+  | { ok: true; models: Array<{ name: string; tier: string }>; latencyMs: number }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  const trimmed = endpoint.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Endpoint er tomt" };
+  }
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return { ok: false, error: "Ugyldig endpoint-URL" };
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return { ok: false, error: "Endpoint skal være http:// eller https://" };
+  }
+
+  // Ollama's tags-endpoint er på root (ikke /v1). Hvis admin har skrevet
+  // /v1 i URL'en, normaliserer vi det væk.
+  const baseUrl = trimmed.replace(/\/v1\/?$/, "").replace(/\/$/, "");
+  const tagsUrl = `${baseUrl}/api/tags`;
+
+  const start = Date.now();
+  let response: Response;
+  try {
+    response = await fetch(tagsUrl, {
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error && err.name === "TimeoutError"
+          ? `Timeout (5s) — er Ollama startet på ${baseUrl}?`
+          : `Kan ikke nå ${baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  const latencyMs = Date.now() - start;
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: `Ollama returnerede ${response.status} — er endpoint korrekt?`,
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return { ok: false, error: "Ollama returnerede ikke gyldig JSON" };
+  }
+
+  // Ollama-format: { models: [{ name: "gemma3:12b", ... }, ...] }
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !Array.isArray((body as { models?: unknown[] }).models)
+  ) {
+    return {
+      ok: false,
+      error: "Uventet Ollama-response (forventede {models: []})",
+    };
+  }
+  const rawModels = (body as { models: Array<{ name?: unknown }> }).models;
+  const models = rawModels
+    .map((m) => (typeof m.name === "string" ? m.name : null))
+    .filter((n): n is string => n !== null)
+    .map((name) => ({
+      name,
+      tier: getModelCapabilities(name).tools,
+    }));
+
+  return { ok: true, models, latencyMs };
+}
+
+/**
+ * Send en minimal test-prompt til den konfigurerede provider og returnér
+ * svar + latency. Bruges af "Test forbindelse"-knap i LocalAiForm OG af
+ * Fase 1.8 ai-test page.
+ *
+ * intent="chat" så det respekterer aiProvider; intent="vibe" tvinges altid
+ * til Anthropic (bruges hvis vi vil bevise at vibe-routing virker).
+ */
+export async function testAiProviderAction(
+  intent: ChatIntent = "chat",
+  prompt: string = "Sig præcis: OK",
+): Promise<
+  | {
+      ok: true;
+      provider: string;
+      model: string;
+      response: string;
+      latencyMs: number;
+    }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  let resolved: Awaited<ReturnType<typeof chatModelResolved>>;
+  try {
+    resolved = await chatModelResolved(intent);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Provider ikke konfigureret",
+    };
+  }
+
+  const start = Date.now();
+  try {
+    const result = await generateText({
+      model: resolved.handle,
+      prompt: prompt.slice(0, 500),
+    });
+    return {
+      ok: true,
+      provider: resolved.provider,
+      model: resolved.model,
+      response: result.text.slice(0, 500),
+      latencyMs: Date.now() - start,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Ukendt fejl ved test-kald",
+    };
+  }
 }

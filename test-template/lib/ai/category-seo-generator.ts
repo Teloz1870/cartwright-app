@@ -78,7 +78,10 @@ export type CategoryGenerationInput = {
 export async function generateCategorySEO(
   input: CategoryGenerationInput,
 ): Promise<CategorySeoResult> {
-  const model = await chatModel();
+  // Local-AI plan: intent="vibe" → altid Anthropic. Kategori-SEO genererer
+  // metaTitle + descriptionLong + FAQ (4-6 items) via structured-output;
+  // local-modeller breaker det for ofte.
+  const model = await chatModel("vibe");
 
   const policies = brand.policies;
   const policiesText = `gratis fragt over ${policies.shippingFreeThresholdDkk / 100} kr, ${policies.returnDays} dages returret`;

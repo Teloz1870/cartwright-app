@@ -3,14 +3,14 @@ import { randomUUID } from "node:crypto";
 import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
 import { z } from "zod";
 import {
-  chatModel,
-  getAnthropicApiKey,
+  chatModelResolved,
   SYSTEM_PROMPT,
   CUSTOMER_TOOL_ALLOWLIST,
   MAX_TOOL_CALLS_PER_SESSION,
   CUSTOMER_CONFIRM_REQUIRED,
   isCustomerTool,
 } from "@/lib/ai/client";
+import { withAuditContext } from "@/lib/audit-context";
 import { getTool, invokeTool } from "@/lib/tools/registry";
 import { CUSTOMER_CHAT_SCOPES } from "@/lib/scopes";
 import { prisma } from "@/lib/db";
@@ -88,14 +88,19 @@ export async function POST(request: NextRequest) {
   }
   const { messages, confirmations } = parsedBody.data;
 
-  // Vi læser API-key tidligt så fejlen er klar i UI. Foretrækker DB
-  // (sat i /admin/integrations) frem for env.
-  const apiKey = await getAnthropicApiKey();
-  if (!apiKey) {
+  // Local-AI plan: resolver provider/model tidligt så fejlen er klar i UI.
+  // Customer-chat respekterer samme aiProvider-setting som admin-chat, så hvis
+  // shop'en kører på local Gemma, gør storefront-chatten det også.
+  let resolved: Awaited<ReturnType<typeof chatModelResolved>>;
+  try {
+    resolved = await chatModelResolved("chat");
+  } catch (err) {
     return Response.json(
       {
         error:
-          "AI-stylisten er ikke konfigureret endnu. Gå til /admin/integrations for at tilføje en Anthropic API-key.",
+          err instanceof Error
+            ? err.message
+            : "AI-stylisten er ikke konfigureret endnu. Gå til /admin/integrations.",
       },
       { status: 503 },
     );
@@ -292,22 +297,35 @@ export async function POST(request: NextRequest) {
   const modelMessages = await convertToModelMessages(
     messages as Parameters<typeof convertToModelMessages>[0],
   );
-  const model = await chatModel();
 
-  const result = streamText({
-    model,
-    system: SYSTEM_PROMPT,
-    messages: modelMessages,
-    tools: aiTools,
-    stopWhen: stepCountIs(MAX_TOOL_CALLS_PER_SESSION),
-    // Defensiv: hvis modellen kommer med et tool-navn der ikke er i aiTools
-    // (kan ske ved hallucination), returnerer SDK'et en pæn fejl.
-    onError({ error }) {
-      console.error("[assistant/chat] streamText error:", error);
+  // Local-AI plan: wrap i withAuditContext så customer-chat tool-calls også
+  // får provider+model stamps på audit-rows. AsyncLocalStorage propagerer
+  // gennem streamText's tool.execute callbacks.
+  const response = await withAuditContext(
+    {
+      provider: resolved.provider,
+      model: resolved.model,
+      modality: "text",
     },
-  });
-
-  const response = result.toUIMessageStreamResponse();
+    async () => {
+      const result = streamText({
+        model: resolved.handle,
+        system: SYSTEM_PROMPT,
+        messages: modelMessages,
+        tools: aiTools,
+        stopWhen: stepCountIs(MAX_TOOL_CALLS_PER_SESSION),
+        // Defensiv: hvis modellen kommer med et tool-navn der ikke er i aiTools
+        // (kan ske ved hallucination), returnerer SDK'et en pæn fejl.
+        onError({ error }) {
+          console.error(
+            `[assistant/chat] streamText error (provider=${resolved.provider} model=${resolved.model}):`,
+            error,
+          );
+        },
+      });
+      return result.toUIMessageStreamResponse();
+    },
+  );
 
   // Hvis vi genererede en ny sessionId (ingen cookie eksisterede), set
   // den nu så efterfølgende requests har samme sessionId — kritisk for

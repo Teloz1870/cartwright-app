@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { getAnthropicApiKey } from "@/lib/ai/client";
 import { getGoogleGeminiApiKey } from "@/lib/ai/gemini";
+import { getAiSettings } from "@/lib/ai/settings";
 import { getResendApiKey } from "@/lib/mailer/resend";
 import { getStripeKeys } from "@/lib/stripe";
 
@@ -105,12 +106,14 @@ export async function getSetupStatus(): Promise<SetupStatus> {
     resendApiKey,
     anthropicApiKey,
     googleGeminiApiKey,
+    aiSettings,
     completedManualItems,
   ] = await Promise.all([
     getStripeKeys(),
     getResendApiKey(),
     getAnthropicApiKey(),
     getGoogleGeminiApiKey(),
+    getAiSettings(),
     getCompletedManualChecklistItems(),
   ]);
 
@@ -163,6 +166,32 @@ export async function getSetupStatus(): Promise<SetupStatus> {
         : "Kunde-chatten kræver en Anthropic key.",
       setupHref: "/admin/integrations",
       helpUrl: "https://docs.anthropic.com/",
+    },
+    {
+      id: "ai-provider-configured",
+      category: "email",
+      label: "AI provider valgt",
+      status:
+        aiSettings.provider === "local"
+          ? aiSettings.localConfigured
+            ? "ok"
+            : "missing"
+          : aiSettings.provider === "anthropic"
+            ? aiSettings.anthropicConfigured
+              ? "ok"
+              : "missing"
+            : // auto
+              aiSettings.localConfigured || aiSettings.anthropicConfigured
+              ? "ok"
+              : "missing",
+      description:
+        aiSettings.provider === "local"
+          ? `Local · ${aiSettings.localAiModel ?? "(model ikke valgt)"}`
+          : aiSettings.provider === "auto"
+            ? `Auto · ${aiSettings.localConfigured ? aiSettings.localAiModel : aiSettings.anthropicModel} (med fallback)`
+            : `Cloud · ${aiSettings.anthropicModel}`,
+      setupHref: "/admin/integrations",
+      helpUrl: "https://cartwright.app/docs/ai",
     },
     {
       id: "google-gemini-api-key",

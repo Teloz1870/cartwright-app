@@ -1,21 +1,86 @@
 import "server-only";
 
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { prisma } from "@/lib/db";
 import { decryptSecret } from "@/lib/secret-encryption";
+import { getAiSettings, type AiSettings } from "@/lib/ai/settings";
 
 /**
- * AI-client for storefront-chatten.
+ * AI-client for storefront- og admin-chat.
+ *
+ * Provider-routing landed med Local-AI planen: `chatModel(intent)` returnerer
+ * den rette model baseret på `IntegrationSettings.aiProvider` + intent:
+ *
+ *   - intent="vibe"      → ALTID Anthropic. Theme/SEO-generators bruger
+ *                          generateObject med Zod-schema; invalid JSON breaker
+ *                          brand-setup. Local-modeller er ikke pålidelige nok
+ *                          til structured output på dette stake-niveau.
+ *   - intent="chat"      → Respekterer aiProvider. Default Anthropic Haiku 4.5;
+ *                          local kører via @ai-sdk/openai-compatible mod Ollama.
+ *   - intent="generation"→ Samme regler som "chat". Bruges hvis vi senere får
+ *                          long-form generation der ikke kan toleres failure-loop.
  *
  * Default model er Haiku 4.5 — billig + hurtig, perfekt til tool-orchestration
- * og produkt-anbefaling. Hvis vi senere får brug for dybere reasoning kan vi
- * eskalere til Sonnet/Opus i specifikke flows.
+ * og produkt-anbefaling. Local-default er gemma3:12b (sweet-spot tools+kvalitet).
  */
 export const CHAT_MODEL = "claude-haiku-4-5";
 
-// Memory-cache så vi ikke rammer DB ved hvert chat-kald. 30 sek TTL —
-// kort nok til at admin-changes slår igennem hurtigt, langt nok til at
-// chat-burst ikke spammer DB.
+export type ChatIntent = "chat" | "generation" | "vibe";
+
+/**
+ * Per-model capability matrix. Bruges af tool-filteringen til at cappe
+ * admin-toolset baseret på modellens reelle function-calling kvalitet.
+ *
+ * Tier-meaning:
+ *   "read-only"        → kun *.search/*.list/*.get + analytics + audit (10 tools)
+ *   "low-risk-writes"  → ovenstående + pages.upsert, categories.upsert, discounts.toggle (15 tools)
+ *   "all"              → alle 37 admin tools
+ *
+ * Unknown model fallbacks til "read-only" (sikker default).
+ *
+ * Tilføj nye entries her når nye modeller pulles og testes. Den her const
+ * er bevidst HARDCODED frem for et separat registry — vi har 4 entries i v1
+ * og fragmentering på tværs af filer er prematurely-DRY.
+ */
+export type ToolTier = "read-only" | "low-risk-writes" | "all";
+
+export type ModelCapabilities = {
+  tools: ToolTier;
+  /** Effective context window for prompts+tools+messages */
+  maxTokens: number;
+  supportsToolCall: boolean;
+};
+
+export const MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
+  // Anthropic — alle 37 admin tools, large context
+  "claude-haiku-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
+  "claude-sonnet-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
+  "claude-opus-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
+  // Gemma 3 via Ollama — capability tiered per size
+  "gemma3:4b": { tools: "read-only", maxTokens: 8192, supportsToolCall: true },
+  "gemma3:12b": { tools: "low-risk-writes", maxTokens: 8192, supportsToolCall: true },
+  "gemma3:27b": { tools: "all", maxTokens: 8192, supportsToolCall: true },
+  // Llama 3.3 — stærk function calling, alle tools
+  "llama3.3:70b": { tools: "all", maxTokens: 8192, supportsToolCall: true },
+  // Smaller open-source — read-only baseline (safe default)
+  "llama3.2:3b": { tools: "read-only", maxTokens: 8192, supportsToolCall: true },
+  "qwen2.5:7b": { tools: "low-risk-writes", maxTokens: 8192, supportsToolCall: true },
+};
+
+const UNKNOWN_MODEL_CAPABILITIES: ModelCapabilities = {
+  tools: "read-only",
+  maxTokens: 8192,
+  supportsToolCall: true,
+};
+
+export function getModelCapabilities(modelId: string): ModelCapabilities {
+  return MODEL_CAPABILITIES[modelId] ?? UNKNOWN_MODEL_CAPABILITIES;
+}
+
+// Legacy Anthropic-only cache — bevares for bagudkompatibilitet med kode der
+// stadig kalder getAnthropicApiKey() direkte (audit-helpers etc.). Ny kode
+// bør bruge getAiSettings().
 let cachedKey: { value: string | null; expiresAt: number } | null = null;
 const CACHE_TTL_MS = 30_000;
 
@@ -58,20 +123,155 @@ export function invalidateApiKeyCache() {
 }
 
 /**
- * Returnerer en konfigureret model-handle. Async fordi vi kan have brug for
- * at læse key fra DB.
+ * Bygget model-handle + metadata for audit-logging og tool-filtering.
+ * Routes bruger `.handle` til streamText, og `.provider`/`.model` til at
+ * stamps audit-rows.
  */
-export async function chatModel() {
-  const apiKey = await getAnthropicApiKey();
+export type ChatModelResolution = {
+  handle: Awaited<ReturnType<typeof buildAnthropicModel>>;
+  provider: "anthropic" | "local";
+  model: string;
+  capabilities: ModelCapabilities;
+};
+
+/**
+ * Returnerer en konfigureret model-handle. Async fordi vi kan have brug for
+ * at læse settings fra DB.
+ *
+ * BACKWARD COMPAT: gamle callers der kalder `chatModel()` uden argument får
+ * intent="chat" og returnerer kun handle'n (ikke metadata-objektet). Nye
+ * callers bør bruge `chatModelResolved(intent)` for at få provider+model
+ * til audit-stamping.
+ */
+export async function chatModel(intent: ChatIntent = "chat") {
+  const resolved = await chatModelResolved(intent);
+  return resolved.handle;
+}
+
+/**
+ * Som chatModel() men returnerer fuld resolution med provider/model/capabilities.
+ * Brug denne fra routes der skal stamps audit-rows og filtrere tools.
+ */
+export async function chatModelResolved(
+  intent: ChatIntent = "chat",
+): Promise<ChatModelResolution> {
+  const settings = await getAiSettings();
+
+  // vibe = altid Anthropic, structured output stake-niveauet er for højt
+  // for local modeller i v1. Når Gemma 4+ structured output bliver pålideligt
+  // er det her én if-condition at fjerne (se docs/ai/extending.mdx).
+  if (intent === "vibe") {
+    return resolveAnthropic(settings);
+  }
+
+  // chat | generation: følg aiProvider
+  if (settings.provider === "local") {
+    return resolveLocal(settings);
+  }
+
+  if (settings.provider === "auto") {
+    // V1: auto preferer local hvis konfigureret, ellers anthropic.
+    // Request-time on-error fallback er Fase 2-arbejde (kræver wrapper omkring
+    // streamText error-handler). For nu: hvis local er konfigureret, brug den —
+    // hvis call fejler, ser admin fejlen og kan manuelt skifte til "anthropic".
+    if (settings.localConfigured) {
+      return resolveLocal(settings);
+    }
+    return resolveAnthropic(settings);
+  }
+
+  // Default / "anthropic"
+  return resolveAnthropic(settings);
+}
+
+async function resolveAnthropic(
+  settings: AiSettings,
+): Promise<ChatModelResolution> {
+  const handle = await buildAnthropicModel(settings);
+  return {
+    handle,
+    provider: "anthropic",
+    model: settings.anthropicModel,
+    capabilities: getModelCapabilities(settings.anthropicModel),
+  };
+}
+
+async function resolveLocal(settings: AiSettings): Promise<ChatModelResolution> {
+  if (!settings.localAiEndpoint || !settings.localAiModel) {
+    throw new Error(
+      "Lokal AI er ikke konfigureret — sæt localAiEndpoint + localAiModel i /admin/integrations",
+    );
+  }
+  const handle = buildLocalModel(settings);
+  return {
+    handle,
+    provider: "local",
+    model: settings.localAiModel,
+    capabilities: getModelCapabilities(settings.localAiModel),
+  };
+}
+
+async function buildAnthropicModel(settings: AiSettings) {
+  const apiKey = settings.anthropicApiKey ?? (await getAnthropicApiKey());
   if (!apiKey) {
     throw new Error(
       "Ingen Anthropic API-key — sæt en i /admin/integrations eller via ANTHROPIC_API_KEY i .env",
     );
   }
-  // createAnthropic gør det muligt at injicere keyen i stedet for at SDK'et
-  // automatisk læser fra process.env (som ikke fanger DB-keyen).
   const provider = createAnthropic({ apiKey });
-  return provider(CHAT_MODEL);
+  return provider(settings.anthropicModel);
+}
+
+function buildLocalModel(settings: AiSettings) {
+  const endpoint = settings.localAiEndpoint!;
+  const modelId = settings.localAiModel!;
+  // Ollama exposerer OpenAI-compatible API på <endpoint>. apiKey er ignored
+  // men SDK kræver non-empty streng.
+  const provider = createOpenAICompatible({
+    name: "ollama",
+    baseURL: endpoint.endsWith("/v1") ? endpoint : `${endpoint.replace(/\/$/, "")}/v1`,
+    apiKey: "ollama-local",
+  });
+  return provider(modelId);
+}
+
+/**
+ * Tool-filtering baseret på modellens capability-tier.
+ * Bruges af /api/admin/chat til at cappe tool-listen for små modeller der
+ * ikke pålideligt håndterer 37 tools eller skrive-operationer.
+ */
+const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  "products.search",
+  "products.get",
+  "categories.list",
+  "pages.list",
+  "orders.list",
+  "orders.get",
+  "discounts.list",
+  "analytics.summary",
+  "audit.list",
+  "settings.get",
+]);
+
+const LOW_RISK_WRITE_TOOLS: ReadonlySet<string> = new Set([
+  ...READ_ONLY_TOOLS,
+  "categories.upsert",
+  "pages.upsert",
+  "discounts.toggle",
+  "images.search_unsplash",
+  "products.attach_image",
+]);
+
+export function filterToolsForCapability<T extends string>(
+  toolNames: readonly T[],
+  capabilities: ModelCapabilities,
+): T[] {
+  if (capabilities.tools === "all") {
+    return [...toolNames];
+  }
+  const allowed =
+    capabilities.tools === "low-risk-writes" ? LOW_RISK_WRITE_TOOLS : READ_ONLY_TOOLS;
+  return toolNames.filter((name) => allowed.has(name));
 }
 
 /**

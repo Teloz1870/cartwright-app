@@ -12,6 +12,7 @@ import {
   type InboxVendor,
 } from "@/lib/email/dns-records";
 import type { DnsCheckResult, DnsCheckStatus } from "@/lib/email/dns-verify";
+import ExplainButton from "@/components/admin/ExplainButton";
 
 type Props = {
   initialDomain: string | null;
@@ -273,34 +274,55 @@ export default function EmailDomainPanel({
               {verifyResult.verifiedAt.toLocaleTimeString("da-DK")}
             </p>
             <ul className="divide-y divide-sol-ink/5 rounded-lg border border-sol-ink/10">
-              {verifyResult.checks.map((check) => (
-                <li key={check.id} className="grid gap-1 px-3 py-2 md:grid-cols-[auto_1fr_auto]">
-                  <span
-                    className={`inline-flex h-fit shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${STATUS_CLASSES[check.status]}`}
-                  >
-                    {STATUS_LABEL[check.status]}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sol-ink">{check.label}</div>
-                    <div className="text-[11px] text-sol-muted">{check.expectedHint}</div>
-                    {check.detail && (
-                      <div className="mt-1 text-[11px] font-bold text-orange-900">
-                        ⚠ {check.detail}
+              {verifyResult.checks.map((check) => {
+                const isProblem =
+                  check.status === "mismatch" ||
+                  check.status === "missing" ||
+                  check.status === "error";
+                return (
+                  <li key={check.id} className="grid gap-1 px-3 py-2 md:grid-cols-[auto_1fr_auto]">
+                    <span
+                      className={`inline-flex h-fit shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${STATUS_CLASSES[check.status]}`}
+                    >
+                      {STATUS_LABEL[check.status]}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sol-ink">{check.label}</div>
+                      <div className="text-[11px] text-sol-muted">{check.expectedHint}</div>
+                      {check.detail && (
+                        <div className="mt-1 text-[11px] font-bold text-orange-900">
+                          ⚠ {check.detail}
+                        </div>
+                      )}
+                      {check.found && check.found.length > 0 && (
+                        <details className="mt-1 text-[11px] text-sol-muted">
+                          <summary className="cursor-pointer">Fundet i DNS</summary>
+                          <ul className="mt-1 list-disc space-y-0.5 pl-4 font-mono">
+                            {check.found.map((value, i) => (
+                              <li key={i} className="break-all">{value}</li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                    {isProblem && (
+                      <div className="md:justify-self-end">
+                        <ExplainButton
+                          contextType="dns-check-fail"
+                          contextData={{
+                            label: check.label,
+                            status: check.status,
+                            expectedHint: check.expectedHint,
+                            found: check.found,
+                            detail: check.detail,
+                            domain: verifyResult.domain,
+                          }}
+                        />
                       </div>
                     )}
-                    {check.found && check.found.length > 0 && (
-                      <details className="mt-1 text-[11px] text-sol-muted">
-                        <summary className="cursor-pointer">Fundet i DNS</summary>
-                        <ul className="mt-1 list-disc space-y-0.5 pl-4 font-mono">
-                          {check.found.map((value, i) => (
-                            <li key={i} className="break-all">{value}</li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

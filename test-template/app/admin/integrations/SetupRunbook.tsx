@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { toggleManualChecklistItemAction } from "./actions";
 import type { SetupItem, SetupItemCategory, SetupItemStatus } from "@/lib/setup-status";
+import ExplainButton from "@/components/admin/ExplainButton";
 
 type Props = {
   items: SetupItem[];
@@ -186,6 +187,16 @@ export default function SetupRunbook({
                     </div>
 
                     <div className="flex items-start gap-2 md:justify-end">
+                      {(item.status === "missing" || item.status === "warning") && (
+                        <ExplainButton
+                          contextType="setup-item-missing"
+                          contextData={{
+                            label: item.label,
+                            description: item.description,
+                            category: item.category,
+                          }}
+                        />
+                      )}
                       {item.setupHref && (
                         <a
                           href={item.setupHref}
