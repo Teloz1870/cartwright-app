@@ -1,0 +1,69 @@
+---
+title: Pull modeller fra admin-UI
+description: Klik en knap, se live download-progress, skift mellem Gemma-varianter uden at åbne terminalen.
+---
+
+Når du har installeret Ollama er der intet du nogensinde behøver gøre i terminal igen. Cartwright's admin har en **Pull this model**-knap der orchestrerer hele download-flowet og viser progress live.
+
+## Forudsætning
+
+- Ollama er installeret og kørende på `localhost:11434` (eller en endpoint du har konfigureret). Se [Setup Ollama](/docs/ai/local-ai/ollama-setup) hvis ikke.
+- Du er logget ind som admin.
+
+## Flow
+
+<Steps>
+
+1. **Åbn `/admin/integrations`** og vælg **Local** under "AI provider".
+
+2. **Klik "Hent modeller"**. Hvis Ollama svarer men ingen modeller er installeret, ser du tre anbefaling-kort:
+
+   - **Tiny** — gemma4:e2b (7.2 GB, 8 GB+ RAM, read-only tools)
+   - **Anbefalet** — gemma4:e4b (9.6 GB, 16 GB+ RAM, low-risk-writes)
+   - **Power** — gemma4:26b (18 GB, 32 GB+ RAM, alle 37 tools)
+
+   På en Apple Silicon Mac vælger Cartwright automatisk `-mlx`-varianten af e2b og e4b (markant hurtigere på M-series chips).
+
+3. **Klik "Pull"-knappen på det kort du vil have**. Cartwright POSTer til `/api/admin/ai/ollama-pull` som streamer Ollama's pull-progress via Server-Sent Events. Du ser:
+
+   ```
+   downloading                                           42%
+   ████████████████░░░░░░░░░░░░░░░░░░░░
+   ```
+
+   Status'en opdateres real-time fra "pulling manifest" → "downloading" → "verifying sha256" → "success". Hele forløbet tager 2-15 minutter afhængig af din internet-forbindelse.
+
+4. **Når pull'en er færdig**, dukker modellen automatisk op i Model-dropdown'en og bliver auto-valgt. Du behøver ikke klikke "Hent modeller" igen.
+
+5. **Klik "Gem settings"** og dernæst **"Test forbindelse"** for at verificere den faktisk svarer.
+
+</Steps>
+
+## Hvad sker der under hætten?
+
+- **Allow-list:** Pull-endpointet validerer model-navnet mod en hardcoded liste (Gemma 3/4, Llama 3.x, Qwen). Du kan ikke pulle vilkårlige tags fra Ollama-registry'et — det er defense-in-depth mod corrupted DB-state.
+- **Audit-log:** Hver pull-attempt logges to gange — én ved start (`errorMsg="pull started"`) og én ved finish (`ok=true` eller `false` med fejlbesked). Filtrér `/admin/audit` på `tool="ollama.pull"` for at se historik.
+- **Cancellation:** Lukker du tabben midt i en pull, propagerer aborten til Ollama via `AbortSignal`. Halvkomplette downloads forbliver i Ollama's cache og kan resumes ved næste forsøg.
+- **Cost:** Pull'en koster intet — det er Ollama der downloader fra deres registry. Cartwright proxyer kun progress-streamen.
+
+## Hvad hvis det fejler?
+
+**"Model 'foo' er ikke i allow-listen"** — model-navnet matchede ikke allow-list'en. Tjek staveformer (`gemma4:e4b`, ikke `gemma-4-e4b`) eller pull manuelt via terminal og opdater listen i [`lib/ai/client.ts`](https://github.com/cartwright/cartwright/blob/main/test-template/app/api/admin/ai/ollama-pull/route.ts).
+
+**"Ollama returnerede 404"** — Ollama-endpointet er forkert. Tjek `/admin/integrations` "AI provider"-sektionen og sørg for at endpoint-URL'en peger på en kørende Ollama-instans.
+
+**Pull går i stå halvvejs** — Ollama's egen retry-logik håndterer kortvarige netværks-glitches. Hvis pull'en hænger >5 min uden progress, refresh siden og prøv igen. Ollama caches partial downloads så du ikke starter forfra.
+
+**Permission error** — `/api/admin/ai/ollama-pull` kræver admin-role. Hvis du ser 401, log ind igen.
+
+## Skifte mellem modeller
+
+Du kan pulle flere modeller og skifte mellem dem i Model-dropdown'en. Aktuelt valg gemmes i `IntegrationSettings.localAiModel` og slår igennem instantanly — næste chat-besked bruger den nye model.
+
+Ollama beholder modeller i ~/.ollama/models indtil du eksplicit fjerner dem med `ollama rm <model>` (terminal — pull-fra-admin har ikke en delete-knap i v1).
+
+## Hvor finder jeg listen over hvad jeg har pulled?
+
+- **Admin-UI:** `/admin/integrations` → "Hent modeller"-knap viser alle pulled modeller med deres capability-tier
+- **Terminal:** `ollama list`
+- **Audit-log:** filtrér på `tool="ollama.pull"` for historik

@@ -1,8 +1,9 @@
 {
-  "title": "Lokal AI (Ollama + Gemma)",
+  "title": "Lokal AI (Ollama + Gemma 4)",
   "pages": [
     "index",
     "ollama-setup",
+    "pulling-models",
     "model-selection",
     "providers",
     "troubleshooting"

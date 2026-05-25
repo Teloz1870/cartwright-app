@@ -38,15 +38,17 @@ ollama list
 Tjek at den model du har sat i `/admin/integrations` faktisk er i listen. Hvis ikke:
 
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma4:e4b
 ```
+
+Eller pull via admin-UI — se [Pull fra admin-UI](/docs/ai/local-ai/pulling-models).
 
 ## "Tool call failed" — Gemma laver fejlende argumenter
 
-Almindeligt for 4B-modeller på write-tools. To fixes:
+Almindeligt for 2B/e2b-modeller på write-tools. To fixes:
 
-1. **Skift til en større model** — `ollama pull gemma3:12b` og opdater i `/admin/integrations`
-2. **Forstå capability-tier** — 4B er cappet til read-only tools af denne grund. Hvis du vil have write-tools lokalt, brug 12B eller 27B.
+1. **Skift til en større model** — `ollama pull gemma4:e4b` (eller `e4b-mlx` på Apple Silicon) og opdater i `/admin/integrations`
+2. **Forstå capability-tier** — e2b er cappet til read-only tools af denne grund. Hvis du vil have write-tools lokalt, brug e4b eller 26b.
 
 Se [Model Selection](/docs/ai/local-ai/model-selection) for tier-mapping.
 
@@ -58,7 +60,7 @@ Du kan "warm up" modellen ved at sende en lille request første gang:
 
 ```bash
 curl http://localhost:11434/api/generate -d '{
-  "model": "gemma3:12b",
+  "model": "gemma4:e4b",
   "prompt": "ok",
   "stream": false
 }'
@@ -94,14 +96,17 @@ Self-host er den enkleste vej og det vi anbefaler i 99% af tilfældene. Det er o
 
 Tjek:
 
-- Du har nok RAM (Gemma 3 12B kræver ~9 GB; hvis du har under 16 GB total, swapper systemet)
+- Du har nok RAM (gemma4:e4b kræver ~10 GB; hvis du har under 16 GB total, swapper systemet)
 - Ingen tunge processer (Docker, Photoshop, andre LLM'er) tager hukommelse samtidigt
-- Du kører ikke en større model end din hardware kan (27B på 16 GB maskine = swapping)
+- Du kører ikke en større model end din hardware kan (gemma4:26b på 16 GB maskine = swapping)
+- På Apple Silicon: brug `-mlx`-varianten — den er markant hurtigere end den generiske bygning
 
 Skift til en mindre model:
 
 ```bash
-ollama pull gemma3:4b
+ollama pull gemma4:e2b-mlx  # Apple Silicon
+# eller
+ollama pull gemma4:e2b
 ```
 
 Og opdater i `/admin/integrations`.

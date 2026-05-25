@@ -1,29 +1,31 @@
 ---
-title: Lokal AI — Gemma via Ollama
-description: Kør Cartwright's admin copilot på din egen maskine med Ollama + Gemma. Gratis, privat, samme security-model som cloud.
+title: Lokal AI — Gemma 4 via Ollama
+description: Kør Cartwright's admin copilot på din egen maskine med Ollama + Gemma 4. Gratis, privat, samme security-model som cloud.
 ---
 
 Cartwright's admin har en AI-copilot der kan kalde 37 forskellige tools — fra produkt-CRUD til ordre-management til marketing-kampagner. Som default bruger den Claude Haiku 4.5 via Anthropic's API.
 
-Med **Local AI** kører hele systemet på din egen maskine via [Ollama](https://ollama.com). Du installerer en model (fx Gemma 3 12B), peger Cartwright på `http://localhost:11434/v1`, og fra det øjeblik håndteres alle admin-AI-kald lokalt.
+Med **Local AI** kører hele systemet på din egen maskine via [Ollama](https://ollama.com). Du installerer **Gemma 4** (Google's nyeste open-source-model, multimodal med 128K-256K context), peger Cartwright på `http://localhost:11434/v1`, og fra det øjeblik håndteres alle admin-AI-kald lokalt.
 
 ## Hvad det betyder konkret
 
 - **Ingen data forlader dit netværk** — ikke kundens emails, ikke ordre-detaljer, ikke prompts du tester
-- **Ingen cloud-omkostning** — Gemma er gratis at køre, du betaler kun for hardware
+- **Ingen cloud-omkostning** — Gemma 4 er gratis at køre, du betaler kun for hardware
 - **Samme features** — confirmation-gates, audit-log, scope-enforcement fungerer identisk
-- **Privacy som default** — self-hosted Cartwright free tier får full lokal AI ud af boksen
+- **Multimodal som default** — Gemma 4 håndterer både tekst og billeder, samme som Gemini
+- **Apple Silicon-optimeret** — MLX-varianten (`gemma4:e4b-mlx`) kører markant hurtigere på M-series Macs
 
 ## Hvad du har brug for
 
-- En maskine med 16+ GB RAM (Gemma 3 12B fitter på 8GB i 4-bit kvantisering, men 16GB anbefales for at have hovedrum)
+- En maskine med 16+ GB RAM (vores anbefalede `gemma4:e4b` fitter på 16GB)
 - macOS, Linux eller Windows (Ollama supporterer alle tre)
 - 5-10 minutter til at installere + pulle en model
 
 <Cards>
   <Card title="1. Setup Ollama" href="/docs/ai/local-ai/ollama-setup" />
   <Card title="2. Vælg din model" href="/docs/ai/local-ai/model-selection" />
-  <Card title="3. Forstå provider-routing" href="/docs/ai/local-ai/providers" />
+  <Card title="3. Pull fra admin-UI" href="/docs/ai/local-ai/pulling-models" />
+  <Card title="4. Forstå provider-routing" href="/docs/ai/local-ai/providers" />
   <Card title="Troubleshooting" href="/docs/ai/local-ai/troubleshooting" />
 </Cards>
 

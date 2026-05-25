@@ -1,16 +1,17 @@
 ---
 title: Hvilken model skal jeg vælge?
-description: Trade-offs mellem Gemma 3 sizes, plus capability matrix der bestemmer hvilke tools modellen får adgang til.
+description: Trade-offs mellem Gemma 4 varianter (plus Gemma 3 legacy) og capability matrix der bestemmer tool-access.
 ---
 
 ## TL;DR — anbefalinger
 
-| Use case | Anbefalet model | RAM | Tool-tier |
-|---|---|---|---|
-| Production shop, almindelig hardware | **Gemma 3 12B** | 16 GB | Lav-risk writes (~15 tools) |
-| High-end workstation, maks kvalitet | **Gemma 3 27B** | 32 GB | Alle 37 tools |
-| Laptop, minimal hardware | **Gemma 3 4B** | 8 GB | Læs-only (~10 tools) |
-| Testing eller heavy reasoning | **Llama 3.3 70B** | 64 GB | Alle 37 tools |
+| Use case | Anbefalet model | Size | RAM | Tool-tier |
+|---|---|---|---|---|
+| Production shop, almindelig hardware | **gemma4:e4b** (`e4b-mlx` på Apple Silicon) | 9.6 GB | 16 GB+ | Lav-risk writes (~15 tools) |
+| High-end workstation, maks kvalitet | **gemma4:26b** | 18 GB | 32 GB+ | Alle 37 tools |
+| Tiny laptop, 8GB RAM | **gemma4:e2b** (`e2b-mlx` på Apple Silicon) | 7.2 GB | 8 GB+ | Læs-only (~10 tools) |
+| Niche, langsomst men dybeste reasoning | **gemma4:31b** | 20 GB | 32 GB+ | Alle 37 tools |
+| Testing alternativ open-source | **Llama 3.3 70B** | 40 GB | 64 GB | Alle 37 tools |
 
 ## Capability matrix
 
@@ -20,52 +21,88 @@ Cartwright capper hvilke admin-tools en model får adgang til, baseret på model
 - **`low-risk-writes`** — ovenstående + sikre writes (`pages.upsert`, `categories.upsert`, `discounts.toggle`, `images.search_unsplash`, `products.attach_image`). Cirka 15 tools.
 - **`all`** — alle 37 admin-tools inkl. destruktive writes (`products.delete`, `orders.update_status`, `marketing.create_campaign`, `audit.revert`).
 
-Hvorfor cap'es det? Fordi small-models laver tool-call-fejl. Gemma 3 4B kan godt sige *"jeg vil kalde `products.delete` på slug 'foo'"*, men når Zod validerer args mod schema, fejler det ofte. Bedre at vise færre tools end at admin spørger AI'en og får "AI prøvede og fejlede" som svar.
+Hvorfor cap'es det? Fordi small-models laver tool-call-fejl. En 2-4B-model kan godt sige *"jeg vil kalde `products.delete` på slug 'foo'"*, men når Zod validerer args mod schema, fejler det ofte. Bedre at vise færre tools end at admin spørger AI'en og får "AI prøvede og fejlede" som svar.
 
-## Per-model spec
+## Gemma 4 — anbefalet stack
 
-### Gemma 3 12B (anbefalet)
+Gemma 4 er Google's nyeste open-source-model: multimodal (text + image), 128K-256K context window, og MLX-optimerede varianter for Apple Silicon. Vores capability-tier er konservativt valgt — bump'es efter empirisk verifikation.
 
-```bash
-ollama pull gemma3:12b
-```
-
-- **Storrelse:** ~7 GB download, ~9 GB i RAM (4-bit kvantisering)
-- **Latency:** 2-8 sek pr. svar (varierer med spørgsmål-kompleksitet)
-- **Sweet spot** mellem kvalitet og hardware-krav. Håndterer rolige tool-flows pålideligt.
-- **Tool-tier:** `low-risk-writes`
-
-### Gemma 3 27B (max kvalitet)
+### gemma4:e4b / gemma4:e4b-mlx (anbefalet)
 
 ```bash
-ollama pull gemma3:27b
+# Apple Silicon (M1/M2/M3/M4)
+ollama pull gemma4:e4b-mlx
+
+# Linux / Intel Mac / Windows
+ollama pull gemma4:e4b
 ```
 
-- **Storrelse:** ~17 GB download, ~19 GB i RAM
-- **Latency:** 5-15 sek pr. svar
-- **Subjektivt tæt på Claude Haiku 4.5 på admin-tasks**. Hvis du har hardware'en, brug den.
-- **Tool-tier:** `all` — alle 37 admin-tools
+- **Storrelse:** 9.6 GB download
+- **Latency:** 0.5-3 sek pr. svar på Apple Silicon med MLX-variant
+- **Sweet spot** for de fleste shops. Læser + low-risk writes.
+- **Tool-tier:** `low-risk-writes` (~15 tools)
+- **Context:** 128K tokens
 
-### Gemma 3 4B (minimal)
+### gemma4:26b (max kvalitet)
 
 ```bash
-ollama pull gemma3:4b
+ollama pull gemma4:26b
 ```
 
-- **Storrelse:** ~3 GB download, ~4 GB i RAM
-- **Latency:** 1-4 sek pr. svar — hurtigst
-- **God til Explain-knapperne** og simpel chat. Cappet til read-only tools fordi function-calling ikke er pålideligt nok på write-tools.
+- **Storrelse:** 18 GB download
+- **Latency:** 3-12 sek pr. svar
+- **Alle 37 admin-tools** inkl. destruktive operations.
+- **Tool-tier:** `all`
+- **Context:** 256K tokens
+
+### gemma4:e2b / gemma4:e2b-mlx (tiny)
+
+```bash
+# Apple Silicon
+ollama pull gemma4:e2b-mlx
+
+# Andre
+ollama pull gemma4:e2b
+```
+
+- **Storrelse:** 7.2 GB download
+- **Latency:** 0.3-1.5 sek pr. svar med MLX
+- **God til Explain-knapper** og simpel læs-chat. Cappet til read-only tools.
 - **Tool-tier:** `read-only`
 
-### Llama 3.3 70B (heavy)
+### gemma4:31b (niche)
+
+```bash
+ollama pull gemma4:31b
+```
+
+- **Storrelse:** 20 GB download
+- **Latency:** 5-18 sek pr. svar
+- **Lidt bedre reasoning end 26b på lange flows**, men slower. Vælg kun hvis du har specifik use case.
+- **Tool-tier:** `all`
+- **Context:** 256K tokens
+
+## Gemma 3 (legacy — virker stadig)
+
+Cartwright's `MODEL_CAPABILITIES` har stadig entries for Gemma 3 så kunder der allerede har pulled disse modeller kan blive ved med at bruge dem:
+
+| Model | Size | RAM | Tier |
+|---|---|---|---|
+| gemma3:4b | 3 GB | 8 GB | read-only |
+| gemma3:12b | 7 GB | 16 GB | low-risk-writes |
+| gemma3:27b | 17 GB | 32 GB | all |
+
+Migration til Gemma 4 anbefales men ikke obligatorisk — bare pull den nye model og vælg den i admin-UI.
+
+## Llama 3.3 70B (alternativ heavy)
 
 ```bash
 ollama pull llama3.3:70b
 ```
 
-- **Storrelse:** ~40 GB download, ~48 GB i RAM
+- **Storrelse:** 40 GB download, 48 GB i RAM
 - **Latency:** 10-30 sek pr. svar
-- **Bedste open-source reasoning** lige nu. Overkill for de fleste shops, men hvis du har serveren der kører den, kan den håndtere alle 37 tools pålideligt.
+- **Bedste open-source reasoning** for tool-heavy flows. Overkill for de fleste shops.
 - **Tool-tier:** `all`
 
 ## Hvad sker der med en ukendt model?

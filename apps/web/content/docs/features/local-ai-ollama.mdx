@@ -15,7 +15,7 @@ Two fields in `IntegrationSettings`:
 |---|---|---|
 | `aiProvider` | `"anthropic"` (default) \| `"local"` | Which client `lib/ai/client.ts:chatModel()` instantiates |
 | `localAiEndpoint` | URL string | The OpenAI-compatible endpoint Ollama exposes — typically `http://ollama.internal:11434/v1` |
-| `localAiModel` | Model slug | e.g. `"llama3.3:70b"`, `"qwen2.5-coder:32b"`, `"gemma3"` |
+| `localAiModel` | Model slug | e.g. `"gemma4:e4b"`, `"gemma4:26b"`, `"llama3.3:70b"` |
 
 Change them via `/admin/integrations` → "AI provider". The change takes effect within the 30-second key cache window — no redeploy.
 

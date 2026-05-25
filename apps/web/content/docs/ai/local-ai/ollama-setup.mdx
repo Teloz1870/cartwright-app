@@ -1,6 +1,6 @@
 ---
 title: Setup Ollama
-description: Installer Ollama, pull en Gemma-model, og pege Cartwright på det. ~10 minutter.
+description: Installer Ollama, pull en Gemma 4-model, og pege Cartwright på det. ~10 minutter.
 ---
 
 ## 1. Installer Ollama
@@ -47,21 +47,31 @@ Download installer fra [ollama.com/download/windows](https://ollama.com/download
 
 ## 2. Pull en model
 
-Anbefalet til Cartwright admin: **Gemma 3 12B** (sweet spot mellem kvalitet og hardware-krav).
+**Hurtigste vej:** spring til [Pull fra admin-UI](/docs/ai/local-ai/pulling-models) — admin har en knap der pull'er modellen og viser progress live, så du aldrig skal åbne terminalen igen efter Ollama er installeret.
+
+Hvis du foretrækker terminal: anbefalet til Cartwright admin er **Gemma 4 e4b** (sweet spot mellem kvalitet og hardware-krav).
 
 ```bash
-ollama pull gemma3:12b
+# Apple Silicon (M1/M2/M3/M4)
+ollama pull gemma4:e4b-mlx
+
+# Linux / Intel Mac / Windows
+ollama pull gemma4:e4b
 ```
 
-Det downloader ~7 GB. Hvis du har en kraftigere maskine:
+Det downloader ~9.6 GB. Hvis du har en kraftigere maskine:
 
 ```bash
-# 27B model — bedst kvalitet, kræver 32GB+ RAM
-ollama pull gemma3:27b
+# 26B model — bedst kvalitet, kræver 32GB+ RAM
+ollama pull gemma4:26b
 
-# 4B model — minimal hardware-fodaftryk, kører på laptops
-ollama pull gemma3:4b
+# Lille variant — kører på 8GB laptops, men kun læs-only tools
+ollama pull gemma4:e2b
 ```
+
+Har du allerede Gemma 3 pulled fra før? Det virker stadig — Cartwright's
+`MODEL_CAPABILITIES` har entries for både Gemma 3 og 4. Du kan migrere over
+tid uden at miste konfiguration.
 
 Se [Model Selection](/docs/ai/local-ai/model-selection) for at forstå trade-offs.
 
@@ -140,20 +150,20 @@ I admin:
 2. Find sektionen **"AI provider"**
 3. Vælg **Local** (eller **Auto** hvis du også vil have cloud-fallback)
 4. Indsæt endpoint: `http://localhost:11434/v1`
-5. Klik **"Hent modeller"** — du skulle se din pullede model i listen
+5. Klik **"Hent modeller"** — du skulle se din pullede model i listen. Har du ingen modeller endnu? Anbefaling-kortene viser tre Gemma 4-varianter med "Pull this model"-knap — se [Pull fra admin-UI](/docs/ai/local-ai/pulling-models).
 6. Vælg modellen
 7. Klik **"Gem settings"**
-8. Klik **"Test forbindelse"** — du skulle få "✓ local · gemma3:12b · ~1500ms"
+8. Klik **"Test forbindelse"** — du skulle få "✓ local · gemma4:e4b-mlx · ~800ms"
 
 </Steps>
 
 ## 5. Verificér
 
-Status-pill nederst-højre i admin viser nu **🔒 Local AI · gemma3:12b**.
+Status-pill nederst-højre i admin viser nu **🔒 Local AI · gemma4:e4b-mlx**.
 
-Gå til `/admin/integrations/ai-test`, klik **"Kør alle 3"**. Hver canned prompt skulle besvares af din lokale Gemma med latency mellem 1-15 sekunder (første kald er langsomst pga. model-load).
+Gå til `/admin/integrations/ai-test`, klik **"Kør alle 3"**. Hver canned prompt skulle besvares af din lokale Gemma med latency mellem 0.5-8 sekunder (første kald er langsomst pga. model-load; MLX-varianten er markant hurtigere på M-series Macs end ikke-MLX).
 
-Gå til `/admin/audit` og find seneste rows — de viser nu `provider="local"`, `model="gemma3:12b"`. Det er din bekræftbarhed på at intet gik til Anthropic.
+Gå til `/admin/audit` og find seneste rows — de viser nu `provider="local"`, `model="gemma4:e4b-mlx"`. Det er din bekræftbarhed på at intet gik til Anthropic.
 
 ## Hvis du støder ind i problemer
 
