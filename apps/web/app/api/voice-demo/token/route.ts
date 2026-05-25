@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
-import { checkBotId } from "@vercel/botid";
+import { checkBotId } from "botid/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
