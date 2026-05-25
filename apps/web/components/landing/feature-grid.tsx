@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Section, SectionHeader } from '@/components/landing/section';
 
 const features = [
@@ -125,6 +126,15 @@ export function FeatureGrid() {
           </div>
         ))}
       </div>
+      <p className="mt-6 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
+        Want the integration-by-integration story instead — Stripe, Resend, Vercel, Turso, Sentry, the AI providers, all wired?{' '}
+        <Link
+          href="/docs/in-the-box"
+          className="font-medium text-cw-terracotta hover:underline"
+        >
+          See what's in the box →
+        </Link>
+      </p>
     </Section>
   );
 }

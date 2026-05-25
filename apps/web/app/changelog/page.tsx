@@ -40,6 +40,9 @@ const RELEASES = [
       'Global Auto-Translation: Built-in Google Gemini Flash automatically translates Vibe designs globally while preserving code.',
       'Themes & AI Design dashboard in the admin panel.',
       'New Setup Wizard with email and Vercel domain flow.',
+      'Setup wizard at /admin/setup walks brand → theme → API keys → first category → completion. Every key round-trip-validated before save.',
+      'Stripe Elements wired with appearance block driven by brand.config.ts — Payment Element + webhooks + mock fallback for local-dev work without real Stripe traffic.',
+      'Vercel domain flow integrated into the setup wizard — pick a domain, Cartwright prints the DNS records, polls until verified.',
     ],
   },
   {
@@ -53,6 +56,9 @@ const RELEASES = [
       'MCP (Model Context Protocol) Server endpoints enabled out-of-the-box.',
       'llms.txt generation for AI search engines (Perplexity, OpenAI).',
       'Phone.inc Cloud telephony integration directly in the browser.',
+      'Anthropic SDK + Gemini SDK both wired via the Vercel AI SDK — same chatModel() accessor, swap providers with one field in IntegrationSettings.',
+      'i18nexus cloud strings for storefront copy translation — no manual locale-JSON management.',
+      'DB-first secret storage via lib/secret-encryption.ts (AES-256-GCM): paste a key in /admin/integrations, no .env edit, no redeploy.',
     ],
   },
   {
@@ -66,6 +72,10 @@ const RELEASES = [
       'i18nexus cloud integration for standard texts.',
       'Dark Mode SaaS support out-of-the-box.',
       'Stripe Checkout B2B subscriptions added.',
+      'Turso (libSQL) as the default database — point-in-time restore, edge-replicated, managed SQLite that survives a Vercel function cold start in under 50ms.',
+      'Sentry error tracking + performance traces wired with build-time source-map upload via SENTRY_AUTH_TOKEN.',
+      'Upstash Redis for lib/rate-limit.ts — per-IP and per-API-key throttling without standing up your own Redis.',
+      'Custom domain on Vercel: /admin/setup walkthrough prints the exact A/CNAME records, then verifies Resend SPF/DKIM/DMARC on the same domain so transactional email is deliverable from go-live day.',
     ],
   },
   {
@@ -78,6 +88,10 @@ const RELEASES = [
       'Prisma DB schema and basic CRUD for products and pages.',
       'Admin panel with Stripe Webhooks.',
       'Vercel Edge Network optimizations.',
+      'NextAuth magic-link sign-in via Resend transactional templates — no third-party identity vendor lock-in from day one.',
+      'Resend wired for order confirmation + magic-link emails, with a .mail-previews/ dev fallback so local development never burns email credits.',
+      'Vercel Blob image uploads with signed URLs and per-product image variants — no S3 bucket setup, no CloudFront config.',
+      'One-click Vercel deploy with the storefront + admin compiled as a single Next.js app — no separate dashboard hosting.',
     ],
   },
 ];

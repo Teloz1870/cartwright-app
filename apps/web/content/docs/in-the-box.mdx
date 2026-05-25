@@ -1,0 +1,95 @@
+---
+title: In the box
+description: Every integration that ships pre-wired so a Cartwright shop can go live in an afternoon.
+---
+
+A Cartwright shop ships with the integrations that normally take a sprint each to wire — payments, email, auth, hosting, database, storage, observability, rate limiting, i18n, and the AI providers. Paste a key in `/admin/setup` and the storefront is already calling the right SDK behind it. The CLI scaffolds the wiring; the wizard collects the keys; the deploy happens on Vercel; the first real order is possible in an afternoon, not a quarter.
+
+This page is the integration-by-integration tour. The [Feature Grid](/) on the home page lists capabilities; this page lists the platforms underneath them.
+
+## Payments → Stripe
+
+Stripe is the default payment processor. Cartwright ships with Stripe Elements (Payment Element, not the legacy Checkout page) so the checkout UI lives inside your storefront, styled by `brand.config.ts:stripeAppearance`. Webhook handling is wired at `/api/stripe/webhook` with signature verification and idempotency keys; payment-intent state transitions land in `Order` rows and the audit log in the same transaction.
+
+For local development there's a mock-mode fallback — the test key prefix toggles a stubbed processor that produces realistic success and failure paths without sending real traffic. Test mode vs live mode is a switch in `/admin/integrations`; no redeploy.
+
+Keys are DB-first via `lib/secret-encryption.ts` (AES-256-GCM). Paste them into the setup wizard, rotate them whenever. The Vercel env var only holds the encryption seed.
+
+## Email → Resend
+
+Resend handles every transactional email a shop sends — order confirmation, shipping update, magic-link sign-in, customer service replies. Templates live in `lib/email/templates/` as React components; preview them in dev at `.mail-previews/` without burning credits.
+
+Custom domain setup is part of the same setup wizard that handles Vercel DNS: pick a domain, Cartwright generates the SPF, DKIM, and DMARC records, then polls Resend until verification reports green. From the merchant's seat it's "fill in a domain, wait a minute"; the underlying flow is the same one you'd otherwise read three blog posts to assemble.
+
+## Authentication → NextAuth + Resend
+
+Magic-link sign-in via NextAuth (Auth.js). Resend ships the actual email; NextAuth runs the token machinery. No password store, no third-party identity vendor, no SOC 2 dependency on someone else's auth provider. Your `User` and `Session` tables live in your own database; users own their accounts.
+
+For shops that want OAuth providers added (Google, GitHub, Apple), the NextAuth `providers` array in `app/api/auth/[...nextauth]/route.ts` is the one place to extend. The rest of the auth surface — middleware, route protection, admin gating — keeps working as-is.
+
+## Hosting → Vercel
+
+One Next.js app, one deploy. The storefront, admin, agent endpoints, MCP server, and ACP routes all compile into the same Vercel project. Preview branches deploy automatically — every PR gets a URL. Production promotes by merge.
+
+Custom domains are handled by the setup wizard: paste the domain, Cartwright prints the DNS records (`A` + `CNAME` + the Vercel verification record), and waits until both Vercel and Resend report verified. Source-map upload to Sentry happens in the same build.
+
+Fluid Compute is the default runtime — Node.js everywhere, including middleware. No edge-runtime compatibility dance, no separate function bundles for different routes.
+
+## Database → Turso
+
+Turso is the default database (managed libSQL — a fork of SQLite). Edge-replicated, point-in-time restore, sub-50ms reads from a Vercel function cold start. `DATABASE_URL` + `TURSO_AUTH_TOKEN` is the entire setup; Prisma uses the libSQL adapter so the schema and migrations look exactly like a standard Prisma project.
+
+For local development a file-based SQLite database is the canonical fallback — `prisma migrate dev` works against `dev.db` without any network. Switching to Turso for production is two env vars and a `prisma migrate deploy`.
+
+## File storage → Vercel Blob
+
+Product images, category covers, generated Luma video clips, OG images — all land in Vercel Blob via signed-URL uploads from the admin. Image variants (thumbnail, card, hero) are produced on demand; you don't pre-render every size at upload time.
+
+The integration with `next/image` is direct — Blob URLs are recognised as remote patterns automatically, so optimisation, format conversion, and CDN delivery come for free.
+
+## Observability → Sentry
+
+Error tracking and performance traces are pre-wired. Builds upload source maps via `SENTRY_AUTH_TOKEN` so production stack traces resolve to your actual TypeScript. Server-side, every API route is wrapped; client-side, the React error boundary integrates with Sentry's session replay.
+
+Cost-control sampling is configured by default (`tracesSampleRate: 0.1` in production). The dev environment doesn't send to Sentry at all unless you explicitly opt in — local errors stay on your machine.
+
+## Rate limiting → Upstash
+
+Upstash Redis backs `lib/rate-limit.ts:createRateLimiter()`. Per-IP and per-API-key throttling is already applied to storefront chat, agent endpoints, admin write actions, and the negotiation surface. The limits are configurable per route; the defaults are tuned for typical shops with one or two attached buyer agents.
+
+For shops that don't want managed Redis, the limiter falls back to a process-local LRU cache — single-instance correctness, multi-instance approximate. The Upstash env vars being absent is fine; the limiter just downgrades silently.
+
+## i18n → i18nexus
+
+i18nexus is the cloud strings platform for storefront copy. UI labels, error messages, and category-page templates live in i18nexus; the Cartwright app pulls them at build time and falls back to the source locale at runtime. No manual locale-JSON file management, no missing-translation crashes in production.
+
+For dynamic content — product descriptions, page bodies, vibe-pushed HTML — the [Vibe Coding](/docs/features/vibe-coding) translation pipeline takes over: Gemini auto-translates per locale and stores the result on the entity. The two together cover both UI strings and AI-generated body content.
+
+## AI & agents → Anthropic, Gemini, Ollama, MCP
+
+`lib/ai/client.ts:chatModel()` is the single accessor for every text-generating path in the app. The provider is chosen by one field in `IntegrationSettings` — `aiProvider: "anthropic"` (default), `"local"` (Ollama), or any other OpenAI-compatible endpoint. Storefront chat, admin AI features, and tool-orchestration calls all follow the same toggle.
+
+Gemini is wired separately for image-aware tasks: palette extraction, Vibe translation, reference-image-driven composition. There's no "swap Gemini for X" knob — the image-specific paths stay on Gemini.
+
+The MCP server at `/api/mcp` exposes a typed tool registry to external agents — discover by `/.well-known/mcp.json`, connect with any MCP-speaking client. Auth is API-key based with per-key scopes; rate limiting is already on.
+
+## How fast can you actually go live?
+
+The path looks like this:
+
+1. `npx create-cartwright my-shop` scaffolds the template.
+2. `vercel link && vercel deploy` ships a build with mock keys.
+3. Open `/admin/setup` on the preview URL. Step through brand → theme → API keys → first category. Keys go into the encrypted store: Anthropic (or Ollama), Stripe (test mode pre-filled), Resend, Vercel Blob (auto-issued by Vercel), Sentry optional.
+4. Add a domain in the wizard. DNS records are printed; verification polls; you wait a minute.
+5. First product, first category, first order possible.
+
+That's an afternoon of work for a developer who's seen this stack once before. A team that hasn't will spend a day; a team setting up Stripe + Resend + Turso + Vercel + Sentry from scratch usually spends a sprint.
+
+Honest about what's **not** in the box: your product catalogue, your brand assets (logo, photography, copy), your team's hiring pipeline, your tax-jurisdiction-specific accounting. Cartwright ships the rails; the train is yours.
+
+<Cards>
+  <Card title="Setup wizard" href="/docs/features/setup-wizard" />
+  <Card title="Deployment → Vercel" href="/docs/deployment/vercel" />
+  <Card title="Configuration → env vars" href="/docs/configuration/env-vars" />
+  <Card title="FAQ" href="/docs/faq" />
+</Cards>
