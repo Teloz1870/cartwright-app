@@ -65,6 +65,13 @@ export const brand = {
     newsletter: true,
     /** Eksponér /api/mcp + /api/v1/tools offentligt (PR-signal for AI-first shops) */
     mcpPublic: true,
+    /**
+     * Gemini Live voice + vision shopping (FAB mic-knap). Off som default
+     * fordi det kræver Google Gemini API key + admin-opt-in i
+     * /admin/integrations. Compile-time gate; runtime-gate sker via
+     * IntegrationSettings.voiceShopEnabled.
+     */
+    voiceShop: false,
   },
 
   // ─── Policies ────────────────────────────────────────────────────────────

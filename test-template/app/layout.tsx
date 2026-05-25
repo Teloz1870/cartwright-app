@@ -7,6 +7,7 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AIStylistButton from "@/components/AIStylistButton";
+import VoiceShopMount from "@/components/voice/VoiceShopMount";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,8 @@ export default async function RootLayout({
         <Footer />
         {/* Feature-flag: shops uden AI-stylist (fx panel-hegn) skipper denne mount */}
         {brand.features.aiStylist && <AIStylistButton />}
+        {/* Voice-plan: dobbelt-gated bag brand.features.voiceShop + DB-config. */}
+        <VoiceShopMount />
       </body>
     </html>
   );
