@@ -1,0 +1,147 @@
+---
+title: Modtag mail på dit domæne — gratis
+description: Tre gratis måder at få mail leveret til hello@dit-domæne.dk — Cloudflare Email Routing, ImprovMX og Zoho Mail. Sammenlign og vælg.
+---
+
+Resend sender mail fra din shop, men kan ikke modtage den. For at kunne tage imod kundesvar på `hello@dit-domæne.dk` skal du have en separat indbakke-løsning. Her er de tre gratis muligheder — alle tre fungerer fint side om side med Resend og kræver kun et par DNS-records.
+
+## Sammenligning
+
+| Løsning | Pris | Indbakke-type | Kræver | Aliases | Bedst til |
+|---|---|---|---|---|---|
+| **Cloudflare Email Routing** | Gratis (for altid) | Forwarding til din Gmail/iCloud | Cloudflare som DNS-udbyder | Ubegrænset | Allerede på Cloudflare, vil bruge eksisterende Gmail |
+| **ImprovMX** | Gratis (paid fra $9/md) | Forwarding | Ingen — virker med enhver DNS | 1 gratis | Hurtig start, ingen DNS-flytning |
+| **Zoho Mail** | Gratis op til 5 brugere | Rigtig indbakke (webmail + IMAP) | Lidt mere DNS-setup + DKIM | 5 brugere | Vil have rigtig inbox uden Gmail-kobling |
+
+**Anbefaling:** Hvis dit domæne kan flyttes til Cloudflare DNS, brug Cloudflare Email Routing — det er den enkleste og mest robuste løsning. Hvis ikke, vælg ImprovMX for hurtigt setup eller Zoho hvis du vil have en rigtig indbakke i stedet for forwarding.
+
+<Callout type="info">
+**Forwarding vs. rigtig indbakke:** Cloudflare og ImprovMX videresender mail til din eksisterende Gmail/iCloud-konto — du svarer fra den konto (eventuelt med "Send as" konfiguration). Zoho giver dig en rigtig indbakke på dit domæne med webmail og IMAP — du logger ind hos Zoho og skriver direkte derfra.
+</Callout>
+
+## Cloudflare Email Routing
+
+Forudsætning: dit domæne bruger Cloudflare som DNS-udbyder. Hvis du ikke gør det endnu, skift nameservers først (Cloudflare giver dig instruks når du tilføjer domænet).
+
+<Steps>
+
+1. **Log ind på Cloudflare** og vælg dit domæne.
+
+2. Gå til **Email → Email Routing** i sidebar'en. Klik **Enable Email Routing**.
+
+3. **Cloudflare opretter automatisk MX + SPF records** for dig (du behøver ikke kopiere dem manuelt) — men du skal selv kombinere SPF med Resend's:
+
+   Find den TXT-record Cloudflare tilføjede (`v=spf1 include:_spf.mx.cloudflare.net ~all`) og rediger den til:
+
+   ```
+   v=spf1 include:_spf.mx.cloudflare.net include:_spf.resend.com ~all
+   ```
+
+   <Callout type="warn">
+   Cloudflare opretter SPF uden Resend-include. Hvis du glemmer at flette dem sammen, vil dine udgående Resend-mails fejle SPF check.
+   </Callout>
+
+4. Under **Routes**, opret aliases:
+   - `hello@dit-domæne.dk` → `dit-navn@gmail.com`
+   - `orders@dit-domæne.dk` → samme
+   - `*` (catch-all) → samme (valgfrit, fanger typoes)
+
+5. **Bekræft destination-adressen.** Cloudflare sender en bekræftelses-mail til din Gmail første gang.
+
+6. **Send en testmail** til `hello@dit-domæne.dk` fra en anden konto. Den skal lande i din Gmail inden for sekunder.
+
+</Steps>
+
+For at svare AS `hello@dit-domæne.dk` fra Gmail, opsæt "Send mail as" under Gmail Settings → Accounts (kræver Resend SMTP credentials eller en separat sender).
+
+## ImprovMX
+
+<Steps>
+
+1. **Opret en konto** på [improvmx.com](https://improvmx.com) og tilføj dit domæne.
+
+2. ImprovMX viser dig to MX-records og en SPF-record. Tilføj MX records hos din DNS-udbyder:
+
+   ```
+   MX  @  mx1.improvmx.com  priority 10
+   MX  @  mx2.improvmx.com  priority 20
+   ```
+
+3. **Tilføj eller flet SPF-recorden.** Hvis du allerede har Resend, skal de kombineres til én:
+
+   ```
+   v=spf1 include:spf.improvmx.com include:_spf.resend.com ~all
+   ```
+
+4. **Opret en alias** på ImprovMX dashboardet:
+   - From: `hello@dit-domæne.dk`
+   - To: `dit-navn@gmail.com`
+
+   Gratis tier giver 1 alias. Paid tier ($9/md) giver ubegrænset.
+
+5. **Send en testmail** og bekræft levering.
+
+</Steps>
+
+## Zoho Mail
+
+Zoho giver dig en rigtig indbakke (ikke forwarding) på dit domæne — gratis for op til 5 brugere.
+
+<Steps>
+
+1. **Opret en Zoho Mail-konto** på [zoho.com/mail](https://www.zoho.com/mail/). Vælg **Free plan** (5 brugere, 5GB/bruger).
+
+2. **Tilføj dit domæne** under setup wizard. Vælg data-region: **EU** hvis du er i Danmark/EU (giver dig `.eu` endpoints i alle records nedenfor).
+
+3. **Verificér domain-ownership.** Zoho beder dig oprette en TXT-record:
+
+   ```
+   TXT  @  "zoho-verification=zb<id>.zmverify.zoho.eu"
+   ```
+
+   Tilføj og vent på propagering (~5-30 min). Klik **Verify** i Zoho.
+
+4. **Opret din første bruger** — fx `hello@dit-domæne.dk` med adgangskode. Dette er din primære indbakke.
+
+5. **Tilføj MX records.** For EU-region:
+
+   ```
+   MX  @  mx.zoho.eu      priority 10
+   MX  @  mx2.zoho.eu     priority 20
+   MX  @  mx3.zoho.eu     priority 50
+   ```
+
+   For ikke-EU region: brug `.com` i stedet for `.eu`.
+
+6. **Flet SPF med Resend:**
+
+   ```
+   v=spf1 include:zoho.eu include:_spf.resend.com ~all
+   ```
+
+   (Brug `zoho.com` hvis ikke EU.)
+
+7. **Tilføj DKIM for Zoho.** Under **Zoho Mail Admin → Email Configuration → DKIM**, generér en selector og kopier værdien:
+
+   ```
+   TXT  zoho._domainkey  <DKIM-key-fra-Zoho>
+   ```
+
+   Dette er nødvendigt hvis du sender mail FRA Zoho-indbakken (svar til kunder). Uden DKIM lander dine svar i spam.
+
+8. **Log ind på [mail.zoho.eu](https://mail.zoho.eu)** med `hello@dit-domæne.dk` og send/modtag testmail.
+
+</Steps>
+
+Zoho understøtter også IMAP/SMTP hvis du foretrækker Outlook desktop, Apple Mail eller mobile mail-apps — credentials findes under Zoho Mail Settings → Mail Accounts.
+
+## Hvad nu?
+
+Når din indbakke er live, vend tilbage til:
+
+<Cards>
+  <Card title="Resend — sæt Reply-To korrekt" href="/docs/email/resend-sending" />
+  <Card title="DNS records — verificér alt" href="/docs/email/dns-records" />
+  <Card title="Outlook 365 (hvis du vil opgradere)" href="/docs/email/outlook-365" />
+  <Card title="Fejlfinding" href="/docs/email/troubleshooting" />
+</Cards>

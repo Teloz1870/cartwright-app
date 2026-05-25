@@ -1,0 +1,102 @@
+---
+title: Outlook 365 — professionel mail som primær indbakke
+description: Microsoft 365 Business Basic på dit domæne — Outlook desktop, Teams, kalender og delt postkasse. Sameksisterer med Resend-afsendelse fra shoppen.
+---
+
+For shops der vil have professionel mail som primær (Outlook desktop, Teams, delt kalender, opgaver), er Microsoft 365 Business Basic den letteste vej. Det koster ca. **40 kr/md per bruger** (Business Basic — webmail + Office web apps + 50GB postkasse) eller **75 kr/md** (Business Standard — også desktop Office).
+
+M365 erstatter de gratis indbakke-løsninger (Cloudflare/ImprovMX/Zoho) — du kører ikke dem samtidig. Resend forbliver din udgående afsender fra shoppen, M365 håndterer al kunde-korrespondance.
+
+## Opsætning
+
+<Steps>
+
+1. **Køb Microsoft 365 Business Basic** på [microsoft.com/microsoft-365/business](https://www.microsoft.com/microsoft-365/business). Brug enten dit `.onmicrosoft.com` start-domæne midlertidigt eller spring direkte til domain-setup.
+
+2. **Tilføj dit domæne** under **M365 Admin Center → Setup → Domains → Add domain**. Indtast `dit-domæne.dk`.
+
+3. **Bekræft domain-ownership.** M365 viser dig en TXT-record:
+
+   ```
+   TXT  @  MS=ms<id>
+   ```
+
+   Tilføj hos din DNS-udbyder, vent på propagering, klik **Verify**.
+
+4. **Tilføj de fire DNS-records** M365 viser dig efter ownership-verifikation. De ser sådan ud (udskift `<tenant>` med din faktiske tenant slug):
+
+   ```
+   MX     @                       example-dk.mail.protection.outlook.com   priority 0
+   CNAME  autodiscover            autodiscover.outlook.com
+   CNAME  selector1._domainkey    selector1-example-dk._domainkey.<tenant>.onmicrosoft.com
+   CNAME  selector2._domainkey    selector2-example-dk._domainkey.<tenant>.onmicrosoft.com
+   ```
+
+   MX-hostnavnet bruger bindestreg i stedet for punktum (`example-dk` for `example.dk`). M365 viser det eksakte hostname — kopier eksakt.
+
+5. **Flet SPF med Resend.** M365 vil bede dig oprette `v=spf1 include:spf.protection.outlook.com -all` — **men hvis du allerede har Resend, skal du flette dem og ikke bruge `-all`** (start blødt):
+
+   ```
+   TXT  @  "v=spf1 include:spf.protection.outlook.com include:_spf.resend.com ~all"
+   ```
+
+   <Callout type="warn">
+   M365's wizard foreslår `-all` (hård fail) som default. Brug `~all` (soft fail) i de første 2-4 uger så du fanger eventuelle SPF-fejl uden at blokere legitime mails. Stram til `-all` når DMARC-rapporter (se [dns-records](/docs/email/dns-records#dmarc-alle-scenarier--tilf%C3%B8j-sidst)) er rene.
+   </Callout>
+
+6. **Opret brugere** under **M365 Admin Center → Users → Active users → Add user**:
+   - `hello@dit-domæne.dk` — primær indbakke
+   - `orders@dit-domæne.dk` — hvis du vil have ordrer separat
+   - Evt. flere som distribution lists eller delte postkasser
+
+7. **Log ind på [outlook.office.com](https://outlook.office.com)** med din nye konto. Send og modtag en testmail.
+
+8. **Opdater `brand.config.ts:emails.replyTo`** så kundesvar lander i din M365-indbakke:
+
+   ```ts
+   emails: {
+     from: "Din Shop <orders@dit-domæne.dk>",   // Resend-signed
+     replyTo: "hello@dit-domæne.dk",            // M365-modtaget
+   }
+   ```
+
+</Steps>
+
+## 10-DNS-lookup budget
+
+Resend + M365 bruger ca. 5 af de 10 tilladte SPF-lookups (`spf.protection.outlook.com` ~3 + `_spf.resend.com` ~2). Du har plads til én ekstra include (fx en marketing-platform) før du rammer grænsen. Hold styr på det live med [mxtoolbox.com/spf](https://mxtoolbox.com/spf.aspx).
+
+## Outlook desktop og mobil
+
+Med M365 Business Basic får du **kun webmail + Office web apps** — ikke desktop Office. Hvis du vil have Outlook desktop, opgradér til **Business Standard** (~75 kr/md).
+
+Outlook mobile app fungerer dog på Basic — log ind med din `hello@dit-domæne.dk` konto.
+
+`autodiscover` CNAME-recorden (oprettet i trin 4) lader Outlook desktop/mobile finde dine indstillinger automatisk uden manuel server-konfiguration.
+
+## Delt postkasse uden ekstra licens
+
+Ofte vil du have flere addresser (`hello@`, `support@`, `orders@`) men ikke betale for hver. M365 understøtter **Shared Mailboxes** — gratis op til 50GB hver, knyttet til en eksisterende licens.
+
+Opret under **M365 Admin Center → Teams & groups → Shared mailboxes → Add a shared mailbox**. Tildel dig selv som member. Mails til den delte adresse vises som separate mapper i din Outlook.
+
+## Migrering fra gratis indbakke til M365
+
+Hvis du startede med Cloudflare/ImprovMX/Zoho og opgraderer:
+
+<Steps>
+
+1. **Slet de gamle MX-records** først (Cloudflare/ImprovMX/Zoho MX) — ellers konkurrerer to mail-systemer om indkommende mail.
+2. **Slet den gamle SPF include** (`include:_spf.mx.cloudflare.net` osv.) og erstat med `include:spf.protection.outlook.com`.
+3. **Behold Resend include** uændret — den ændres ikke ved indbakke-skift.
+4. **Behold Resend DKIM** (`resend._domainkey`) — den er på en anden selector end M365's, så de kommer ikke i konflikt.
+5. **Migrér eksisterende mails** med M365's [Migration Manager](https://learn.microsoft.com/en-us/exchange/mailbox-migration/mailbox-migration) hvis du vil have historik over.
+
+</Steps>
+
+<Cards>
+  <Card title="DNS records — alle scenarier" href="/docs/email/dns-records" />
+  <Card title="Resend — Reply-To mønsteret" href="/docs/email/resend-sending" />
+  <Card title="Tilbage til gratis indbakke" href="/docs/email/receive-inbox" />
+  <Card title="Fejlfinding" href="/docs/email/troubleshooting" />
+</Cards>

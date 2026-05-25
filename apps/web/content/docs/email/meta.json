@@ -1,0 +1,11 @@
+{
+  "title": "Email & Domæner",
+  "pages": [
+    "index",
+    "dns-records",
+    "resend-sending",
+    "receive-inbox",
+    "outlook-365",
+    "troubleshooting"
+  ]
+}

@@ -1,0 +1,159 @@
+---
+title: DNS records — komplet oversigt
+description: Hele DNS-zonen samlet ét sted — Vercel (web) + Resend (udgående) + indbakke-udbyder (indkommende) + DMARC. Copy-pastable for hver kombination.
+---
+
+Denne side viser den **komplette DNS-zone** du skal oprette hos din DNS-udbyder (Cloudflare, Simply, Porkbun, GoDaddy, etc.). Skift mellem fanerne for at se den eksakte record-liste for din valgte indbakke-løsning.
+
+<Callout type="warn">
+**SPF skal være ÉN record, ikke flere.** Den mest almindelige fejl er at oprette én TXT-record for Resend og en anden TXT-record for din indbakke-udbyder. Det får mail-modtagere til at afvise dine afsendelser. Kombinér altid `include:` direktiverne i én linje.
+</Callout>
+
+I alle eksempler bruger vi `example.dk` som dit domæne — udskift med dit eget. `<token-fra-X>` betyder at du skal kopiere den eksakte værdi fra det respektive dashboard (Resend, Zoho, M365 osv.).
+
+## Vercel website-records (alle scenarier)
+
+Disse records peger selve sitet — de er ens uanset hvilken mail-løsning du vælger.
+
+```
+Type   Host       Value                          TTL
+A      @          76.76.21.21                    Auto / 3600
+CNAME  www        cname.vercel-dns.com           Auto / 3600
+TXT    _vercel    vc-domain-verify=example.dk,<token>   (kun hvis Vercel beder om det)
+```
+
+Se [Custom Domain](/docs/deployment/custom-domain) for detaljer om www-til-apex redirect og `NEXT_PUBLIC_APP_URL` synkronisering.
+
+## Resend sending-records (alle scenarier)
+
+Disse skal også tilføjes uanset indbakke-valg — det er dem der lader shoppen sende mail fra dit domæne.
+
+```
+Type   Host                 Value                                          Priority
+TXT    resend._domainkey    <DKIM-public-key-fra-Resend>                   —
+MX     send                 feedback-smtp.<region>.amazonses.com           10
+TXT    send                 "v=spf1 include:amazonses.com ~all"            —
+```
+
+Region (`eu-west-1`, `us-east-1` osv.) vises i Resend dashboard når du har valgt sending-region for dit domæne. Brug det eksakte hostname Resend viser dig.
+
+<Callout type="info">
+Resend's DKIM record bruger selector `resend` — dvs. host-feltet er bogstaveligt `resend._domainkey` (eller `resend._domainkey.example.dk` afhængig af din DNS-udbyders konvention). DKIM-værdien er en lang public key — kopier-indsæt eksakt.
+</Callout>
+
+## Kombineret SPF + MX (vælg din indbakke-løsning)
+
+<Tabs items={['Cloudflare Email Routing', 'ImprovMX', 'Zoho Mail', 'Microsoft 365']}>
+
+<Tab value="Cloudflare Email Routing">
+
+**Forudsætning:** Dit domæne skal bruge Cloudflare som DNS-udbyder (dvs. nameservers peger på Cloudflare). Hvis du bruger Simply, Porkbun eller GoDaddy DNS direkte, vælg ImprovMX eller Zoho i stedet.
+
+```
+Type   Host    Value                              Priority
+MX     @       route1.mx.cloudflare.net           13
+MX     @       route2.mx.cloudflare.net           86
+MX     @       route3.mx.cloudflare.net           24
+TXT    @       "v=spf1 include:_spf.mx.cloudflare.net include:_spf.resend.com ~all"
+```
+
+Email Routing aktiveres i Cloudflare dashboardet under **Email → Email Routing** — derefter opretter du aliases (`hello@example.dk` → `dit-navn@gmail.com`).
+
+</Tab>
+
+<Tab value="ImprovMX">
+
+Virker med enhver DNS-udbyder — ingen nameserver-skift kræves.
+
+```
+Type   Host    Value               Priority
+MX     @       mx1.improvmx.com    10
+MX     @       mx2.improvmx.com    20
+TXT    @       "v=spf1 include:spf.improvmx.com include:_spf.resend.com ~all"
+```
+
+Gratis tier giver én forwarding-adresse. Opret aliases på improvmx.com og pege dem på din eksisterende inbox.
+
+</Tab>
+
+<Tab value="Zoho Mail">
+
+Giver dig en rigtig indbakke (webmail + IMAP) — ikke kun forwarding. Gratis for op til 5 brugere på dit domæne.
+
+```
+Type   Host                 Value                                         Priority
+MX     @                    mx.zoho.eu                                    10
+MX     @                    mx2.zoho.eu                                   20
+MX     @                    mx3.zoho.eu                                   50
+TXT    @                    "v=spf1 include:zoho.eu include:_spf.resend.com ~all"
+TXT    zoho._domainkey      <DKIM-key-fra-Zoho-admin>                     —
+TXT    @                    "zoho-verification=zb<id>.zmverify.zoho.eu"   (engang ved signup)
+```
+
+**EU vs. global:** brug `mx.zoho.eu` + `include:zoho.eu` hvis du valgte EU-data-residency ved signup. Ellers brug `mx.zoho.com` + `include:zoho.com`. Stem overens med begge records.
+
+DKIM for Zoho er nødvendig hvis du sender mail FRA Zoho-indbakken (fx svarer kunder). Hent værdien under **Zoho Mail Admin → Email Configuration → DKIM**.
+
+</Tab>
+
+<Tab value="Microsoft 365">
+
+For dem der vil have Outlook desktop, Teams og kalender med samme login.
+
+```
+Type   Host                       Value                                                                  Priority
+MX     @                          example-dk.mail.protection.outlook.com                                 0
+TXT    @                          "v=spf1 include:spf.protection.outlook.com include:_spf.resend.com ~all"
+CNAME  selector1._domainkey       selector1-example-dk._domainkey.<tenant>.onmicrosoft.com
+CNAME  selector2._domainkey       selector2-example-dk._domainkey.<tenant>.onmicrosoft.com
+CNAME  autodiscover               autodiscover.outlook.com
+```
+
+MX-hostnavnet er domænet med bindestreg i stedet for punktum + `.mail.protection.outlook.com` — M365 Admin Center viser det eksakte hostname. `<tenant>` er din M365 tenant slug (vises samme sted).
+
+Se [Outlook 365 setup](/docs/email/outlook-365) for komplet walkthrough.
+
+</Tab>
+
+</Tabs>
+
+## DMARC (alle scenarier — tilføj sidst)
+
+DMARC fortæller modtagere hvad de skal gøre med mail der ser ud til at komme fra dit domæne men ikke består SPF/DKIM. Start altid i **monitor mode** (`p=none`):
+
+```
+Type   Host       Value
+TXT    _dmarc     "v=DMARC1; p=none; rua=mailto:dmarc@example.dk; pct=100; adkim=r; aspf=r"
+```
+
+Læg `rua=mailto:` adressen i din nye indbakke — så får du aggregerede rapporter ugentligt om hvordan dine mail-strømme klarer sig. **Vent 2-4 uger** med at stramme policy'en op:
+
+<Steps>
+
+1. **Uge 1-2:** `p=none` — kun rapporter, ingenting blokeres.
+2. **Uge 3-4:** `p=quarantine` — afvigende mail lander i spam (kan reddes).
+3. **Efter uge 4:** `p=reject` — afvigende mail afvises hårdt.
+
+</Steps>
+
+Stram aldrig direkte til `p=reject` på dag 1 — du risikerer at blokere dine egne legitime mails inden du opdager en SPF-fejl.
+
+## Propagering og verifikation
+
+DNS-ændringer slår typisk igennem på under 30 minutter, men kan tage op til 24-48 timer i værste fald. Tjek status fra terminalen:
+
+```bash
+dig TXT example.dk +short                          # SPF + verification
+dig TXT resend._domainkey.example.dk +short        # Resend DKIM
+dig MX example.dk +short                           # Indbakke
+dig TXT _dmarc.example.dk +short                   # DMARC
+```
+
+Eller brug et online værktøj som [mxtoolbox.com](https://mxtoolbox.com) for visuel oversigt.
+
+<Cards>
+  <Card title="Resend (udgående) — fuld setup" href="/docs/email/resend-sending" />
+  <Card title="Modtag mail — vælg løsning" href="/docs/email/receive-inbox" />
+  <Card title="Outlook 365 — fuld setup" href="/docs/email/outlook-365" />
+  <Card title="Fejlfinding" href="/docs/email/troubleshooting" />
+</Cards>

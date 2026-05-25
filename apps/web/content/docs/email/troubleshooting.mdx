@@ -1,0 +1,117 @@
+---
+title: Fejlfinding — email og DNS
+description: Symptom → diagnose for de almindelige email-problemer. SPF-konflikt, DKIM fail, MX-clash, DMARC reject, propagering, deliverability.
+---
+
+Email-opsætning fejler altid på en af 6-7 måder. Find symptomet, kør diagnose-kommandoen, ret problemet.
+
+## "Mine mails lander i spam"
+
+**Mest sandsynlige årsager** (i rækkefølge):
+
+<Steps>
+
+1. **DMARC står på `p=reject` for tidligt.** Gå tilbage til `p=none` i 2 uger, læs `rua` rapporter, find den fejlende strøm, ret den, stram derefter til `p=quarantine` og senere `p=reject`.
+
+2. **SPF har to TXT-records på `@` i stedet for én.** Den klassiske fejl. Tjek:
+
+   ```bash
+   dig TXT dit-domæne.dk +short | grep spf
+   ```
+
+   Hvis der vises to linjer med `v=spf1`, slet den ene og kombinér deres `include:` direktiver i den andens.
+
+3. **From-domænet matcher ikke et verificeret Resend sender.** Resend afviser hårdt og du får en API-fejl. Tjek `brand.config.ts:emails.from` matcher præcis hvad du verificerede.
+
+4. **DKIM signerer ikke.** Check headerne i en modtaget testmail (`View original` i Gmail / `View source` i Outlook). Du leder efter `dkim=pass`. Hvis `dkim=fail` eller mangler:
+   - DNS-recorden er ikke propageret endnu — vent eller tjek med `dig TXT resend._domainkey.dit-domæne.dk +short`.
+   - DKIM-værdien er kopieret forkert (mest almindeligt: trailing whitespace eller manglende afsluttende `;`).
+
+5. **Sender reputation er ny.** Resend deler IP-pools mellem kunder. Nye domæner har lav reputation indtil de har sendt 100-1000 reelle mails. Det normaliserer sig over 1-2 uger.
+
+</Steps>
+
+## "Resend siger 'Domain not verified'"
+
+```bash
+# Tjek alle Resend-records er live:
+dig TXT resend._domainkey.dit-domæne.dk +short    # DKIM
+dig MX send.dit-domæne.dk +short                  # Return-path
+dig TXT send.dit-domæne.dk +short                 # AWS SES SPF
+```
+
+Alle tre skal returnere værdier. Hvis en mangler:
+- **DNS endnu ikke propageret** — vent 30 min, prøv igen.
+- **Forkert host-navn** — nogle DNS-udbydere kræver `resend._domainkey` mens andre kræver fuld FQDN `resend._domainkey.dit-domæne.dk`. Tjek deres dokumentation.
+- **TXT-værdi for lang** — DKIM keys er typisk 2048-bit og kan kræve splitting i flere chunks. Cloudflare og de fleste udbydere håndterer det automatisk; manuelt setup hos andre kræver `"part1" "part2"` syntax.
+
+## "Kunder kan ikke skrive til hello@ — det bouncer"
+
+```bash
+dig MX dit-domæne.dk +short
+```
+
+Output skal vise MX-records for din indbakke-udbyder (Cloudflare/ImprovMX/Zoho/M365). Hvis tom eller forkert:
+
+- **MX peger på den forkerte udbyder** (du skiftede måske udbyder uden at opdatere).
+- **MX peger på `send.dit-domæne.dk`** — det er Resend's return-path, ikke en indbakke. Du må ikke sætte primær MX til `send`.
+- **To sæt MX-records aktive samtidig** (fx både Cloudflare og Zoho) — slet det gamle sæt.
+
+## "DKIM fejler kun i Gmail / kun i Outlook"
+
+Tjek typisk:
+
+- **Microsoft 365 bruger CNAME (ikke TXT)** til DKIM. Hvis du tilføjede en TXT med DKIM-værdien i stedet for CNAME, virker det ikke i M365's signering.
+- **Selector-navn mismatch.** Resend bruger `resend._domainkey`, M365 bruger `selector1._domainkey` og `selector2._domainkey`. Zoho bruger sin egen selector. De må ikke kollidere.
+- **CNAME-target peger på forkert tenant.** M365 viser dig det eksakte target — kopier eksakt.
+
+## "DMARC rapporter viser mass `dkim=fail` for én strøm"
+
+DMARC `rua` viser hvor du fejler. Læs en rapport (XML format — brug dmarcian.com eller postmarkapp.com gratis viewer):
+
+- **Source-IP er en du sender fra** (en marketing-tool, en CRM, en gammel mailer) → tilføj `include:` for den service i din SPF.
+- **Source-IP er ukendt** → nogen spoofer dit domæne. Tighten DMARC til `p=quarantine` for at blokere.
+- **Source-IP er Resend men `dkim=fail`** → kontrollér at `resend._domainkey` TXT er live og uændret.
+
+## "DNS-ændringer slår ikke igennem"
+
+```bash
+# Tjek hvad public DNS faktisk ser (omgår lokal cache):
+dig @8.8.8.8 TXT dit-domæne.dk +short
+dig @1.1.1.1 MX dit-domæne.dk +short
+```
+
+Hvis du ser dine ændringer her men ikke i din browser, er det din lokale DNS-cache. Vent eller flush:
+
+```bash
+# macOS:
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+# Linux (systemd-resolved):
+sudo resolvectl flush-caches
+```
+
+Ellers — vent. DNS TTL bestemmer hvor længe en gammel record cachers. Hvis din udbyder satte TTL til 86400 (24 timer), tager det tilsvarende tid før alle modtagere ser ændringen.
+
+## Diagnose-værktøjer
+
+| Værktøj | Bruges til |
+|---|---|
+| [mxtoolbox.com](https://mxtoolbox.com) | Verificér MX/SPF/DKIM/DMARC live, tæl SPF-lookups |
+| [dmarcian.com](https://dmarcian.com) | Læs DMARC rua rapporter visuelt |
+| [mail-tester.com](https://www.mail-tester.com) | Send testmail, få score med præcise fejl |
+| `dig` (terminal) | Hurtigste lookup-værktøj — bypass browser cache |
+| [Resend dashboard logs](https://resend.com/logs) | Se nøjagtige API-fejlbeskeder for afviste sends |
+
+## Avancerede emner (out of scope ved launch)
+
+- **BIMI** — kræver verificeret VMC-certifikat ($1500/år) og DMARC mindst `p=quarantine`. Overvej når brand-presence er etableret.
+- **MTA-STS / TLS-RPT** — moderne transport-sikkerhed. Pænt at have, men ikke launch-blocker.
+- **Reverse DNS (PTR)** — styres af Resend's afsendelses-IPs; du kan ikke konfigurere det selv.
+- **Google Postmaster Tools / Microsoft SNDS** — relevante efter ~1000 sends/md. Tilmeld dig hvis du oplever Gmail/Outlook deliverability-problemer.
+
+<Cards>
+  <Card title="Tilbage til oversigten" href="/docs/email" />
+  <Card title="DNS records — alle scenarier" href="/docs/email/dns-records" />
+  <Card title="Resend setup" href="/docs/email/resend-sending" />
+</Cards>

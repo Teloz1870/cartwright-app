@@ -1,0 +1,60 @@
+---
+title: Email & Domæner — oversigt
+description: Sådan får du dit eget domæne live, en rigtig mail-konto på din adresse (gratis), og sender ordrebekræftelser fra din egen shop.
+---
+
+Din Cartwright-shop består af tre helt adskilte systemer der skal spille sammen i den samme DNS-zone på dit domæne:
+
+| Lag | Hvad det gør | Hvem leverer det |
+|---|---|---|
+| **Web** | Hoster selve shoppen på `dit-domæne.dk` | Vercel (A + CNAME records) |
+| **Udgående mail** | Sender ordrebekræftelser, magic-links og kvitteringer fra `orders@dit-domæne.dk` | Resend (SPF + DKIM records) |
+| **Indkommende mail** | Modtager mail på `hello@dit-domæne.dk` så kunder kan svare dig | Cloudflare / ImprovMX / Zoho / M365 (MX records) |
+
+De tre er uafhængige af hinanden, men de deler én DNS-zone — og specielt SPF-recorden skal kombineres til **én** linje med flere `include:` ellers strider de mod hinanden og dine mails lander i spam.
+
+<Callout type="info">
+Cartwright bruger Resend **kun** til at sende mail fra shoppen. Resend giver dig ikke en indbakke. For at modtage mail på dit domæne skal du vælge en separat indbakke-løsning — guiden nedenfor sammenligner tre gratis muligheder og én betalt.
+</Callout>
+
+## Beslutningstræ — hvilken indbakke-løsning?
+
+<Steps>
+
+1. **Bruger du allerede Cloudflare som DNS-udbyder?**
+   → Brug [Cloudflare Email Routing](/docs/email/receive-inbox) — gratis, ubegrænsede aliases, forwarder direkte til din eksisterende Gmail/iCloud.
+
+2. **Vil du have en rigtig indbakke uden at koble til Gmail?**
+   → Brug [Zoho Mail gratis tier](/docs/email/receive-inbox) — webmail + IMAP, op til 5 brugere på dit domæne.
+
+3. **Vil du i gang nu uden at flytte DNS?**
+   → Brug [ImprovMX](/docs/email/receive-inbox) — virker med enhver DNS-udbyder, gratis forwarding for én adresse.
+
+4. **Vil du have professionel mail som primær (Outlook desktop, Teams, kalender)?**
+   → Brug [Microsoft 365 Business Basic](/docs/email/outlook-365) — ca. 40 kr/md per bruger.
+
+</Steps>
+
+## Den anbefalede rækkefølge
+
+Lav opsætningen i denne rækkefølge — det undgår at du venter på DNS-propagering flere gange:
+
+<Steps>
+
+1. **Tilføj domænet til Vercel** og opret A + CNAME records. Se [DNS records](/docs/email/dns-records).
+2. **Verificér domænet i Resend** og tilføj SPF + DKIM. Se [Resend opsætning](/docs/email/resend-sending).
+3. **Vælg din indbakke-løsning** og tilføj MX + de tilhørende records. Se [Modtag mail](/docs/email/receive-inbox).
+4. **Tilføj DMARC-record** i monitor-mode (`p=none`). Lad den køre i 2 uger.
+5. **Test alt sammen** — placér en testordre, send mail til `hello@`, modtag i din indbakke.
+
+</Steps>
+
+Hele opsætningen tager typisk 30-45 minutter, plus DNS-propagering (oftest under en time, men op til 24 timer i værste fald).
+
+<Cards>
+  <Card title="DNS records — komplet oversigt" href="/docs/email/dns-records" />
+  <Card title="Resend (udgående mail)" href="/docs/email/resend-sending" />
+  <Card title="Modtag mail — 3 gratis muligheder" href="/docs/email/receive-inbox" />
+  <Card title="Outlook 365 (betalt)" href="/docs/email/outlook-365" />
+  <Card title="Fejlfinding" href="/docs/email/troubleshooting" />
+</Cards>

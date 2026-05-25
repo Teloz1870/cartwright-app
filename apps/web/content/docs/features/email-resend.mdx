@@ -5,6 +5,10 @@ description: Transactional email via Resend with a dev-only file-preview fallbac
 
 Cartwright sends transactional email through Resend. The mailer lives in `lib/mailer/` (the directory) with `lib/mailer/resend.ts` as the Resend-specific adapter. Templates render HTML server-side using palette values mirrored into `brand.config.ts:emailColors` (Stripe Elements + email clients both need hardcoded palette since they cannot read your CSS variables).
 
+<Cards>
+  <Card title="Full setup walkthrough — Resend + your domain" href="/docs/email/resend-sending" />
+</Cards>
+
 ## Templates shipped
 
 - **Order confirmation** — sent on successful Stripe webhook.

@@ -5,6 +5,10 @@ description: Adding a custom domain to your Cartwright Vercel deployment — DNS
 
 After your initial deploy to Vercel, the app runs on a `*.vercel.app` subdomain. Pointing a custom domain at it requires three things: adding the domain to the Vercel project, creating DNS records with your registrar, and updating `NEXT_PUBLIC_APP_URL` to match the new canonical host.
 
+<Callout type="info">
+Planning to also receive mail at `hello@your-domain.com`? Don't add records piecemeal — see the [Email & Domains section](/docs/email/dns-records) for the complete DNS zone (Vercel + Resend + your chosen inbox provider) so SPF stays in one combined record.
+</Callout>
+
 ## Steps
 
 <Steps>

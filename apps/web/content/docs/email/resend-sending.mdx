@@ -1,0 +1,126 @@
+---
+title: Resend — udgående mail fra din shop
+description: Sæt Resend op så din Cartwright-shop sender ordrebekræftelser, magic-links og kvitteringer fra dit eget domæne — gratis op til 3000 mails/md.
+---
+
+Cartwright sender alle transaktionsmails via Resend. Uden en API-key falder mailerne tilbage til lokale `.mail-previews/` HTML-filer i dev (se [features/email-resend](/docs/features/email-resend) for fallback-detaljer) — men i production skal du have Resend op at køre, ellers får dine kunder aldrig deres ordrebekræftelser.
+
+Hele denne opsætning er gratis: Resend's free tier dækker 3000 mails om måneden, som er rigeligt til de fleste shops.
+
+## Opsætning (10-15 minutter)
+
+<Steps>
+
+1. **Opret en Resend-konto** på [resend.com](https://resend.com). Bekræft din mail.
+
+2. **Tilføj dit domæne** under **Domains → Add Domain**. Skriv `dit-domæne.dk` (ikke `mail.dit-domæne.dk` med mindre du bevidst vil isolere afsendelse — se subdomæne-strategi nedenfor).
+
+3. **Vælg sending-region.** EU-region (`eu-west-1`) er det rigtige valg hvis du sender primært til danske/europæiske kunder — bedre latency og GDPR-historisk renere data-residency. Du kan ikke skifte region senere uden at oprette domænet på ny.
+
+4. **Kopiér de tre DNS-records** Resend viser dig:
+   - En TXT med DKIM public key på host `resend._domainkey`
+   - En MX på host `send` der peger på `feedback-smtp.<region>.amazonses.com`
+   - En TXT på host `send` med SPF-include for AWS SES (Resend's underliggende infrastruktur)
+
+   Tilføj alle tre hos din DNS-udbyder. Se [komplet DNS-oversigt](/docs/email/dns-records) for præcis formatering.
+
+5. **Vent på DNS-propagering** — oftest under 30 minutter. Klik **Verify** i Resend dashboardet. Status flipper til `Verified` når SPF + DKIM er live.
+
+6. **Generér en API-key** under **API Keys → Create**. Vælg scope `Sending access` — ikke `Full access`, da nøglen ender i din production-env og en kompromitteret key med Full access kan slette dit domæne.
+
+7. **Gem API-key'en i Cartwright.** Du har to muligheder:
+
+   <Tabs items={['Via /admin/integrations (anbefalet)', 'Via Vercel env']}>
+
+   <Tab value="Via /admin/integrations (anbefalet)">
+   Åbn `https://din-shop.dk/admin/integrations`, indsæt key'en i Resend-feltet, klik **Gem key**. Nøglen krypteres i databasen — ingen redeploy nødvendig.
+   </Tab>
+
+   <Tab value="Via Vercel env">
+   ```bash
+   vercel env add RESEND_API_KEY production
+   # Indsæt re_... ved prompt
+   vercel deploy --prod
+   ```
+
+   DB-nøglen tager forrang over env-nøglen hvis begge er sat. Brug env hvis du foretrækker GitOps-style secrets management.
+   </Tab>
+
+   </Tabs>
+
+8. **Opdater `brand.config.ts:emails.from`** til en adresse på dit verificerede domæne:
+
+   ```ts
+   emails: {
+     from: "Din Shop <orders@dit-domæne.dk>",
+     fromName: "Din Shop",
+   }
+   ```
+
+   Dette skal matche dit verificerede Resend sender-domæne. Mismatch giver silent failure — ordren oprettes, betalingen tages, men kunden får aldrig sin kvittering.
+
+9. **Send en testmail** fra Resend dashboardet til din egen adresse. Hvis den lander uden problemer, er sender-reputation intakt.
+
+10. **Placér en test-ordre** i Stripe test mode (se [Stripe test mode recipe](/docs/recipes/stripe-test-mode)) — ordrebekræftelsen skal lande i din indbakke inden for få sekunder, render'et i din shops palette og uden spam-stempel.
+
+</Steps>
+
+## Subdomæne-strategi: `mail.dit-domæne.dk` vs apex
+
+To valgmuligheder når du tilføjer domænet i Resend:
+
+| Valg | For | Imod |
+|---|---|---|
+| **Apex (`dit-domæne.dk`)** | Pænere from-adresse: `orders@dit-domæne.dk` | Hvis Resend's IP-pool får et deliverability-hit, rammer det også al anden mail fra dit domæne |
+| **Subdomæne (`mail.dit-domæne.dk`)** | Isolation — corporate mail upåvirket hvis send-domænet får problemer | Grimmere from-adresse: `orders@mail.dit-domæne.dk` |
+
+For en startup shop er apex det rigtige valg — Resend's deliverability er solid og kosmetisk ren from-adresse vinder. Skift til subdomæne hvis du senere kører høj-volume kampagne-mail eller får leveringsproblemer.
+
+## Reply-To: mønsteret du skal kende
+
+Cartwright sender med:
+
+- **From:** `orders@dit-domæne.dk` (DKIM-signeret af Resend, SPF aligned)
+- **Reply-To:** `hello@dit-domæne.dk` (din indbakke — hvor kundens svar lander)
+
+Det er hele pointen med at køre Resend + en separat indbakke-løsning samtidig. Resend håndterer udgående med deres infrastruktur; din mailbox-udbyder håndterer indkommende — og kunder bemærker aldrig forskellen fordi `Reply-To` får svar til at gå det rigtige sted hen.
+
+Konfigurér `Reply-To` i `brand.config.ts:emails.replyTo` eller equivalent felt afhængig af din fork.
+
+## 10-DNS-lookup-grænsen
+
+SPF har en hård grænse på 10 DNS-lookups under evaluation. Hver `include:` tæller mod den grænse — transitivt (en `include:` der selv har includes tæller hver enkelt). Reelle tal for almindelige kombinationer:
+
+| Kombination | Lookups | Status |
+|---|---|---|
+| Resend alene | ~2 | ✅ Masser plads |
+| Resend + Cloudflare Email Routing | ~3 | ✅ Sikker |
+| Resend + ImprovMX | ~3 | ✅ Sikker |
+| Resend + Zoho | ~5 | ✅ Sikker |
+| Resend + Microsoft 365 | ~5 | ✅ Sikker |
+| Resend + M365 + Mailchimp + SendGrid | ~12 | ❌ Over grænse |
+
+Hvis du krydser 10, begynder dine mails at fejle SPF check selv hos modtagere du har sendt til før. Brug [mxtoolbox.com/spf](https://mxtoolbox.com/spf.aspx) til at tælle live.
+
+## Verifikation
+
+```bash
+# Verificér DKIM + SPF live:
+dig TXT resend._domainkey.dit-domæne.dk +short
+dig TXT dit-domæne.dk +short
+
+# Send via API som final smoke test (kræver curl + din key):
+curl -X POST 'https://api.resend.com/emails' \
+  -H 'Authorization: Bearer re_din_key' \
+  -H 'Content-Type: application/json' \
+  -d '{"from":"orders@dit-domæne.dk","to":"dig@gmail.com","subject":"Test","text":"Hej fra Cartwright"}'
+```
+
+Mailen skal lande i din inbox med `Authentication-Results: ... spf=pass dkim=pass dmarc=pass` i headerne (åbn message source i Gmail/Outlook for at se).
+
+<Cards>
+  <Card title="DNS records — alle scenarier" href="/docs/email/dns-records" />
+  <Card title="Modtag mail — vælg løsning" href="/docs/email/receive-inbox" />
+  <Card title="Feature reference: Email (Resend)" href="/docs/features/email-resend" />
+  <Card title="Fejlfinding" href="/docs/email/troubleshooting" />
+</Cards>
