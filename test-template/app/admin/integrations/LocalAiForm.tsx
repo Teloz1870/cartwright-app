@@ -269,7 +269,7 @@ export default function LocalAiForm({ initial }: Props) {
               </code>
               {" "}+{" "}
               <code className="rounded bg-white px-1.5 py-0.5">
-                ollama pull gemma3:12b
+                ollama pull gemma4:e4b
               </code>
               . Husk{" "}
               <code className="rounded bg-white px-1.5 py-0.5">
