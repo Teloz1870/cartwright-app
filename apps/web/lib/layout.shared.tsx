@@ -11,6 +11,7 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       { text: 'Onboarding', url: '/onboarding' },
       { text: 'Docs', url: '/docs' },
+      { text: 'Integrations', url: '/integrations' },
       { text: 'Pricing', url: '/services' },
       { text: 'Showcase', url: '/showcase' },
       { text: 'Changelog', url: '/changelog' },

@@ -84,3 +84,30 @@ html > body[data-scroll-locked] {
   background-image:
     radial-gradient(circle at 1px 1px, rgba(245, 245, 244, 0.07) 1px, transparent 0);
 }
+
+/* Integrations page — marquee logo band */
+@keyframes cw-marquee-x {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.cw-marquee-track {
+  animation: cw-marquee-x 50s linear infinite;
+  width: max-content;
+}
+
+.cw-marquee-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 80px,
+    black calc(100% - 80px),
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cw-marquee-track {
+    animation: none;
+  }
+}

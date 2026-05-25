@@ -129,7 +129,7 @@ export function FeatureGrid() {
       <p className="mt-6 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
         Want the integration-by-integration story instead — Stripe, Resend, Vercel, Turso, Sentry, the AI providers, all wired?{' '}
         <Link
-          href="/docs/in-the-box"
+          href="/integrations"
           className="font-medium text-cw-terracotta hover:underline"
         >
           See what's in the box →
