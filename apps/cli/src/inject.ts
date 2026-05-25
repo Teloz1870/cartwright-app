@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { type ShopBrief } from "./brief";
-import { generateThemeCss, generatePromptModule, generateSeedData } from "./generate";
+import { type ShopBrief } from "./brief.js";
+import { generateThemeCss, generatePromptModule, generateSeedData } from "./generate/index.js";
 
 export function injectBriefFiles(targetDir: string, brief: ShopBrief): void {
   // Opret mapper

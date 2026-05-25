@@ -1,4 +1,4 @@
-import { type ShopBrief } from "../brief";
+import { type ShopBrief } from "../brief.js";
 
 export function generateThemeCss(brief: ShopBrief): string {
   return `/**

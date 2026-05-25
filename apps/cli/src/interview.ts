@@ -1,5 +1,5 @@
-import { generateJson } from "./llm";
-import { type ShopBrief } from "./brief";
+import { generateJson } from "./llm.js";
+import { type ShopBrief } from "./brief.js";
 
 export interface InterviewDeps {
   apiKey: string;

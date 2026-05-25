@@ -1,4 +1,4 @@
-import { validateKey } from "./llm";
+import { validateKey } from "./llm.js";
 
 export type KeyModeResult = { type: "key"; key: string } | { type: "manual" };
 

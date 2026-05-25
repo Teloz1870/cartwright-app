@@ -77,11 +77,11 @@ import {
   tryGitInit,
   tryInstall,
   databaseNote
-} from "./scaffold";
-import { resolveKeyMode } from "./key-step";
-import { runInterview } from "./interview";
-import { summarizeBuild } from "./approve";
-import { injectBriefFiles } from "./inject";
+} from "./scaffold.js";
+import { resolveKeyMode } from "./key-step.js";
+import { runInterview } from "./interview.js";
+import { summarizeBuild } from "./approve.js";
+import { injectBriefFiles } from "./inject.js";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {

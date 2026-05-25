@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { type ShopBrief } from "./brief";
+import { type ShopBrief } from "./brief.js";
 
 export function summarizeBuild(brief: ShopBrief): string {
   const lines = [
