@@ -1,0 +1,63 @@
+---
+title: Setup
+description: Få Voice Shop live på din egen Cartwright-storefront på 5 minutter.
+---
+
+Du har brug for tre ting før voice virker:
+
+1. En **Google Gemini API-nøgle** (gratis tier er rigeligt til at teste)
+2. `brand.features.voiceShop = true` i `brand.config.ts`
+3. Admin-toggle aktiveret i `/admin/integrations`
+
+## 1. Hent en Gemini API-nøgle
+
+Gå til [Google AI Studio](https://aistudio.google.com/app/apikey), log ind med din Google-konto, og klik **"Create API key"**. Du får en nøgle der starter med `AIza...`.
+
+Gratis-tieret giver dig **15 requests/min og 1500 requests/dag** mod `gemini-2.5-flash-live` — det er mere end nok til at teste og early-adopter brug. Hvis du forventer at gå viral, opgrader til betalt tier i Google Cloud Console.
+
+## 2. Aktivér feature-flag
+
+Åbn `brand.config.ts`:
+
+```ts
+features: {
+  aiStylist: true,
+  voiceShop: true,  // ← sæt til true
+  // ...
+}
+```
+
+Dette er compile-time-gaten — shops der ikke bruger voice (fx panel-hegn) kan beholde flaggen `false` så bundlen ikke loader voice-koden.
+
+## 3. Konfigurer i admin
+
+Restart dev-serveren og åbn `/admin/integrations`. Du har nu en **Voice Shop**-sektion. Udfyld:
+
+- **Voice Shop aktiveret:** ✓
+- **Gemini API-nøgle:** indsæt nøglen fra step 1 (genbruger samme felt som virtual try-on)
+- **Model:** `gemini-2.5-flash-live` (GA) — eller `gemini-3.1-flash-live-preview` hvis du vil teste preview
+- **Voice:** Puck (default, varm), Charon, Kore, Fenrir, Aoede, Leda, Orus, Zephyr
+- **Allowed tools:** lad default-subset stå (`products.search`, `products.get`, `cart.add`, `cart.get_summary`, `discounts.try_apply`). `orders.create` er bevidst ude — voice-confirmation-UX er ikke trivielt at få right
+- **Vision:** ✓ hvis du vil tillade kamera-input
+- **Max minutter per session:** 5 (default)
+- **Max minutter per dag:** 60 (default — bumpe op når du har data)
+
+Klik **Gem** og derefter **Test voice-forbindelse**. Du skal se ✅ med latency-tal hvis API-nøglen er gyldig.
+
+## 4. Test fra storefront
+
+Gå til din storefront's forside. Du har nu en mic-knap i nederste-højre hjørne (lige over den eksisterende AI-stylist FAB). Klik den, giv mikrofon-tilladelse, og sig: **"Vis mig dine nyeste produkter"**.
+
+Hvis alt virker:
+
+- Du hører Gemini svare med stemme indenfor ~600ms
+- Overlay'en viser produkt-kort som tool-result
+- I `/admin/audit` ser du en ny række med `actor="storefront-voice:..."`, `modality="voice"`, `provider="google"`, `model="gemini-2.5-flash-live"`
+
+## Production-deploy
+
+Voice Shop bygger på Vercel uden ekstra setup — `/api/live/*` routes kører på samme Fluid Compute som resten af templaten. Sørg for:
+
+- `GOOGLE_GENAI_API_KEY` er sat som Vercel env hvis du foretrækker env-fallback frem for at gemme i DB
+- BotID er aktiveret på dit Vercel-projekt (gratis op til 10k req/mo) — den beskytter token-mint-endpointet i prod
+- Forventet cost-loft via daily-cap er sat før første launch (se [Cost rails](/docs/ai/voice-shop/cost-rails))

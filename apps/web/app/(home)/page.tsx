@@ -1,4 +1,5 @@
 import { Hero } from '@/components/landing/hero';
+import { VoiceShopDemo } from '@/components/landing/voice-shop-demo';
 import { ValueProps } from '@/components/landing/value-props';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { FeatureGrid } from '@/components/landing/feature-grid';
@@ -49,6 +50,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Hero />
+      <VoiceShopDemo />
       <ValueProps />
       <HowItWorks />
       <FeatureGrid />

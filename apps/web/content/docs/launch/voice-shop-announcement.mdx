@@ -1,0 +1,98 @@
+---
+title: Voice Shop launch template
+description: Ready-to-tweet template du kan kopiere når du aktiverer voice på din egen shop.
+---
+
+Når du har voice live på din Cartwright-storefront, så hjælp os med at sprede ordet. Kopiér en af templates herunder, indsæt screenshot af din voice-overlay i action, og post:
+
+## Twitter / X (kort)
+
+> Just enabled **voice + vision shopping** on my webshop with [@cartwrightapp](https://x.com/cartwrightapp) 🎤
+>
+> Click the mic, ask "show me red lamps", get audio back in 600ms. Camera works too — point it at a sweater, get matches.
+>
+> Self-hosted. Open source. Same security model as text chat.
+>
+> 👉 [your-shop-url]
+>
+> #ai #ecommerce #voiceshopping
+
+## LinkedIn (medium)
+
+> We just shipped **voice + vision shopping** on our store.
+>
+> Customers can now click a mic button, talk to the shop, and even hold their camera up to show what they're looking for. Powered by Google's Gemini Live API, running directly from the browser with ephemeral tokens — but every tool-call routes back through our server's existing scope-system, confirmation-gates, and audit-log.
+>
+> Same security model as our text chat. New modality.
+>
+> The whole stack came from [Cartwright](https://cartwright.app) — an open-source AI-first webshop template. We added the API key in admin, flipped a feature flag, and shipped.
+>
+> Try it: [your-shop-url]
+
+## Hacker News (Show HN)
+
+> **Show HN: Voice + vision shopping on my self-hosted webshop**
+>
+> URL: [your-shop-url]
+>
+> I just shipped Gemini Live voice shopping on my [niche] webshop using the [Cartwright](https://cartwright.app) template. Browser talks WS directly to Google; tool-calls route back through our server's scope-enforcement and audit-log so confirmation-gates fire the same way text chat does. Vision works too — kunder kan vise kameraet og spørge om matchende produkter.
+>
+> What worked:
+> - First-audio-latency ~600ms — føles instant
+> - Cost-rails kept billing predictable (5 min session cap, 60 min daily cap, BotID gate)
+> - Bring-your-own-key — Google biller direkte mod min konto, ikke en mellem-vendor
+>
+> What's hard:
+> - Voice-prompt-engineering ER anderledes end text — modellen vil instinktivt sige bullets og "først, andet, tredje"
+> - Confirmation-UX i voice (orders.create) er stadig open problem — vi har "say ja/nej" keyword detection som v1
+>
+> Code er MIT, template er på [GitHub-link når public]. Voice-koden er ~1500 linjer total inkl. UI; resten arver fra eksisterende tool-registry.
+
+## Mastodon / Bluesky (kort)
+
+> Klik på mic-knappen på min webshop og snak med den. 🎤
+>
+> Voice + vision shopping, self-hosted, audit-logged. Gemini Live under the hood, men confirmation-gates og scope-enforcement kører på MIN server.
+>
+> Same security model som text chat. New modality.
+>
+> [your-shop-url]
+>
+> ([Cartwright](https://cartwright.app) gjorde det nemt at ship)
+
+## Email-nyhedsbrev til kunder
+
+**Emne:** Du kan nu *snakke* med [shopname]
+
+> Hej [name],
+>
+> En lille opdatering: vores webshop kan nu modtage talte spørgsmål.
+>
+> Når du besøger [shop-url], så se efter den lille mic-ikon i nederste-højre hjørne. Klik den, sig "vis mig din nyeste kollektion", og hør shoppen svare. Du kan også vise kameraet hvis du leder efter noget visuelt ("find produkter i denne farve").
+>
+> Det er det samme menneske-skrevne katalog du kender — bare nu med en stemme.
+>
+> Bedste hilsner,
+> [you]
+
+## Screenshot-prompts
+
+For at få et godt screenshot:
+
+1. Åbn din shop i mobile Safari/Chrome (mic-overlay'en ser bedst ud i portrait)
+2. Klik mic-knappen, vent til den siger "listening"
+3. Sig en demo-prompt ("vis mig røde t-shirts" / "show me red lamps")
+4. Vent til Gemini har leveret tool-resultater og kort dukker op
+5. Tag screenshot mens overlay'en viser:
+   - Aktiv "speaking" eller "listening" state badge
+   - Live transcript med kundens prompt
+   - 1-3 produkt-kort som tool-result
+   - Session-timer der tikker ned
+
+## Hashtags der ranker
+
+For X/LinkedIn audience-targeting:
+`#voiceshopping #AIcommerce #GeminiLive #AIfirst #ecommerce #nextjs #vercel`
+
+For mere developer-vinklet:
+`#openSource #selfhosted #ai #LLM #tooluse #aiSDK`

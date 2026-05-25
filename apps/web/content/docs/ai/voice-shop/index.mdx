@@ -1,0 +1,54 @@
+---
+title: Voice Shop — Gemini Live
+description: Voice + vision shopping bygget ind i din webshop. Same security model som text-chatten, ny modalitet.
+---
+
+Cartwright's storefront-templates har en floating mic-knap. Kunder klikker, taler til shoppen, og kan holde kameraet op for at vise hvad de leder efter. Stemmen kommer fra Google's **Gemini Live API** — den eneste generally available stack der i dag kan håndtere voice + vision + function calling i én WebSocket-session.
+
+## Hvad det betyder konkret
+
+- **First-mover surface** — pr. januar 2026 er der ingen open-source webshop-template med pakket Gemini Live voice-shopping. Du shipper det dag 1.
+- **Same security model, different modality** — voice-calls arver det fulde scope-system, confirmation-gates og audit-log fra Cartwright's text-chat. Voice-rows er stamps med `modality="voice"` så GDPR/DPO kan filtrere dem ud.
+- **Bring-your-own-key** — kunden konfigurerer deres egen Google Gemini API-nøgle i `/admin/integrations`. Du betaler ingen voice-cost; det er forholdet mellem shop-ejer og Google.
+- **Cost-rails som default** — per-session-cap (default 5 min), daglig per-shop-cap (default 60 min), per-IP rate-limit + BotID. Andre voice-implementeringer mangler dette og brænder $1000/dag på første abuse-incident.
+- **Vision = differentiator** — kunden kan toggle kamera til/fra. 1 fps frames til Gemini. "Find produkter i denne farve" mens de holder telefon mod en væg fungerer fra dag 1.
+
+## Arkitektur
+
+```
+[browser] ──WSS──> [Google Gemini Live API]
+   │                       │
+   │                       ↓ tool-call
+   │                       │
+   └──POST──> [your-shop /api/live/tool-dispatch]
+                   ↓
+              invokeTool(name, args, ctx, CUSTOMER_CHAT_SCOPES)
+                   ↓
+              [Prisma DB · audit-log · confirmation-gate]
+```
+
+Browseren snakker WS direkte med Google (server-relay ville koste 2× bandwidth og kan ikke køre på Vercel Fluid Compute). Men hver gang Gemini vil kalde en tool, POSTer browseren det til din server — som kører den samme `invokeTool()`-dispatcher som text-chatten, med samme scope-guards, samme confirmation-tokens, samme audit-log.
+
+**Token-mintingen er pre-committet:** når serveren udsteder den ephemeral token Gemini skal bruge, låser den `tools`, `systemInstruction` og `responseModalities` via `lockAdditionalFields`. Browseren kan ikke udvide tool-allowlisten efter token er udstedt — selv hvis nogen stjæler tokenen og åbner deres egen WS-forbindelse, vil sessionen være bundet til præcis de constraints serveren bestemte.
+
+## Audit-spor
+
+Hver voice-tool-call skrives til `AuditLog`-tabellen med:
+
+```
+actor          storefront-voice:<sessionId>
+tool           "products.search" (registry dot-format)
+provider       "google"
+model          "gemini-2.5-flash-live"
+modality       "voice"
+sessionMinutes <minutter-brugt-indtil-nu>
+```
+
+GDPR-buyers og DPO'er kan filtrere `/admin/audit` på `modality="voice"` og se nøjagtig hvilken Gemini-version, hvilken voice, og hvilke tool-kald hver session lavede. Det er ægte compliance-værdi — voice-shopping er normalt en sort boks.
+
+## Næste skridt
+
+- [Setup](/docs/ai/voice-shop/setup) — pull Gemini API key + enable feature
+- [Cost rails](/docs/ai/voice-shop/cost-rails) — caps, rate-limits, abuse-protection
+- [Customization](/docs/ai/voice-shop/customization) — voice-tone, tool-subset
+- [Vision mode](/docs/ai/voice-shop/vision-mode) — kamera-input, privacy

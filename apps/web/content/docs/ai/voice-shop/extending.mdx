@@ -1,0 +1,114 @@
+---
+title: Extending
+description: Eksponér nye tools til voice, override prompts, koble på audit-streams.
+---
+
+## Tilføj et nyt tool til voice
+
+Voice-tools deler registry med text-chatten. Tilføj et nyt tool ved at:
+
+1. **Definér tool'en** i `lib/tools/<domain>.ts`:
+
+```ts
+import { defineTool } from "@/lib/tools/types";
+import { z } from "zod";
+
+export const fittingRoomTool = defineTool({
+  name: "fitting.book_slot",
+  description: "Reserve en fitting-room-tid for kunden",
+  scope: "catalog:read",
+  input: z.object({
+    productId: z.string(),
+    timeslot: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),
+  }),
+  handler: async (args, ctx) => {
+    // ... din business logic
+  },
+});
+```
+
+2. **Registrér i `lib/tools/registry.ts`:**
+
+```ts
+import { fittingRoomTool } from "@/lib/tools/fitting-room";
+
+const ALL_TOOLS = [
+  ...productsTools,
+  // ...
+  fittingRoomTool,
+];
+```
+
+3. **Tilføj til `CUSTOMER_TOOL_ALLOWLIST`** i `lib/ai/client.ts` (allerede gør tool'en tilgængelig for text-chat):
+
+```ts
+export const CUSTOMER_TOOL_ALLOWLIST = [
+  // ...
+  "fitting.book_slot",
+] as const;
+```
+
+4. **Aktivér i admin** under `/admin/integrations` → Voice Shop → Allowed tools → tjek `fitting.book_slot`.
+
+Voice-token-mint inkluderer nu tool'en i Gemini's function declarations, og browseren kan kalde den via `/api/live/tool-dispatch`. Audit-log får `tool="fitting.book_slot"` med `modality="voice"` automatisk via `withAuditContext`.
+
+## Override voice-prompt per brand
+
+Hvis du vil have helt forskellig voice-personlighed end default-prompten:
+
+1. Opret `lib/voice/prompts/<din-slug>.ts`:
+
+```ts
+import type { MergedBrand } from "@/lib/brand";
+
+export function buildPrompt(brand: MergedBrand): string {
+  return `Du er ${brand.storeName}'s personal shopper. ...
+  
+  // ... din egen prompt
+  `;
+}
+```
+
+2. Importer og swap i `lib/voice/prompts.ts`'s `buildVoiceShopPrompt`:
+
+```ts
+import { buildPrompt as eyewearPrompt } from "./prompts/eyewear";
+// ...
+return brand.industryTemplate === "eyewear"
+  ? eyewearPrompt(brand)
+  : defaultPrompt(brand);
+```
+
+Husk voice-prompt-constraints:
+
+- INGEN markdown
+- Korte sætninger (under 15 ord)
+- Ingen URLs eller code
+- Tal naturligt, ikke i lister
+
+## Koble på voice-audit-streams
+
+Hver voice-tool-call går gennem `withAuditContext({ modality: "voice", ... })` → `prisma.auditLog.create({...})`. Du kan abonnere på live audit-events ved at:
+
+1. **DB-trigger** (SQLite/Postgres): tilføj en trigger der publisher til Redis pub/sub eller WebSocket-kanal når `AuditLog` får en row med `modality = 'voice'`
+
+2. **Custom-wrap af withAudit** i `lib/audit.ts` — append en `if (meta.modality === "voice") emitEvent(...)` hook efter `prisma.auditLog.create`
+
+3. **Periodisk polling** fra dit BI-system mod `/api/v1/audit?modality=voice` — eksisterende REST-endpoint inkluderer nu voice-rows
+
+For real-time admin-dashboards anbefaler vi (1) eller (2). For weekly business-review (3) er fint.
+
+## Voice-specifik analytik
+
+Brug `sessionMinutes`-feltet på `AuditLog` til at beregne cost-attribution:
+
+```sql
+SELECT model,
+       SUM(sessionMinutes) as total_min,
+       SUM(sessionMinutes) * 0.024 as estimated_cost_usd
+FROM AuditLog
+WHERE modality = 'voice' AND createdAt >= date('now', '-30 days')
+GROUP BY model;
+```
+
+`sessionMinutes` skrives kun på den sidste row i en session (`tool="session.end"` typisk), så summen er nogenlunde præcis nok til intern reporting. For nøjagtig billing-reconcilation: bruger Google Cloud Console → Billing → Gemini API.

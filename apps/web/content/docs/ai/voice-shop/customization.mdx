@@ -1,0 +1,69 @@
+---
+title: Customization
+description: Voice-tone, tool-subset, system-prompt-override.
+---
+
+## Voice-tone
+
+Default-prompten gør voice-stilisten "varm og hjælpsom som en god ekspedient". Brand kan override med en custom tone via `brand.ai.voiceTone`:
+
+```ts
+ai: {
+  enabled: true,
+  promptModule: "generic",
+  assistantLabel: "AI-assistent",
+  voiceTone: "professionel og koncis, som en garvet salgsrådgiver",  // ← ny
+}
+```
+
+Tone-string'en injiceres direkte i system-prompten under "DIT TONE:". Hold det konkret og adfærdsmæssigt — "varm, men ikke sælgende" virker bedre end "venlig".
+
+## Tool-subset
+
+I `/admin/integrations` kan admin vælge nøjagtigt hvilke tools voice må kalde (alt fra `CUSTOMER_TOOL_ALLOWLIST`). Defaults til discovery-fokus:
+
+- `products.search`
+- `products.get`
+- `cart.add`
+- `cart.get_summary`
+- `discounts.try_apply`
+
+**`orders.create` er off som default** fordi voice-confirmation er svært at få rigtigt. Hvis du vil tilbyde voice-checkout:
+
+1. Aktivér `orders.create` i admin-formen
+2. Vær opmærksom på at hver write går gennem den eksisterende `CUSTOMER_CONFIRM_REQUIRED`-gate
+3. Brugeren skal sige "ja" (eller klikke "ja" som backup) før tool faktisk eksekverer
+4. Voice-rows i `AuditLog` viser om confirmation-tokenen blev konsumeret eller ej
+
+## Custom voice system-prompt
+
+Hvis du vil overstyre den fulde voice system-prompt:
+
+1. Opret `lib/voice/prompts/<din-slug>.ts` med en `buildPrompt(brand)`-funktion der returnerer din egen prompt-streng
+2. Importér og swap i `lib/voice/prompts.ts` `buildVoiceShopPrompt`
+
+Voice-prompten ER forskellig fra text-prompten. Du må aldrig outputte:
+
+- Markdown (`*`, `**`, `_`, `#`) — TTS læser dem som "asterisk asterisk"
+- Bullets eller numbered lists — det lyder maskinelt
+- URLs — TTS læser dem bogstaveligt
+- Code-blocks — det er en talt assistant, ikke en developer-tool
+
+Brug korte sætninger (under 15 ord), naturlige overgange ("først ... og så ..."), og lad UI bære den lange liste af tool-resultater.
+
+## Voice-selection
+
+8 native Google-voices er tilgængelige:
+
+| Voice | Karakter |
+|-------|----------|
+| Puck | Varm, neutral (default) |
+| Charon | Dyb, sober |
+| Kore | Lys, energisk |
+| Fenrir | Skarp, urban |
+| Aoede | Sang-agtig, melodisk |
+| Leda | Beroligende, voksen |
+| Orus | Autoritativ, voksen |
+| Zephyr | Let, mobile-venlig |
+
+Skift voice i `/admin/integrations`. Næste session bruger den nye stemme (eksisterende sessions kører videre med den gamle indtil de slutter).

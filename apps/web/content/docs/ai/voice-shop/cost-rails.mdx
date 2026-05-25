@@ -1,0 +1,81 @@
+---
+title: Cost rails
+description: Daily-cap, session-cap, BotID, IP-rate-limit. Forventet cost-loft før du shipper.
+---
+
+Voice-shopping kan brænde penge hvis du ikke har rails fra dag 1. En bot der ringer ind 24/7 mod en ubeskyttet voice-endpoint kan koste $50-100/dag på Gemini-faktura.
+
+Cartwright shipper 4 lag beskyttelse som default. Sluk dem kun hvis du har bevidst grund.
+
+## 1. Per-session cap (5 min default)
+
+`voiceShopMaxMinutesPerSession`: Google's `newSessionExpireTime` lukker WSS-forbindelsen efter X minutter. Ingen browser-tricks kan forlænge den — token er pre-committet og kan ikke fornyes uden ny mint.
+
+Anbefalinger:
+
+- **3-5 min** for browse-mode (default)
+- **10 min** hvis du har power-users eller B2B-shopping
+- **1 min** hvis du opdager abuse-patterns
+
+## 2. Per-shop daily-cap (60 min default)
+
+`voiceShopMaxMinutesPerDay`: når totale voice-minutter brugt i en UTC-dag rammer caps'en, returnerer `/api/live/token` 429 og mic-knappen viser tooltip om "daily limit reached".
+
+Ved $0.024/min for native-audio output × 60 min/dag = **~$1.44/dag** = ~$45/måned.
+
+Tip: start lavt (30-60 min) og bump op efter første uge når du har data om reel brug.
+
+## 3. Per-IP rate-limit
+
+`voiceTokenLimiter` i `lib/rate-limit.ts`: max 3 token-mints per IP per 20 minutter (sustained, burst 3). En bot der prøver at åbne mange sessioner får 429 efter første tre.
+
+In-memory token-bucket — state reset per Vercel-deploy. Til multi-instance prod-deploy bør du senere switche til Upstash Redis hvis abuse-traffic vokser.
+
+## 4. Vercel BotID
+
+`@vercel/botid` kører automatisk i production (`VERCEL_ENV === "production"`) før hver token-mint. Bots afvises med 403 og logges til audit:
+
+```
+actor       storefront-voice:bot-rejected-<ip>
+tool        live.token.mint
+ok          false
+errorMsg    BotID rejected token mint
+```
+
+Lokal dev springer BotID-check over så du ikke skal mock'e Vercel-infrastruktur.
+
+## Cost-eksempel for én shop
+
+| Scenarie | Min/dag | Cost/dag | Cost/måned |
+|----------|---------|----------|------------|
+| Lav trafik (5 sessions à 1 min) | 5 | ~$0.12 | ~$3.60 |
+| Medium (20 sessions à 3 min) | 60 | ~$1.44 | ~$45 |
+| Høj (100 sessions à 3 min) | 300 | ~$7.20 | ~$220 |
+| Daily-cap nået ved 60 min | 60 | ~$1.44 | **~$45 maks** |
+
+Daily-cap er **hard cap** — ramt den, viser knappen "daily limit reached" indtil næste UTC-day.
+
+## Audit-spor af voice-cost
+
+`AuditLog` rows for voice-sessions har `sessionMinutes`-feltet sat når sessionen slutter. Aggregér per dag:
+
+```sql
+SELECT DATE(createdAt) as day,
+       SUM(sessionMinutes) as total_minutes,
+       COUNT(DISTINCT actor) as unique_sessions
+FROM AuditLog
+WHERE modality = 'voice' AND tool = 'session.end'
+GROUP BY day
+ORDER BY day DESC;
+```
+
+Du kan også se totalen i `/admin/integrations`' AI-status-pill — udvidet med voice-mins i dag.
+
+## Hvis du planlægger viral launch
+
+Inden du tweeter "prøv voice på min shop":
+
+1. Bump `voiceShopMaxMinutesPerDay` til hvad du kan tåle (start 200-300)
+2. Verificér Gemini API-nøglen har betalt-tier aktiveret (gratis-tier rate-limits hurtigt)
+3. Indsæt en monitoring-alert på Google Cloud → Billing → Budget alert
+4. Vær klar til at sætte `voiceShopEnabled = false` hvis tingene løber løbsk — instant kill-switch via admin

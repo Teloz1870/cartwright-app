@@ -1,0 +1,49 @@
+---
+title: Vision mode
+description: Kamera-input til voice-sessioner. Hvad Gemini ser, og hvad det betyder for privacy.
+---
+
+Voice-sessioner kan tilvælge **vision** — kameraet sender 1 frame/sek til Gemini, og modellen kan referere til hvad det ser.
+
+Eksempler på vision-prompts kunden kan sige:
+
+- "Find produkter i samme farve som det her bord"
+- "Har I noget der matcher denne sweater?"
+- "Hvilken størrelse er det her?" (mens hun holder en linjal mod et produkt)
+
+## Hvordan det virker
+
+1. Kunden klikker **Kamera til** i voice-overlay'en
+2. Browseren beder om kamera-permission via `getUserMedia({ video: { facingMode: "environment" } })`
+3. Hver sekund tager vi et 720p-snapshot, encoded som JPEG ved kvalitet 0.7
+4. Frame sendes via WSS til Gemini med `mimeType: "image/jpeg"`
+5. Gemini bruger frame'en som kontekst når den vælger næste tool-call eller voice-output
+
+Bagkamera prefereres på mobile (`facingMode: "environment"`) så kunden kan vise omgivelser; desktop bruger forward-kamera.
+
+## Privacy-noter
+
+- **Frames sendes direkte til Google** — ikke gennem din server. Token er pre-committet med vision-tilladelsen, så browseren kan ikke "smugle" frames via en sidekanal.
+- **Frames lagres ikke per default** — Google's ZDR-tilbud for Gemini Live API betyder at frame-data ikke trænes på eller persist'es ud over session-længden. Hvis du har en specifik DPA-kontrakt med Google, gælder den kontrakts retention-policy.
+- **Du logger ikke frames serverside** — Cartwright's `/api/live/tool-dispatch` ser kun det færdige tool-call (fx `products.search({"query":"blue chairs"})`), ikke det visuelle materiale. Hvad Gemini "så" inden den valgte at kalde tool'en kommer aldrig ind på din server.
+- **GDPR-implikation:** Kunden giver eksplicit kamera-permission per session. Browser-promptens text er styret af din shop's domain (`/api/live/token`-mintet token), så det er din shop kunden ser i prompten.
+
+## Sluk vision globalt
+
+Hvis din DPO ikke er klar til vision-input endnu:
+
+1. `/admin/integrations` → Voice Shop sektion → unflag "Vision aktiveret"
+2. Eller per brand: `brand.config.ts` → fjern voice-mounting helt (sæt `features.voiceShop = false`)
+
+Mic-knappen forbliver synlig, men kamera-toggle vises ikke i overlay'en. Voice-only sessions tæller samme mod daily-cap.
+
+## Per-customer kontrol
+
+Kunden ser kamera-toggle som tydelig knap i overlay'en — den er **off** når sessionen starter. Kunden vælger aktivt at tænde, og kan slukke igen midt i en session. Når slukket, stopper alle video-tracks og frames sendes ikke længere.
+
+## Tekniske begrænsninger
+
+- **Kun JPEG-frames** ved 1 fps. Højere rate er muligt men koster billing-tokens linært.
+- **Ingen lyd-fra-video** — webcam-audio sendes ikke (vi bruger eksklusivt mic-stream fra `getUserMedia({ audio: ... })`).
+- **Screen-share er IKKE understøttet** i v1. Forvirrende for kunder i shopping-flow; potentielt relevant for admin-voice senere.
+- **Frame-size:** 720p down-scaled til 70% JPEG-kvalitet. Trade-off mellem visuel klarhed og bandwidth (mobile-data scenarie).

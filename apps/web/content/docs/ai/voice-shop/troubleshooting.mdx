@@ -1,0 +1,80 @@
+---
+title: Troubleshooting
+description: Microphone permission, WSS-block, latency-spikes, audio-glitches.
+---
+
+## "Mikrofon-adgang blev nægtet"
+
+Browser blokerer `getUserMedia` af to grunde:
+
+1. **HTTPS er påkrævet** for ikke-localhost. Hvis du tester mod en preview-URL via HTTP, browseren returnerer NotAllowedError uden prompt. Brug Vercel preview-URL (HTTPS) eller lokal `http://localhost:3000`.
+
+2. **Permission tidligere afvist.** Klik 🔒-ikonet i adresselinjen → Site permissions → Microphone → Allow → reload.
+
+## "Voice-forbindelsen blev afbrudt"
+
+WSS-forbindelsen til `*.generativelanguage.googleapis.com` blokerer ved:
+
+- **Corporate proxy/VPN** der ikke understøtter WebSockets eller HTTP/2-tunneling
+- **Strenge CSP-headers** der blocker WS-uplink — tjek `connect-src` i din shop's CSP
+
+Test fra et andet netværk (mobile-hotspot) for at isolere proxy-issue. Hvis det virker uden VPN, er det din corporate firewall.
+
+## Høj first-audio-latency (>2s)
+
+Forventet first-audio-latency er **320-800ms**. Hvis du ser konsistent >2s:
+
+- **Browseren cold-starter audio-context** — første session per tab er langsommere. Genstart ikke per turn.
+- **Network-RTT mod Google** — voice-traffic går til Google's nærmeste region. Skandinaviske brugere får ~50ms. >200ms RTT betyder dit netværk eller deres serverside er overbelastet.
+- **Mic-permission-prompt timer mid-connect** — bed om permission *før* token-mint hvis du har en custom flow.
+
+Du kan se latency-tallet for token-mint-flowet i `/admin/integrations` → Voice Shop → Test voice-forbindelse. Hvis det er <500ms men first-audio er langsom, er problemet i Google's tail eller browserens AudioContext-initialisering.
+
+## "Ingen voice-tools tilgængelige"
+
+Token-mint returnerer 503 hvis `voiceShopAllowedTools` er tomt **eller** ingen af de valgte tools matcher `CUSTOMER_TOOL_ALLOWLIST`. Tjek:
+
+1. `/admin/integrations` → Voice Shop → Tools-multi-select — vælg mindst ét
+2. Hvis du har customisat `CUSTOMER_TOOL_ALLOWLIST` i `lib/ai/client.ts`, sørg for at admin's gemte tools stadig findes der
+
+## Audio-glitches (clicks/pops mellem turns)
+
+Output-audio fra Gemini kommer som diskrete frames. Cartwright's client scheduler dem på `AudioContext.currentTime` cursor — hvis browseren har throttlet audio-context (bagground-tab), buffer'en run ud og du hører clicks.
+
+Fix: hold tabben aktivt synlig under demo. Mobile Safari throttler aggressivt i baggrunden.
+
+## "Tool ikke tilladt i voice-mode"
+
+Tool-dispatch returnerer 403 hvis:
+
+1. Tool-navn fra Gemini ikke matcher allowed-list (defence-in-depth — token-mintet låser det, men vi double-check'er)
+2. Allowed-list i DB er ude af sync med registry — fx du fjernede et tool fra `CUSTOMER_TOOL_ALLOWLIST` men admin's gemte settings refererer stadig til det
+
+Audit-log vil have en row med `ok=false`, `errorMsg="Voice-dispatch: tool ikke i allowlist"`. Det indikerer enten config-mismatch eller (i værste fald) et angriber-forsøg.
+
+## "Session-id mismatch"
+
+Tool-dispatch tjekker at body's `sessionId` matcher `cart_session` cookie. Mismatch sker hvis:
+
+- Browseren har lukket en gammel session og åbnet en ny i samme tab uden at refreshe cookie
+- Du tester på flere tabs samtidig og cookie crossover'er
+
+Fix: refresh siden. Hvis det stadig sker, tjek at din shop's middleware ikke trinser `cart_session` mid-flight.
+
+## Daily cap nået
+
+`/api/live/token` returnerer 429 med `Retry-After`-header pointing til midnight UTC. Knappen viser "Daily limit reached" tooltip. To muligheder:
+
+1. **Bump cap** i `/admin/integrations` (kræver kun page-reload)
+2. **Vent til midnight UTC** når counter nulstilles
+
+Hvis du ofte rammer cap'en, er det signal om reel customer-engagement — overvej at bump cap'en og overvåg Google Cloud Console for actual cost.
+
+## Gemini API-fejl: "Rate limit exceeded"
+
+Gratis-tier rate-limits er **15 RPM, 1500 RPD** for `gemini-2.5-flash-live`. Hvis du shipper voice viralt skal du opgradere til betalt tier:
+
+1. Google Cloud Console → APIs & Services → Enabled APIs → Generative Language API
+2. Quotas tab → Request increase
+
+Betalt-tier giver 2k+ RPM. Forventet cost: ~$0.024/min audio out, ~$0.001/sec audio input. Set [Cost rails](/docs/ai/voice-shop/cost-rails) for konkrete eksempler.

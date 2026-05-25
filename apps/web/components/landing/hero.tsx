@@ -14,9 +14,9 @@ export function Hero() {
             v0.1 beta
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
-            The AI-first webshop template{' '}
+            The first webshop your customers can{' '}
             <span className="relative inline-block">
-              <span className="relative z-10">you actually own.</span>
+              <span className="relative z-10">talk to.</span>
               <span
                 aria-hidden
                 className="absolute inset-x-0 -bottom-1 h-3 bg-cw-terracotta/20 dark:bg-cw-terracotta/30 -z-0"
@@ -24,9 +24,12 @@ export function Hero() {
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
-            A production-shaped Next.js 16 commerce stack with an AI-native admin,
-            built-in MCP server, and Stripe checkout. Scaffold a real shop in one
-            command — then own every line.
+            Cartwright is the AI-first Next.js 16 commerce template with voice +
+            vision shopping built in. Click the mic below and try it live — same
+            engine your customers will use on day one.
+          </p>
+          <p className="mt-3 text-xs sm:text-sm text-cw-terracotta font-mono">
+            ↓ click the mic to try voice shopping
           </p>
           <p className="mt-4 max-w-2xl text-sm sm:text-base text-cw-stone-600 dark:text-cw-stone-300 leading-relaxed">
             Built for human shoppers <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">and</span> AI buyer agents.{' '}
