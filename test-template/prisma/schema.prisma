@@ -432,19 +432,43 @@ model IntegrationSettings {
   // structured output). Local kører via @ai-sdk/openai-compatible mod
   // localAiEndpoint (typisk http://localhost:11434/v1 for Ollama).
   // Auto = forsøg local; fallback til anthropic on-error.
-  aiProvider           String? @default("anthropic") // "anthropic" | "local" | "auto"
-  anthropicModel       String? @default("claude-haiku-4-5")
-  localAiEndpoint      String? // plaintext URL, ikke krypteret (ikke secret)
-  localAiModel         String? // fx "gemma3:12b"
-  localAiFallbackMode  String? @default("on-error") // "off" | "on-error" | "after-3-failures"
-  lastDegradedAt       DateTime? // sidste gang local fejlede og auto-fallback skiftede
-  lastModelDetectedAt  DateTime? // for capability-cache invalidation
+  aiProvider          String?   @default("anthropic") // "anthropic" | "local" | "auto"
+  anthropicModel      String?   @default("claude-haiku-4-5")
+  localAiEndpoint     String? // plaintext URL, ikke krypteret (ikke secret)
+  localAiModel        String? // fx "gemma3:12b"
+  localAiFallbackMode String?   @default("on-error") // "off" | "on-error" | "after-3-failures"
+  lastDegradedAt      DateTime? // sidste gang local fejlede og auto-fallback skiftede
+  lastModelDetectedAt DateTime? // for capability-cache invalidation
   /**
    * Cost-accounting JSON (Fase 3.3): per-dag per-provider call counter.
    * Format: { "2026-05-25": { "anthropic": 142, "local": 89 }, ... }
    * Beskytter mod surprise-bills når auto-fallback er aktiv.
    */
-  aiUsageJson          String?
+  aiUsageJson         String?
+
+  // Voice-plan Fase 1: Gemini Live voice-shopping config.
+  // googleGeminiApiKey (line 413) genbruges som API-key — samme felt som
+  // virtual try-on. Voice-features gates desuden af brand.features.voiceShop
+  // i config-laget så templates kan opt-out på shop-niveau før admin-toggle.
+  voiceShopEnabled              Boolean? @default(false)
+  voiceShopModel                String?  @default("gemini-2.5-flash-live")
+  voiceShopVoice                String?  @default("Puck") // Google native voices: Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, Zephyr
+  /**
+   * JSON-array af tool-navne fra CUSTOMER_TOOL_ALLOWLIST som voice må kalde.
+   * Default subset i lib/voice/settings.ts hvis NULL/tom.
+   * Voice-discovery er bedre end voice-transaction så orders.create er ude
+   * af defaults — admin kan opt-in eksplicit.
+   */
+  voiceShopAllowedToolsJson     String?
+  voiceShopMaxMinutesPerSession Int?     @default(5)
+  voiceShopMaxMinutesPerDay     Int?     @default(60) // per-shop daily cap
+  voiceShopVisionEnabled        Boolean? @default(true)
+  /**
+   * Daily usage tracker for cost-rails. Format:
+   * { "date": "2026-05-25", "minutesUsed": 42 }
+   * Atomic-updateres af incrementDailyUsage(). Resettes ved date-flip.
+   */
+  voiceShopLastDailyUsageJson   String?
 
   updatedAt DateTime @updatedAt
 }
