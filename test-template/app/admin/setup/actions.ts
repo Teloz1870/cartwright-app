@@ -29,12 +29,17 @@ type ActionResult = { ok: true } | { ok: false; error: string };
  * felter (tagline, domain, emails, industryTemplate). Felter er nullable så
  * tomme værdier bevarer brand.config defaults.
  */
+const INBOX_VENDORS = ["cloudflare", "improvmx", "zoho", "m365"] as const;
+
 const brandSchema = z.object({
   storeName: z.string().min(2).max(60),
   announcement: z.string().max(160).default(""),
   tagline: z.string().trim().max(120).optional(),
   domain: z.string().trim().max(120).optional(),
+  emailFrom: z.string().trim().email().optional().or(z.literal("")),
+  emailFromName: z.string().trim().max(60).optional(),
   emailSupport: z.string().trim().email().optional().or(z.literal("")),
+  inboxVendor: z.enum(INBOX_VENDORS).optional().or(z.literal("")),
   industryTemplate: z.enum(INDUSTRY_SLUGS).optional(),
 });
 
@@ -45,7 +50,10 @@ export async function saveBrandStep(formData: FormData): Promise<ActionResult> {
     announcement: formData.get("announcement") ?? "",
     tagline: formData.get("tagline") || undefined,
     domain: formData.get("domain") || undefined,
+    emailFrom: formData.get("emailFrom") || undefined,
+    emailFromName: formData.get("emailFromName") || undefined,
     emailSupport: formData.get("emailSupport") || undefined,
+    inboxVendor: formData.get("inboxVendor") || undefined,
     industryTemplate: formData.get("industryTemplate") || undefined,
   });
   if (!parsed.success) {
@@ -59,7 +67,10 @@ export async function saveBrandStep(formData: FormData): Promise<ActionResult> {
       announcement: data.announcement,
       tagline: data.tagline || null,
       domain: data.domain || null,
+      emailFrom: data.emailFrom || null,
+      emailFromName: data.emailFromName || null,
       emailSupport: data.emailSupport || null,
+      inboxVendor: data.inboxVendor || null,
       industryTemplate: data.industryTemplate || null,
     },
     create: {
@@ -69,7 +80,10 @@ export async function saveBrandStep(formData: FormData): Promise<ActionResult> {
       announcement: data.announcement,
       tagline: data.tagline || null,
       domain: data.domain || null,
+      emailFrom: data.emailFrom || null,
+      emailFromName: data.emailFromName || null,
       emailSupport: data.emailSupport || null,
+      inboxVendor: data.inboxVendor || null,
       industryTemplate: data.industryTemplate || null,
     },
   });

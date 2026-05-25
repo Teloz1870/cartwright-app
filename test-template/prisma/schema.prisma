@@ -370,6 +370,13 @@ model BrandingSettings {
   emailSupport     String?
   emailAdmin       String?
   /**
+   * Lag 2: kundens valgte indbakke-udbyder. Bruges af EmailDomainPanel til
+   * at vise præcis DNS-record-sæt + kombineret SPF. Valgmuligheder matcher
+   * docs/email/dns-records.mdx: "cloudflare" | "improvmx" | "zoho" | "m365"
+   * | null (= ikke valgt endnu).
+   */
+  inboxVendor      String?
+  /**
    * Industry-template-override fra DB. Hvis sat, læser seed/UI fra denne i
    * stedet for brand.config.industryTemplate. Tillader admin at skifte
    * template via /admin/setup uden code-deploy. Default null = brug brand.config.

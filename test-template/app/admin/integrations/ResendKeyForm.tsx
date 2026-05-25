@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setResendKeyAction, clearResendKeyAction } from "./actions";
+import {
+  setResendKeyAction,
+  clearResendKeyAction,
+  sendTestResendEmailAction,
+} from "./actions";
 import { brand } from "@/brand.config";
 
 type Props = {
@@ -13,6 +17,29 @@ export default function ResendKeyForm({ initial }: Props) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [savedPreview, setSavedPreview] = useState<string | null>(initial.preview);
+
+  // Test-email state (separat fra key-form så vi kan kalde uden at gemme nyt)
+  const [testTo, setTestTo] = useState("");
+  const [testPending, startTestTransition] = useTransition();
+  const [testResult, setTestResult] = useState<
+    | { kind: "ok"; sentTo: string }
+    | { kind: "error"; message: string }
+    | null
+  >(null);
+
+  function handleSendTest() {
+    setTestResult(null);
+    const fd = new FormData();
+    fd.set("to", testTo);
+    startTestTransition(async () => {
+      const r = await sendTestResendEmailAction(fd);
+      if (r.ok) {
+        setTestResult({ kind: "ok", sentTo: r.sentTo });
+      } else {
+        setTestResult({ kind: "error", message: r.error });
+      }
+    });
+  }
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -87,8 +114,17 @@ export default function ResendKeyForm({ initial }: Props) {
             >
               resend.com/api-keys
             </a>
-            . Gratis tier: 100 mails/dag. Husk DKIM + SPF i Resend-dashboard
-            for {brand.domain}.
+            . Gratis tier: 3000 mails/md. Følg den komplette opsætning på{" "}
+            <a
+              href="https://cartwright.app/docs/email/resend-sending"
+              target="_blank"
+              rel="noreferrer"
+              className="font-bold text-sol-accent underline"
+            >
+              cartwright.app/docs/email/resend-sending
+            </a>
+            {" "}— SPF, DKIM, brand.config.ts og hvordan du undgår SPF-konflikt
+            med din indbakke-udbyder for {brand.domain}.
           </span>
         </label>
 
@@ -118,6 +154,66 @@ export default function ResendKeyForm({ initial }: Props) {
           )}
         </div>
       </form>
+
+      {/* Test-email — kun synlig når key er gemt så vi ved hvad vi tester */}
+      {savedPreview && (
+        <div className="rounded-lg border border-sol-ink/10 bg-sol-cream/30 p-4">
+          <div className="mb-3">
+            <h3 className="text-xs font-black uppercase tracking-widest text-sol-ink">
+              Test afsendelse
+            </h3>
+            <p className="mt-1 text-xs text-sol-muted">
+              Send en testmail til din egen indbakke for at bekræfte at afsender-
+              domænet er verificeret i Resend og DNS er propageret. Hvis du får
+              en fejl, peger den typisk på en uverificeret from-adresse eller
+              manglende SPF/DKIM — se{" "}
+              <a
+                href="https://cartwright.app/docs/email/troubleshooting"
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-sol-accent underline"
+              >
+                troubleshooting
+              </a>
+              .
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex-1 min-w-[200px]">
+              <span className="block text-[10px] font-black uppercase tracking-widest text-sol-muted">
+                Modtager
+              </span>
+              <input
+                type="email"
+                value={testTo}
+                onChange={(e) => setTestTo(e.target.value)}
+                placeholder="din-egen@gmail.com"
+                autoComplete="off"
+                spellCheck={false}
+                className="mt-1 block w-full rounded-lg border border-sol-ink/15 bg-white px-3 py-2 font-mono text-sm text-sol-ink outline-none focus:border-sol-accent"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={handleSendTest}
+              disabled={testPending || testTo.trim().length === 0}
+              className="rounded-full border border-sol-ink/15 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-sol-ink transition hover:bg-sol-accent hover:text-white hover:border-sol-accent disabled:opacity-50"
+            >
+              {testPending ? "Sender…" : "Send testmail"}
+            </button>
+          </div>
+          {testResult?.kind === "ok" && (
+            <p className="mt-3 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-bold text-green-800">
+              ✓ Testmail sendt til {testResult.sentTo}. Tjek din indbakke (og evt. spam-mappe) — verificér Authentication-Results i headerne.
+            </p>
+          )}
+          {testResult?.kind === "error" && (
+            <p className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-bold text-red-700">
+              {testResult.message}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

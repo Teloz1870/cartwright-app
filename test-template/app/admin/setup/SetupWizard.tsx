@@ -19,7 +19,22 @@ type Props = {
   initialStoreName: string;
   initialAnnouncement: string;
   initialBrandSlug: string;
+  initialTagline?: string;
+  initialDomain?: string;
+  initialEmailFrom?: string;
+  initialEmailFromName?: string;
+  initialEmailSupport?: string;
+  initialInboxVendor?: string;
+  initialIndustryTemplate?: string;
 };
+
+const INBOX_VENDOR_OPTIONS = [
+  { value: "", label: "— Vælg senere —" },
+  { value: "cloudflare", label: "Cloudflare Email Routing (gratis, forward)" },
+  { value: "improvmx", label: "ImprovMX (gratis, forward)" },
+  { value: "zoho", label: "Zoho Mail (gratis indbakke, 5 brugere)" },
+  { value: "m365", label: "Microsoft 365 (betalt, fuld indbakke)" },
+];
 
 const STEPS: { id: StepId; label: string }[] = [
   { id: "brand", label: "Brand" },
@@ -49,6 +64,13 @@ export default function SetupWizard({
   initialStoreName,
   initialAnnouncement,
   initialBrandSlug,
+  initialTagline = "",
+  initialDomain = "",
+  initialEmailFrom = "",
+  initialEmailFromName = "",
+  initialEmailSupport = "",
+  initialInboxVendor = "",
+  initialIndustryTemplate = "eyewear",
 }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<StepId>("brand");
@@ -58,12 +80,15 @@ export default function SetupWizard({
   // Brand-step state (ULTRAPLAN-lite UL5: nu med tagline/domain/email/industry)
   const [storeName, setStoreName] = useState(initialStoreName);
   const [announcement, setAnnouncement] = useState(initialAnnouncement);
-  const [tagline, setTagline] = useState("");
-  const [domain, setDomain] = useState("");
-  const [emailSupport, setEmailSupport] = useState("");
+  const [tagline, setTagline] = useState(initialTagline);
+  const [domain, setDomain] = useState(initialDomain);
+  const [emailFrom, setEmailFrom] = useState(initialEmailFrom);
+  const [emailFromName, setEmailFromName] = useState(initialEmailFromName);
+  const [emailSupport, setEmailSupport] = useState(initialEmailSupport);
+  const [inboxVendor, setInboxVendor] = useState(initialInboxVendor);
   // P1.4: derive industries dynamisk fra INDUSTRY_TEMPLATE_OPTIONS — drop literal-type
   // så nye industries automatisk dukker op uden code-edit
-  const [industryTemplate, setIndustryTemplate] = useState<string>("eyewear");
+  const [industryTemplate, setIndustryTemplate] = useState<string>(initialIndustryTemplate);
 
   // Theme-step state (ULTRAPLAN-lite UL6)
   const [brandDescription, setBrandDescription] = useState("");
@@ -105,7 +130,10 @@ export default function SetupWizard({
     fd.set("announcement", announcement);
     if (tagline) fd.set("tagline", tagline);
     if (domain) fd.set("domain", domain);
+    if (emailFrom) fd.set("emailFrom", emailFrom);
+    if (emailFromName) fd.set("emailFromName", emailFromName);
     if (emailSupport) fd.set("emailSupport", emailSupport);
+    if (inboxVendor) fd.set("inboxVendor", inboxVendor);
     fd.set("industryTemplate", industryTemplate);
     startTransition(() => {
       void (async () => {
@@ -287,19 +315,6 @@ export default function SetupWizard({
                 />
               </div>
               <div>
-                <label htmlFor="emailSupport" className={labelClass}>
-                  Support-email (valgfri)
-                </label>
-                <input
-                  id="emailSupport"
-                  type="email"
-                  value={emailSupport}
-                  onChange={(e) => setEmailSupport(e.target.value)}
-                  className={inputClass}
-                  placeholder="kontakt@dit-domæne.dk"
-                />
-              </div>
-              <div>
                 <label htmlFor="industryTemplate" className={labelClass}>
                   Industry-template
                 </label>
@@ -320,6 +335,101 @@ export default function SetupWizard({
                 <p className="mt-1 text-xs text-sol-muted">
                   Vælger seed-data ved næste `npm run seed`. Skifter ikke eksisterende data.
                 </p>
+              </div>
+            </div>
+
+            {/* Email-konfiguration — kan ændres uden code-deploy.
+                Tomme værdier bevarer brand.config defaults.
+                Komplet DNS-setup: cartwright.app/docs/email */}
+            <div className="mt-6 rounded-lg border border-sol-ink/10 bg-sol-cream/30 p-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-sol-ink">
+                  Email-adresser
+                </h3>
+                <p className="mt-1 text-xs text-sol-muted">
+                  Disse styrer hvem der står som afsender på ordrebekræftelser og
+                  magic-links. Skift når dit domæne er verificeret i Resend — guide
+                  på{" "}
+                  <a
+                    href="https://cartwright.app/docs/email"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-sol-accent underline"
+                  >
+                    cartwright.app/docs/email
+                  </a>
+                  .
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label htmlFor="emailFromName" className={labelClass}>
+                    Afsender-navn (valgfri)
+                  </label>
+                  <input
+                    id="emailFromName"
+                    value={emailFromName}
+                    onChange={(e) => setEmailFromName(e.target.value)}
+                    className={inputClass}
+                    placeholder="Fx Panel Hegn Direkte"
+                    maxLength={60}
+                  />
+                  <p className="mt-1 text-xs text-sol-muted">
+                    Vises i mail-klienter før afsender-adressen.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="emailFrom" className={labelClass}>
+                    Afsender-adresse (valgfri)
+                  </label>
+                  <input
+                    id="emailFrom"
+                    type="email"
+                    value={emailFrom}
+                    onChange={(e) => setEmailFrom(e.target.value)}
+                    className={inputClass}
+                    placeholder="orders@dit-domæne.dk"
+                  />
+                  <p className="mt-1 text-xs text-sol-muted">
+                    Skal være verificeret i Resend ellers afvises afsendelsen.
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="emailSupport" className={labelClass}>
+                    Support-email / Reply-To (valgfri)
+                  </label>
+                  <input
+                    id="emailSupport"
+                    type="email"
+                    value={emailSupport}
+                    onChange={(e) => setEmailSupport(e.target.value)}
+                    className={inputClass}
+                    placeholder="hello@dit-domæne.dk"
+                  />
+                  <p className="mt-1 text-xs text-sol-muted">
+                    Her lander kundernes svar. Sættes typisk til din indbakke (fx Cloudflare Email Routing, Zoho eller M365 — se docs).
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="inboxVendor" className={labelClass}>
+                    Indbakke-løsning (valgfri)
+                  </label>
+                  <select
+                    id="inboxVendor"
+                    value={inboxVendor}
+                    onChange={(e) => setInboxVendor(e.target.value)}
+                    className={inputClass}
+                  >
+                    {INBOX_VENDOR_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-sol-muted">
+                    Bestemmer hvilke DNS-records vi viser dig i /admin/integrations. Du kan altid skifte senere.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

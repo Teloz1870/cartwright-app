@@ -4,22 +4,41 @@ import {
   getResendStatus,
 } from "./actions";
 import { getSetupStatus } from "@/lib/setup-status";
+import { getBrand } from "@/lib/brand";
 import AnthropicKeyForm from "./AnthropicKeyForm";
 import GeminiKeyForm from "./GeminiKeyForm";
 import StripeKeyForm from "./StripeKeyForm";
 import ResendKeyForm from "./ResendKeyForm";
+import EmailDomainPanel from "./EmailDomainPanel";
 import SetupRunbook from "./SetupRunbook";
 import SetupTabs from "./SetupTabs";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminIntegrationsPage() {
-  const [{ anthropic, gemini }, stripe, resend, setupStatus] = await Promise.all([
-    getIntegrationStatus(),
-    getStripeStatus(),
-    getResendStatus(),
-    getSetupStatus(),
-  ]);
+  const [{ anthropic, gemini }, stripe, resend, setupStatus, brandData] =
+    await Promise.all([
+      getIntegrationStatus(),
+      getStripeStatus(),
+      getResendStatus(),
+      getSetupStatus(),
+      getBrand(),
+    ]);
+
+  // Vis kun rigtige værdier (ikke compile-time placeholder "example.com")
+  const realDomain =
+    brandData.domain && brandData.domain !== "example.com"
+      ? brandData.domain
+      : null;
+  const realEmailFrom =
+    brandData.emails.from && brandData.emails.from !== "noreply@example.com"
+      ? brandData.emails.from
+      : "";
+  const realEmailFromName =
+    brandData.emails.fromName &&
+    brandData.emails.fromName !== "Cartwright Demo Store"
+      ? brandData.emails.fromName
+      : "";
 
   return (
     <div className="flex flex-col gap-8">
@@ -96,6 +115,13 @@ export default async function AdminIntegrationsPage() {
               </div>
               <ResendKeyForm initial={resend} />
             </section>
+
+            <EmailDomainPanel
+              initialDomain={realDomain}
+              initialInboxVendor={brandData.inboxVendor}
+              initialEmailFrom={realEmailFrom}
+              initialEmailFromName={realEmailFromName}
+            />
 
             <section className="rounded-2xl border border-dashed border-sol-ink/15 p-6">
               <h2 className="text-lg font-black text-sol-muted">Kommer senere</h2>

@@ -29,6 +29,13 @@ export default async function SetupPage() {
         initialStoreName={settings?.storeName ?? brand.storeName}
         initialAnnouncement={settings?.announcement ?? ""}
         initialBrandSlug={brand.storeSlug}
+        initialTagline={settings?.tagline ?? ""}
+        initialDomain={settings?.domain ?? ""}
+        initialEmailFrom={settings?.emailFrom ?? ""}
+        initialEmailFromName={settings?.emailFromName ?? ""}
+        initialEmailSupport={settings?.emailSupport ?? ""}
+        initialInboxVendor={settings?.inboxVendor ?? ""}
+        initialIndustryTemplate={settings?.industryTemplate ?? "eyewear"}
       />
     </div>
   );

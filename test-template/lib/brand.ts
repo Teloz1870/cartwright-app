@@ -34,6 +34,12 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] extends object ? Mutable<T[K]
 export type MergedBrand = Mutable<typeof brandDefaults> & {
   /** Indikerer at brand er hentet fra DB (vs fresh fallback) */
   source: "db" | "fallback";
+  /**
+   * Lag 2: kundens valgte indbakke-løsning. Findes kun i DB (ikke i
+   * compile-time brand.config). Bruges af EmailDomainPanel + DNS verify.
+   * Null = ikke valgt endnu.
+   */
+  inboxVendor: string | null;
 };
 
 export async function getBrand(): Promise<MergedBrand> {
@@ -48,7 +54,11 @@ export async function getBrand(): Promise<MergedBrand> {
     });
 
     if (!row) {
-      const fallback = { ...brandDefaults, source: "fallback" as const } as MergedBrand;
+      const fallback = {
+        ...brandDefaults,
+        source: "fallback" as const,
+        inboxVendor: null,
+      } as MergedBrand;
       cache = { value: fallback, expiresAt: now + CACHE_TTL_MS };
       return fallback;
     }
@@ -71,6 +81,7 @@ export async function getBrand(): Promise<MergedBrand> {
       industryTemplate:
         row.industryTemplate || brandDefaults.industryTemplate,
       source: "db" as const,
+      inboxVendor: row.inboxVendor ?? null,
     } as MergedBrand;
 
     cache = { value: merged, expiresAt: now + CACHE_TTL_MS };
@@ -81,7 +92,11 @@ export async function getBrand(): Promise<MergedBrand> {
       "[getBrand] DB-load fejlede, bruger brand.config defaults:",
       err instanceof Error ? err.message : err,
     );
-    const fallback = { ...brandDefaults, source: "fallback" as const } as MergedBrand;
+    const fallback = {
+      ...brandDefaults,
+      source: "fallback" as const,
+      inboxVendor: null,
+    } as MergedBrand;
     cache = { value: fallback, expiresAt: now + CACHE_TTL_MS };
     return fallback;
   }

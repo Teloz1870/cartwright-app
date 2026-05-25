@@ -1,5 +1,6 @@
 "use server";
 
+import { Resend } from "resend";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
@@ -9,9 +10,18 @@ import {
   invalidateGeminiKeyCache,
 } from "@/lib/ai/gemini";
 import { invalidateStripeKeysCache } from "@/lib/stripe";
-import { invalidateResendKeyCache } from "@/lib/mailer/resend";
+import { getResendApiKey, invalidateResendKeyCache } from "@/lib/mailer/resend";
+import { getBrand, invalidateBrandCache } from "@/lib/brand";
 import { encryptSecret, decryptSecret } from "@/lib/secret-encryption";
 import { invalidateSetupStatusCache, parseChecklist } from "@/lib/setup-status";
+import { verifyDomainDns, type DnsCheckResult } from "@/lib/email/dns-verify";
+import type { InboxVendor } from "@/lib/email/dns-records";
+
+const INBOX_VENDORS = ["cloudflare", "improvmx", "zoho", "m365"] as const;
+
+function isValidInboxVendor(v: string): v is InboxVendor {
+  return (INBOX_VENDORS as readonly string[]).includes(v);
+}
 
 /**
  * Hent settings + masked key. Plaintext-keyen returneres ALDRIG til
@@ -294,6 +304,138 @@ export async function clearResendKeyAction(): Promise<void> {
   invalidateResendKeyCache();
   invalidateSetupStatusCache();
   revalidatePath("/admin/integrations");
+}
+
+/**
+ * Send en testmail via den konfigurerede Resend-key + brand.emails.from.
+ *
+ * Validerer end-to-end-flowet uden at kræve en rigtig ordre:
+ *   - Resend-key er gyldig
+ *   - From-adressen er verificeret i Resend (ellers afviser API'en)
+ *   - DNS/SPF/DKIM er propageret (ellers ender den i spam — vi logger ikke det,
+ *     men admin kan tjekke headers manuelt)
+ *
+ * Sender til en adresse admin selv skriver i form'en — så man kan teste til
+ * sin egen Gmail/Outlook uden at involvere en kunde.
+ */
+export async function sendTestResendEmailAction(
+  formData: FormData,
+): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  await requireAdmin();
+
+  const rawTo = String(formData.get("to") ?? "").trim().toLowerCase();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(rawTo) || rawTo.length > 254) {
+    return { ok: false, error: "Ugyldig email-adresse" };
+  }
+
+  const key = await getResendApiKey();
+  if (!key) {
+    return {
+      ok: false,
+      error: "Ingen Resend-key konfigureret — gem en key først.",
+    };
+  }
+
+  const brandData = await getBrand();
+  const fromAddress = `${brandData.emails.fromName} <${brandData.emails.from}>`;
+  const replyTo = brandData.emails.support || brandData.emails.from;
+
+  const resend = new Resend(key);
+  try {
+    const result = await resend.emails.send({
+      from: fromAddress,
+      to: rawTo,
+      replyTo,
+      subject: `[Test] Cartwright email-opsætning for ${brandData.domain ?? brandData.storeName}`,
+      text: [
+        "Denne testmail bekræfter at din Resend-opsætning virker.",
+        "",
+        `Afsender:  ${fromAddress}`,
+        `Reply-To:  ${replyTo}`,
+        `Domæne:    ${brandData.domain ?? "(ikke sat)"}`,
+        "",
+        "Hvis mailen lander uden problemer er din konfiguration klar til at sende",
+        "ordrebekræftelser og magic-links.",
+        "",
+        "Næste skridt — verificér i mail-headerne:",
+        "  Authentication-Results: ... spf=pass dkim=pass dmarc=pass",
+        "",
+        "Hvis du ser fejl: https://cartwright.app/docs/email/troubleshooting",
+      ].join("\n"),
+    });
+    if (result.error) {
+      return {
+        ok: false,
+        error: `Resend afviste mailen: ${result.error.message}. Tjek at ${brandData.emails.from} er verificeret i Resend dashboardet.`,
+      };
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Ukendt fejl ved afsendelse",
+    };
+  }
+
+  return { ok: true, sentTo: rawTo };
+}
+
+// ── Lag 2: indbakke-udbyder + DNS verify ────────────────────────────────
+
+/**
+ * Skift kundens valgte indbakke-løsning fra EmailDomainPanel uden at sende
+ * dem tilbage til wizard'en.
+ */
+export async function setInboxVendorAction(
+  vendor: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+  const normalized = vendor.trim();
+  if (normalized === "") {
+    await prisma.brandingSettings.upsert({
+      where: { id: 1 },
+      update: { inboxVendor: null },
+      create: { id: 1, storeName: "Min shop", heroImage: "", announcement: "", inboxVendor: null },
+    });
+  } else if (isValidInboxVendor(normalized)) {
+    await prisma.brandingSettings.upsert({
+      where: { id: 1 },
+      update: { inboxVendor: normalized },
+      create: { id: 1, storeName: "Min shop", heroImage: "", announcement: "", inboxVendor: normalized },
+    });
+  } else {
+    return { ok: false, error: "Ugyldig indbakke-løsning" };
+  }
+  invalidateBrandCache();
+  invalidateSetupStatusCache();
+  revalidatePath("/admin/integrations");
+  return { ok: true };
+}
+
+/**
+ * Verificér public DNS state mod den forventede record-konfiguration. Læser
+ * domæne + vendor fra brand-cache så vi altid bruger den aktuelle valgte
+ * løsning.
+ *
+ * Returnerer pr-record status så UI'et kan vise hvilke records der mangler
+ * eller er forkert konfigureret.
+ */
+export async function verifyEmailDnsAction(): Promise<
+  | { ok: true; domain: string; checks: DnsCheckResult[] }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+  const brandData = await getBrand();
+  const domain = brandData.domain?.trim();
+  if (!domain || domain === "example.com") {
+    return {
+      ok: false,
+      error: "Sæt dit domæne i /admin/setup før du kan verificere DNS.",
+    };
+  }
+  const vendor = brandData.inboxVendor as InboxVendor | null;
+  const checks = await verifyDomainDns({ domain, inboxVendor: vendor });
+  return { ok: true, domain, checks };
 }
 
 export async function toggleManualChecklistItemAction(

@@ -41,6 +41,22 @@ let cachedStatus: { value: SetupStatus; expiresAt: number } | null = null;
 
 const manualItems = [
   {
+    id: "email-dns-verified",
+    category: "email",
+    label: "Email DNS-records verificeret",
+    description:
+      "Bekræft at SPF + DKIM er live for Resend, og at MX peger på din valgte indbakke-løsning (Cloudflare, ImprovMX, Zoho eller M365).",
+    helpUrl: "https://cartwright.app/docs/email/dns-records",
+  },
+  {
+    id: "email-inbox-configured",
+    category: "email",
+    label: "Indbakke for hello@ aktiv",
+    description:
+      "Du kan modtage mail på fx hello@dit-domæne.dk. Test ved at sende fra en anden adresse.",
+    helpUrl: "https://cartwright.app/docs/email/receive-inbox",
+  },
+  {
     id: "cookie-banner",
     category: "legal",
     label: "Cookie-banner live",
@@ -135,7 +151,7 @@ export async function getSetupStatus(): Promise<SetupStatus> {
         ? "Resend API key er konfigureret."
         : "Production-mail til magic-links og ordrebekræftelser kræver Resend.",
       setupHref: "/admin/integrations",
-      helpUrl: "https://resend.com/docs",
+      helpUrl: "https://cartwright.app/docs/email/resend-sending",
     },
     {
       id: "anthropic-api-key",
@@ -272,19 +288,26 @@ function envItem(args: {
 function appUrlItem(): SetupItem {
   const value = process.env.NEXT_PUBLIC_APP_URL?.trim();
   let status: SetupItemStatus = "missing";
-  let description = "Canonical public app URL used for redirects, links, and external callbacks.";
+  let description =
+    "Canonical public app URL — bruges af Resend-receipts, Stripe webhook-callbacks og open-graph metadata. Sættes i Vercel Dashboard → Settings → Environment Variables.";
+  let copyableValue: string | undefined =
+    'NEXT_PUBLIC_APP_URL="https://dit-domæne.dk"';
 
   if (value) {
     try {
       const parsed = new URL(value);
       status = parsed.protocol === "https:" ? "ok" : "warning";
-      description =
-        parsed.protocol === "https:"
-          ? "NEXT_PUBLIC_APP_URL er konfigureret."
-          : "NEXT_PUBLIC_APP_URL er sat, men production bør bruge HTTPS.";
+      if (parsed.protocol === "https:") {
+        description = `NEXT_PUBLIC_APP_URL er sat til ${value}.`;
+        copyableValue = value;
+      } else {
+        description = `NEXT_PUBLIC_APP_URL er sat til ${value}, men production bør bruge HTTPS. Opdater i Vercel Dashboard.`;
+        copyableValue = `NEXT_PUBLIC_APP_URL="${value.replace(/^http:/, "https:")}"`;
+      }
     } catch {
       status = "warning";
-      description = "NEXT_PUBLIC_APP_URL er sat, men er ikke en gyldig absolut URL.";
+      description =
+        "NEXT_PUBLIC_APP_URL er sat, men er ikke en gyldig absolut URL.";
     }
   }
 
@@ -294,6 +317,7 @@ function appUrlItem(): SetupItem {
     label: "Public app URL",
     status,
     description,
-    helpUrl: "https://nextjs.org/docs/app/guides/environment-variables",
+    copyableValue,
+    helpUrl: "https://vercel.com/docs/projects/environment-variables",
   };
 }
