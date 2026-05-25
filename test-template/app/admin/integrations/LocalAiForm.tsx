@@ -8,6 +8,7 @@ import {
 } from "./actions";
 import OllamaInstallCard from "@/components/admin/OllamaInstallCard";
 import ModelRecommendationCards from "@/components/admin/ModelRecommendationCards";
+import InstalledModelsList from "@/components/admin/InstalledModelsList";
 
 type Initial = {
   provider: "anthropic" | "local" | "auto";
@@ -53,10 +54,11 @@ export default function LocalAiForm({ initial }: Props) {
 
   const [discoverPending, startDiscoverTransition] = useTransition();
   const [discoveredModels, setDiscoveredModels] = useState<
-    Array<{ name: string; tier: string }>
+    Array<{ name: string; tier: string; sizeBytes: number; modifiedAt: string | null }>
   > ([]);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
   const [discoverLatency, setDiscoverLatency] = useState<number | null>(null);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
   // null = ikke testet endnu, true = Ollama svarer, false = ECONNREFUSED/timeout
   const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null);
   // Auto-poll efter pull complete så modellen dukker op uden manuel klik
@@ -96,6 +98,7 @@ export default function LocalAiForm({ initial }: Props) {
       if (r.ok) {
         setDiscoveredModels(r.models);
         setDiscoverLatency(r.latencyMs);
+        setTotalBytes(r.totalBytes);
         setOllamaReachable(true);
       } else {
         setDiscoverError(r.error);
@@ -333,9 +336,17 @@ export default function LocalAiForm({ initial }: Props) {
                 </>
               )}
             {discoveredModels.length > 0 && (
-              <p className="mt-2 text-xs text-sol-muted">
-                {discoveredModels.length} modeller fundet ({discoverLatency}ms)
-              </p>
+              <>
+                <p className="mt-2 text-xs text-sol-muted">
+                  {discoveredModels.length} modeller fundet ({discoverLatency}ms)
+                </p>
+                <InstalledModelsList
+                  models={discoveredModels}
+                  totalBytes={totalBytes}
+                  activeModel={localAiModel}
+                  onDeleted={handleDiscover}
+                />
+              </>
             )}
           </div>
 

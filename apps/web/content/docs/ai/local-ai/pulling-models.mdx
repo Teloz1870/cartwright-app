@@ -64,6 +64,31 @@ Ollama beholder modeller i ~/.ollama/models indtil du eksplicit fjerner dem med 
 
 ## Hvor finder jeg listen over hvad jeg har pulled?
 
-- **Admin-UI:** `/admin/integrations` → "Hent modeller"-knap viser alle pulled modeller med deres capability-tier
+- **Admin-UI:** `/admin/integrations` → "Hent modeller"-knap → **Installerede modeller**-sektionen viser hver pulled model med navn, størrelse, capability-tier og en **Slet**-knap. Total disk-usage vises i højre hjørne ("3.2 GB samlet")
 - **Terminal:** `ollama list`
-- **Audit-log:** filtrér på `tool="ollama.pull"` for historik
+- **Audit-log:** filtrér på `tool="ollama.pull"` eller `tool="ollama.delete"` for historik
+
+## Slet en model
+
+Klik **Slet** på modellen i Installerede modeller-listen. Du får en
+confirm-dialog med model-navn + størrelse — accepter for at fjerne den
+permanent. Slet-knappen er disabled på den aktive model (skift først til
+en anden i Model-dropdown'en).
+
+Når sletningen lykkes:
+- Modellen er væk fra disk (`~/.ollama/models/`)
+- RAM frigøres hvis modellen var loadet
+- Audit-log får row med `tool="ollama.delete"`, `actor=user:<id>`,
+  `model=<navn>`
+- Listen refreshes automatisk
+
+Du kan altid pulle modellen igen senere — modellen ligger fortsat i Ollama's
+registry. Genoptag downloaden ved at klikke Pull-knappen på det relevante
+anbefaling-kort.
+
+Eller terminal:
+
+```bash
+ollama stop <model>   # frigør RAM nu (modellen unloader auto efter ~5 min ellers)
+ollama rm <model>     # slet fra disk
+```

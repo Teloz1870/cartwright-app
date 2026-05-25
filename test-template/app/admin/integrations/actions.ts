@@ -748,16 +748,121 @@ export async function listOllamaModelsAction(
       error: "Uventet Ollama-response (forventede {models: []})",
     };
   }
-  const rawModels = (body as { models: Array<{ name?: unknown }> }).models;
+  const rawModels = (
+    body as {
+      models: Array<{ name?: unknown; size?: unknown; modified_at?: unknown }>;
+    }
+  ).models;
   const models = rawModels
-    .map((m) => (typeof m.name === "string" ? m.name : null))
-    .filter((n): n is string => n !== null)
-    .map((name) => ({
-      name,
-      tier: getModelCapabilities(name).tools,
-    }));
+    .map((m) => {
+      if (typeof m.name !== "string") return null;
+      const sizeBytes = typeof m.size === "number" ? m.size : 0;
+      const modifiedAt =
+        typeof m.modified_at === "string" ? m.modified_at : null;
+      return {
+        name: m.name,
+        tier: getModelCapabilities(m.name).tools,
+        sizeBytes,
+        modifiedAt,
+      };
+    })
+    .filter((m): m is NonNullable<typeof m> => m !== null);
 
-  return { ok: true, models, latencyMs };
+  const totalBytes = models.reduce((sum, m) => sum + m.sizeBytes, 0);
+
+  return { ok: true, models, latencyMs, totalBytes };
+}
+
+/**
+ * Slet en lokal Ollama-model. Frigør diskplads + RAM (hvis modellen var
+ * loadet). Spejler ollama-pull's allow-list så admin kun kan slette modeller
+ * vi anerkender — beskytter mod kommando-injection via DB-state.
+ *
+ * Audit-log row med actor=user:<id>, tool="ollama.delete", provider="local",
+ * model=<navn>. Spor for "hvem slettede hvilke modeller hvornår".
+ */
+export async function deleteOllamaModelAction(
+  modelName: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireAdmin();
+  const actor = `user:${session.user?.id ?? "unknown"}` as const;
+
+  const ALLOWED_DELETE_MODELS = [
+    "gemma4:e2b",
+    "gemma4:e4b",
+    "gemma4:e2b-mlx",
+    "gemma4:e4b-mlx",
+    "gemma4:26b",
+    "gemma4:31b",
+    "gemma3:1b",
+    "gemma3:4b",
+    "gemma3:12b",
+    "gemma3:27b",
+    "llama3.2:3b",
+    "llama3.3:70b",
+    "qwen2.5:7b",
+  ];
+
+  if (!ALLOWED_DELETE_MODELS.includes(modelName)) {
+    return {
+      ok: false,
+      error: `Model '${modelName}' er ikke i allow-listen. Slet i terminal med 'ollama rm ${modelName}' hvis du vil.`,
+    };
+  }
+
+  const settings = await getAiSettings();
+  const baseUrl = (settings.localAiEndpoint ?? "http://localhost:11434")
+    .replace(/\/v1\/?$/, "")
+    .replace(/\/$/, "");
+
+  try {
+    const res = await fetch(`${baseUrl}/api/delete`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: modelName }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return {
+        ok: false,
+        error: `Ollama returnerede ${res.status}${text ? `: ${text}` : ""}`,
+      };
+    }
+
+    await prisma.auditLog
+      .create({
+        data: {
+          actor,
+          tool: "ollama.delete",
+          argsJson: JSON.stringify({ model: modelName }),
+          ok: true,
+          errorMsg: "model deleted",
+          requestId: crypto.randomUUID(),
+          ip: null,
+          userAgent: null,
+          provider: "local",
+          model: modelName,
+          modality: "text",
+        },
+      })
+      .catch(() => {
+        // Audit-failure må ikke blokere
+      });
+
+    invalidateAiSettingsCache();
+    revalidatePath("/admin/integrations");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error && err.name === "TimeoutError"
+          ? "Timeout (30s) — Ollama tog for lang tid om at slette"
+          : `Fejl: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 }
 
 /**
