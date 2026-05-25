@@ -1,0 +1,160 @@
+---
+title: Setup Ollama
+description: Installer Ollama, pull en Gemma-model, og pege Cartwright på det. ~10 minutter.
+---
+
+## 1. Installer Ollama
+
+<Tabs items={['macOS', 'Linux', 'Windows']}>
+
+<Tab value="macOS">
+
+Download fra [ollama.com/download](https://ollama.com/download/mac) eller via Homebrew:
+
+```bash
+brew install ollama
+```
+
+Start service:
+
+```bash
+brew services start ollama
+```
+
+</Tab>
+
+<Tab value="Linux">
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+Service starter automatisk. Verificér med:
+
+```bash
+systemctl status ollama
+```
+
+</Tab>
+
+<Tab value="Windows">
+
+Download installer fra [ollama.com/download/windows](https://ollama.com/download/windows). Service starter automatisk.
+
+</Tab>
+
+</Tabs>
+
+## 2. Pull en model
+
+Anbefalet til Cartwright admin: **Gemma 3 12B** (sweet spot mellem kvalitet og hardware-krav).
+
+```bash
+ollama pull gemma3:12b
+```
+
+Det downloader ~7 GB. Hvis du har en kraftigere maskine:
+
+```bash
+# 27B model — bedst kvalitet, kræver 32GB+ RAM
+ollama pull gemma3:27b
+
+# 4B model — minimal hardware-fodaftryk, kører på laptops
+ollama pull gemma3:4b
+```
+
+Se [Model Selection](/docs/ai/local-ai/model-selection) for at forstå trade-offs.
+
+## 3. Sæt CORS-tilladelse (vigtigt)
+
+Hvis Cartwright admin kører i en anden origin end Ollama (typisk når du bruger `next dev` på `localhost:3000`), skal Ollama eksplicit tillade requests fra den origin:
+
+<Tabs items={['macOS', 'Linux', 'Windows']}>
+
+<Tab value="macOS">
+
+```bash
+# Stop service
+brew services stop ollama
+
+# Start med OLLAMA_ORIGINS sat
+OLLAMA_ORIGINS=* ollama serve
+```
+
+For permanent: tilføj til `~/.zshrc` eller `~/.bash_profile`:
+
+```bash
+export OLLAMA_ORIGINS=*
+```
+
+Genstart terminal og `brew services restart ollama`.
+
+</Tab>
+
+<Tab value="Linux">
+
+```bash
+sudo systemctl edit ollama
+```
+
+Tilføj:
+
+```
+[Service]
+Environment="OLLAMA_ORIGINS=*"
+```
+
+Genstart:
+
+```bash
+sudo systemctl restart ollama
+```
+
+</Tab>
+
+<Tab value="Windows">
+
+Sæt environment-variabel via System Settings → Advanced → Environment Variables. Tilføj:
+
+```
+OLLAMA_ORIGINS=*
+```
+
+Genstart Ollama-service via System Tray.
+
+</Tab>
+
+</Tabs>
+
+<Callout type="warn">
+`OLLAMA_ORIGINS=*` tillader CORS fra alle origins. På en delt maskine eller server, snæver det ind til præcis det Cartwright-domæne du bruger — fx `OLLAMA_ORIGINS=http://localhost:3000,https://min-shop.dk`.
+</Callout>
+
+## 4. Tilslut Cartwright
+
+I admin:
+
+<Steps>
+
+1. Åbn `/admin/integrations`
+2. Find sektionen **"AI provider"**
+3. Vælg **Local** (eller **Auto** hvis du også vil have cloud-fallback)
+4. Indsæt endpoint: `http://localhost:11434/v1`
+5. Klik **"Hent modeller"** — du skulle se din pullede model i listen
+6. Vælg modellen
+7. Klik **"Gem settings"**
+8. Klik **"Test forbindelse"** — du skulle få "✓ local · gemma3:12b · ~1500ms"
+
+</Steps>
+
+## 5. Verificér
+
+Status-pill nederst-højre i admin viser nu **🔒 Local AI · gemma3:12b**.
+
+Gå til `/admin/integrations/ai-test`, klik **"Kør alle 3"**. Hver canned prompt skulle besvares af din lokale Gemma med latency mellem 1-15 sekunder (første kald er langsomst pga. model-load).
+
+Gå til `/admin/audit` og find seneste rows — de viser nu `provider="local"`, `model="gemma3:12b"`. Det er din bekræftbarhed på at intet gik til Anthropic.
+
+## Hvis du støder ind i problemer
+
+Se [Troubleshooting](/docs/ai/local-ai/troubleshooting).

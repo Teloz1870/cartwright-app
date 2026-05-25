@@ -1,0 +1,10 @@
+{
+  "title": "Lokal AI (Ollama + Gemma)",
+  "pages": [
+    "index",
+    "ollama-setup",
+    "model-selection",
+    "providers",
+    "troubleshooting"
+  ]
+}

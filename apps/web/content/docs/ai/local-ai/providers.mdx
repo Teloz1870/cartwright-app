@@ -1,0 +1,69 @@
+---
+title: Provider-routing forklaret
+description: Sådan vælger Cartwright mellem Anthropic og Local — per-intent + per-config.
+---
+
+Hver gang Cartwright skal kalde en AI-model, går den gennem `chatModel(intent)` i `lib/ai/client.ts`. Det er ét enkelt sted hvor routing-logikken bor.
+
+## Decision tree
+
+```
+chatModel(intent="vibe")           → ALTID Anthropic
+chatModel(intent="chat" eller "generation"):
+  aiProvider="anthropic"           → Anthropic
+  aiProvider="local"               → Local (Ollama)
+  aiProvider="auto":
+    local konfigureret             → Local
+    ellers                         → Anthropic
+    on-error (Fase 2 fremtid)      → Local → Anthropic fallback
+```
+
+## Hvorfor `vibe` altid bruger Anthropic
+
+Tre steder i Cartwright bruger `chatModel("vibe")`:
+
+- `lib/ai/theme-generator.ts` — genererer 6-farve palette + rationale (structured output)
+- `lib/ai/product-seo-generator.ts` — produkt-beskrivelse + attributter (structured output)
+- `lib/ai/category-seo-generator.ts` — kategori-SEO + FAQ (structured output)
+
+Alle bruger `generateObject()` med et Zod-schema. Hvis modellen returnerer JSON der ikke matcher schemaet, fejler hele wizard-flowet. Det er en høj-stake operation hvor kvalitet matters mere end privacy.
+
+Lokal Gemma kan godt generere JSON — men ikke pålideligt nok endnu til at vi ville udsætte en kunde for at "wizarden fejlede tilfældigt, prøv igen". Når Gemma 5 lander og kan håndtere det, fjerner vi `vibe`-undtagelsen i én if-condition.
+
+## Auto-mode i detalje
+
+`aiProvider = "auto"` siger til Cartwright: *"prøv local hvis det er konfigureret; ellers cloud"*.
+
+I v1 er auto-mode **"prefer local hvis configured"** — der er ingen request-time fallback når local er nede. Hvis Ollama er nede og du har auto-mode, ser admin en fejl i chatten og kan manuelt skifte til Anthropic.
+
+I Fase 2 (på roadmap) tilføjer vi `localAiFallbackMode = "on-error"` som lever af request-time fejldetection: hvis et streamText-kald fejler, retries automatisk mod Anthropic, og `lastDegradedAt` skrives så status-pill viser "Auto · degraded".
+
+## Audit-log
+
+Hvert tool-call skrives med `provider` og `model` (Local-AI plan udvidede AuditLog-modellen). Det betyder du kan eftervise overfor DPO at den specifikke ordre-update eller customer-lookup gik til lokal eller cloud:
+
+```sql
+-- Hvor mange admin-actions gik til local AI sidste uge?
+SELECT provider, COUNT(*) FROM AuditLog
+WHERE createdAt > date('now', '-7 days') AND actor LIKE 'operator-chat:%'
+GROUP BY provider;
+```
+
+Eller direkte i admin: `/admin/audit` har provider/model-kolonner.
+
+## Hvordan tilføjer jeg en ny provider?
+
+`chatModel()` har en switch over `aiProvider`. Vil du tilføje fx Mistral, DeepSeek eller en ny lokal model:
+
+1. Tilføj enum-værdi til `AiProvider` i `lib/ai/settings.ts`
+2. Tilføj case i `chatModel()` switch — typisk `createOpenAICompatible(...)` mod den nye provider's base-URL
+3. Tilføj modellen til `MODEL_CAPABILITIES` med dens tool-tier
+4. Tilføj UI-radio i `LocalAiForm.tsx`
+
+Hele kæden er ~30 minutter for en ny provider. **Det er extensibility som infrastruktur — ikke et nyt plugin-framework**.
+
+## Hvorfor ingen "request-time provider switch"?
+
+Du kan tænke: hvorfor lader Cartwright ikke mig vælge provider per chat-message? Svaret: confirmation-token-systemet og audit-log er request-scoped, og at skifte provider midt i en session ville gøre svært at debugge "hvilken model gjorde præcis dette".
+
+Hvis du vil sammenligne providers, gå til `/admin/integrations/ai-test` og kør de samme prompts på begge konfigurationer. Det er en bevidst trade-off: ÉN provider per session = audit-clarity, sammenligning sker i et dedikeret testing-flow.

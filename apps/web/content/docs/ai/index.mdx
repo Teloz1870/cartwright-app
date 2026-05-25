@@ -1,0 +1,53 @@
+---
+title: AI & Providers — oversigt
+description: Cartwright's AI-arkitektur — provider-agnostisk admin copilot, per-intent routing, og hvordan du flipper switch til lokal Gemma uden at miste én eneste sikkerhedsmekanisme.
+---
+
+Cartwright's admin har en fuld AI-copilot med 37 MCP-tools, confirmation-gates, audit-log og scope-enforcement — alt drevet af `streamText` fra Vercel AI SDK. Det eneste sted hvor modellen blev valgt var hardcoded til Claude.
+
+I dag er Cartwright **provider-agnostisk**. Samme tools, samme audit-trail, samme confirmation-gates — med modellen valgt pr. use case.
+
+<Callout type="info">
+**Pitch i én sætning:** Skift `aiProvider = "local"` i `/admin/integrations` og Cartwright's admin-copilot kører mod dit eget Ollama-endpoint — samme tool-registry, samme audit-trail, samme confirmation-gates, nul cloud-roundtrips.
+</Callout>
+
+## De tre providers
+
+| Provider | Hvornår | Hvad |
+|---|---|---|
+| **Anthropic** (Claude) | Default · cloud-hosted | Bedste kvalitet, kræver API-key, betaler per token |
+| **Local** (Ollama + Gemma) | Self-hosted · privacy-first | Gratis, kører på din egen maskine, ingen data forlader dit netværk |
+| **Auto** | Begge configured | Prefer local, fallback til Anthropic on-error |
+
+## Per-intent routing
+
+Cartwright router AI-kald baseret på **intent**:
+
+| Intent | Hvor det bruges | Provider-valg |
+|---|---|---|
+| `chat` | Admin copilot (`/admin/ai`), customer AI-stylist | Følger `aiProvider`-setting |
+| `generation` | Long-form generation (fremtidig) | Følger `aiProvider`-setting |
+| `vibe` | Theme-generator, SEO-generators (structured output) | **ALTID Anthropic** — invalid JSON breaker brand-setup |
+
+Det er ikke et hack — det er en bevidst beslutning. Local-modeller (Gemma 3) er gode til konversation og forklaringer, men ikke pålidelige nok endnu til structured output med 7-felt Zod-schemas. Når Gemma 5 lander og kan håndtere det, fjerner vi `vibe`-undtagelsen.
+
+## Same security model, different provider
+
+Det her er det vigtigste princip i hele AI-laget:
+
+- **Confirmation tokens** — write-tools kræver server-issued bekræftelse, uanset om Claude eller Gemma kalder dem
+- **Scope-enforcement** — `invokeTool()` checker tools mod scope-listen før dispatch, identisk for begge providers
+- **Audit-log** — hvert tool-call skrives med `provider` + `model` + `modality` så DPO kan eftervise præcis hvilken AI der gjorde hvad
+- **Tool-allowlist** — local Gemma er capped til en subset af tools baseret på model-størrelse (4B → 10 read-only tools, 12B → +3 low-risk writes, 27B+ → alle 37)
+
+<Cards>
+  <Card title="Lokal AI med Ollama" href="/docs/ai/local-ai" />
+  <Card title="Voice Shop (kommer snart)" href="/docs/ai/voice-shop" />
+</Cards>
+
+## Hvad du får ud af det
+
+1. **Privacy as default**, ikke premium feature — self-hosted free tier giver fuld lokal AI
+2. **Cost-control** — `aiProvider = "local"` = nul cloud-omkostning
+3. **GDPR-værdi** — audit-log bekræfter at data ikke har forladt EU/dit netværk
+4. **Vej frem** — capability matrix gør at nye modeller (Gemma 5, Llama 5, DeepSeek-X) er én fil at lægge ind

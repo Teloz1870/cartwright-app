@@ -1,0 +1,117 @@
+---
+title: Troubleshooting — lokal AI
+description: De typiske fejlmønstre når Ollama integration ikke virker.
+---
+
+## "Cannot reach Ollama" / connection failed
+
+```bash
+# Tjek at Ollama kører
+curl http://localhost:11434/api/tags
+```
+
+Skulle returnere JSON med liste over installerede modeller. Hvis det timeout eller giver connection refused:
+
+- macOS: `brew services restart ollama`
+- Linux: `sudo systemctl restart ollama`
+- Windows: genstart Ollama fra System Tray
+
+## "CORS error" i browser console
+
+Cartwright admin og Ollama er på forskellige origins. Sæt `OLLAMA_ORIGINS`:
+
+```bash
+# midlertidigt
+OLLAMA_ORIGINS=* ollama serve
+```
+
+For permanent fix, se [Setup Ollama → CORS](/docs/ai/local-ai/ollama-setup#3-s%C3%A6t-cors-tilladelse-vigtigt).
+
+## "Model not found"
+
+Ollama er kørende, men din valgte model er ikke pullet:
+
+```bash
+ollama list
+```
+
+Tjek at den model du har sat i `/admin/integrations` faktisk er i listen. Hvis ikke:
+
+```bash
+ollama pull gemma3:12b
+```
+
+## "Tool call failed" — Gemma laver fejlende argumenter
+
+Almindeligt for 4B-modeller på write-tools. To fixes:
+
+1. **Skift til en større model** — `ollama pull gemma3:12b` og opdater i `/admin/integrations`
+2. **Forstå capability-tier** — 4B er cappet til read-only tools af denne grund. Hvis du vil have write-tools lokalt, brug 12B eller 27B.
+
+Se [Model Selection](/docs/ai/local-ai/model-selection) for tier-mapping.
+
+## Latency: første kald er super langsom (30+ sek)
+
+Det er Ollama der loader modellen i memory. Efterfølgende kald er meget hurtigere (1-10 sek typisk).
+
+Du kan "warm up" modellen ved at sende en lille request første gang:
+
+```bash
+curl http://localhost:11434/api/generate -d '{
+  "model": "gemma3:12b",
+  "prompt": "ok",
+  "stream": false
+}'
+```
+
+Modellen forbliver i memory ~5 min efter sidste request, så hvis du bruger den jævnligt, undgår du cold-starts.
+
+## "AI offline" i status pill, men Ollama svarer på curl
+
+Tjek at endpoint i `/admin/integrations` er præcis:
+
+- ✅ `http://localhost:11434/v1`
+- ❌ `localhost:11434` (mangler protocol)
+- ❌ `http://localhost:11434` (mangler `/v1` — Ollama's OpenAI-compatible API'er er på `/v1`)
+- ✅ `http://localhost:11434` (Cartwright tilføjer `/v1` automatisk, men eksplicit er sikrest)
+
+## Theme/SEO-genereringen fejler — selvom Ollama virker
+
+Det er forventet — `theme-generator`, `product-seo-generator` og `category-seo-generator` bruger altid Anthropic uanset `aiProvider`-setting (se [Providers](/docs/ai/local-ai/providers#hvorfor-vibe-altid-bruger-anthropic)).
+
+Hvis du får 503 på dem, mangler du en Anthropic-key i `/admin/integrations`. Lokal Gemma kan ikke (endnu) bruges til structured output.
+
+## Vercel-hosted admin kan ikke nå min localhost Ollama
+
+Korrekt — det er ikke et bug. Cloud-hosted admin på Vercel kan per design ikke nå customer's localhost. To workarounds:
+
+1. **Self-host Cartwright** (anbefalet) — admin og Ollama kører på samme maskine
+2. **Eksponer Ollama via Cloudflare Tunnel** — peg `localAiEndpoint` på den public URL. ⚠️ Husk reverse proxy med API-key auth foran Ollama — den har ingen auth indbygget
+
+Self-host er den enkleste vej og det vi anbefaler i 99% af tilfældene. Det er også derfor self-hosted Cartwright er free-tier — local AI er en grund til at vælge self-host.
+
+## Latency er konstant høj selv efter warmup
+
+Tjek:
+
+- Du har nok RAM (Gemma 3 12B kræver ~9 GB; hvis du har under 16 GB total, swapper systemet)
+- Ingen tunge processer (Docker, Photoshop, andre LLM'er) tager hukommelse samtidigt
+- Du kører ikke en større model end din hardware kan (27B på 16 GB maskine = swapping)
+
+Skift til en mindre model:
+
+```bash
+ollama pull gemma3:4b
+```
+
+Og opdater i `/admin/integrations`.
+
+## Stadig problemer?
+
+Tjek `/admin/audit` for `provider="local"` rows med `ok=false`. Errors viser præcis hvilket tool og hvilken fejl. Du kan også kigge i Ollama-loggen:
+
+```bash
+# macOS / Linux
+journalctl -u ollama -f       # Linux
+log show --predicate 'process == "ollama"' --last 5m    # macOS
+```

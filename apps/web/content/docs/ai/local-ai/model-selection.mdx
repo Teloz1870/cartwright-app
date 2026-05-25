@@ -1,0 +1,92 @@
+---
+title: Hvilken model skal jeg vælge?
+description: Trade-offs mellem Gemma 3 sizes, plus capability matrix der bestemmer hvilke tools modellen får adgang til.
+---
+
+## TL;DR — anbefalinger
+
+| Use case | Anbefalet model | RAM | Tool-tier |
+|---|---|---|---|
+| Production shop, almindelig hardware | **Gemma 3 12B** | 16 GB | Lav-risk writes (~15 tools) |
+| High-end workstation, maks kvalitet | **Gemma 3 27B** | 32 GB | Alle 37 tools |
+| Laptop, minimal hardware | **Gemma 3 4B** | 8 GB | Læs-only (~10 tools) |
+| Testing eller heavy reasoning | **Llama 3.3 70B** | 64 GB | Alle 37 tools |
+
+## Capability matrix
+
+Cartwright capper hvilke admin-tools en model får adgang til, baseret på modellens reelle function-calling-kvalitet:
+
+- **`read-only`** — kun læse-tools (`*.search`, `*.list`, `*.get`, `analytics.summary`, `audit.list`, `settings.get`). Cirka 10 tools.
+- **`low-risk-writes`** — ovenstående + sikre writes (`pages.upsert`, `categories.upsert`, `discounts.toggle`, `images.search_unsplash`, `products.attach_image`). Cirka 15 tools.
+- **`all`** — alle 37 admin-tools inkl. destruktive writes (`products.delete`, `orders.update_status`, `marketing.create_campaign`, `audit.revert`).
+
+Hvorfor cap'es det? Fordi small-models laver tool-call-fejl. Gemma 3 4B kan godt sige *"jeg vil kalde `products.delete` på slug 'foo'"*, men når Zod validerer args mod schema, fejler det ofte. Bedre at vise færre tools end at admin spørger AI'en og får "AI prøvede og fejlede" som svar.
+
+## Per-model spec
+
+### Gemma 3 12B (anbefalet)
+
+```bash
+ollama pull gemma3:12b
+```
+
+- **Storrelse:** ~7 GB download, ~9 GB i RAM (4-bit kvantisering)
+- **Latency:** 2-8 sek pr. svar (varierer med spørgsmål-kompleksitet)
+- **Sweet spot** mellem kvalitet og hardware-krav. Håndterer rolige tool-flows pålideligt.
+- **Tool-tier:** `low-risk-writes`
+
+### Gemma 3 27B (max kvalitet)
+
+```bash
+ollama pull gemma3:27b
+```
+
+- **Storrelse:** ~17 GB download, ~19 GB i RAM
+- **Latency:** 5-15 sek pr. svar
+- **Subjektivt tæt på Claude Haiku 4.5 på admin-tasks**. Hvis du har hardware'en, brug den.
+- **Tool-tier:** `all` — alle 37 admin-tools
+
+### Gemma 3 4B (minimal)
+
+```bash
+ollama pull gemma3:4b
+```
+
+- **Storrelse:** ~3 GB download, ~4 GB i RAM
+- **Latency:** 1-4 sek pr. svar — hurtigst
+- **God til Explain-knapperne** og simpel chat. Cappet til read-only tools fordi function-calling ikke er pålideligt nok på write-tools.
+- **Tool-tier:** `read-only`
+
+### Llama 3.3 70B (heavy)
+
+```bash
+ollama pull llama3.3:70b
+```
+
+- **Storrelse:** ~40 GB download, ~48 GB i RAM
+- **Latency:** 10-30 sek pr. svar
+- **Bedste open-source reasoning** lige nu. Overkill for de fleste shops, men hvis du har serveren der kører den, kan den håndtere alle 37 tools pålideligt.
+- **Tool-tier:** `all`
+
+## Hvad sker der med en ukendt model?
+
+Hvis du pull'er en model der ikke er i Cartwright's hardcoded `MODEL_CAPABILITIES`-matrix, defaulter den til **`read-only`** tier — den sikre default.
+
+Vil du have din model anerkendt? PR til [`lib/ai/client.ts`](https://github.com/cartwright/cartwright/blob/main/test-template/lib/ai/client.ts):
+
+```ts
+export const MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
+  // ... eksisterende ...
+  "min-nye-model:13b": {
+    tools: "low-risk-writes",
+    maxTokens: 16384,
+    supportsToolCall: true,
+  },
+};
+```
+
+Det er én linje. Et nyt provider-system kræver ikke at man rører kerne-kode.
+
+## Når Gemma 5 / Llama 5 / DeepSeek-X lander
+
+Capability matrix gør det trivielt: tilføj en entry, valg modellen i `/admin/integrations`, og hele Cartwright bruger den. Ingen refactor, ingen breaking changes — det er hele pointen med provider-abstraktionen.
