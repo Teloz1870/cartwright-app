@@ -1,0 +1,110 @@
+---
+title: Agentic dashboard
+description: A live human-in-the-loop view of every A2A call your shop sees — verifications, escrow positions, disputes, policy.
+---
+
+When buyer agents start hitting your shop, the human shop owner needs a window. `/admin/agentic` is that window. It surfaces the last 24 hours of agentic activity, the current escrow positions, the dispute queue, and (in a follow-up release) lets you edit the legislation policy directly.
+
+The dashboard is **read-only in this release**. Force-release / force-refund actions, provider toggle (cloud Anthropic vs local Ollama), and the policy editor are deferred to a follow-up commit so the write-side gets careful UX review.
+
+## Enabling
+
+The nav link only appears when `brand.features.adminAgenticDashboard = true`. The `agent-marketplace` template ships with the flag on; other templates default it off (you can flip manually).
+
+```ts
+// brand.config.ts
+features: {
+  adminAgenticDashboard: true,
+}
+```
+
+Direct navigation to `/admin/agentic` with the flag off returns 404 — same gating as the nav.
+
+## What you see
+
+### 24-hour verification stats
+
+Three counters at the top, scoped to the last 24 hours of `AgenticJWT` rows:
+
+| Counter | What |
+|---|---|
+| **Allowed** | Guardian-approved calls (verdict `pass`) |
+| **Denied** | Guardian-rejected calls (verdict `fail`) — usually scope mismatch, over-cap, or blocked agent |
+| **Pending** | Calls awaiting external verification (e.g. a webhook callback) |
+
+### Agent Card snapshot
+
+Shows the latest non-revoked `AgentCard`:
+
+- Version number (monotonic on rotation)
+- Signed-at timestamp
+- Expires-at (or "no expiry")
+- "view JSON →" link that opens `/api/agent-card` in a new tab so you can see what a buyer agent receives
+
+If no Agent Card exists, the panel shows an amber warning: "Buyer agents will receive 503 on /api/agent-card until one is published."
+
+### Escrow positions
+
+Five cards, one per state in the state machine (`pending`, `funded`, `released`, `refunded`, `disputed`). Each shows row count + total amount in DKK.
+
+The state machine guarantees these positions are mutually exclusive — every `EscrowTransaction` is in exactly one bucket. See [Guardian middleware → Escrow state machine](/docs/features/guardian-middleware#escrow-state-machine).
+
+### Disputed-escrow review queue
+
+If any `EscrowTransaction.status === "disputed"`, a dedicated red-bordered table surfaces them regardless of age:
+
+| Column | Value |
+|---|---|
+| Escrow ID | Stable `ctx_…` identifier |
+| Buyer Agent | The `sub` claim from their A-JWT |
+| Amount | Formatted DKK |
+| Disputed At | ISO timestamp |
+| Reason | Free-text dispute reason set by the disputing party |
+
+In a future release, this is where the "force release" and "force refund" buttons will live — but for now, you'd resolve disputes via direct DB writes or by running an admin command. The Master Plan §3.3 mandates human-in-the-loop for these actions; a thoughtful UX is being designed before shipping the write-side.
+
+### Recent verifications (last 50)
+
+Live tail of `AgenticJWT` rows from the past 24 hours. Each row:
+
+| Column | Value |
+|---|---|
+| When | ISO timestamp |
+| Agent | `issuerAgentId` (the buyer agent's `sub`) |
+| Path | `requestMethod requestPath` (e.g. `POST /api/negotiate`) |
+| Verdict | Color-coded badge: green pass, red fail, amber pending, gray skipped |
+| Reason / error | `verifyError` when present, em-dash when not |
+
+The verdict column reads from Guardian's audit write — see [Guardian middleware](/docs/features/guardian-middleware).
+
+## What's deferred (Phase 9 follow-up)
+
+The next dashboard commit adds write-side actions:
+
+1. **Force-release / force-refund** on disputed escrows. Each action wrapped in `withAudit()` so the resolution is logged to `AuditLog` with an `operator-chat:<adminId>` actor tag.
+2. **Provider toggle** — flip `IntegrationSettings.aiProvider` between `"anthropic"` (cloud) and `"local"` (Ollama via `localAiEndpoint`). The Delegate Agent proxy is already wired in `lib/ai/client.ts`; the dashboard just needs the UI control.
+3. **Policy editor** — JSON editor with Zod-schema validation for `BrandingSettings.agenticPolicyJson`. Saves to DB; Guardian picks up changes on the next call (no cache to invalidate beyond the per-call read).
+4. **Force-rotate Agent Card** — generate a new ed25519 keypair and sign a new version; mark the previous card `revokedAt = now()`. Buyer agents that cache the public key are forced to re-discover.
+
+Each is small in isolation; bundling them adds confirmation flows + audit-trail discipline.
+
+## Wiring it to your data
+
+The page is a Next.js server component (`app/admin/agentic/page.tsx`) that reads four queries in parallel:
+
+```ts
+const [recentJwts, escrowsByStatus, jwt24hStats, openAgentCard] = await Promise.all([
+  prisma.agenticJWT.findMany({ where: { createdAt: { gte: since } }, take: 50 }),
+  prisma.escrowTransaction.groupBy({ by: ["status"], _count: { _all: true }, _sum: { amountMinor: true } }),
+  prisma.agenticJWT.groupBy({ by: ["verifyResult"], where: { createdAt: { gte: since } }, _count: { _all: true } }),
+  prisma.agentCard.findFirst({ where: { revokedAt: null }, orderBy: { createdAt: "desc" } }),
+]);
+```
+
+Plus a fifth for the dispute queue (always shown, not 24h-scoped). Fast to render — typically < 50 ms even with many thousand audit rows since everything is indexed.
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Industry templates" href="/docs/features/industry-templates" />
+</Cards>

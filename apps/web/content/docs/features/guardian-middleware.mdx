@@ -1,0 +1,154 @@
+---
+title: Guardian middleware
+description: The third independent branch of Separation-of-Power — every agentic call passes through Guardian before any money or escrow state moves.
+---
+
+Guardian is Cartwright's **Adjudication** branch. The Master Plan §3.3 splits agentic responsibilities into three independent layers:
+
+| Branch | Who | What |
+|---|---|---|
+| **Legislation** | Human admin via `/admin/agentic` | Sets the rules — what scopes are allowed, value caps, payment rails, whether escrow is required. |
+| **Execution** | Route handlers in `app/api/*` | Run business logic — parse requests, call engine, write DB. |
+| **Adjudication** | `lib/guardian/middleware.ts` | Inspects every agentic call, validates against legislation, writes audit. |
+
+The point: no single layer can both write rules AND execute them. A prompt-injection that tricks a route into thinking it has permission still has to pass Guardian, and Guardian reads from a separate signed policy.
+
+## The verdict pipeline
+
+Every call into `/api/mcp`, `/api/acp/*`, `/api/negotiate`, or `/api/escrow/verify` runs Guardian first. Six steps:
+
+```
+1. Load legislation        → BrandingSettings.agenticPolicyJson (deny-all default)
+2. Replay protection       → unique (issuerAgentId, jti) on AgenticJWT
+3. Scope check             → required scope in policy.allowedScopes?
+4. Order-value cap         → amount ≤ policy.maxOrderValueMinor?
+5. Rail allowlist          → rail in policy.allowedRails?
+6. Audit write             → one AgenticJWT row, allow or deny verdict
+```
+
+Any failure short-circuits with `403 forbidden { reason }`. The audit row is written on **both** allow and deny — `/admin/agentic` reads the table for the live dashboard.
+
+## Fail-closed defaults
+
+Guardian fails closed at every layer:
+
+- **No policy configured?** `DEFAULT_POLICY` is deny-all. A fresh shop accepts zero agentic calls until the admin opts in.
+- **Malformed policy JSON?** Zod validation fails → deny.
+- **DB unavailable?** Caught → deny.
+- **`agenticPolicyJson` column missing?** Raw-SQL fallback returns null → deny-all semantics.
+
+Opt-in is explicit, never accidental.
+
+## Legislation schema
+
+`BrandingSettings.agenticPolicyJson` holds a Zod-validated JSON:
+
+```json
+{
+  "allowedScopes": ["negotiate", "escrow.fund", "escrow.release"],
+  "blockedAgentIds": ["bad-agent-001"],
+  "maxOrderValueMinor": 100000,
+  "allowedRails": ["stripe"],
+  "requireEscrow": true,
+  "requireEscrowAboveMinor": 50000
+}
+```
+
+The 8 canonical scopes:
+
+| Scope | What it permits |
+|---|---|
+| `negotiate` | POST `/api/negotiate` |
+| `escrow.fund` | Create + fund an EscrowTransaction |
+| `escrow.release` | Submit a PoTE to release escrow |
+| `escrow.refund` | Request refund of escrow |
+| `agent-card.read` | GET `/api/agent-card` |
+| `products.read` | GET `/api/acp/feed` |
+| `checkout.create` | POST `/api/acp/v1/checkout_sessions` |
+| `mcp.invoke` | Any `/api/mcp` tool invocation |
+
+Edit policy via the admin UI at `/admin/agentic` (see [Agentic Dashboard](/docs/features/agentic-dashboard)).
+
+## A-JWT audit log
+
+Every Guardian call writes an `AgenticJWT` row:
+
+- `jti` + `issuerAgentId` — replay protection (unique constraint)
+- `scopes` + `capabilitiesJson` — what was requested
+- `signedJwt` — raw A-JWT for forensic replay
+- `verifyResult` — `pass | fail | pending | skipped`
+- `verifyError` — reason on fail
+- `requestPath` + `requestMethod` + `ipAddress` + `userAgent` — context
+
+The `/admin/agentic` dashboard reads the last 24h for the live view. Older entries stay for audit; no automatic purging.
+
+## P2K scanner
+
+The Prompt-to-Key scanner enforces architecturally what Guardian enforces at runtime: **no file may import an LLM AND a money-or-policy primitive in the same module**.
+
+Run locally:
+
+```bash
+node --import tsx scripts/p2k-scan.ts
+```
+
+Run in CI: same script. Exits non-zero if any file in `app/api/**` or `lib/**` imports both:
+
+- LLM patterns: `@ai-sdk/*`, `anthropic`, `openai`, `gemini`, `chatModel()`, `generateText()`, `streamText()`, `embed()`, `generateObject()`
+- Money/policy patterns: `calcPriceBreakdown`, `stripe.`, `EscrowTransaction`, `PoTEProof`, `decideNegotiation`, `lib/negotiation/`, `agenticPolicyJson`, `isScopeAllowed`
+
+False positives are blocked by stripping comments + string contents before pattern-matching. The scanner has a small hard-coded allowlist (currently 1 entry: the customer-facing AI assistant where the LLM acts as a translation layer over server-computed price) — additions require code review, not source-comment suppression.
+
+This is Cartwright's automatic-block rule per Master Plan §4: if your diff introduces a P2K intersection that isn't on the allowlist, the build fails.
+
+## Escrow state machine
+
+Companion to Guardian: `lib/escrow/state-machine.ts` defines the legal transitions for `EscrowTransaction.status`:
+
+```
+pending  → funded   (buyer agent deposits)
+funded   → released (PoTE verified)
+funded   → refunded (PoTE missing/invalid)
+funded   → disputed (human dispute opened)
+disputed → released (admin force-release)
+disputed → refunded (admin force-refund)
+
+released, refunded → (terminal)
+```
+
+`assertTransition(from, to)` throws `IllegalEscrowTransitionError` on any illegal move. The state machine is the only authority — adding a transition requires editing both the source table and the corresponding test row in lockstep.
+
+## Where to plug in
+
+If you write a new agentic route handler, the pattern:
+
+```ts
+import { guardianCheck } from "@/lib/guardian/middleware";
+
+export async function POST(request: Request) {
+  // ... auth + parse body ...
+
+  const verdict = await guardianCheck({
+    agentId: body.agentId,
+    jti: body.jti,
+    signedJwt: body.signedJwt,
+    scopes: body.scopes,
+    requiredScope: "negotiate",     // your scope
+    requestPath: "/api/negotiate",
+    requestMethod: "POST",
+    amountMinor: body.counterOffer?.priceMinor,  // optional value cap
+    rail: undefined,                              // optional rail check
+  });
+  if (verdict.decision === "deny") {
+    return new Response(JSON.stringify({ error: "forbidden", reason: verdict.reason }), { status: 403 });
+  }
+
+  // ... your business logic, knowing the call is policy-approved
+}
+```
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Anchor-Resume engine" href="/docs/features/anchor-resume-engine" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+</Cards>

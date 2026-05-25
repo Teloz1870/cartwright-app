@@ -1,83 +1,142 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
-import { gitConfig } from '@/lib/shared';
 import type { Metadata } from 'next';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Changelog',
-  description:
-    'Release history of the Cartwright template, fetched from cartwright/CHANGELOG.md.',
+  description: 'Release history of the Cartwright template.',
 };
 
-const RAW_URL = `https://raw.githubusercontent.com/${gitConfig.user}/cartwright-template/main/CHANGELOG.md`;
+const RELEASES = [
+  {
+    version: '3.1.0',
+    date: 'May 2026',
+    title: 'Headless Merchant: A2A Foundation',
+    description: 'The full Agent-to-Agent architecture lands. Cartwright shops can now serve buyer agents end-to-end — signed Agent Card discovery, deterministic negotiation, Verify-then-Pay escrow with cryptographic Proof-of-Task-Execution, and human-in-the-loop oversight via /admin/agentic. All gated behind brand.features.a2a so your storefront stays clean unless you opt in.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Three new A2A endpoints: GET /api/agent-card (signed ed25519 JSON), POST /api/negotiate (deterministic engine), POST /api/escrow/verify (state machine + PoTE).',
+      'Anchor-and-Resume negotiation engine — pure TS, monotonicity-guaranteed, 800+ property tests per CI run. No LLM imports allowed in the kernel.',
+      'Guardian middleware as the Adjudication branch of Separation-of-Power: every agentic call validated against shop legislation before money moves. Fails closed to deny-all by default.',
+      'P2K scanner: blocks any commit that imports an LLM and a money/policy primitive in the same module. Architectural enforcement, not a lint suggestion.',
+      'Five industry templates: --template website-corporate | coffee | sunglasses | agent-marketplace | generic. Each sets brand.mode + brand.features defaults to match the archetype.',
+      '/admin/agentic dashboard — live A-JWT verification feed, escrow positions, disputed-escrow review queue, Agent Card snapshot. Read-only first; write-side incoming.',
+      'EscrowTransaction + PoTEProof + AgentCard + AgenticJWT — four new Prisma models with state-machine-enforced transitions.',
+      'CLI: --ref stable|next channel aliases (stable resolves to latest tag, next opts into bleeding-edge main).',
+    ],
+  },
+  {
+    version: '3.0.0',
+    date: 'May 2026',
+    title: 'Software 3.0: Vibe Templates & AI Localization',
+    description: 'Our biggest update ever. We introduce Vibe Templates, allowing you to build and inject infinitely scalable layouts directly via Cursor or Vercel v0.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Vibe API: Inject custom Tailwind HTML live from Cursor.',
+      'Global Auto-Translation: Built-in Google Gemini Flash automatically translates Vibe designs globally while preserving code.',
+      'Themes & AI Design dashboard in the admin panel.',
+      'New Setup Wizard with email and Vercel domain flow.',
+    ],
+  },
+  {
+    version: '2.5.0',
+    date: 'April 2026',
+    title: 'Local AI & Agentic Commerce',
+    description: 'Make the platform independent with local AI via Ollama, and make your product catalog machine-readable with the Agentic Commerce Protocol (ACP).',
+    icon: <Terminal className="w-5 h-5 text-cw-oker" />,
+    features: [
+      'Gemma 4 integration via Ollama for free on-device inference.',
+      'MCP (Model Context Protocol) Server endpoints enabled out-of-the-box.',
+      'llms.txt generation for AI search engines (Perplexity, OpenAI).',
+      'Phone.inc Cloud telephony integration directly in the browser.',
+    ],
+  },
+  {
+    version: '2.0.0',
+    date: 'March 2026',
+    title: 'The Golden Stack & Multi-Tenant Architecture',
+    description: 'A complete rewrite of the core engine to run B2B SaaS and Webshops on the exact same platform without compromises.',
+    icon: <Globe className="w-5 h-5 text-blue-500" />,
+    features: [
+      'Next.js 16 and React 19 foundation for extreme speed.',
+      'i18nexus cloud integration for standard texts.',
+      'Dark Mode SaaS support out-of-the-box.',
+      'Stripe Checkout B2B subscriptions added.',
+    ],
+  },
+  {
+    version: '1.0.0',
+    date: 'January 2026',
+    title: 'Initial Release: Cartwright Engine',
+    description: 'The first version of our vision for a self-custody e-commerce platform.',
+    icon: <Code2 className="w-5 h-5 text-cw-stone-400" />,
+    features: [
+      'Prisma DB schema and basic CRUD for products and pages.',
+      'Admin panel with Stripe Webhooks.',
+      'Vercel Edge Network optimizations.',
+    ],
+  },
+];
 
-async function fetchChangelog(): Promise<{ md: string; status: 'ok' | 'missing' | 'error'; error?: string }> {
-  try {
-    const res = await fetch(RAW_URL, {
-      next: { revalidate: 600 },
-    });
-    if (res.status === 404) {
-      return { md: '', status: 'missing' };
-    }
-    if (!res.ok) {
-      return {
-        md: '',
-        status: 'error',
-        error: `HTTP ${res.status}`,
-      };
-    }
-    const md = await res.text();
-    return { md, status: 'ok' };
-  } catch (err) {
-    return {
-      md: '',
-      status: 'error',
-      error: (err as Error).message,
-    };
-  }
-}
-
-export default async function ChangelogPage() {
-  const { md, status, error } = await fetchChangelog();
-
+export default function ChangelogPage() {
   return (
     <HomeLayout {...baseOptions()}>
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <header className="border-b border-cw-stone-200 dark:border-cw-stone-800 pb-8 mb-10">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
-            Releases
+      <main className="mx-auto max-w-4xl px-6 py-24 bg-cw-paper dark:bg-cw-ink">
+        <header className="mb-20 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.35em] text-cw-terracotta mb-4">
+            Updates & Releases
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+          <h1 className="text-5xl sm:text-7xl font-black tracking-tighter mb-6 leading-tight text-cw-stone-900 dark:text-cw-stone-50">
             Changelog
           </h1>
-          <p className="mt-4 text-cw-stone-500 dark:text-cw-stone-400">
-            Mirrored from the cartwright template's <code>CHANGELOG.md</code>. Rebuilds every 10 minutes.
+          <p className="text-xl text-cw-stone-600 dark:text-cw-stone-400 max-w-2xl mx-auto font-light">
+            Follow along as we continuously build the future of Software 3.0 commerce.
           </p>
         </header>
 
-        {status === 'ok' && (
-          <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-cw-stone-700 dark:text-cw-stone-300">
-            {md}
-          </pre>
-        )}
+        <div className="space-y-16">
+          {RELEASES.map((release, index) => (
+            <article key={release.version} className="relative grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 md:gap-12">
+              {/* Timeline dot & line - hidden on mobile */}
+              {index !== RELEASES.length - 1 && (
+                <div className="hidden md:block absolute left-[calc(25%-1.5rem)] top-12 bottom-[-4rem] w-px bg-cw-stone-200 dark:bg-cw-stone-800" />
+              )}
+              
+              {/* Meta information */}
+              <div className="md:text-right pt-2 relative">
+                <div className="hidden md:flex absolute right-[-2.25rem] top-2.5 w-6 h-6 rounded-full border-4 border-cw-paper dark:border-cw-ink bg-cw-stone-100 dark:bg-cw-stone-800 items-center justify-center z-10">
+                  <div className="w-2 h-2 rounded-full bg-cw-stone-400" />
+                </div>
+                <h3 className="text-2xl font-black text-cw-stone-900 dark:text-cw-stone-50 mb-1">v{release.version}</h3>
+                <time className="text-sm text-cw-stone-500 uppercase tracking-wider font-semibold">{release.date}</time>
+              </div>
 
-        {status === 'missing' && (
-          <div className="rounded-lg border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50 dark:bg-cw-stone-900/40 p-6">
-            <p className="text-cw-stone-700 dark:text-cw-stone-300">
-              No <code>CHANGELOG.md</code> yet on the public mirror. The first
-              tagged release of the cartwright template will populate this page.
-            </p>
-          </div>
-        )}
+              {/* Content */}
+              <div className="bg-cw-stone-50 dark:bg-[#111] border border-cw-stone-200 dark:border-cw-stone-800 rounded-2xl p-8 hover:border-cw-stone-300 dark:hover:border-cw-stone-700 transition-all shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-white dark:bg-white/5 border border-cw-stone-200 dark:border-white/10 shadow-sm">
+                    {release.icon}
+                  </div>
+                  <h2 className="text-2xl font-bold text-cw-stone-900 dark:text-cw-stone-50">{release.title}</h2>
+                </div>
+                
+                <p className="text-cw-stone-600 dark:text-cw-stone-300 text-lg leading-relaxed mb-6 font-light">
+                  {release.description}
+                </p>
 
-        {status === 'error' && (
-          <div className="rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-6">
-            <p className="text-red-800 dark:text-red-200">
-              Could not fetch the changelog right now ({error}). Try refreshing
-              shortly.
-            </p>
-          </div>
-        )}
+                <div className="space-y-3">
+                  {release.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-3 text-cw-stone-600 dark:text-cw-stone-400">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cw-terracotta mt-2.5 shrink-0" />
+                      <span className="leading-relaxed">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       </main>
     </HomeLayout>
   );

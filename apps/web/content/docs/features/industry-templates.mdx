@@ -1,0 +1,140 @@
+---
+title: Industry templates
+description: Five templates that scaffold the right defaults for your shop archetype — from corporate site to pure A2A marketplace.
+---
+
+A Cartwright shop falls into one of three archetypes: a **website** (no shop catalogue), a **webshop** (full e-commerce GUI), or an **agent-marketplace** (pure A2A backend, no GUI). The `--template` CLI flag scaffolds the right `brand.mode` + `brand.features.*` defaults so you don't have to wire them by hand.
+
+```bash
+npx create-cartwright@latest my-shop --template <slug>
+```
+
+Five slugs ship with the CLI today.
+
+## website-corporate
+
+Marketing site for a holding company, agency, or service business. **No shop catalogue.**
+
+| What it sets | Value |
+|---|---|
+| `brand.mode` | `"website"` |
+| `features.webshop` | `false` |
+| `features.acp` | `false` |
+| `features.a2a` | `false` |
+| `features.adminAgenticDashboard` | `false` |
+
+Seed data: zero categories, zero products, three static pages (about, services, contact). Replace via `/admin/sider` (Pages) once scaffolded.
+
+**Used by:** Teloz ApS (the holding company behind Cartwright). Live at [teloz-showcase.vercel.app](https://teloz-showcase.vercel.app) — migrating to teloz.net.
+
+Legacy alias: `--template saas` still maps here for any pre-rename forks.
+
+## coffee
+
+Modern e-commerce reference. Demonstrates clean `Product.attributes` (JSON) — the right way to model variant data for non-eyewear shops.
+
+| What it sets | Value |
+|---|---|
+| `brand.mode` | `"webshop"` |
+| `features.webshop` | `true` |
+
+Seed data: 2 categories (Beans, Espresso), 3 sample products (Ethiopia Yirgacheffe, Colombia Supremo, Northbound Espresso Blend) with realistic attributes (origin, roast level, tasting notes), 3 info pages.
+
+**Used by:** the Northbound Coffee Shop demo on `teloz-showcase.vercel.app/da/produkter`. Worth a visit to see the engine in action.
+
+## sunglasses
+
+Legacy eyewear template — the original archetype Cartwright grew out of (solbrillen.dk).
+
+| What it sets | Value |
+|---|---|
+| `brand.mode` | `"webshop"` |
+| `features.webshop` | `true` |
+
+Seed data: 2 categories (Men, Women), 3 sample products with the legacy `frameColor` / `lensColor` / `brand` fields populated.
+
+<Callout type="warn">
+This is the **only** template that still uses the legacy eyewear Prisma fields. New non-eyewear forks should use `Product.attributes` (JSON) instead — coffee is the reference for that pattern. The storefront has hard-coded filter facets that read `frameColor` and `lensColor` specifically, which is why the convention sticks for sunglasses.
+</Callout>
+
+Legacy alias: `--template eyewear` still maps here.
+
+## agent-marketplace
+
+Pure A2A shop. No visual storefront — buyer agents discover via `/api/agent-card`, negotiate via `/api/negotiate`, settle via `/api/escrow/verify`. The only human-facing surface is `/admin` (especially [`/admin/agentic`](/docs/features/agentic-dashboard)).
+
+| What it sets | Value |
+|---|---|
+| `brand.mode` | `"agent-marketplace"` |
+| `features.webshop` | `false` |
+| `features.acp` | `true` |
+| `features.a2a` | `true` |
+| `features.adminAgenticDashboard` | `true` |
+
+Seed data: 2 categories (Capabilities, Services), 3 sample capabilities as "products" — "Catalogue feed (per 1000 records)", "Inventory check (single SKU)", "Bulk order fulfilment (per order)". Plus a single page explaining the Agent Card endpoint usage.
+
+**Used by:** the canonical reference for the Headless Merchant architecture. No live customer yet — yours could be the first.
+
+## generic
+
+Fallback template. Webshop mode, 2 categories, 6 placeholder products. Use when nothing else fits, or as a clean slate to fill with your own seed data.
+
+| What it sets | Value |
+|---|---|
+| `brand.mode` | `"webshop"` |
+| `features.webshop` | `true` |
+| Other A2A flags | `false` |
+
+## Mode + features architecture
+
+Each template patches two things in `brand.config.ts`:
+
+```ts
+// Top-level mode — declarative archetype
+mode: "website" | "webshop" | "agent-marketplace",
+
+// Additive feature flags — granular control
+features: {
+  webshop: boolean,                  // /[locale]/produkter/* visible
+  acp: boolean,                      // /api/acp/* enabled
+  a2a: boolean,                      // /api/agent-card, /api/negotiate, /api/escrow/verify enabled
+  adminAgenticDashboard: boolean,    // /admin/agentic nav link
+},
+```
+
+Hybrid shops (e.g. webshop + a2a) are possible — set the flags individually. The templates are just starting points; nothing stops you from `npx create-cartwright my-hybrid --template coffee` and then flipping `features.a2a = true` post-scaffold.
+
+## How `--template` patches your scaffold
+
+The CLI downloads the latest mirror snapshot via `giget`, then runs `patchBrandConfigForTemplate()` (in `apps/cli/src/scaffold.ts`) which applies the per-template defaults. Idempotent — safe to re-run with `--template generic` on an already-generic shop.
+
+```bash
+# Default (generic) — no flag needed
+npx create-cartwright@latest my-shop
+
+# Explicit
+npx create-cartwright@latest my-coffee --template coffee
+npx create-cartwright@latest my-agent --template agent-marketplace
+```
+
+## Adding your own template
+
+Templates live in `industry-templates/<slug>/seed-data.ts` in `cartwright-private`. Each exports an `IndustryTemplate` with `categories`, `pages`, `products`, and optional `categorySeo`. Register the slug in `industry-templates/index.ts`:
+
+```ts
+// industry-templates/index.ts
+import { myTemplate } from "./my-niche/seed-data";
+
+const TEMPLATES: Record<string, IndustryTemplate> = {
+  ...,
+  "my-niche": myTemplate,
+};
+```
+
+The CLI's `TEMPLATE_SLUGS` (in `apps/cli/src/scaffold.ts`) also needs to know about new slugs to validate `--template my-niche`. Send a PR — we'll fast-track it.
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+  <Card title="Brand config" href="/docs/configuration/brand-config" />
+</Cards>

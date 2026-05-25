@@ -1,0 +1,111 @@
+---
+title: Anchor-and-Resume negotiation engine
+description: Pure-TypeScript deterministic negotiation kernel — never an LLM, monotonicity-guaranteed, 800+ property-test cases per CI run.
+---
+
+A buyer agent walks up to your shop's `/api/negotiate` endpoint and proposes a price. Should you accept? Counter? Reject? Cartwright's answer is **deterministic code, never an LLM**.
+
+Letting a language model compute prices is unacceptable: prompt injection can move money, and stochastic outputs cannot guarantee monotonic offers. The Anchor-and-Resume engine (`lib/negotiation/anchor-resume.ts`) is the kernel that solves this — pure TypeScript, no clocks, no randomness, no external state.
+
+## Six invariants
+
+The engine is architected around six hard rules:
+
+1. **No LLM imports.** The file must not import `@ai-sdk/*`, `anthropic`, `openai`, `gemini`, `chatModel()`, `generateText()`, or anything from `lib/ai/`. Enforced by `tests/unit/negotiation/no-llm-imports.test.ts` which scans the source.
+2. **Monotonicity.** Once an offer is on the table, the next offer to the same counterparty must be equal-or-better for them (lower price for shop-side offers). Background market shifts cannot retract a live offer.
+3. **Floor respect.** Never offer below `floorMinor` (the shop's minimum acceptable price).
+4. **Anchor respect.** Never offer above `anchorMinor` (the list price).
+5. **No price chosen by LLM.** The engine produces the number. A downstream LLM may render it as natural language for buyer comms — but choosing the number is engine territory only.
+6. **Deterministic.** Identical input → identical output. Wall-clock time is passed in via the `now` parameter, never read from `Date.now()`.
+
+## The decision function
+
+One public function:
+
+```ts
+export function decideNegotiation(input: NegotiationInput): NegotiationDecision;
+```
+
+`NegotiationInput` carries the shop-side configuration (floor, anchor, concession rate), counterparty state (current offer, counter offer), optional market signals, round number, max-rounds cap, and the current time. `NegotiationDecision` is one of four verdicts plus a list of reasoning codes:
+
+```ts
+type NegotiationDecision = {
+  decision: "accept" | "counter" | "hold" | "reject";
+  nextOffer: Offer | null;
+  reasoningCodes: ReadonlyArray<ReasoningCode>;
+};
+```
+
+## Concession formula
+
+When a counter-offer arrives below the floor, the engine concedes:
+
+```
+gap         = current - floor
+concession  = floor(gap * concessionRate)
+nextPrice   = current - concession
+nextPrice   = max(nextPrice, floor)          // floor clamp
+nextPrice   = min(nextPrice, currentPrice)   // monotonicity clamp
+```
+
+If `nextPrice === current` (no further movement possible) → `reject` with reason `AT_FLOOR`. Otherwise → `counter` with reason `CONCESSION_APPLIED`.
+
+`concessionRate` is a shop-configured value in `[0, 1]`. `0` = never concede (reject below-floor offers outright). `0.5` = meet the gap halfway each round. `1.0` = drop to floor in a single move (aggressive).
+
+## Reasoning codes
+
+The engine never produces prose. It emits a closed 9-element enum of reasoning codes that the calling layer (or a downstream LLM translation layer) can render to humans:
+
+| Code | When |
+|---|---|
+| `FIRST_ROUND_ANCHOR` | Opening offer is the anchor price |
+| `COUNTER_AT_OR_ABOVE_FLOOR` | Counter is acceptable; engine accepts |
+| `COUNTER_BELOW_FLOOR` | Counter is unacceptable; engine concedes or rejects |
+| `CONCESSION_APPLIED` | Engine moved toward the floor |
+| `AT_FLOOR` | Cannot concede further |
+| `MONOTONICITY_HOLD` | Market suggested raising; engine held instead |
+| `INVALID_INPUT` | Validation failed (floor>anchor, rate∉[0,1], etc.) |
+| `COUNTER_EXPIRED` | Counter's `validUntil` is in the past |
+| `MAX_ROUNDS_REACHED` | Capped to prevent infinite negotiation |
+
+## Property tests
+
+`tests/unit/negotiation/monotonicity.property.test.ts` uses `fast-check` to generate 200 random inputs per property, four properties total. **800 generated cases per CI run** verifying:
+
+1. `nextOffer.priceMinor ≤ currentOffer.priceMinor` — monotonicity
+2. Market signals suggesting higher prices never cause an increase
+3. `nextOffer.priceMinor ≥ floor` — floor respect on counter
+4. Accepted counter price ≥ floor — floor respect on accept
+5. Determinism: identical input → identical output across calls
+
+Any single counter-example fails the build and fast-check shrinks to the smallest input that demonstrates the violation.
+
+## Wiring into your routes
+
+The `/api/negotiate` endpoint already calls the engine. If you want to expose negotiation through another surface (e.g. an admin tool, batch job, or alternative protocol), import directly:
+
+```ts
+import { decideNegotiation } from "@/lib/negotiation/anchor-resume";
+
+const decision = decideNegotiation({
+  floorMinor: shop.floorMinor,
+  anchorMinor: product.priceMinor,
+  concessionRate: 0.5,
+  currentOffer,
+  counterOffer,
+  round: session.round,
+  maxRounds: 5,
+  now: new Date(),
+});
+```
+
+Just remember: **the file calling the engine MUST NOT also import an LLM** — that's a P2K violation and the scanner will block your commit.
+
+## When the LLM does come in
+
+Master Plan §3.2 reserves a translation layer outside the engine: given `{decision, nextOffer, reasoningCodes}`, an LLM may render the verdict as buyer-facing natural language ("We can do 49.50 — that's halfway to your offer, but our floor is 40 and we won't go below"). This layer is out of scope for Phase 6 of the implementation — the engine ships first, prose-generation is bolt-on.
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+</Cards>

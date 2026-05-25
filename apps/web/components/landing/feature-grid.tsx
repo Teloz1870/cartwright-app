@@ -47,7 +47,27 @@ const features = [
   },
   {
     title: 'Industry templates',
-    body: 'Switch between generic, eyewear, fashion, more — without rewriting the app.',
+    body: 'Five templates: website-corporate, coffee, sunglasses, agent-marketplace, generic. `--template <slug>` patches brand.mode + features.',
+  },
+  {
+    title: 'A2A endpoints',
+    body: 'GET /api/agent-card, POST /api/negotiate, POST /api/escrow/verify — buyer agents discover, negotiate, settle without a browser.',
+  },
+  {
+    title: 'Anchor-Resume engine',
+    body: 'Deterministic negotiation kernel in pure TS — never an LLM, monotonicity-guaranteed, 800+ property tests per CI run.',
+  },
+  {
+    title: 'Guardian middleware',
+    body: 'Adjudication branch + P2K scanner. Every agentic call validates against shop legislation before money or escrow state moves.',
+  },
+  {
+    title: 'Headless Merchant mode',
+    body: 'brand.mode = "agent-marketplace" ships an A2A-only shop — no GUI, just signed Agent Card + 5 ACP endpoints + admin.',
+  },
+  {
+    title: 'Agentic dashboard',
+    body: '/admin/agentic shows live A-JWT verifications, escrow positions, disputed-escrow review queue. Read-only first; write-side incoming.',
   },
 ];
 

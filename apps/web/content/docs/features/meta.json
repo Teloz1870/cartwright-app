@@ -9,6 +9,11 @@
     "image-upload-blob",
     "email-resend",
     "seo-automation",
-    "api-rate-limiting"
+    "api-rate-limiting",
+    "industry-templates",
+    "a2a-endpoints",
+    "guardian-middleware",
+    "anchor-resume-engine",
+    "agentic-dashboard"
   ]
 }

@@ -1,0 +1,149 @@
+---
+title: A2A endpoints
+description: Three new REST endpoints that let buyer agents discover, negotiate, and settle with your shop — without ever opening a browser.
+---
+
+Cartwright v0.2.0 ships three Agent-to-Agent endpoints that turn your shop into a Headless Merchant. A buyer agent can read your published Agent Card, negotiate price via a deterministic engine, and release funds against a Proof-of-Task-Execution — all over plain HTTPS, no GUI involved.
+
+All three live in `app/api/` and are gated behind `brand.features.a2a` (default `false`). A shop scaffolded with `--template agent-marketplace` has the flag on; everything else returns 404 to keep your storefront surface clean.
+
+## GET /api/agent-card
+
+Discovery endpoint. A buyer agent calls this first to learn what your shop sells, which payment rails you accept, and what negotiation policy you publish.
+
+```bash
+curl https://example-shop.app/api/agent-card
+```
+
+Response is a signed `SignedAgentCard`:
+
+```json
+{
+  "payload": {
+    "version": 1,
+    "shopId": "example-shop.app",
+    "shopName": "Example",
+    "issuedAt": "2026-05-25T08:00:00.000Z",
+    "expiresAt": null,
+    "capabilities": [
+      { "id": "catalogue-feed", "name": "Catalogue feed (per 1000 records)",
+        "anchorPriceMinor": 5900, "floorPriceMinor": 4000, "currency": "DKK" }
+    ],
+    "paymentRails": ["stripe"],
+    "negotiationPolicy": { "concessionRate": 0.5, "maxRounds": 5 }
+  },
+  "signature": "base64-ed25519-signature",
+  "publicKey": "base64-ed25519-public-key",
+  "_meta": { "version": 1, "signedAt": "...", "expiresAt": null }
+}
+```
+
+The buyer agent verifies the signature offline against the embedded public key before trusting any field. Signed with ed25519 (`lib/a2a/agent-card.ts`).
+
+If no `AgentCard` row exists yet, the endpoint returns `503 no_agent_card_configured` — buyer agents MUST refuse to negotiate with an un-carded shop.
+
+## POST /api/negotiate
+
+Negotiation endpoint. Wraps the deterministic [Anchor-and-Resume engine](/docs/features/anchor-resume-engine) — never an LLM. The handler authenticates via Bearer token, runs the [Guardian middleware](/docs/features/guardian-middleware), then invokes the engine.
+
+```bash
+curl -X POST https://example-shop.app/api/negotiate \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agentId": "buyer-001",
+    "jti": "unique-jwt-id-001",
+    "signedJwt": "eyJ...",
+    "scopes": ["negotiate"],
+    "floorMinor": 4000,
+    "anchorMinor": 5900,
+    "concessionRate": 0.5,
+    "currentOffer": { "priceMinor": 5900, "quantity": 1, "validUntil": "2026-05-26T08:00:00Z" },
+    "counterOffer": { "priceMinor": 3000, "quantity": 1, "validUntil": "2026-05-26T08:00:00Z" },
+    "round": 2,
+    "maxRounds": 5
+  }'
+```
+
+Response:
+
+```json
+{
+  "decision": "counter",
+  "nextOffer": { "priceMinor": 4950, "quantity": 1, "validUntil": "..." },
+  "reasoningCodes": ["COUNTER_BELOW_FLOOR", "CONCESSION_APPLIED"]
+}
+```
+
+`decision` is `accept | counter | hold | reject`. `reasoningCodes` is a closed enum (9 values) that explains why — the LLM translation layer can render them as natural-language buyer comms downstream, but the engine itself never speaks prose.
+
+<Callout type="warn">
+The engine has NO LLM imports. This is a hard rule per the Master Plan §3.2 — any prompt-injection that moves money is automatically blocked by the [P2K scanner](/docs/features/guardian-middleware#p2k-scanner). If you build atop this, never call `chatModel()` from a route that touches money.
+</Callout>
+
+## POST /api/escrow/verify
+
+Fund-release endpoint. Buyer agent submits a Proof-of-Task-Execution (PoTE) to release escrowed funds.
+
+```bash
+curl -X POST https://example-shop.app/api/escrow/verify \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agentId": "buyer-001",
+    "jti": "unique-jwt-id-002",
+    "signedJwt": "eyJ...",
+    "scopes": ["escrow.release"],
+    "escrowTxId": "ctx_abc123",
+    "proofType": "hash",
+    "proofPayload": {},
+    "submittedHash": "abc123..."
+  }'
+```
+
+`proofType` discriminates four verifier paths:
+
+| `proofType` | What's verified |
+|---|---|
+| `hash` | Constant-time comparison against `EscrowTransaction.expectedHash`. Pass → state machine transitions `funded → released`. |
+| `delivery` | Carrier-side delivery confirmation (signed webhook). For Phase 8, recorded as `pending` awaiting external confirmation. |
+| `signature` | Buyer's ed25519 signature over the artifact hash. Phase 8 records as pending; admin approves manually in `/admin/agentic`. |
+| `webhook` | External system (Stripe, shipping) webhook event id. Records pending until external confirmation. |
+
+On `pass`, the escrow row transitions to `released` atomically (state-machine-guarded — see [escrow state machine](/docs/features/guardian-middleware#escrow-state-machine)). On `fail`, the row stays unchanged so a human can dispute via `/admin/agentic`.
+
+## Discovery surface
+
+The Agent Card endpoint is the discovery point, but Cartwright also publishes:
+
+- `/.well-known/mcp.json` — Model Context Protocol discovery (Cartwright v1)
+- `/.well-known/ucp` — Universal Commerce Protocol
+- `/llms.txt` — LLM crawler hint
+- `/api/v1/tools` — typed catalogue of every action an agent can take
+
+A buyer agent has multiple ways to find your shop — `gh api`-style discovery, MCP probe, or just curl-ing well-known paths.
+
+## Authentication
+
+All three POST endpoints require a Bearer token (`Authorization: Bearer <api-key>`). API keys are managed via `/admin/api-keys` and scoped (e.g. `["negotiate", "escrow.release"]`). The Guardian middleware additionally enforces the shop's `agenticPolicyJson` legislation rules before any handler runs.
+
+## Enabling on your shop
+
+```ts
+// brand.config.ts
+features: {
+  a2a: true,            // turns the 3 endpoints on
+  acp: true,            // enables /api/acp/* (commerce protocol)
+  webshop: false,       // optional: hide buyer-facing GUI for pure-A2A shops
+  adminAgenticDashboard: true,
+}
+```
+
+Or scaffold with `npx create-cartwright my-agent-shop --template agent-marketplace` — the template ships these flags on by default.
+
+<Cards>
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Anchor-Resume engine" href="/docs/features/anchor-resume-engine" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+  <Card title="Industry templates" href="/docs/features/industry-templates" />
+</Cards>
