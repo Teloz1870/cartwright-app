@@ -1,0 +1,85 @@
+---
+title: Setup wizard
+description: The /admin/setup flow that walks new shops from "fresh scaffold" to "ready to sell" without touching an env file.
+---
+
+`/admin/setup` is the post-scaffold onboarding flow. After `npx create-cartwright my-shop` and the first DB push, a brand-new admin lands on this wizard instead of the empty dashboard. Five steps, DB-first secrets, no `.env` editing required.
+
+## The five steps
+
+1. **Brand** — shop name, contact email, currency, default locale. Patches `BrandingSettings` and `brand.config.ts:contact`.
+2. **Theme** — primary colour or upload a hero image. The image flows through `lib/ai/gemini.ts:extractPaletteFromImage()`; the wizard offers 3–5 palette suggestions and writes the choice to `BrandingSettings.themeTokens`.
+3. **API keys** — Anthropic, Gemini, Stripe (test mode pre-filled), Resend. Each is AES-256-GCM encrypted via `lib/secret-encryption.ts` and stored in `IntegrationSettings.id=1`.
+4. **First category** — minimum-viable catalogue surface. Creates one `Category` row; the wizard offers an AI-drafted description (`lib/ai/category-seo-generator.ts`) you can accept, edit, or skip.
+5. **Completion** — flips `BrandingSettings.setupComplete = true` and redirects to `/admin`.
+
+Each step is independently re-runnable from `/admin/setup` — useful when you swap currency or add a new payment provider months later.
+
+## The setup gate
+
+`lib/setup-status.ts:isSetupComplete()` reads `BrandingSettings.setupComplete`. The result drives middleware redirects:
+
+| Request | Pre-setup | Post-setup |
+|---|---|---|
+| `/admin` | → `/admin/setup` | renders dashboard |
+| `/admin/setup` | renders wizard | renders wizard (read-only history view) |
+| `/` (storefront) | renders "Coming soon" placeholder | renders the shop |
+| `/api/acp/*`, `/api/agent-card`, `/api/negotiate` | 503 `shop_not_ready` | normal |
+
+The gate fails closed: until step 5 commits, the shop refuses to take orders or expose any agent surface. This stops a half-scaffolded shop from accepting purchases its admin didn't realise it was advertising.
+
+```ts
+// lib/setup-status.ts
+export async function isSetupComplete(): Promise<boolean> {
+  const s = await prisma.brandingSettings.findUnique({ where: { id: 1 } });
+  return s?.setupComplete === true;
+}
+```
+
+## Why DB-first
+
+Traditional Next.js starters expect you to edit `.env`. That works for solo developers; it breaks for non-technical shop owners and for teams that share environments.
+
+Cartwright's choice: secrets live in `IntegrationSettings`, encrypted at rest with `SECRET_ENCRYPTION_KEY` (the only env var that has to exist before setup). `getAnthropicApiKey()`, `getStripeKey()`, etc., all read DB first and fall back to env only for local dev convenience.
+
+Consequence: the wizard can fully configure a shop from a browser. No SSH, no Vercel dashboard, no env-pull. The owner pastes their Stripe key in, hits save, the next checkout works.
+
+## What the wizard cannot do
+
+Two things stay in the developer's lap:
+
+- **`SECRET_ENCRYPTION_KEY` itself.** This is the seed that decrypts everything else. The CLI scaffolds it into Vercel via `vercel env pull` during `create-cartwright`. The wizard cannot change it — rotating would invalidate every stored secret.
+- **Domain pointing.** The wizard can hint, but DNS records, custom domain registration on Vercel, and `NEXTAUTH_URL` updates remain manual. The roadmap calls this out as Phase 10 of the Master Plan.
+
+## API keys go through validation
+
+Every key the wizard accepts is round-trip-validated before save:
+
+| Provider | Validation |
+|---|---|
+| Anthropic | `POST /v1/messages` with `max_tokens=1` — must return 200 |
+| Gemini | `GET /v1beta/models` — must list models |
+| Stripe | `GET /v1/account` — must return the account id |
+| Resend | `GET /domains` — must return at least the sandbox domain |
+
+A failed validation surfaces the provider's actual error text. Common case: pasting a key with a trailing newline. The wizard normalises whitespace and shows what was actually sent.
+
+<Callout type="tip">
+After setup, re-running any individual step is the supported flow. Direct DB edits work but skip validation. If a key has stopped working, re-paste it through `/admin/setup` — the round-trip validation will tell you whether the key, the network, or the provider is the problem.
+</Callout>
+
+## Templates and setup
+
+`npx create-cartwright --template <slug>` pre-fills wizard defaults:
+
+- `--template website-corporate` skips the "first category" step (no commerce surface).
+- `--template coffee` / `--template sunglasses` pre-fill currency and locale.
+- `--template agent-marketplace` flips `features.acp` and `features.a2a` on at completion, requires the Anthropic key to be valid (negotiation engine needs it for the translation layer).
+
+The template choice is locked in at scaffold time; the wizard surfaces the choice as read-only context but lets you change anything downstream.
+
+<Cards>
+  <Card title="Industry templates" href="/docs/features/industry-templates" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+</Cards>

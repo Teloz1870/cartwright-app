@@ -15,6 +15,18 @@ const proofs = [
     body: '/api/v1/tools is a machine-readable list of every action an agent can take — products.search, cart, and more. Typed, versioned, and discoverable without docs.',
   },
   {
+    badge: 'Indexable',
+    endpoint: 'GET /api/acp/feed',
+    title: 'A JSONL product feed agents can ingest',
+    body: 'Every shop publishes its catalogue as newline-delimited JSON at /api/acp/feed — the format ChatGPT Instant Checkout and other AI shopping engines read directly. No XML to maintain, no merchant centre to upload to.',
+  },
+  {
+    badge: 'Buyable',
+    endpoint: 'POST /api/acp/v1/checkout_sessions',
+    title: 'Stateless agentic checkout',
+    body: 'A buyer agent POSTs line items + shipping in one call; the response is a checkout session with totals already computed by lib/pricing.ts. /complete posts the order. Idempotency keys handle retries. Specified per the Agentic Commerce Protocol v0.2.',
+  },
+  {
     badge: 'Connectable',
     endpoint: 'POST /api/mcp',
     title: 'A built-in MCP server',
@@ -76,12 +88,13 @@ export function AgentSurface() {
         ))}
       </div>
       <p className="mt-6 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
-        Seven endpoints. One signed Agent Card. One deterministic negotiation engine. One
+        Nine endpoints. One signed Agent Card. One deterministic negotiation engine. One
         Guardian middleware that enforces shop legislation before any money moves.
         Cartwright v0.2 ships the full Headless Merchant architecture —
         Agentic Commerce Protocol checkout, A2A negotiation, escrow with PoTE.
-        All gated behind <span className="font-mono">brand.features.a2a</span>{' '}
-        so your storefront stays clean if you don't want it.
+        ACP is gated behind <span className="font-mono">brand.features.acp</span> and
+        A2A behind <span className="font-mono">brand.features.a2a</span>, so your
+        storefront stays clean if you don't want either surface.
       </p>
     </Section>
   );

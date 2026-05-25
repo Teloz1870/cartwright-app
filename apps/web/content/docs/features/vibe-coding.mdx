@@ -1,0 +1,102 @@
+---
+title: Vibe Coding
+description: Software 3.0 page builder — push raw Tailwind HTML from Cursor, v0, or Lovable, auto-translated globally by Gemini, sanitised before it lands.
+---
+
+Vibe Coding is the Cartwright take on Software 3.0: you design with the AI tool you already use — Cursor, Vercel v0, Lovable — and the resulting HTML lands directly on a page, product, category, or service in your shop. No copy-paste, no theme dance, no second build.
+
+The integration is one HTTP call (`POST /api/admin/vibe/push`) plus a sanitisation pipeline that enforces semantic colour tokens, strips dangerous markup, and queues a Gemini auto-translation pass for every locale you ship.
+
+## Why this lives in the schema
+
+Every editable surface has a `vibeHtml` text field next to the structured content:
+
+- `Page.vibeHtml`
+- `Product.vibeDescriptionHtml`
+- `Category.vibeHtml`
+- `Service.vibeHtml`
+
+When `vibeHtml` is non-null, the renderer prefers it over the default component tree. Switch back by clearing the field — the structured content is still there, untouched.
+
+## The Vibe Sandbox
+
+`/admin/vibe-sandbox` is the staging surface. Paste HTML, see it render against your live design tokens, iterate until it's right, then publish to a specific entity. Sandbox state is per-admin-user, so two editors can work in parallel without stepping on each other.
+
+```tsx
+// app/admin/vibe-sandbox/VibeSandboxClient.tsx — the canonical AI-control admin pattern
+```
+
+The sandbox shares the same sanitiser the API endpoint runs, so what you see is what publishes.
+
+## API endpoints
+
+Three routes under `/api/admin/vibe/*`:
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/admin/vibe/generate` | Server-side generation via the configured AI provider (Anthropic by default; Ollama if `aiProvider = "local"`). Returns sanitised HTML. |
+| `POST /api/admin/vibe/push` | External tools (Cursor, v0) send finished HTML here. Sanitised, attached to the target entity, queued for translation. |
+| `POST /api/admin/vibe/translate` | Manual re-trigger of the Gemini translation pass — useful when you've added a new locale post-publish. |
+
+`push` example from Cursor:
+
+```bash
+curl -X POST https://example-shop.app/api/admin/vibe/push \
+  -H "Authorization: Bearer <admin-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target": { "type": "page", "slug": "about" },
+    "html": "<section class=\"bg-sol-sand py-24\">...</section>",
+    "sourceLocale": "en"
+  }'
+```
+
+Response includes the entity id and the translation job id. The job runs async; poll `/api/admin/vibe/jobs/<id>` or watch the toast feed in `/admin/vibe-sandbox`.
+
+## Semantic colour enforcement
+
+The sanitiser refuses raw hex or rgb in `class` or inline `style`. Only semantic tokens are accepted:
+
+```html
+<!-- ✓ Accepted -->
+<section class="bg-sol-sand text-cw-stone-900 dark:bg-cw-ink dark:text-cw-stone-50">
+
+<!-- ✗ Rejected with token suggestion -->
+<section class="bg-[#F5E6D3] text-[#1A1A1A]">
+```
+
+This is what makes Vibe-pushed designs survive a brand-token swap. When a customer rebrands by editing `brand.config.ts`, every Vibe-rendered page picks up the new palette automatically — because nothing was ever hardcoded.
+
+The token allowlist lives in `lib/vibe/sanitiser.ts` and is generated from the active Tailwind theme.
+
+## Auto-translation
+
+After `push`, the source HTML is fed into `lib/ai/gemini.ts:translateVibeBlock()` for every locale in `brand.config.ts:locales`. Gemini preserves the markup tree, classes, and structural integrity — it only rewrites visible prose.
+
+The result lands in `vibeHtml` keyed per locale (the field is a JSON map: `{ "en": "...", "da": "...", "de": "..." }`). The renderer reads the active locale and falls back to source on miss.
+
+<Callout type="tip">
+Translation requires a Gemini API key (`/admin/integrations`). Without it, Vibe still works — but only the source locale gets the new design until you re-run translate after adding the key.
+</Callout>
+
+## Sanitisation pipeline
+
+Every Vibe payload passes through `lib/vibe/sanitiser.ts` before it touches the database:
+
+1. **Parse** with `parse5` — strict, no error-recovery shortcuts.
+2. **Strip** `<script>`, `<iframe>`, event handlers (`on*`), `javascript:` URLs, `data:` URIs that aren't images.
+3. **Reject** non-semantic colour tokens (see above).
+4. **Validate** internal links resolve to known routes; external links get `rel="noopener noreferrer"` and `target="_blank"`.
+5. **Normalise** whitespace and self-close void elements.
+
+A reject returns 422 with the specific rule that fired — so external tools can present a clear error to the user instead of "something went wrong".
+
+## Why "Vibe"
+
+Software 3.0's premise: you describe the vibe of what you want, the AI tool produces the code, the platform accepts the code as a first-class artefact. Cartwright is one of the few commerce platforms where AI-generated layout actually persists end-to-end — most platforms make you re-do it through their own builder.
+
+<Cards>
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="Local AI / Ollama" href="/docs/features/local-ai-ollama" />
+  <Card title="Industry templates" href="/docs/features/industry-templates" />
+</Cards>

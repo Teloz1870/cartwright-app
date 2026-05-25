@@ -11,6 +11,7 @@ const stack = [
   'Stripe',
   'Anthropic SDK',
   'Gemini SDK',
+  'Ollama',
   'Vercel AI SDK',
   'Vercel Blob',
   'Resend',
@@ -27,6 +28,10 @@ const stack = [
   'Satori',
   'next/og',
   'MCP',
+  'Phone.inc',
+  'Luma Dream Machine',
+  'Unsplash',
+  'i18nexus',
 ];
 
 export function StackGrid() {
@@ -35,7 +40,7 @@ export function StackGrid() {
       <SectionHeader
         eyebrow="The stack"
         title="All current versions. No legacy."
-        description="If a dependency is on cartwright, it shipped a major in the last six months. We track upstream, you get the upgrades."
+        description="Thirty current-major dependencies — from Next 16 and React 19 to Ollama, Phone.inc, and Luma Dream Machine. We track upstream, you get the upgrades."
       />
       <ul className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px overflow-hidden rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-200 dark:bg-cw-stone-800">
         {stack.map((name) => (

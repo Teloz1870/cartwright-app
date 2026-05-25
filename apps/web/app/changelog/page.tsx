@@ -24,6 +24,9 @@ const RELEASES = [
       '/admin/agentic dashboard — live A-JWT verification feed, escrow positions, disputed-escrow review queue, Agent Card snapshot. Read-only first; write-side incoming.',
       'EscrowTransaction + PoTEProof + AgentCard + AgenticJWT — four new Prisma models with state-machine-enforced transitions.',
       'CLI: --ref stable|next channel aliases (stable resolves to latest tag, next opts into bleeding-edge main).',
+      'Vibe Coding sandbox at /admin/vibe-sandbox — push raw HTML from Cursor or v0 via /api/admin/vibe/push, auto-translate via Gemini.',
+      'Phone.inc telephony scaffolded at /admin/telefon — IVR config, voicemail transcription, call routing. Preview while Phone.inc API spec stabilises.',
+      'Setup wizard at /admin/setup — DB-first secret storage; no env file editing required.',
     ],
   },
   {

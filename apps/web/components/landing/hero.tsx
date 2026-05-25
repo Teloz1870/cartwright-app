@@ -28,6 +28,13 @@ export function Hero() {
             built-in MCP server, and Stripe checkout. Scaffold a real shop in one
             command — then own every line.
           </p>
+          <p className="mt-4 max-w-2xl text-sm sm:text-base text-cw-stone-600 dark:text-cw-stone-300 leading-relaxed">
+            Built for human shoppers <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">and</span> AI buyer agents.{' '}
+            <span className="font-mono text-xs text-cw-terracotta">brand.mode</span>{' '}
+            picks which surface(s) you ship — the same engine sells to a person
+            browsing on their phone and to a buyer agent that just read your{' '}
+            <span className="font-mono text-xs">/llms.txt</span>.
+          </p>
 
           <div className="mt-10 w-full max-w-2xl">
             <CopyCommand command="npx create-cartwright@latest my-shop" />

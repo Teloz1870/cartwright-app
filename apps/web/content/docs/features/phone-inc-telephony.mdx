@@ -1,0 +1,103 @@
+---
+title: Phone.inc telephony
+description: IVR, voicemail transcription, and call routing scaffolded at /admin/telefon. Preview — the Phone.inc API spec is still evolving.
+---
+
+<Callout type="warn">
+**Preview.** Phone.inc integration ships in code; the Phone.inc public API spec is still evolving, so some flows are scaffolded but not fully wired. Track readiness in the [roadmap](/docs/roadmap).
+</Callout>
+
+Phone.inc is Cartwright's bridge between voice and the rest of the shop. The admin surface at `/admin/telefon` lets you configure an IVR menu, route calls by topic, and review transcribed voicemails alongside the same customer record that holds their orders and chat history.
+
+## Why telephony belongs in commerce
+
+Most Cartwright shops eventually get a "can I just call someone?" customer. The platform's stance: don't push voice into a third-party silo. Surface call history next to order history, transcribe voicemails into searchable text, and let the AI assistant cite a recent phone call when answering a follow-up chat.
+
+That's the destination. The preview shipping today covers the configuration surface and the inbound webhook; outbound calling and full call-recording playback land in subsequent releases.
+
+## Configuration
+
+`IntegrationSettings` carries two fields:
+
+| Field | Purpose |
+|---|---|
+| `phoneIncWorkspaceId` | Your Phone.inc workspace identifier |
+| `phoneIncApiKey` | API key — encrypted via `lib/secret-encryption.ts` |
+
+Both are set in `/admin/integrations` → "Phone.inc". With them present, `/admin/telefon` becomes editable; without, the nav entry hides.
+
+## /admin/telefon
+
+The admin surface has three tabs:
+
+1. **IVR menu** — define greetings (per locale), branch options (1 = Sales, 2 = Support…), and the routing per branch (forward to number, leave voicemail, AI receptionist).
+2. **Voicemails** — transcript list with filter by branch, date, and customer-match. Each row links to the matched `Customer` row when one exists.
+3. **Call log** — inbound call history. Phone.inc-side recording URLs surface here; playback is link-out for now.
+
+The IVR editor saves to `PhoneIvrConfig.json` — a single JSON blob the inbound webhook reads on every call.
+
+## /api/phone/token
+
+Issues a short-lived token Phone.inc uses to open a media-server session. Server-side check ensures the requesting workspace matches `phoneIncWorkspaceId`. Without this endpoint, the admin's browser-based call-test feature can't connect.
+
+```bash
+# Internal — called by /admin/telefon test panel
+curl -X POST https://example-shop.app/api/phone/token \
+  -H "Authorization: Bearer <admin-session>" \
+  -H "Content-Type: application/json" \
+  -d '{ "purpose": "admin-test-call" }'
+```
+
+## /api/phone/webhook
+
+The inbound endpoint Phone.inc posts to on every IVR event: call start, branch choice, hang-up, voicemail-finished, transcript-ready.
+
+The handler is idempotent on Phone.inc's `event_id`. Out-of-order delivery is handled by sorting on `event_ts` per call session before writing to `PhoneCall` and `PhoneVoicemail` rows.
+
+```bash
+# Phone.inc → Cartwright on every event
+POST /api/phone/webhook
+{
+  "event_id": "evt_2NjA...",
+  "event_type": "voicemail_transcribed",
+  "event_ts": "2026-05-25T10:14:22Z",
+  "call_id": "call_2NjA...",
+  "from": "+4520123456",
+  "transcript": "Hi, I'm calling about the order I placed yesterday...",
+  "audio_url": "https://phone.inc/.../audio.mp3"
+}
+```
+
+Verification: HMAC-SHA256 over the raw body using `phoneIncWebhookSecret` (also in `IntegrationSettings`, also encrypted). Webhook rejected if the signature header doesn't match.
+
+## Customer matching
+
+When a call comes in, the handler matches the caller's E.164 number against `Customer.phone`. On match, the resulting `PhoneCall` row links to the customer; their `/admin/customers/<id>` page now shows the call alongside orders and chat sessions.
+
+The match is exact. International formatting variance is normalised before lookup (libphonenumber). No fuzzy matching — a transposed digit produces an unmatched call you can manually assign from the admin.
+
+## What's scaffolded vs wired
+
+Honest status per surface:
+
+| Surface | Status |
+|---|---|
+| IVR editor UI | ✓ wired, saves to PhoneIvrConfig |
+| Voicemail transcript list | ✓ wired, reads PhoneVoicemail rows |
+| Inbound webhook | ✓ wired, signature-verified |
+| Phone-token issuance | ✓ wired, used by admin test-call |
+| AI receptionist branch | preview — accepts the config, routes to Phone.inc's AI but the prompt-handoff to Cartwright tools is wire-only |
+| Outbound calling | preview — UI present, sends through but call-recording metadata isn't yet linked to PhoneCall |
+| Call recording playback | preview — link-out to Phone.inc; embedded player on roadmap |
+
+The Phone.inc API documentation has gaps that will close as their product matures. We track the deltas; integration releases follow theirs.
+
+## Disabling
+
+Don't configure the keys, or set both to empty strings in `/admin/integrations`. The `/admin/telefon` nav entry disappears, `/api/phone/*` returns 503, and `Customer` rows simply don't gain call history. The schema fields exist but stay unpopulated — no migration needed.
+
+<Cards>
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="Audit + revert" href="/docs/features/audit-log-revert" />
+</Cards>

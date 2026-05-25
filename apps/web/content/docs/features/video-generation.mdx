@@ -1,0 +1,105 @@
+---
+title: Video generation
+description: Luma Dream Machine wired into /admin/generate-video — cinematic 5-second product showcases generated and stored without leaving the admin.
+---
+
+`/admin/generate-video` is the in-admin surface for generating short cinematic videos via Luma Dream Machine. Use it for product hero loops, category mood films, or campaign trailers. Generated assets persist on `Product.videoUrl` or `Category.heroVideo` and stream from Vercel Blob like any other shop media.
+
+## Provider configuration
+
+Luma is the default. The provider abstraction (`lib/ai/video-client.ts`) reads from `IntegrationSettings`:
+
+| Field | Purpose |
+|---|---|
+| `videoGenProvider` | `"luma"` (default) or a future-provider slug |
+| `videoGenerationApiKey` | The Luma API key. Encrypted at rest via `lib/secret-encryption.ts`. |
+| `videoGenerationDefaultModel` | `"ray-2"` (default) — Luma's current model id |
+
+Set these via `/admin/integrations` → "Video generation". The setup wizard does not prompt for Luma — videos are optional and most shops add them later.
+
+## The /api/admin/generate-video endpoint
+
+Single POST that orchestrates a generation:
+
+```bash
+curl -X POST https://example-shop.app/api/admin/generate-video \
+  -H "Authorization: Bearer <admin-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target": { "type": "product", "id": "prod_001" },
+    "prompt": "Slow rotating shot of a mahogany sunglass frame on warm sand, golden hour light, depth of field shallow",
+    "durationSec": 5,
+    "aspectRatio": "16:9",
+    "referenceImageUrl": "https://example-shop.app/img/prod_001.jpg"
+  }'
+```
+
+Response is the generation job id and an ETA:
+
+```json
+{
+  "jobId": "lum_2NjAaP1eZvKYlo2C0",
+  "status": "queued",
+  "etaSec": 90
+}
+```
+
+Polling `/api/admin/generate-video/jobs/<jobId>` returns `queued → running → done|failed`. On `done`, the response includes the Vercel Blob URL where the asset was streamed.
+
+## Persistence model
+
+Two fields hold the result:
+
+```prisma
+model Product {
+  // ...
+  videoUrl            String?  // Vercel Blob URL of the generated clip
+  videoGenerationId   String?  // Luma job id, kept for re-runs / billing audits
+}
+
+model Category {
+  // ...
+  heroVideo           String?  // Vercel Blob URL — used in the hero-band component
+}
+```
+
+Storing the Luma job id lets the admin re-fetch metadata (prompt, settings, cost) for audit later — useful when a campaign asset is questioned weeks after generation.
+
+## Cost notes
+
+Luma Dream Machine bills per-second of generated video. Five-second 1080p ray-2 clips currently sit at roughly $0.40 each at list price; the admin surfaces a per-job cost estimate before kickoff so an editor can decide whether a re-run is worth the spend.
+
+<Callout type="warn">
+Generation runs against your own Luma key — Cartwright doesn't proxy or rate-limit. If you mass-generate, watch your Luma dashboard. The admin endpoint does add a soft per-shop cap (`MAX_VIDEO_JOBS_PER_HOUR`, default 20) to prevent a runaway script from burning credits.
+</Callout>
+
+## Reference images
+
+Luma accepts a reference image to anchor look, framing, or product fidelity. The admin endpoint passes the `referenceImageUrl` straight to Luma — typically you point it at the existing product photo. The result tracks the shape of the reference rather than hallucinating product details.
+
+For category hero films, point at the category cover image; the camera move stays subtle and brand-consistent.
+
+## Hero-band usage
+
+The Category hero-band component renders `heroVideo` as an autoplay-muted-loop element with a fallback to `heroImage`. The component handles the Safari autoplay quirk (`playsInline`, `muted`, `preload="metadata"`) so you don't have to.
+
+```tsx
+// components/storefront/category-hero.tsx
+{category.heroVideo ? (
+  <video src={category.heroVideo} autoPlay muted loop playsInline />
+) : (
+  <img src={category.heroImage} alt={category.title} />
+)}
+```
+
+## What this is not
+
+It's not a video editor. Trim, voice-over, captions — those happen elsewhere. This is "generate one short loop, attach it to a shop entity, ship". That's the entire scope.
+
+For longer-form video (product explainers, founder stories) you embed a URL into a Vibe block or a Page's structured content — the storefront renders any video tag the sanitiser approves.
+
+<Cards>
+  <Card title="Vibe Coding" href="/docs/features/vibe-coding" />
+  <Card title="Image uploads" href="/docs/features/image-upload-blob" />
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+</Cards>

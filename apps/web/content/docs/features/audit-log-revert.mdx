@@ -1,0 +1,145 @@
+---
+title: Audit log + revert
+description: Every tool call writes a before/after snapshot to AuditLog. /admin/audit shows the full history; one-click revert undoes any reversible operation.
+---
+
+Cartwright records every agentic action — storefront chat tool calls, admin edits, MCP requests, A2A endpoint hits — in `AuditLog`. The schema captures who did what, when, with what input, and what changed. `/admin/audit` is the read surface; reversible entries get an "Undo" button that replays the inverse operation.
+
+## The schema
+
+```prisma
+model AuditLog {
+  id            String   @id @default(cuid())
+  ts            DateTime @default(now())
+  actor         String   // "apikey:<id>" | "user:<userId>" | "storefront-chat:<customerId>" | "system"
+  tool          String   // e.g. "products.update", "orders.refund", "vibe.push"
+  args          Json     // sanitised input arguments
+  before        Json?    // snapshot of affected rows BEFORE the change (revertible if non-null)
+  after         Json?    // snapshot AFTER
+  revertible    Boolean  @default(false)
+  revertedAt    DateTime?
+  revertedBy    String?
+  outcome       String   // "success" | "failure" | "denied"
+  durationMs    Int
+  provider      String?  // "anthropic" | "local" | null
+  guardianFlags String[] // any flags raised by the Guardian middleware
+}
+```
+
+Every row tells a story: someone (or something) called a tool, with arguments, against state-X, producing state-Y. The story is reconstructable months later.
+
+## withAudit()
+
+`lib/audit.ts:withAudit()` is the wrapper used by every tool handler:
+
+```ts
+import { withAudit } from '@/lib/audit';
+
+export const productsUpdate = withAudit({
+  tool: 'products.update',
+  revertible: true,
+  snapshot: async (args) => prisma.product.findUnique({ where: { id: args.id } }),
+}, async (args, ctx) => {
+  const updated = await prisma.product.update({
+    where: { id: args.id },
+    data: args.patch,
+  });
+  return updated;
+});
+```
+
+The wrapper:
+
+1. Calls `snapshot()` to capture `before` state.
+2. Runs the handler.
+3. Diffs the snapshot against post-state for `after`.
+4. Records the row with `outcome` and `durationMs`.
+
+If the handler throws, the row still lands — with `outcome: "failure"` and the error in `args`. Audit visibility is independent of handler success.
+
+## Actor types
+
+`actor` is a discriminated string. The audit reader UI groups by prefix:
+
+| Prefix | Source |
+|---|---|
+| `user:<userId>` | Authenticated admin via session cookie |
+| `apikey:<keyId>` | Bearer-authenticated API call |
+| `storefront-chat:<customerId>` | Storefront assistant on behalf of a logged-in customer |
+| `storefront-chat:anon` | Storefront assistant for an unauthenticated visitor |
+| `mcp:<sessionId>` | External MCP client |
+| `a2a:<agentId>` | A2A buyer agent — set from the signed JWT subject |
+| `system` | Cron jobs, background workers, internal migrations |
+
+When filtering `/admin/audit`, the prefix is a first-class facet — see "show me everything any AI agent did this week" or "show me every action my own API key made".
+
+## The /admin/audit UI
+
+Three panels:
+
+- **Filter** — actor type, tool, date range, outcome, has-guardian-flag, revertible-only.
+- **List** — virtualised table; one row per action. Severity icon = outcome.
+- **Detail** — clicked row expands to show `args`, `before`, `after` (collapsible JSON), Guardian flags, and the revert button if applicable.
+
+`app/admin/audit/page.tsx` is the canonical filter+list+detail pattern in the codebase — admin pages for new features tend to copy its shape.
+
+## Revertible operations
+
+A row is revertible iff:
+
+- `revertible = true` was set on the `withAudit()` wrapper.
+- `before` is non-null (i.e. the wrapper captured state before the change).
+- `revertedAt` is null (not already reverted).
+- The current actor has permission to perform the inverse tool.
+
+The "Undo" button calls `POST /api/admin/audit/<id>/revert`, which:
+
+1. Re-reads `before` from the row.
+2. Calls the inverse tool with `before` as the target state (e.g. `products.update` again, but with the old field values).
+3. Marks the original row `revertedAt = now()`, `revertedBy = currentActor`.
+4. **Writes a new audit row** for the revert itself — the revert is also auditable.
+
+Reverts of reverts work. The chain is fully traceable.
+
+```bash
+# Revert via API
+curl -X POST https://example-shop.app/api/admin/audit/audit_2NjA.../revert \
+  -H "Authorization: Bearer <admin-api-key>"
+```
+
+## Non-revertible operations
+
+Some operations don't have a clean inverse. Cartwright is explicit about these:
+
+| Tool | Why not revertible |
+|---|---|
+| `orders.refund` | The Stripe refund actually moved money; the audit row records it but doesn't offer "un-refund" — that's a charge, not a revert. |
+| `customers.delete` | GDPR-driven hard delete. The before-snapshot is intentionally redacted; we want the data actually gone. |
+| `vibe.push` | The before-state was raw HTML; the revert is "paste the old HTML back", which the UI surfaces as a copy button rather than a one-click. |
+| Any tool with `outcome: "failure"` | Nothing to revert — the action didn't change state. |
+
+The detail view explains the reason inline so admins aren't left guessing.
+
+## PII redaction
+
+`args` and `before` go through `lib/audit.ts:redact()` before they hit the DB. The redactor strips:
+
+- `password`, `passwordHash`, `secret`, `apiKey`, `bearerToken`
+- Credit card numbers (PAN regex)
+- Email addresses inside snapshot bodies (replaced with `<redacted-email>`)
+
+Email in `actor` is kept — that's the audit trail. Email inside a `before.customer.email` snapshot is redacted — that's PII leakage waiting to happen.
+
+<Callout type="tip">
+The redactor is intentionally aggressive. If you find a field that's getting over-redacted, edit `lib/audit.ts:redact()` — it's a single function with a documented allowlist. Don't try to "unredact" downstream; the source of truth is in the row.
+</Callout>
+
+## Retention
+
+Audit rows do not auto-prune. They're cheap (most are < 4KB) and immensely valuable months later when debugging a "wait, what happened to this order?" question. For GDPR-compliant deletion of customer-linked audit rows, the `lib/audit.ts:purgeForSubject(subjectId)` helper performs the cascade — `before`/`after` snapshots get nulled, the row keeps the action timestamp and tool name so aggregate stats still work.
+
+<Cards>
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+</Cards>

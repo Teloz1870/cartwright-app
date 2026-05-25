@@ -69,6 +69,34 @@ const features = [
     title: 'Agentic dashboard',
     body: '/admin/agentic shows live A-JWT verifications, escrow positions, disputed-escrow review queue. Read-only first; write-side incoming.',
   },
+  {
+    title: 'ACP endpoints',
+    body: '/api/acp/feed + /api/acp/v1/checkout_sessions — stateless agentic checkout per the Agentic Commerce Protocol spec. ChatGPT Instant Checkout-compatible.',
+  },
+  {
+    title: 'Vibe Coding',
+    body: 'Software 3.0 page builder: external AI tools (Cursor, v0, Lovable) push raw Tailwind HTML to /api/admin/vibe/push; Gemini auto-translates.',
+  },
+  {
+    title: 'Setup wizard',
+    body: '/admin/setup walks through brand, theme, API keys, first category. DB-first secrets — no env file editing required.',
+  },
+  {
+    title: 'Video generation',
+    body: 'Luma Dream Machine wired into /admin/generate-video. Cinematic 5-sec product showcases without leaving the admin.',
+  },
+  {
+    title: 'Local AI / Ollama',
+    body: 'IntegrationSettings.aiProvider toggles cloud Anthropic vs local Ollama. Same Guardian + audit log either way.',
+  },
+  {
+    title: 'Audit + revert',
+    body: '/admin/audit shows every tool call with before/after snapshots. One-click undo on revertible operations.',
+  },
+  {
+    title: 'Phone.inc telephony',
+    body: 'IVR + voicemail + transcription scaffolded at /admin/telefon. (Phone.inc API spec evolving — current integration is preview.)',
+  },
 ];
 
 export function FeatureGrid() {

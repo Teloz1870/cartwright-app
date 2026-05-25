@@ -1,0 +1,283 @@
+---
+title: How an AI sale actually happens
+description: End-to-end walkthrough — a buyer agent discovers your shop, negotiates, checks out, funds escrow, submits proof, and triggers release. Nine endpoints, one coherent story.
+---
+
+This guide follows a single transaction from "buyer agent has never heard of your shop" to "funds are in your Stripe account". Every step shows the actual HTTP call and the actual response. The point is to make the abstract concrete: when we say "headless merchant", this is the conversation that proves the claim.
+
+The walkthrough assumes a Cartwright shop scaffolded with `--template agent-marketplace` (so `brand.features.a2a` and `brand.features.acp` are both `true`). A pure-A2A shop, a pure-ACP shop, or a hybrid all draw from the same surface — they just answer 404 on the endpoints they opted out of.
+
+## Cast of characters
+
+- **Your shop**: `example-shop.app` — a Cartwright deploy
+- **The buyer agent**: a process somewhere on the internet acting for an end user (or for another business)
+- **Stripe**: the payment processor your shop authorised at setup
+- **The audit ledger**: `AuditLog` + `AgenticJWT` rows that get written along the way
+
+## Step 1 — Discovery
+
+The agent has a buyer intent ("find 100 wholesale sunglass frames in mahogany under DKK 65 per unit") and a list of candidate shops. It probes Cartwright's discovery surface to learn what `example-shop.app` is.
+
+```bash
+# Cartwright publishes four discovery hints
+curl https://example-shop.app/llms.txt
+curl https://example-shop.app/api/v1/tools
+curl https://example-shop.app/.well-known/mcp.json
+```
+
+`llms.txt` is the LLM-crawler hint (free-form). `/api/v1/tools` is the typed catalogue of available actions. `/.well-known/mcp.json` is the MCP discovery card. Together they tell the agent: "this shop is reachable, here are the entry points, here are the auth requirements".
+
+## Step 2 — Agent Card fetch
+
+The agent now wants the cryptographically-signed truth: who owns this shop, what they sell, what rails they accept, what their negotiation policy is.
+
+```bash
+curl https://example-shop.app/api/agent-card
+```
+
+Response (truncated):
+
+```json
+{
+  "payload": {
+    "version": 1,
+    "shopId": "example-shop.app",
+    "shopName": "Atelier Sunglass Co.",
+    "issuedAt": "2026-05-25T08:00:00.000Z",
+    "expiresAt": null,
+    "capabilities": [
+      { "id": "sunglass-frames-wholesale",
+        "name": "Sunglass frames, wholesale lots of 50–500 units",
+        "anchorPriceMinor": 6500,
+        "floorPriceMinor": 4200,
+        "currency": "DKK" }
+    ],
+    "paymentRails": ["stripe", "escrow-poTE"],
+    "negotiationPolicy": { "concessionRate": 0.5, "maxRounds": 5 }
+  },
+  "signature": "...",
+  "publicKey": "..."
+}
+```
+
+The agent verifies the ed25519 signature offline against the embedded public key. If it doesn't verify, the agent walks away — no negotiation with un-carded shops. See [A2A endpoints](/docs/features/a2a-endpoints#get-apiagent-card) for the signing setup.
+
+## Step 3 — Product feed
+
+The Agent Card describes capabilities; the feed gives the actual SKUs. The agent pulls the JSONL product feed.
+
+```bash
+curl https://example-shop.app/api/acp/feed
+```
+
+```jsonl
+{"id":"prod_mahogany","title":"Mahogany frame, classic round","price":{"amount":"65.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","stock":847,"link":"https://example-shop.app/products/mahogany"}
+{"id":"prod_walnut","title":"Walnut frame, wayfarer cut","price":{"amount":"58.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","stock":1240,"link":"https://example-shop.app/products/walnut"}
+```
+
+The agent matches the buyer intent against the feed (mahogany, 100 units, under DKK 65). `prod_mahogany` at DKK 65 list price is at the ceiling; the agent decides to negotiate.
+
+## Step 4 — Negotiation
+
+The agent obtains an API key from the shop (out of band — typically a one-time admin issuance for known buyer agents, or via a public-facing self-serve at `/api/agent-onboard` if the shop opts in). It then opens a negotiation.
+
+```bash
+curl -X POST https://example-shop.app/api/negotiate \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agentId": "buyer-northbound",
+    "jti": "neg-7f3e9a1b-2026-05-25-001",
+    "signedJwt": "eyJ...",
+    "scopes": ["negotiate"],
+    "floorMinor": 4200,
+    "anchorMinor": 6500,
+    "concessionRate": 0.5,
+    "currentOffer": { "priceMinor": 6500, "quantity": 100, "validUntil": "2026-05-26T08:00:00Z" },
+    "counterOffer": { "priceMinor": 5000, "quantity": 100, "validUntil": "2026-05-26T08:00:00Z" },
+    "round": 1,
+    "maxRounds": 5
+  }'
+```
+
+```json
+{
+  "decision": "counter",
+  "nextOffer": { "priceMinor": 5750, "quantity": 100, "validUntil": "2026-05-26T08:00:00Z" },
+  "reasoningCodes": ["COUNTER_BELOW_FLOOR", "CONCESSION_APPLIED"]
+}
+```
+
+The [Anchor-Resume engine](/docs/features/anchor-resume-engine) is pure TypeScript — no LLM. It received an offer below the floor (DKK 50), concedes by half the gap between anchor (DKK 65) and the previous offer (DKK 65 → 57.50), returns DKK 57.50, and explains why with reasoning codes.
+
+Two more rounds happen; the agent settles at DKK 56 per unit, total DKK 5600 for 100 units.
+
+## Step 5 — Checkout
+
+The agent now creates an ACP checkout session. Idempotency key is critical here — agent retries on transient failures are expected.
+
+```bash
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Idempotency-Key: ckt-7f3e9a1b-2026-05-25-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "line_items": [
+      { "product_id": "prod_mahogany", "quantity": 100, "negotiated_unit_amount_minor": 5600 }
+    ],
+    "shipping_address": {
+      "name": "Northbound Buyer Agent / Atelier B2B",
+      "line1": "Esplanaden 12",
+      "city": "Copenhagen",
+      "postal_code": "1263",
+      "country": "DK"
+    },
+    "payment_method": { "type": "escrow-poTE" }
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "cs_2NjA...",
+  "object": "checkout_session",
+  "status": "open",
+  "currency": "DKK",
+  "totals": {
+    "subtotal_minor": 560000,
+    "tax_minor": 140000,
+    "shipping_minor": 25000,
+    "total_minor": 725000
+  },
+  "escrow": {
+    "transactionId": "esc_2NjA...",
+    "expectedHash": "<sha256 of the agreed bill of goods>",
+    "rails": "stripe"
+  },
+  "expires_at": "2026-05-25T09:00:00Z"
+}
+```
+
+Pricing was computed server-side by `lib/pricing.ts` — including the negotiated unit price the engine returned. Tax and shipping use the shop's existing rules; the agent doesn't have to know them.
+
+The `escrow.expectedHash` is what the agent will eventually sign to release funds. It's a deterministic hash of the line items + totals + shipping address — the agent stores it.
+
+```bash
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjA.../complete \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Idempotency-Key: ckt-7f3e9a1b-2026-05-25-001" \
+  -H "Content-Type: application/json" \
+  -d '{ "payment_method_id": "pm_card_visa_corp" }'
+```
+
+`complete` creates an `Order` row, fires the Stripe charge against the agent's card, and triggers the escrow transition.
+
+## Step 6 — Escrow funding
+
+Stripe processes the charge. The Cartwright webhook handler at `/api/stripe/webhook` receives `payment_intent.succeeded` and transitions `EscrowTransaction.status` from `pending → funded`. The order is now paid; the funds sit in Stripe's holding pattern.
+
+From the agent's perspective:
+
+```bash
+curl https://example-shop.app/api/escrow/esc_2NjA...
+```
+
+```json
+{
+  "id": "esc_2NjA...",
+  "status": "funded",
+  "amountMinor": 725000,
+  "currency": "DKK",
+  "expectedHash": "...",
+  "fundedAt": "2026-05-25T08:14:22.000Z",
+  "releaseRequiresProofType": "delivery"
+}
+```
+
+The shop ships. Carrier (DPD, GLS, PostNord) updates the tracking URL. When delivery is confirmed, the agent moves to release.
+
+## Step 7 — Proof submission
+
+The agent submits a Proof-of-Task-Execution. For a physical-goods order, the canonical proof is the carrier's delivery confirmation webhook — but the agent can also submit a `signature` proof (the agent's signed acknowledgement of receipt) for faster release on trusted-agent routes.
+
+```bash
+curl -X POST https://example-shop.app/api/escrow/verify \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agentId": "buyer-northbound",
+    "jti": "rel-7f3e9a1b-2026-05-25-001",
+    "signedJwt": "eyJ...",
+    "scopes": ["escrow.release"],
+    "escrowTxId": "esc_2NjA...",
+    "proofType": "delivery",
+    "proofPayload": {
+      "carrier": "GLS",
+      "tracking": "JJD000123456789",
+      "deliveredAt": "2026-05-27T11:22:00Z",
+      "signatureName": "M. Hansen"
+    }
+  }'
+```
+
+The handler:
+
+1. Authenticates the Bearer token, checks scope contains `escrow.release`.
+2. Runs the [Guardian middleware](/docs/features/guardian-middleware) — legislation rules pass.
+3. Reads the carrier webhook history for `esc_2NjA...` — matches.
+4. Transitions the state machine: `funded → released`.
+5. Writes an `AgenticJWT` row for the release.
+
+```json
+{
+  "decision": "released",
+  "escrowTxId": "esc_2NjA...",
+  "status": "released",
+  "releasedAt": "2026-05-27T11:23:01.000Z",
+  "auditId": "ajwt_2NjA..."
+}
+```
+
+## Step 8 — Funds disbursement
+
+Stripe's payment-intent capture (which was actually a pre-auth-and-capture cycle gated by the escrow state) now finalises. Funds land in your Stripe balance on the usual payout schedule.
+
+If the proof had **failed** — say the delivery webhook never arrived, or the hash didn't match — the state machine would stay at `funded` and a row would appear in `/admin/agentic`'s disputed-escrow queue. A human reviews and either force-releases or refunds. Nothing moves automatically when proof fails; that's the point.
+
+## Step 9 — Audit
+
+Every step in this walkthrough wrote a row. The shop admin opens `/admin/agentic` and sees:
+
+| When | Event | Actor | Detail |
+|---|---|---|---|
+| 08:14:00 | `agent-card.fetch` | `a2a:buyer-northbound` | Card v1, signature verified |
+| 08:14:02 | `acp.feed.read` | `a2a:buyer-northbound` | 847 rows returned |
+| 08:14:08 | `negotiate` round 1 | `a2a:buyer-northbound` | counter → DKK 57.50 |
+| 08:14:14 | `negotiate` round 2 | `a2a:buyer-northbound` | counter → DKK 56.25 |
+| 08:14:19 | `negotiate` round 3 | `a2a:buyer-northbound` | accept → DKK 56.00 |
+| 08:14:21 | `acp.checkout.create` | `a2a:buyer-northbound` | session cs_2NjA... |
+| 08:14:22 | `acp.checkout.complete` | `a2a:buyer-northbound` | order_2NjA..., escrow esc_2NjA... funded |
+| 11:23:01 | `escrow.release` | `a2a:buyer-northbound` | proofType=delivery, released |
+
+Every row is filterable, every row is exportable, every row links to its full snapshot. The [audit log](/docs/features/audit-log-revert) is the receipt.
+
+## What didn't happen
+
+Read what's **not** in the walkthrough — that's where the security work is:
+
+- No LLM was asked to decide the price. The [Anchor-Resume engine](/docs/features/anchor-resume-engine) is pure TS; the [P2K scanner](/docs/features/guardian-middleware#p2k-scanner) gates every commit that would try.
+- No money moved before the Guardian middleware ran. Every endpoint that touches money is wrapped.
+- No release happened on an unverified proof. The state machine is the gate; proof verification is constant-time-compared.
+- No agent could exceed its scope. The Bearer token's scopes are checked before the handler runs.
+
+The walkthrough is a happy path. The Guardian + escrow + audit machinery is most of the code; it just happens to stay quiet when the happy path is followed.
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="ACP" href="/docs/features/agentic-commerce-protocol" />
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Anchor-Resume engine" href="/docs/features/anchor-resume-engine" />
+  <Card title="Agentic dashboard" href="/docs/features/agentic-dashboard" />
+  <Card title="Audit + revert" href="/docs/features/audit-log-revert" />
+</Cards>

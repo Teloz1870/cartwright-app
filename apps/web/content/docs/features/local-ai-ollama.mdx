@@ -1,0 +1,110 @@
+---
+title: Local AI / Ollama
+description: Toggle between cloud Anthropic and a local Ollama endpoint with one field. Same Guardian middleware, same audit log, same tool registry.
+---
+
+Cartwright's AI surface is provider-agnostic. The default is Claude (via Anthropic SDK), but `IntegrationSettings.aiProvider = "local"` swaps in an Ollama-compatible endpoint with no other code changes. Same chat surface, same tool calls, same audit log.
+
+This matters for shops with data residency constraints (EU healthcare, public sector) and for shops that want to run inference on-premise to control costs at scale.
+
+## The toggle
+
+Two fields in `IntegrationSettings`:
+
+| Field | Values | Effect |
+|---|---|---|
+| `aiProvider` | `"anthropic"` (default) \| `"local"` | Which client `lib/ai/client.ts:chatModel()` instantiates |
+| `localAiEndpoint` | URL string | The OpenAI-compatible endpoint Ollama exposes — typically `http://ollama.internal:11434/v1` |
+| `localAiModel` | Model slug | e.g. `"llama3.3:70b"`, `"qwen2.5-coder:32b"`, `"gemma3"` |
+
+Change them via `/admin/integrations` → "AI provider". The change takes effect within the 30-second key cache window — no redeploy.
+
+## How chatModel() picks
+
+```ts
+// lib/ai/client.ts
+export async function chatModel() {
+  const settings = await getIntegrationSettings();
+  if (settings.aiProvider === 'local') {
+    return createOpenAICompatible({
+      baseURL: settings.localAiEndpoint,
+      apiKey: 'ollama',  // Ollama ignores the value; SDK requires non-empty
+      modelId: settings.localAiModel,
+    });
+  }
+  return anthropic(settings.anthropicModel ?? 'claude-haiku-4-5');
+}
+```
+
+The Vercel AI SDK's `createOpenAICompatible` is the bridge — Ollama speaks OpenAI's chat-completions wire format, so the same `streamText` + `generateText` calls work against either provider.
+
+## Where it applies
+
+`chatModel()` is the canonical accessor. Everywhere it's called gets the toggle:
+
+- Storefront chat assistant (`app/api/assistant/chat/route.ts`)
+- Admin AI features (category generation, copy suggestions)
+- Tool-orchestration paths (`lib/tools/registry.ts`)
+
+What it does **not** apply to:
+
+- **Negotiation engine** (`lib/negotiation/anchor-resume.ts`) — pure TypeScript, no LLM imports ever. See [Anchor-Resume engine](/docs/features/anchor-resume-engine).
+- **Gemini-specific paths** (`lib/ai/gemini.ts`) — image generation, palette extraction, Vibe translation. Gemini stays separate; there's no "local Gemini" toggle.
+
+If you set `aiProvider = "local"` but the local endpoint doesn't expose vision or image generation, those Gemini-specific features simply continue to call Gemini. Mixed-provider deployments are explicitly supported.
+
+## Guardian + audit, unchanged
+
+The [Guardian middleware](/docs/features/guardian-middleware) wraps every tool call regardless of provider. A local-model jailbreak goes through the same legislation check; the [P2K scanner](/docs/features/guardian-middleware#p2k-scanner) still refuses commits that mix LLM imports with money primitives in the same module.
+
+The [audit log](/docs/features/audit-log-revert) records the provider that handled each call:
+
+```json
+{
+  "actor": "storefront-chat:cstm_42",
+  "tool": "products.search",
+  "provider": "local",
+  "model": "llama3.3:70b",
+  "before": null,
+  "after": { "results": 12 },
+  "durationMs": 280
+}
+```
+
+This makes A/B comparisons honest — you can read the audit table and see whether local-model tool calls succeed at the same rate as cloud calls.
+
+## Chain-of-thought exposure
+
+Master Plan §3.4 calls for the Semantic Firewall to see the model's chain-of-thought when verifying tool inputs. Local models expose CoT freely via the OpenAI-compatible `reasoning_content` field; cloud Anthropic exposes it via extended thinking blocks.
+
+`lib/ai/client.ts:chatModel()` enables CoT capture on both providers when the request is targeting a money-touching tool — the Guardian gets to see the reasoning even though the user-facing response strips it.
+
+## Performance trade-offs
+
+Honest comparisons:
+
+| Aspect | Cloud Anthropic Haiku | Local Llama 3.3 70B |
+|---|---|---|
+| Latency p50 | ~600ms first token | ~1200ms first token (depends on hardware) |
+| Throughput | Anthropic-rate-limited | Bound by your GPU |
+| Tool-call accuracy on Cartwright registry | 99%+ | 92–97% depending on model |
+| Cost at 10k chat turns / day | ~$8/day | Sunk hardware cost |
+| Data residency | US (Anthropic) | Wherever you run Ollama |
+
+For most early-stage shops, cloud Anthropic is the right call — faster, more accurate, cheap at small volumes. Local makes sense when residency is a hard requirement, when daily volume exceeds 50k chat turns, or when you want offline operation.
+
+<Callout type="tip">
+Run both. Set `aiProvider = "local"` for storefront chat (high volume, low-stakes) and override per-call to Anthropic for the [Vibe Coding](/docs/features/vibe-coding) `/api/admin/vibe/generate` path (low volume, quality-sensitive). The dispatcher in `lib/ai/client.ts:chatModelFor(intent)` accepts an `intent` enum exactly for this kind of routing.
+</Callout>
+
+## What Ollama needs
+
+Cartwright doesn't ship Ollama. You stand it up separately — `docker run --gpus all ollama/ollama` is the canonical recipe. Once it's reachable from the Vercel function (e.g. via a Tailscale exit node or a VPC peering), point `localAiEndpoint` at it and you're done.
+
+For Vercel Fluid Compute specifically, the function and the Ollama host need to share a network. Tailscale or a Vercel-network-attached Ollama instance both work; trying to hit `localhost:11434` from a Vercel function will not.
+
+<Cards>
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Audit + revert" href="/docs/features/audit-log-revert" />
+</Cards>

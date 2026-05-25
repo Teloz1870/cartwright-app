@@ -1,0 +1,134 @@
+---
+title: Agentic Commerce Protocol (ACP)
+description: Stateless, idempotent checkout endpoints that let buyer agents purchase from your shop with a single POST — ChatGPT Instant Checkout-compatible.
+---
+
+The Agentic Commerce Protocol is the spec ChatGPT Instant Checkout and other AI shopping engines speak when they want to actually buy from a shop. Cartwright ships it natively: a JSONL product feed plus stateless checkout sessions that wrap your existing pricing, tax, and inventory rules.
+
+ACP is distinct from [A2A](/docs/features/a2a-endpoints). A2A is the negotiation surface (agent ↔ shop bargaining via Anchor-and-Resume). ACP is the purchase surface (agent ↔ shop transacts). A shop can opt into one, both, or neither.
+
+## Feature gate
+
+ACP is gated behind `brand.features.acp` (default `false` on most templates, `true` on `agent-marketplace`). When off, every `/api/acp/*` route returns 404 — your storefront surface stays clean.
+
+```ts
+// brand.config.ts
+features: {
+  acp: true,            // turn the ACP surface on
+  a2a: false,           // independent of A2A
+  webshop: true,        // a shop can serve humans AND ACP buyers
+}
+```
+
+## GET /api/acp/feed
+
+A newline-delimited JSON feed of your live catalogue. ChatGPT Instant Checkout reads this directly — no merchant centre upload, no XML schema, no GTIN guesswork.
+
+```bash
+curl https://example-shop.app/api/acp/feed
+```
+
+Response (one JSON object per line):
+
+```jsonl
+{"id":"prod_001","title":"Sunglass Frame Mahogany","price":{"amount":"599.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","image_link":"https://example-shop.app/img/prod_001.jpg","link":"https://example-shop.app/products/sunglass-frame-mahogany"}
+{"id":"prod_002","title":"Lens Pair Polarised","price":{"amount":"299.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","image_link":"https://example-shop.app/img/prod_002.jpg","link":"https://example-shop.app/products/lens-pair-polarised"}
+```
+
+The feed is regenerated on demand — no cron, no stale snapshots. Field shape follows the ACP product-feed spec; Cartwright maps `Product`, `Category`, and `ProductVariant` rows into the canonical fields.
+
+<Callout type="tip">
+Buyer agents typically pull the feed once per session, then refresh on cache-miss. Use `Cache-Control: max-age=300` if your inventory is volatile — the route honours it.
+</Callout>
+
+## POST /api/acp/v1/checkout_sessions
+
+Create a checkout session. The buyer agent posts line items + shipping address; Cartwright responds with totals computed by `lib/pricing.ts` and a session id the agent uses to complete or update.
+
+```bash
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Idempotency-Key: 7f3e9a1b-4d8c-4e5a-9b2f-1a3c5d7e9f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "line_items": [
+      { "product_id": "prod_001", "quantity": 2 }
+    ],
+    "shipping_address": {
+      "name": "Buyer Agent",
+      "line1": "Rådhuspladsen 1",
+      "city": "Copenhagen",
+      "postal_code": "1550",
+      "country": "DK"
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "cs_2NjAaP1eZvKYlo2C0",
+  "object": "checkout_session",
+  "status": "open",
+  "currency": "DKK",
+  "line_items": [
+    { "product_id": "prod_001", "quantity": 2, "amount_subtotal_minor": 119800 }
+  ],
+  "totals": {
+    "subtotal_minor": 119800,
+    "tax_minor": 29950,
+    "shipping_minor": 4900,
+    "total_minor": 154650
+  },
+  "expires_at": "2026-05-25T09:00:00Z"
+}
+```
+
+## Update, cancel, complete
+
+Sessions are stateful (DB-backed) but the protocol is request-idempotent. Send the same `Idempotency-Key` and the same response replays.
+
+- `GET /api/acp/v1/checkout_sessions/{id}` — read current state
+- `POST /api/acp/v1/checkout_sessions/{id}/update` — change line items or shipping
+- `POST /api/acp/v1/checkout_sessions/{id}/cancel` — abandon
+- `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise → creates an `Order` row, fires the same downstream as a human checkout (Stripe charge, audit log, fulfilment hooks)
+
+```bash
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjAaP1eZvKYlo2C0/complete \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Idempotency-Key: 7f3e9a1b-4d8c-4e5a-9b2f-1a3c5d7e9f0a" \
+  -H "Content-Type: application/json" \
+  -d '{ "payment_method_id": "pm_card_visa" }'
+```
+
+`complete` returns the order id and a status — `succeeded`, `requires_action`, or `failed`. ACP buyer agents look for `requires_action` to surface a 3DS or SCA challenge URL back to the originating chat thread.
+
+## Authentication
+
+All POST endpoints require a Bearer token. API keys are managed at `/admin/api-keys` and can be scoped to `acp:checkout` only — restricting what the key can do is enforced before the handler runs.
+
+<Callout type="warn">
+The feed endpoint is **public by default** (so crawlers can index it). If your catalogue contains private inventory or wholesale pricing, override the auth check in `app/api/acp/feed/route.ts` — there's a `requireFeedAuth()` helper commented out for that case.
+</Callout>
+
+## Relationship to A2A
+
+ACP is the **purchase** surface. A2A is the **negotiation** surface. The two sit side by side:
+
+| Endpoint | Purpose | Spec |
+|---|---|---|
+| `GET /api/acp/feed` | Product discovery (JSONL) | ACP product feed |
+| `POST /api/acp/v1/checkout_sessions` | Stateless purchase | ACP v1 |
+| `GET /api/agent-card` | Shop discovery (signed JSON) | Cartwright A2A v1 |
+| `POST /api/negotiate` | Bargaining | Cartwright A2A v1 |
+| `POST /api/escrow/verify` | Verify-then-Pay release | Cartwright A2A v1 |
+
+A shop with only `features.acp = true` ships a "just-buy-it" surface (fixed prices, no haggling). A shop with both `acp` and `a2a` lets agents discover, negotiate, then settle via either ACP checkout or A2A escrow.
+
+<Cards>
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
+  <Card title="Industry templates" href="/docs/features/industry-templates" />
+  <Card title="AI sale walkthrough" href="/docs/guides/ai-sale-walkthrough" />
+</Cards>

@@ -1,0 +1,129 @@
+---
+title: Product variants
+description: Per-variant SKU, price, stock, and attributes. Schema + admin complete; customer-facing variant picker still on the roadmap.
+---
+
+<Callout type="warn">
+**Storefront UI not yet wired.** The schema, admin editing, cart, and order persistence are complete and battle-tested. The customer-facing variant picker on PDP is the remaining piece — track it on the [roadmap](/docs/roadmap).
+</Callout>
+
+A product variant is a buyable child of a product. The classic example: a t-shirt has size and colour variants, each with its own SKU, price, and stock count. Cartwright models this fully — including per-variant attributes, per-variant images, and snapshot-on-order so reporting works even after a variant is renamed or deleted.
+
+## The schema
+
+```prisma
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku             String   @unique
+  priceMinor      Int      // overrides Product.priceMinor when set
+  stock           Int      @default(0)
+  attributes      Json     // free-form: { size: "M", color: "navy", material: "cotton" }
+  imageUrl        String?  // variant-specific hero image
+  position        Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CartItem {
+  // ...
+  variantId       String?
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+}
+
+model OrderItem {
+  // ...
+  variantId           String?           // FK; nullable for products without variants
+  variantAttributes   Json?             // SNAPSHOT — survives variant renames/deletes
+  variantSku          String?           // SNAPSHOT — same reason
+}
+```
+
+The snapshot pattern on `OrderItem` is the key design choice. Orders historically reference variants by id, but variant rows can change or be archived. Storing the attributes and SKU on the order row at the moment of purchase means a customer service rep can still see what was actually bought 18 months later — even if the variant was renamed or removed.
+
+## Pricing
+
+A variant's `priceMinor` overrides the parent `Product.priceMinor` when set. `lib/pricing.ts:lineItemPrice()` reads variant-first, product-fallback. The override is the whole point — a "size XXL" variant can charge more without a separate product row.
+
+When the override is null (the variant table column allows null even though the type says required — Prisma quirk), the variant inherits product price. Most shops use this for non-pricing variants (colour variants of the same shirt cost the same) and explicit overrides for size variants.
+
+## Stock semantics
+
+`stock` is exact-count per variant. When a customer adds a variant to cart, `stock` is not decremented — only at the order-completion moment does the decrement happen, inside a Prisma transaction that also writes the order row. This avoids the "cart hoarding" problem (one user holding 50 of a popular size in their cart, blocking others).
+
+A simultaneous-order conflict (two orders complete for the last unit at the same time) is resolved by `SELECT ... FOR UPDATE` semantics inside the transaction; the loser gets a `stock_insufficient` error and rolls back. The cart preserves the line item so the customer can retry with whatever is now available.
+
+## Attributes
+
+`attributes` is intentionally `Json`. Cartwright doesn't impose a "must have size + colour" model — a watch might have band-material + face-size, a coffee bean might have origin + roast-level + grind.
+
+The admin variant editor introspects the keys across all variants of a product and presents them as columns. New variants pick up the existing column shape; orphan keys (one variant with a `serial_number` field nothing else has) render as a sparse column.
+
+The storefront variant picker, once wired, will introspect the same way — surfacing whichever dimensions actually vary across the variant set.
+
+## Admin surface
+
+`/admin/products/<id>/variants` is complete and used in production by every commerce-mode Cartwright shop:
+
+- Tabular editor — one row per variant, inline-edit any field.
+- Bulk add — type "S, M, L, XL" into the size axis, get four variants.
+- Image upload per variant (Vercel Blob, same flow as product images).
+- CSV import/export for migration from other platforms.
+- Stock adjustment with audit-logged reason ("annual count", "damage write-off").
+
+The CSV flow is also the recommended bulk-migration path from Shopify or WooCommerce — column mapping is configurable per import.
+
+## Cart and order persistence
+
+`CartItem.variantId` is the live link. When a variant is added:
+
+```ts
+await prisma.cartItem.create({
+  data: {
+    cartId,
+    productId: variant.productId,
+    variantId: variant.id,
+    quantity: 1,
+  },
+});
+```
+
+At checkout completion, `lib/orders.ts:createOrderFromCart()` snapshots:
+
+```ts
+{
+  productId: cartItem.productId,
+  variantId: cartItem.variantId,
+  variantAttributes: variant.attributes,   // snapshot
+  variantSku: variant.sku,                  // snapshot
+  unitPriceMinor: pricedAt,                 // already locked via lib/pricing.ts
+  quantity: cartItem.quantity,
+}
+```
+
+The order row now has everything needed to render the line "1 × T-Shirt — Size M, Navy" forever — even if the variant is deleted.
+
+## What's not wired
+
+The customer-facing variant picker. Today, PDP renders the parent product with the default variant (or no variant if the product has none). The picker, the URL-state encoding (`?variant=size-m-color-navy`), and the cart-add UX with variant selection are on the roadmap as a single coherent piece — adding them piecemeal would create a half-broken experience.
+
+Workarounds in the meantime:
+
+- Use the admin to create separate `Product` rows for high-importance variants. Less DRY but customer-functional.
+- Or expose variants programmatically via the ACP feed (each variant gets its own feed row) — fine for agent-buyer surfaces where the agent picks deterministically.
+
+## Why ship the schema first
+
+Two reasons:
+
+1. **Schema migration is expensive once data exists.** Locking the shape early means shops can start importing variant data into the right structure today and the storefront UI lands as a pure rendering layer later.
+2. **Headless commerce surfaces (A2A, ACP, MCP) already need variants.** Buyer agents don't browse a picker — they query the feed. Wiring variants for the agent surface first matches the order most Cartwright shops actually need.
+
+<Cards>
+  <Card title="Customer storefront" href="/docs/features/customer-storefront" />
+  <Card title="Checkout (Stripe)" href="/docs/features/checkout-stripe" />
+  <Card title="ACP" href="/docs/features/agentic-commerce-protocol" />
+  <Card title="Roadmap" href="/docs/roadmap" />
+</Cards>
