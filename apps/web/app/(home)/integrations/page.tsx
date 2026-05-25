@@ -192,6 +192,76 @@ const foundationStack: { brand: BrandSlug; name: string }[] = [
   { brand: 'prisma', name: 'Prisma' },
 ];
 
+type PlusIntegration = {
+  brand: BrandSlug;
+  name: string;
+  category: string;
+  pitch: string;
+};
+
+const plusIntegrations: PlusIntegration[] = [
+  {
+    brand: 'klaviyo',
+    name: 'Klaviyo',
+    category: 'Email marketing',
+    pitch: 'Trigger flows from cart and order events; sync customer segments back into your shop.',
+  },
+  {
+    brand: 'mailchimp',
+    name: 'Mailchimp',
+    category: 'Email marketing',
+    pitch: 'Push contacts and tag updates; pull campaign metrics back into the admin.',
+  },
+  {
+    brand: 'quickbooks',
+    name: 'QuickBooks',
+    category: 'Accounting',
+    pitch: 'Auto-create invoices for orders; sync customer and product records bi-directionally.',
+  },
+  {
+    brand: 'notion',
+    name: 'Notion',
+    category: 'Knowledge',
+    pitch: 'Mirror product docs and policies; the storefront AI cites them when answering customers.',
+  },
+  {
+    brand: 'airtable',
+    name: 'Airtable',
+    category: 'Operations',
+    pitch: 'Two-way sync inventory, suppliers, and returns into your existing Airtable bases.',
+  },
+  {
+    brand: 'hubspot',
+    name: 'HubSpot',
+    category: 'CRM',
+    pitch: 'Contacts and deals from Cartwright orders; the agent can update lifecycle stages.',
+  },
+  {
+    brand: 'slack',
+    name: 'Slack',
+    category: 'Notifications',
+    pitch: 'Real-time pings on new orders, low stock, and escrow disputes — routed by channel.',
+  },
+  {
+    brand: 'zapier',
+    name: 'Zapier',
+    category: 'Meta-connector',
+    pitch: 'Trigger any of 6 000+ Zapier apps from Cartwright events. Catch-all for the long tail.',
+  },
+  {
+    brand: 'shipstation',
+    name: 'ShipStation',
+    category: 'Fulfillment',
+    pitch: 'Auto-create labels and tracking on shipment; status writes back to Order rows.',
+  },
+  {
+    brand: 'algolia',
+    name: 'Algolia',
+    category: 'Search',
+    pitch: 'Instant product search wired to the storefront and agent-callable for typed queries.',
+  },
+];
+
 const marqueeSlugs: BrandSlug[] = [
   'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
   'nextauth', 'upstash', 'i18nexus', 'gemini', 'ollama', 'mcp',
@@ -349,6 +419,53 @@ export default function IntegrationsPage() {
                 )}
               </a>
             ))}
+          </div>
+        </div>
+
+        {/* Coming with Plus — premium MCP integrations */}
+        <div id="plus" className="mt-24 sm:mt-32 scroll-mt-24">
+          <div className="max-w-2xl">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+              Coming with Plus
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+              Premium MCP integrations.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
+              Tool-callable from the storefront AI and the admin. Plus tier ships these as MCP integrations so an agent can act on them without a single line of glue code.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {plusIntegrations.map((item) => (
+              <div
+                key={item.brand}
+                className="flex flex-col rounded-2xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50/30 dark:bg-cw-stone-900/30 p-5"
+              >
+                <BrandLogo brand={item.brand} size={36} />
+                <h3 className="mt-4 text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                  {item.name}
+                </h3>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-cw-stone-500">
+                  {item.category}
+                </span>
+                <p className="mt-2 text-sm leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
+                  {item.pitch}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-cw-terracotta/30 bg-cw-terracotta/5 dark:bg-cw-terracotta/10 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm text-cw-stone-600 dark:text-cw-stone-300">
+              These ship with the Plus tier — launching Q3 2026.
+            </p>
+            <a
+              href="/pricing"
+              className="text-sm font-medium text-cw-terracotta hover:underline"
+            >
+              Join the Plus waitlist →
+            </a>
           </div>
         </div>
 

@@ -28,7 +28,13 @@ export type BrandSlug =
   | 'shopify'
   | 'woocommerce'
   | 'magento'
-  | 'squarespace';
+  | 'squarespace'
+  | 'airtable'
+  | 'hubspot'
+  | 'slack'
+  | 'zapier'
+  | 'shipstation'
+  | 'algolia';
 
 type Registry = Record<
   BrandSlug,
@@ -62,12 +68,18 @@ const REGISTRY: Registry = {
   woocommerce: { kind: 'svg', file: 'woocommerce.svg', brandColor: '#7F54B3' },
   magento: { kind: 'svg', file: 'magento.svg', brandColor: '#EE672F' },
   squarespace: { kind: 'svg', file: 'squarespace.svg', brandColor: '#000000', bgOnDark: true },
+  airtable: { kind: 'svg', file: 'airtable.svg', brandColor: '#18BFFF' },
+  hubspot: { kind: 'svg', file: 'hubspot.svg', brandColor: '#FF7A59' },
+  slack: { kind: 'svg', file: 'slack.svg', brandColor: '#4A154B', bgOnDark: true },
+  zapier: { kind: 'svg', file: 'zapier.svg', brandColor: '#FF4F00' },
+  algolia: { kind: 'svg', file: 'algolia.svg', brandColor: '#003DFF', bgOnDark: true },
 
   // letter-mark fallback for brands without an available SVG mark
   nextauth: { kind: 'letter', mark: 'A', brandColor: '#7B5CFF' },
   'phone-inc': { kind: 'letter', mark: 'P', brandColor: '#0EA5E9' },
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
   klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
+  shipstation: { kind: 'letter', mark: 'S', brandColor: '#0078D2' },
 };
 
 interface BrandLogoProps {

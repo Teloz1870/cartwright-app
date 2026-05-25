@@ -68,7 +68,7 @@ export function WaitlistForm({ tier, ctaLabel, className }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className={className} noValidate>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2">
         <input
           type="email"
           required
@@ -86,7 +86,6 @@ export function WaitlistForm({ tier, ctaLabel, className }: Props) {
           variant="secondary"
           size="lg"
           disabled={status === 'submitting'}
-          className="sm:w-auto"
         >
           {status === 'submitting' ? (
             <>

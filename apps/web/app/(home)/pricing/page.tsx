@@ -323,9 +323,19 @@ export default function ServicesPage() {
                       </li>
                     ))}
                   </ul>
+                  <p className="mt-3 text-xs text-cw-stone-600 dark:text-cw-stone-400">
+                    Klaviyo, Mailchimp, QuickBooks, Notion{' '}
+                    <strong className="text-cw-stone-900 dark:text-cw-stone-50">+ 6 more</strong>
+                  </p>
+                  <Link
+                    href="/integrations#plus"
+                    className="mt-1 inline-block text-xs font-medium text-cw-terracotta hover:underline"
+                  >
+                    See all premium integrations →
+                  </Link>
                   <Link
                     href="/onboarding"
-                    className="mt-4 inline-block text-xs font-medium text-cw-terracotta hover:underline"
+                    className="mt-2 block text-xs font-medium text-cw-terracotta hover:underline"
                   >
                     See the onboarding experience →
                   </Link>
