@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   setAiSettingsAction,
   listOllamaModelsAction,
   testAiProviderAction,
 } from "./actions";
+import OllamaInstallCard from "@/components/admin/OllamaInstallCard";
+import ModelRecommendationCards from "@/components/admin/ModelRecommendationCards";
 
 type Initial = {
   provider: "anthropic" | "local" | "auto";
@@ -55,6 +57,10 @@ export default function LocalAiForm({ initial }: Props) {
   > ([]);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
   const [discoverLatency, setDiscoverLatency] = useState<number | null>(null);
+  // null = ikke testet endnu, true = Ollama svarer, false = ECONNREFUSED/timeout
+  const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null);
+  // Auto-poll efter pull complete så modellen dukker op uden manuel klik
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [testPending, startTestTransition] = useTransition();
   const [testResult, setTestResult] = useState<
@@ -90,10 +96,55 @@ export default function LocalAiForm({ initial }: Props) {
       if (r.ok) {
         setDiscoveredModels(r.models);
         setDiscoverLatency(r.latencyMs);
+        setOllamaReachable(true);
       } else {
         setDiscoverError(r.error);
+        // ECONNREFUSED/timeout → vis install-card. Andre fejl (404 etc.) →
+        // beholder generel error-besked.
+        const connectivityError =
+          /timeout|kan ikke nå|ECONNREFUSED|ENOTFOUND|fetch failed/i.test(
+            r.error,
+          );
+        setOllamaReachable(!connectivityError);
       }
     });
+  }
+
+  // Auto-poll-loop: når en pull lige er færdig, prøv at refreshe model-list
+  // hvert 3s i op til 30s så den nye model dukker op uden brugerklik.
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  function handlePullComplete(modelName: string) {
+    // Refresh model-list med det samme + auto-select den nye model.
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    let attempts = 0;
+    const poll = async () => {
+      attempts += 1;
+      const r = await listOllamaModelsAction(localAiEndpoint);
+      if (r.ok && r.models.some((m) => m.name === modelName)) {
+        setDiscoveredModels(r.models);
+        setDiscoverLatency(r.latencyMs);
+        setOllamaReachable(true);
+        setLocalAiModel(modelName);
+        setSaved(false);
+        if (pollTimerRef.current) {
+          clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+        }
+      } else if (attempts > 10) {
+        // Gav op efter 30s — admin må klikke "Hent modeller" manuelt
+        if (pollTimerRef.current) {
+          clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+        }
+      }
+    };
+    void poll(); // første tick med det samme
+    pollTimerRef.current = setInterval(poll, 3000);
   }
 
   function handleTest() {
@@ -255,16 +306,32 @@ export default function LocalAiForm({ initial }: Props) {
                 {discoverPending ? "Henter…" : "Hent modeller"}
               </button>
             </div>
-            {discoverError && (
+            {discoverError && ollamaReachable === false && (
+              <OllamaInstallCard
+                errorMessage={discoverError}
+                onRecheck={handleDiscover}
+                rechecking={discoverPending}
+              />
+            )}
+            {discoverError && ollamaReachable !== false && (
               <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
                 {discoverError}
               </p>
             )}
-            {discoverLatency !== null && discoveredModels.length === 0 && !discoverError && (
-              <p className="mt-2 text-xs text-sol-muted">
-                Forbindelse OK ({discoverLatency}ms) men ingen modeller installeret. Pull en model med <code className="rounded bg-sol-cream px-1.5 py-0.5">ollama pull gemma4:e4b</code>.
-              </p>
-            )}
+            {discoverLatency !== null &&
+              discoveredModels.length === 0 &&
+              !discoverError && (
+                <>
+                  <p className="mt-2 text-xs text-sol-muted">
+                    ✓ Forbindelse OK ({discoverLatency}ms) — ingen modeller
+                    installeret endnu.
+                  </p>
+                  <ModelRecommendationCards
+                    endpoint={localAiEndpoint}
+                    onPullComplete={handlePullComplete}
+                  />
+                </>
+              )}
             {discoveredModels.length > 0 && (
               <p className="mt-2 text-xs text-sol-muted">
                 {discoveredModels.length} modeller fundet ({discoverLatency}ms)
