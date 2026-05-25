@@ -11,7 +11,11 @@ permissions:
 
 jobs:
   release:
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') }}"
+    # No if-guard: the Changesets action is internally idempotent — on a
+    # release-merge commit it sees no pending changesets and publishes; on
+    # a feature commit it opens (or updates) the Version Packages PR; on a
+    # no-op commit it exits cleanly. A startsWith("chore: release") guard
+    # would (and did, on merge of PR #12) skip the publish run.
     name: Changesets release
     runs-on: ubuntu-latest
     steps:
