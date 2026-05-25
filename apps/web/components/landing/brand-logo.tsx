@@ -33,13 +33,13 @@ type Registry = Record<
 >;
 
 const REGISTRY: Registry = {
-  // simple-icons SVGs (live in /public/logos/)
+  // SVG logos (live in /public/logos/)
   stripe: { kind: 'svg', file: 'stripe.svg', brandColor: '#635BFF' },
   vercel: { kind: 'svg', file: 'vercel.svg', brandColor: '#000000', bgOnDark: true },
   resend: { kind: 'svg', file: 'resend.svg', brandColor: '#000000', bgOnDark: true },
-  sentry: { kind: 'svg', file: 'sentry.svg', brandColor: '#362D59' },
+  sentry: { kind: 'svg', file: 'sentry.svg', brandColor: '#362D59', bgOnDark: true },
   upstash: { kind: 'svg', file: 'upstash.svg', brandColor: '#00E9A3' },
-  anthropic: { kind: 'svg', file: 'anthropic.svg', brandColor: '#D97757' },
+  anthropic: { kind: 'svg', file: 'anthropic.svg', brandColor: '#191919', bgOnDark: true },
   gemini: { kind: 'svg', file: 'gemini.svg', brandColor: '#8E75B2' },
   ollama: { kind: 'svg', file: 'ollama.svg', brandColor: '#000000', bgOnDark: true },
   unsplash: { kind: 'svg', file: 'unsplash.svg', brandColor: '#000000', bgOnDark: true },
@@ -51,12 +51,12 @@ const REGISTRY: Registry = {
   mailchimp: { kind: 'svg', file: 'mailchimp.svg', brandColor: '#FFE01B' },
   quickbooks: { kind: 'svg', file: 'quickbooks.svg', brandColor: '#2CA01C' },
   notion: { kind: 'svg', file: 'notion.svg', brandColor: '#000000', bgOnDark: true },
+  turso: { kind: 'svg', file: 'turso.svg', brandColor: '#4FF8D2' },
+  mcp: { kind: 'svg', file: 'mcp.svg', brandColor: '#D97757' },
+  i18nexus: { kind: 'svg', file: 'i18nexus.svg', brandColor: '#26A69A' },
 
-  // letter-mark fallback for brands without simple-icons entries
-  turso: { kind: 'letter', mark: 'T', brandColor: '#4FF8D2' },
+  // letter-mark fallback for brands without an available SVG mark
   nextauth: { kind: 'letter', mark: 'A', brandColor: '#7B5CFF' },
-  i18nexus: { kind: 'letter', mark: 'i', brandColor: '#F97316' },
-  mcp: { kind: 'letter', mark: 'M', brandColor: '#D97757' },
   'phone-inc': { kind: 'letter', mark: 'P', brandColor: '#0EA5E9' },
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
   klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
