@@ -1,0 +1,54 @@
+---
+title: Cartwright Setup Guide
+description: Sådan konfigurerer du dit domæne, mail-servere og får platformen live via Vercel.
+---
+
+Vores "Software 3.0" platform hostes direkte på **Vercel Edge Network** for at sikre verdens hurtigste load-tider og global tilgængelighed. Denne guide viser, hvordan du forbinder din platform med dit eget domæne, sætter e-mail op og tilslutter AI-modeller.
+
+<Callout type="tip" title="Brug /admin/setup for nøglerne">
+Den hurtigste vej fra scaffold til live shop er fem-trins wizarden på `/admin/setup`. Den indsamler brand, tema, API-nøgler og første kategori gennem en DB-first flow — ingen .env-redigering nødvendig. Se [Setup wizard](/docs/features/setup-wizard) for det fulde gennemløb. Denne guide nedenfor dækker DNS-, mail- og AI-konfigurationen som ligger uden for wizarden.
+</Callout>
+
+## 1. Domæne & Vercel Deployment
+
+Når du har lanceret dit Cartwright-projekt, skal du pege dit eget domæne (f.eks. `minshop.dk`) mod Vercel.
+
+### Vercel DNS Konfiguration
+
+Hvis du har købt dit domæne via en udbyder som Simply.com eller GoDaddy, skal du ændre DNS indstillingerne. Gå til Vercel Dashboardet under **Settings -> Domains** og tilføj dit domæne dér, før du retter DNS hos din udbyder.
+
+Vercel vil bede dig oprette følgende records:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| **A** | `@` | `76.76.21.21` |
+| **CNAME** | `www` | `cname.vercel-dns.com.` |
+
+<Callout type="info">
+Det tager typisk et par timer for DNS-ændringer at slå igennem globalt.
+</Callout>
+
+---
+
+## 2. E-mail på dit domæne
+
+Vercel hoster kun webdelen — dit domæne skal også konfigureres til at **sende** ordrebekræftelser (via Resend) og **modtage** kundesvar (via en gratis indbakke-løsning eller Outlook 365). De tre lag (web, sending, indbakke) bruger samme DNS-zone og skal koordineres — specielt SPF-recorden skal være ÉN linje med flere `include:`.
+
+Den komplette guide med beslutningstræ, alle DNS-records og fire valgmuligheder for indbakke (Cloudflare, ImprovMX, Zoho, M365) ligger i sin egen sektion:
+
+<Cards>
+  <Card title="Email & Domæner — komplet opsætning" href="/docs/email" />
+</Cards>
+
+---
+
+## 3. Lokal AI & API Nøgler
+
+Cartwright's "Software 3.0" egenskaber kræver adgang til AI modeller. Dette indstilles direkte i platformens Admin-panel.
+
+### Cloud AI (Gemini Flash)
+Gå til **Admin-panelet -> API Keys** for at indsætte din Google AI Studio nøgle. Dette aktiverer Vibe Translation og automatisk SEO-generering out-of-the-box.
+
+### Lokal AI (Gemma 4)
+Hvis du ønsker total privacy og uafhængighed, kan du installere Ollama på din egen lokale maskine. 
+I **Admin-panelet -> Themes & AI Design**, indtast dit lokale Ollama Endpoint (f.eks. `http://localhost:11434`) for at lade shoppen køre on-device inference uden cloud-omkostninger.

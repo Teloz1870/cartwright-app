@@ -5,6 +5,16 @@ description: Honest near-term plans, what is exploring vs committed, and what ca
 
 Cartwright is v0.1 today. The roadmap is intentionally short. Items are marked `[committed]`, `[exploring]`, or `[planned]` so readers can tell production-ready from "we are not even sure we want this."
 
+## Now shipping
+
+These landed in v0.2 and are live in production today.
+
+- **[`/integrations`](/integrations) top-nav page** — 15 core integrations + 10 Plus-tier MCP integrations with real brand logos and category eyebrows.
+- **[`/onboarding`](/onboarding) Plus-tier preview** — type a URL, watch the five-agent migration demo, join the waitlist.
+- **[`/pricing`](/pricing) with four tiers** — Self-hosted $0, Plus $49/mo, Cloud $199/mo, Enterprise. Resend-backed waitlist for Plus and Cloud.
+- **A2A Headless Merchant foundation** — three new endpoints (`/api/agent-card`, `/api/negotiate`, `/api/escrow/verify`), Anchor-Resume negotiation engine, Guardian middleware, P2K scanner. See [changelog v3.1.0](/changelog).
+- **[`/docs/in-the-box`](/docs/in-the-box)** — developer-tone integration walkthrough sitting next to the marketing-tone `/integrations`.
+
 ## Now (v0.1 → v0.2)
 
 - **`create-cartwright` CLI on npm** `[committed]` — dogfooded on three platforms (Mac, Linux, WSL), then `npm publish create-cartwright@0.1.0-beta`.
@@ -17,14 +27,15 @@ Cartwright is v0.1 today. The roadmap is intentionally short. Items are marked `
 ## Soon (v0.2 → v1.0)
 
 - **Cartwright template public** `[planned, gated]` — flip when the [contributing milestones](/docs/contributing) are met. Expected 4-8 weeks after Solbrillen.dk launch.
-- **Shopify migration recipe** `[planned]` — a documented path for forks bringing existing catalogs and customers. Stripe customer ID is the link key; products + customers import scripts to be shipped as `scripts/migrate-shopify.ts`.
+- **Shopify migration with Plus** `[shipping Q3 2026]` — agentic five-step migration: scrape source URL, map products + customers + brand palette, deploy. Live preview already at [/onboarding](/onboarding). The agent ships with Plus; manual scripts remain available for self-hosted forks.
 - **API auto-reference** `[planned]` — generate the `/docs/api/mcp-tools` page from `lib/tools/registry.ts` at build time instead of hand-maintaining it. The current page will drift; this fixes it.
-- **Algolia search option** `[exploring]` — current Orama-based search is enough for v0.1, but larger catalogs (1000+ products) will want Algolia. Optional integration, not a default.
+- **Algolia search** `[committed, Plus Q3 2026]` — confirmed Plus-tier MCP integration. Instant product search wired to the storefront and agent-callable for typed queries. Orama-based search stays for self-hosted forks under ~1000 products.
+
+- **Plus-tier MCP integrations** `[committed, Q3 2026]` — ten brand integrations shipping with Plus: Klaviyo (email marketing), Mailchimp (email marketing), QuickBooks (accounting), Notion (knowledge), Airtable (operations), HubSpot (CRM), Slack (notifications), Zapier (meta-connector), ShipStation (fulfillment), Algolia (search). All tool-callable from the storefront AI and admin. See [/integrations#plus](/integrations#plus) for per-brand pitches.
 - **Multi-tenant docs** `[exploring]` — fork-specific docs hosted on subpaths or via the CLI. Mostly a "would be nice" — unclear if there is real demand.
 
 ## Maybe later
 
-- **Marketplace integrations** `[exploring]` — Klaviyo for email/SMS, Mailchimp, Pipedream-style webhook chaining. Probably built as MCP-tool plugins rather than core.
 - **Headless CMS adapter** `[exploring]` — Sanity / Contentful / Storyblok for the admin Sider CRUD. Likely a separate package, not core cartwright.
 - **B2B / wholesale module** `[exploring]` — tiered pricing, NET-30 invoicing, bulk-order workflows. Big surface, only worth building if a paying user funds it.
 - **EDI** `[exploring]` — only relevant for shops integrating with traditional retail. Unlikely unless a specific fork pulls.

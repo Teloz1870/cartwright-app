@@ -17,11 +17,28 @@ const items = [
   },
   {
     q: 'Will it cost me anything to run?',
-    a: 'No platform fees. You pay the underlying services you choose — Vercel hosting, Turso or Postgres, Stripe’s standard processing, Anthropic/Gemini if you use AI. There is no per-order tax going to cartwright.',
+    a: (
+      <>
+        No platform fees. You pay the underlying services you choose — Vercel hosting, Turso or
+        Postgres, Stripe’s standard processing, Anthropic/Gemini if you use AI. There is no
+        per-order tax going to cartwright. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise)
+        layer on hosted services and premium MCP integrations — see{' '}
+        <a href="/pricing" className="text-cw-terracotta">pricing</a> for the full breakdown.
+      </>
+    ),
   },
   {
     q: 'Can I migrate from Shopify or WooCommerce?',
-    a: 'There’s no migration tool yet (planned for v0.2). What you can do today: scaffold cartwright, run the import scripts for products and customers, and point your DNS over. The Stripe customer ID is the link key.',
+    a: (
+      <>
+        Two paths. <strong>Today:</strong> scaffold cartwright, run the import scripts for products
+        and customers, and point your DNS over. The Stripe customer ID is the link key.{' '}
+        <strong>Q3 2026 with Plus:</strong> an{' '}
+        <a href="/onboarding" className="text-cw-terracotta">agentic onboarding flow</a> that takes a
+        source URL and runs a five-agent migration to a deployed Cartwright shop. The preview is
+        live today; the agent ships with the Plus tier.
+      </>
+    ),
   },
   {
     q: 'How does this compare to Medusa, Saleor, or next-forge?',
@@ -33,7 +50,16 @@ const items = [
   },
   {
     q: 'What does the AI actually do?',
-    a: 'The admin ships with agentic helpers — drafting product copy, generating SEO metadata, answering customer questions in the storefront chat, and exposing a /api/mcp endpoint so external agents can act on the shop with tools you define.',
+    a: (
+      <>
+        The admin ships with agentic helpers — drafting product copy, generating SEO metadata,
+        answering customer questions in the storefront chat, and exposing a <code>/api/mcp</code>{' '}
+        endpoint so external agents can act on the shop with tools you define. Plus tier adds MCP
+        integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion, and four others so the
+        agent can act on them directly — see{' '}
+        <a href="/integrations" className="text-cw-terracotta">integrations</a>.
+      </>
+    ),
   },
   {
     q: 'Where do I get support?',

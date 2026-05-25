@@ -27,6 +27,8 @@ const RELEASES = [
       'Vibe Coding sandbox at /admin/vibe-sandbox — push raw HTML from Cursor or v0 via /api/admin/vibe/push, auto-translate via Gemini.',
       'Phone.inc telephony scaffolded at /admin/telefon — IVR config, voicemail transcription, call routing. Preview while Phone.inc API spec stabilises.',
       'Setup wizard at /admin/setup — DB-first secret storage; no env file editing required.',
+      '/integrations top-nav page launched — 15 core service integrations + 10 Plus-tier MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia) with real brand logos, category eyebrows, and deep-anchor /integrations#plus.',
+      '/onboarding redesigned as Plus-tier preview — type a URL, watch a five-agent migration demo (DOM analyzer, brand extractor, product mapper, SEO generator, ACP deployer), join the waitlist.',
     ],
   },
   {
