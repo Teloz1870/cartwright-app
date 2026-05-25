@@ -28,7 +28,7 @@ const docsCols = [
       { label: 'Discord', href: social.discord },
       { label: 'GitHub', href: social.github },
       { label: 'npm', href: social.npm },
-      { label: 'Contact', href: `mailto:${contactEmail}` },
+      { label: 'Contact', href: '/contact' },
       { label: 'Security', href: '/security' },
     ],
   },
@@ -87,6 +87,12 @@ export function SiteFooter() {
             The AI-first webshop template you actually own. Built by Teloz.
             Released under MIT.
           </p>
+          <a
+            href={`mailto:${contactEmail}`}
+            className="mt-4 inline-block text-sm font-medium text-cw-stone-700 dark:text-cw-stone-300 hover:text-cw-terracotta transition-colors"
+          >
+            {contactEmail}
+          </a>
         </div>
         {docsCols.map((col) => (
           <div key={col.heading}>
