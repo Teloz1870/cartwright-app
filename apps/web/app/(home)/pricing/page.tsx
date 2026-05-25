@@ -323,6 +323,12 @@ export default function ServicesPage() {
                       </li>
                     ))}
                   </ul>
+                  <Link
+                    href="/onboarding"
+                    className="mt-4 inline-block text-xs font-medium text-cw-terracotta hover:underline"
+                  >
+                    See the onboarding experience →
+                  </Link>
                 </div>
               )}
 

@@ -24,7 +24,11 @@ export type BrandSlug =
   | 'klaviyo'
   | 'mailchimp'
   | 'quickbooks'
-  | 'notion';
+  | 'notion'
+  | 'shopify'
+  | 'woocommerce'
+  | 'magento'
+  | 'squarespace';
 
 type Registry = Record<
   BrandSlug,
@@ -54,6 +58,10 @@ const REGISTRY: Registry = {
   turso: { kind: 'svg', file: 'turso.svg', brandColor: '#4FF8D2' },
   mcp: { kind: 'svg', file: 'mcp.svg', brandColor: '#D97757' },
   i18nexus: { kind: 'svg', file: 'i18nexus.svg', brandColor: '#26A69A' },
+  shopify: { kind: 'svg', file: 'shopify.svg', brandColor: '#7AB55C' },
+  woocommerce: { kind: 'svg', file: 'woocommerce.svg', brandColor: '#7F54B3' },
+  magento: { kind: 'svg', file: 'magento.svg', brandColor: '#EE672F' },
+  squarespace: { kind: 'svg', file: 'squarespace.svg', brandColor: '#000000', bgOnDark: true },
 
   // letter-mark fallback for brands without an available SVG mark
   nextauth: { kind: 'letter', mark: 'A', brandColor: '#7B5CFF' },
