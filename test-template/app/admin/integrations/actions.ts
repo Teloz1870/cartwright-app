@@ -18,6 +18,12 @@ import {
   type LocalAiFallbackMode,
 } from "@/lib/ai/settings";
 import {
+  getVoiceShopSettings,
+  invalidateVoiceShopCache,
+  readDailyUsage,
+} from "@/lib/voice/settings";
+import { CUSTOMER_TOOL_ALLOWLIST } from "@/lib/ai/client";
+import {
   getGoogleGeminiApiKey,
   invalidateGeminiKeyCache,
 } from "@/lib/ai/gemini";
@@ -804,6 +810,209 @@ export async function testAiProviderAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Ukendt fejl ved test-kald",
+    };
+  }
+}
+
+// ─── Voice Shop (Gemini Live) ────────────────────────────────────────────────
+
+const VOICE_MODELS = [
+  "gemini-2.5-flash-live",
+  "gemini-3.1-flash-live-preview",
+] as const;
+
+const VOICE_VOICES = [
+  "Puck",
+  "Charon",
+  "Kore",
+  "Fenrir",
+  "Aoede",
+  "Leda",
+  "Orus",
+  "Zephyr",
+] as const;
+
+export async function getVoiceShopSettingsForUi() {
+  await requireAdmin();
+  const s = await getVoiceShopSettings();
+  const usage = await readDailyUsage();
+  return {
+    enabled: s.enabled,
+    apiKeyConfigured: !!s.apiKey,
+    model: s.model,
+    voice: s.voice,
+    allowedTools: s.allowedTools,
+    maxMinutesPerSession: s.maxMinutesPerSession,
+    maxMinutesPerDay: s.maxMinutesPerDay,
+    visionEnabled: s.visionEnabled,
+    todayUsage: usage,
+    availableTools: [...CUSTOMER_TOOL_ALLOWLIST],
+    availableModels: [...VOICE_MODELS],
+    availableVoices: [...VOICE_VOICES],
+  };
+}
+
+export async function setVoiceShopSettingsAction(
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "on";
+  const model = String(formData.get("model") ?? "").trim();
+  const voice = String(formData.get("voice") ?? "").trim();
+  const maxMinutesPerSession = Number(
+    formData.get("maxMinutesPerSession") ?? "5",
+  );
+  const maxMinutesPerDay = Number(formData.get("maxMinutesPerDay") ?? "60");
+  const visionEnabled = formData.get("visionEnabled") === "on";
+  const allowedTools = formData.getAll("allowedTools").map(String);
+
+  if (!(VOICE_MODELS as readonly string[]).includes(model)) {
+    return { ok: false, error: "Ugyldig model" };
+  }
+  if (!(VOICE_VOICES as readonly string[]).includes(voice)) {
+    return { ok: false, error: "Ugyldig voice" };
+  }
+  if (
+    !Number.isFinite(maxMinutesPerSession) ||
+    maxMinutesPerSession < 1 ||
+    maxMinutesPerSession > 60
+  ) {
+    return {
+      ok: false,
+      error: "Session-cap skal være mellem 1 og 60 minutter",
+    };
+  }
+  if (
+    !Number.isFinite(maxMinutesPerDay) ||
+    maxMinutesPerDay < 1 ||
+    maxMinutesPerDay > 10000
+  ) {
+    return { ok: false, error: "Daglig cap skal være 1-10000 min" };
+  }
+
+  // Sanitize allowedTools mod CUSTOMER_TOOL_ALLOWLIST (typed-array-cast)
+  const customerSet = new Set<string>(CUSTOMER_TOOL_ALLOWLIST);
+  const sanitizedTools = allowedTools.filter((t) => customerSet.has(t));
+
+  await prisma.integrationSettings.upsert({
+    where: { id: 1 },
+    update: {
+      voiceShopEnabled: enabled,
+      voiceShopModel: model,
+      voiceShopVoice: voice,
+      voiceShopAllowedToolsJson:
+        sanitizedTools.length > 0 ? JSON.stringify(sanitizedTools) : null,
+      voiceShopMaxMinutesPerSession: maxMinutesPerSession,
+      voiceShopMaxMinutesPerDay: maxMinutesPerDay,
+      voiceShopVisionEnabled: visionEnabled,
+    },
+    create: {
+      id: 1,
+      voiceShopEnabled: enabled,
+      voiceShopModel: model,
+      voiceShopVoice: voice,
+      voiceShopAllowedToolsJson:
+        sanitizedTools.length > 0 ? JSON.stringify(sanitizedTools) : null,
+      voiceShopMaxMinutesPerSession: maxMinutesPerSession,
+      voiceShopMaxMinutesPerDay: maxMinutesPerDay,
+      voiceShopVisionEnabled: visionEnabled,
+    },
+  });
+
+  invalidateVoiceShopCache();
+  revalidatePath("/admin/integrations");
+  return { ok: true };
+}
+
+/**
+ * Validér at en voice-session kan mintet med nuværende settings. Returnerer
+ * latency + diagnostics uden faktisk at åbne en WS (vi mint'er bare en token
+ * og lukker den med det samme). Catcher: invalid API key, allowedTools tom,
+ * cap-fejl.
+ */
+export async function testVoiceShopAction(): Promise<
+  | { ok: true; latencyMs: number; effectiveTools: number; model: string }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  const s = await getVoiceShopSettings();
+  if (!s.enabled) {
+    return { ok: false, error: "Voice shop er ikke aktiveret." };
+  }
+  if (!s.apiKey) {
+    return {
+      ok: false,
+      error: "Mangler Google Gemini API-nøgle. Gem den ovenfor først.",
+    };
+  }
+
+  const { buildVoiceShopTools } = await import("@/lib/voice/tools");
+  const { GoogleGenAI } = await import("@google/genai");
+  const { getBrand } = await import("@/lib/brand");
+  const { buildVoiceShopPrompt } = await import("@/lib/voice/prompts");
+
+  const bundle = buildVoiceShopTools(s.allowedTools);
+  if (bundle.effectiveTools.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Ingen voice-tools tilgængelige — vælg mindst ét tool i listen.",
+    };
+  }
+
+  const brand = await getBrand();
+  const systemPrompt = buildVoiceShopPrompt(brand);
+
+  const start = Date.now();
+  try {
+    const ai = new GoogleGenAI({ apiKey: s.apiKey });
+    const expireTime = new Date(Date.now() + 60 * 1000).toISOString();
+    const newSessionExpireTime = new Date(Date.now() + 60 * 1000).toISOString();
+
+    await (
+      ai as unknown as {
+        authTokens: {
+          create: (input: {
+            config: Record<string, unknown>;
+          }) => Promise<{ name: string }>;
+        };
+      }
+    ).authTokens.create({
+      config: {
+        uses: 1,
+        expireTime,
+        newSessionExpireTime,
+        httpOptions: { apiVersion: "v1alpha" },
+        liveConnectConstraints: {
+          model: `models/${s.model}`,
+          config: {
+            responseModalities: ["AUDIO"],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            tools: bundle.geminiTools,
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: s.voice } },
+            },
+          },
+        },
+        lockAdditionalFields: [
+          "tools",
+          "systemInstruction",
+          "responseModalities",
+        ],
+      },
+    });
+    return {
+      ok: true,
+      latencyMs: Date.now() - start,
+      effectiveTools: bundle.effectiveTools.length,
+      model: s.model,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Test-mint fejlede",
     };
   }
 }

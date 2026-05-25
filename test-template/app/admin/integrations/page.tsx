@@ -3,6 +3,7 @@ import {
   getStripeStatus,
   getResendStatus,
   getAiSettingsForUi,
+  getVoiceShopSettingsForUi,
 } from "./actions";
 import { getSetupStatus } from "@/lib/setup-status";
 import { getBrand } from "@/lib/brand";
@@ -12,6 +13,7 @@ import StripeKeyForm from "./StripeKeyForm";
 import ResendKeyForm from "./ResendKeyForm";
 import EmailDomainPanel from "./EmailDomainPanel";
 import LocalAiForm from "./LocalAiForm";
+import VoiceShopForm from "./VoiceShopForm";
 import SetupRunbook from "./SetupRunbook";
 import SetupTabs from "./SetupTabs";
 
@@ -25,6 +27,7 @@ export default async function AdminIntegrationsPage() {
     setupStatus,
     brandData,
     aiSettings,
+    voiceShop,
   ] = await Promise.all([
     getIntegrationStatus(),
     getStripeStatus(),
@@ -32,6 +35,7 @@ export default async function AdminIntegrationsPage() {
     getSetupStatus(),
     getBrand(),
     getAiSettingsForUi(),
+    getVoiceShopSettingsForUi(),
   ]);
 
   // Vis kun rigtige værdier (ikke compile-time placeholder "example.com")
@@ -157,6 +161,21 @@ export default async function AdminIntegrationsPage() {
               initialEmailFrom={realEmailFrom}
               initialEmailFromName={realEmailFromName}
             />
+
+            <section className="rounded-2xl border border-sol-ink/10 bg-white p-6 shadow-sm">
+              <div className="mb-5">
+                <h2 className="text-lg font-black text-sol-ink">
+                  Voice Shop (Gemini Live)
+                </h2>
+                <p className="mt-1 text-sm text-sol-muted">
+                  Voice + vision shopping på storefront — kunder klikker
+                  mic-knappen, taler til shoppen, kan vise kamera. Bruger samme
+                  Google Gemini API-nøgle som virtual try-on. Daily-cap holder
+                  cost forudsigelig.
+                </p>
+              </div>
+              <VoiceShopForm initial={voiceShop} />
+            </section>
 
             <section className="rounded-2xl border border-dashed border-sol-ink/15 p-6">
               <h2 className="text-lg font-black text-sol-muted">Kommer senere</h2>

@@ -29,6 +29,7 @@
     "@stripe/react-stripe-js": "^6.3.0",
     "@stripe/stripe-js": "^9.5.0",
     "@vercel/blob": "^2.3.3",
+    "@vercel/botid": "^2.0.0",
     "ai": "^6.0.182",
     "bcryptjs": "^3.0.3",
     "next": "16.2.6",

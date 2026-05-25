@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
+import { checkBotId } from "@vercel/botid";
 import {
   canStartVoiceSession,
   getVoiceShopSettings,
@@ -9,6 +10,7 @@ import { buildVoiceShopTools } from "@/lib/voice/tools";
 import { buildVoiceShopPrompt } from "@/lib/voice/prompts";
 import { getBrand } from "@/lib/brand";
 import { voiceTokenLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +40,41 @@ export const maxDuration = 10;
 export async function POST(request: NextRequest) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+
+  // BotID-check: anonyme voice-sessions er primær abuse-flade (gratis demo
+  // på shop = nem at scripte). Skip i development så lokal udvikling virker
+  // uden Vercel-infrastruktur (BotID returnerer alligevel falsk-negative
+  // udenfor prod).
+  if (process.env.VERCEL_ENV === "production") {
+    try {
+      const verification = await checkBotId();
+      if (verification.isBot) {
+        await prisma.auditLog
+          .create({
+            data: {
+              actor: `storefront-voice:bot-rejected-${ip}`,
+              tool: "live.token.mint",
+              argsJson: JSON.stringify({ reason: "bot-detected" }),
+              ok: false,
+              errorMsg: "BotID rejected token mint",
+              requestId: randomUUID(),
+              ip,
+              userAgent: request.headers.get("user-agent") ?? null,
+              provider: "google",
+              modality: "voice",
+            },
+          })
+          .catch(() => {
+            // Audit-fejl må ikke blokere 403
+          });
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } catch (err) {
+      // BotID-fejl må ikke blokere reale brugere — log og fortsæt
+      console.error("[voice/token] BotID check failed:", err);
+    }
+  }
+
   const rl = voiceTokenLimiter.check(ip);
   if (!rl.allowed) {
     return rateLimitResponse(rl);
