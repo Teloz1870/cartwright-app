@@ -22,7 +22,8 @@ import { getAiSettings, type AiSettings } from "@/lib/ai/settings";
  *                          long-form generation der ikke kan toleres failure-loop.
  *
  * Default model er Haiku 4.5 — billig + hurtig, perfekt til tool-orchestration
- * og produkt-anbefaling. Local-default er gemma3:12b (sweet-spot tools+kvalitet).
+ * og produkt-anbefaling. Local-default er gemma4:e4b (9.6GB, 128K context,
+ * multimodal — sweet-spot tools+kvalitet på en 16GB+ Mac).
  */
 export const CHAT_MODEL = "claude-haiku-4-5";
 
@@ -57,7 +58,17 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
   "claude-haiku-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
   "claude-sonnet-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
   "claude-opus-4-5": { tools: "all", maxTokens: 200_000, supportsToolCall: true },
-  // Gemma 3 via Ollama — capability tiered per size
+  // Gemma 4 via Ollama — multimodal, 128K-256K context. Tiered konservativt
+  // matching Gemma 3 sizing (e4b≈12b equivalent function-calling quality);
+  // bump tiers efter empirisk verifikation hvis tests viser den klarer mere.
+  "gemma4:e2b": { tools: "read-only", maxTokens: 128_000, supportsToolCall: true },
+  "gemma4:e4b": { tools: "low-risk-writes", maxTokens: 128_000, supportsToolCall: true },
+  "gemma4:e4b-mlx": { tools: "low-risk-writes", maxTokens: 128_000, supportsToolCall: true },
+  "gemma4:e2b-mlx": { tools: "read-only", maxTokens: 128_000, supportsToolCall: true },
+  "gemma4:26b": { tools: "all", maxTokens: 256_000, supportsToolCall: true },
+  "gemma4:31b": { tools: "all", maxTokens: 256_000, supportsToolCall: true },
+  // Gemma 3 via Ollama — capability tiered per size. Bevares for kunder der
+  // allerede har dem pulled; Gemma 4 er det nye anbefalede default.
   "gemma3:4b": { tools: "read-only", maxTokens: 8192, supportsToolCall: true },
   "gemma3:12b": { tools: "low-risk-writes", maxTokens: 8192, supportsToolCall: true },
   "gemma3:27b": { tools: "all", maxTokens: 8192, supportsToolCall: true },

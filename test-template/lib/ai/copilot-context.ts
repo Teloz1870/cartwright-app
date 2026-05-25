@@ -17,7 +17,7 @@ import { getSetupStatus } from "@/lib/setup-status";
  *   [SETUP-STATE]
  *   domain: dit-domæne.dk · sender: orders@dit-domæne.dk · inbox: cloudflare
  *   setup: 9/12 ok · mangler: stripe-keys, email-dns-verified
- *   provider: local · gemma3:12b
+ *   provider: local · gemma4:e4b
  *   [/SETUP-STATE]
  */
 

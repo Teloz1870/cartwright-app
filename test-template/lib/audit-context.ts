@@ -19,7 +19,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 export type AuditContext = {
   /** "anthropic" | "local" | "google" — den AI-provider der drev kaldet */
   provider?: string;
-  /** Model-id fx "claude-haiku-4-5", "gemma3:12b", "gemini-2.5-flash-live" */
+  /** Model-id fx "claude-haiku-4-5", "gemma4:e4b", "gemini-2.5-flash-live" */
   model?: string;
   /** "text" eller "voice". Default "text" hvis ikke sat. */
   modality?: string;
@@ -35,7 +35,7 @@ const store = new AsyncLocalStorage<AuditContext>();
  *
  * Brug pattern fra route-handlers:
  *   return withAuditContext(
- *     { provider: "local", model: "gemma3:12b", modality: "text" },
+ *     { provider: "local", model: "gemma4:e4b", modality: "text" },
  *     async () => streamText({...}).toUIMessageStreamResponse(),
  *   );
  */

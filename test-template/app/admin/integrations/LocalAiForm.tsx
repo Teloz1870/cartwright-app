@@ -262,7 +262,7 @@ export default function LocalAiForm({ initial }: Props) {
             )}
             {discoverLatency !== null && discoveredModels.length === 0 && !discoverError && (
               <p className="mt-2 text-xs text-sol-muted">
-                Forbindelse OK ({discoverLatency}ms) men ingen modeller installeret. Pull en model med <code className="rounded bg-sol-cream px-1.5 py-0.5">ollama pull gemma3:12b</code>.
+                Forbindelse OK ({discoverLatency}ms) men ingen modeller installeret. Pull en model med <code className="rounded bg-sol-cream px-1.5 py-0.5">ollama pull gemma4:e4b</code>.
               </p>
             )}
             {discoveredModels.length > 0 && (
@@ -299,7 +299,7 @@ export default function LocalAiForm({ initial }: Props) {
                 type="text"
                 value={localAiModel}
                 onChange={(e) => onAnyChange(setLocalAiModel)(e.target.value)}
-                placeholder="gemma3:12b"
+                placeholder="gemma4:e4b"
                 spellCheck={false}
                 autoComplete="off"
                 className="w-full rounded-lg border border-sol-ink/15 bg-white px-3 py-2 font-mono text-sm text-sol-ink focus:border-sol-accent focus:outline-none focus:ring-2 focus:ring-sol-accent/25"

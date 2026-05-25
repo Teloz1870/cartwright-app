@@ -25,7 +25,7 @@ export type AiSettings = {
   anthropicModel: string;
   anthropicApiKey: string | null; // dekrypteret, null hvis ikke konfigureret
   localAiEndpoint: string | null; // typisk "http://localhost:11434/v1"
-  localAiModel: string | null; // fx "gemma3:12b"
+  localAiModel: string | null; // fx "gemma4:e4b"
   localAiFallbackMode: LocalAiFallbackMode;
   lastDegradedAt: Date | null;
   /** Convenience-flag for UI: kan provider faktisk bruges right now? */

@@ -737,7 +737,7 @@ export async function listOllamaModelsAction(
     return { ok: false, error: "Ollama returnerede ikke gyldig JSON" };
   }
 
-  // Ollama-format: { models: [{ name: "gemma3:12b", ... }, ...] }
+  // Ollama-format: { models: [{ name: "gemma4:e4b", ... }, ...] }
   if (
     !body ||
     typeof body !== "object" ||

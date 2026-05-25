@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * Eksempel response:
  *   {
  *     "provider": "local",
- *     "model": "gemma3:12b",
+ *     "model": "gemma4:e4b",
  *     "suggestions": [
  *       { "id": "what-missing", "label": "Hvad mangler i mit setup?", "prompt": "..." },
  *       { "id": "verify-setup", "label": "Verificér mit setup", "prompt": "..." }
