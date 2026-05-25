@@ -13,6 +13,10 @@ Cartwright's storefront-templates har en floating mic-knap. Kunder klikker, tale
 - **Cost-rails som default** — per-session-cap (default 5 min), daglig per-shop-cap (default 60 min), per-IP rate-limit + BotID. Andre voice-implementeringer mangler dette og brænder $1000/dag på første abuse-incident.
 - **Vision = differentiator** — kunden kan toggle kamera til/fra. 1 fps frames til Gemini. "Find produkter i denne farve" mens de holder telefon mod en væg fungerer fra dag 1.
 
+<Callout type="info">
+**Voice ≠ tekst-backend.** Voice kører altid på Google Gemini Live (cloud); det er den eneste stack der pr. 2026 understøtter real-time voice + vision + function calling. Din tekst-chat (admin-copilot, AI-stylist) kan derimod køre på **lokal [Gemma 4 via Ollama](/docs/ai/local-ai)** eller cloud Claude. De to systemer er uafhængige.
+</Callout>
+
 ## Arkitektur
 
 ```
