@@ -29,6 +29,11 @@ const config = {
         destination: 'https://github.com/Teloz1870/cartwright-app',
         permanent: false,
       },
+      {
+        source: '/pricing',
+        destination: '/services',
+        permanent: false,
+      },
     ];
   },
 };

@@ -3,7 +3,7 @@ import { CheckIcon, XIcon } from 'lucide-react';
 const comparisonData = [
   { feature: 'Source Code Ownership', cartwright: true, saas: false },
   { feature: 'Platform Transaction Fees', cartwright: '0%', saas: '2.9% + 30¢' },
-  { feature: 'Monthly Base Cost', cartwright: '€0 (Self-hosted)', saas: '$39 - $399/mo' },
+  { feature: 'Monthly Base Cost', cartwright: '$0 (Self-hosted)', saas: '$39 - $399/mo' },
   { feature: 'Next.js 16 + React 19', cartwright: true, saas: false },
   { feature: 'Built-in AI Assistant Admin', cartwright: true, saas: false },
   { feature: 'Bring Your Own Database', cartwright: true, saas: false },

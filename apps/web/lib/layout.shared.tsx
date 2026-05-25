@@ -9,8 +9,9 @@ export function baseOptions(): BaseLayoutProps {
       url: '/',
     },
     links: [
+      { text: 'Onboarding', url: '/onboarding' },
       { text: 'Docs', url: '/docs' },
-      { text: 'Services', url: '/services' },
+      { text: 'Pricing', url: '/services' },
       { text: 'Showcase', url: '/showcase' },
       { text: 'Changelog', url: '/changelog' },
     ],
