@@ -20,7 +20,11 @@ export type BrandSlug =
   | 'react'
   | 'typescript'
   | 'tailwind'
-  | 'prisma';
+  | 'prisma'
+  | 'klaviyo'
+  | 'mailchimp'
+  | 'quickbooks'
+  | 'notion';
 
 type Registry = Record<
   BrandSlug,
@@ -44,6 +48,9 @@ const REGISTRY: Registry = {
   typescript: { kind: 'svg', file: 'typescript.svg', brandColor: '#3178C6' },
   tailwind: { kind: 'svg', file: 'tailwind.svg', brandColor: '#06B6D4' },
   prisma: { kind: 'svg', file: 'prisma.svg', brandColor: '#2D3748', bgOnDark: true },
+  mailchimp: { kind: 'svg', file: 'mailchimp.svg', brandColor: '#FFE01B' },
+  quickbooks: { kind: 'svg', file: 'quickbooks.svg', brandColor: '#2CA01C' },
+  notion: { kind: 'svg', file: 'notion.svg', brandColor: '#000000', bgOnDark: true },
 
   // letter-mark fallback for brands without simple-icons entries
   turso: { kind: 'letter', mark: 'T', brandColor: '#4FF8D2' },
@@ -52,6 +59,7 @@ const REGISTRY: Registry = {
   mcp: { kind: 'letter', mark: 'M', brandColor: '#D97757' },
   'phone-inc': { kind: 'letter', mark: 'P', brandColor: '#0EA5E9' },
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
+  klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
 };
 
 interface BrandLogoProps {

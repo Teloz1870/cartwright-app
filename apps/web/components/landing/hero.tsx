@@ -53,7 +53,7 @@ export function Hero() {
                 View on GitHub
               </ButtonLink>
             ) : (
-              <ButtonLink href="/services" variant="outline" size="lg">
+              <ButtonLink href="/pricing" variant="outline" size="lg">
                 Need setup help?
               </ButtonLink>
             )}

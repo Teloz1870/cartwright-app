@@ -30,8 +30,8 @@ const config = {
         permanent: false,
       },
       {
-        source: '/pricing',
-        destination: '/services',
+        source: '/services',
+        destination: '/pricing',
         permanent: false,
       },
     ];

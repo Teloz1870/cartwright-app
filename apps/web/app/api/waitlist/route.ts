@@ -107,7 +107,7 @@ export async function POST(request: Request): Promise<Response> {
         'Until then:',
         `  - Scaffold a free self-hosted shop:  npx create-cartwright@latest my-shop`,
         `  - Docs:                              https://cartwright.app/docs`,
-        `  - Pricing details:                   https://cartwright.app/services`,
+        `  - Pricing details:                   https://cartwright.app/pricing`,
         '',
         'Questions? Just reply to this email.',
         '',

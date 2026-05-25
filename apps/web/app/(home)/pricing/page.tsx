@@ -1,6 +1,9 @@
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { WaitlistForm } from '@/components/landing/waitlist-form';
+import { BrandLogo, type BrandSlug } from '@/components/landing/brand-logo';
+import { CopyCommand } from '@/components/landing/copy-command';
 import { contactEmail } from '@/lib/shared';
 import {
   CheckIcon,
@@ -14,6 +17,14 @@ import {
 } from 'lucide-react';
 import { ComparisonTable } from '@/components/landing/comparison-table';
 import { FeatureMatrix } from '@/components/landing/feature-matrix';
+
+const ALL_INTEGRATION_LOGOS: BrandSlug[] = [
+  'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
+  'nextauth', 'upstash', 'i18nexus', 'gemini', 'ollama', 'mcp',
+  'phone-inc', 'luma', 'unsplash',
+];
+
+const PLUS_PREMIUM_LOGOS: BrandSlug[] = ['klaviyo', 'mailchimp', 'quickbooks', 'notion'];
 
 export const metadata = {
   title: 'Pricing',
@@ -213,6 +224,26 @@ export default function ServicesPage() {
             services, premium integrations, or someone running it for you, layer
             on a paid tier. The template itself is never paywalled.
           </p>
+          <Link
+            href="/integrations"
+            className="mt-5 text-sm font-medium text-cw-terracotta hover:underline"
+          >
+            All 15 integrations are included in every tier →
+          </Link>
+        </div>
+
+        {/* Logo band — all 15 integrations included in every tier */}
+        <div className="mt-12 rounded-2xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50/40 dark:bg-cw-stone-900/40 px-6 py-6">
+          <p className="text-center text-xs font-mono uppercase tracking-[0.16em] text-cw-stone-500 dark:text-cw-stone-400 mb-5">
+            Every tier ships pre-wired with
+          </p>
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-4 sm:gap-x-7">
+            {ALL_INTEGRATION_LOGOS.map((slug) => (
+              <li key={slug}>
+                <BrandLogo brand={slug} size={32} />
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Tier grid */}
@@ -271,7 +302,7 @@ export default function ServicesPage() {
                 )}
               </div>
 
-              <ul className="mb-8 flex-1 space-y-4 text-sm text-cw-stone-600 dark:text-cw-stone-300">
+              <ul className="mb-6 flex-1 space-y-4 text-sm text-cw-stone-600 dark:text-cw-stone-300">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex gap-3">
                     <CheckIcon className="size-5 shrink-0 text-cw-terracotta" />
@@ -279,6 +310,21 @@ export default function ServicesPage() {
                   </li>
                 ))}
               </ul>
+
+              {tier.popular && (
+                <div className="mb-6 border-t border-cw-stone-200 dark:border-cw-stone-800 pt-5">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-cw-stone-500 dark:text-cw-stone-400 mb-3">
+                    Premium MCP integrations
+                  </p>
+                  <ul className="flex items-center gap-3">
+                    {PLUS_PREMIUM_LOGOS.map((slug) => (
+                      <li key={slug}>
+                        <BrandLogo brand={slug} size={28} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {tier.cta.kind === 'link' ? (
                 <ButtonLink
@@ -297,18 +343,16 @@ export default function ServicesPage() {
         </div>
 
         {/* Add-ons */}
-        <div className="mt-32 max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <Badge tone="terracotta" className="mb-6">
-              <span className="size-1.5 rounded-full bg-cw-terracotta" />
+        <div className="mt-32">
+          <div className="max-w-2xl mb-12">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
               Add-ons
-            </Badge>
-            <h2 className="text-3xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
-              Stack on any tier
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+              Stack on any tier.
             </h2>
-            <p className="mt-4 text-cw-stone-500 dark:text-cw-stone-400">
-              One-time services and recurring extras. Works with self-hosted or
-              any paid tier.
+            <p className="mt-4 text-base sm:text-lg leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
+              One-time services and recurring extras. Works with self-hosted or any paid tier.
             </p>
           </div>
 
@@ -363,21 +407,44 @@ export default function ServicesPage() {
         </div>
 
         {/* Trust strip */}
-        <div className="mt-24 max-w-3xl mx-auto rounded-2xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50/50 dark:bg-cw-stone-900/50 p-8 text-center">
-          <h2 className="text-xl font-semibold text-cw-stone-900 dark:text-cw-stone-50">
-            The template is MIT. Always.
-          </h2>
-          <p className="mt-3 text-sm text-cw-stone-500 dark:text-cw-stone-400">
-            Paid tiers add hosted services, premium integrations, and support.
-            They never gate features inside the template itself. You can cancel
-            and keep running your shop — your code, your database, your
-            customers.
-          </p>
+        <div className="mt-24 rounded-3xl border border-cw-terracotta/30 bg-cw-terracotta/5 dark:bg-cw-terracotta/10 p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8">
+          <div className="flex-1">
+            <h2 className="text-2xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+              The template is MIT. Always.
+            </h2>
+            <p className="mt-3 text-sm text-cw-stone-500 dark:text-cw-stone-400 max-w-xl">
+              Paid tiers add hosted services, premium integrations, and support. They never gate features inside the template itself. Cancel any time and keep running your shop — your code, your database, your customers.
+            </p>
+          </div>
+          <ButtonLink href="/docs/roadmap" variant="outline" size="lg">
+            Read the roadmap →
+          </ButtonLink>
         </div>
 
         <ComparisonTable />
 
         <FeatureMatrix />
+
+        {/* CTA footer */}
+        <div className="mt-24 sm:mt-32 flex flex-col items-center text-center">
+          <h2 className="max-w-2xl text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+            Start with one command.
+          </h2>
+          <p className="mt-4 max-w-xl text-base text-cw-stone-500 dark:text-cw-stone-400">
+            Self-hosted today. Layer on a tier when you need it.
+          </p>
+          <div className="mt-8 w-full max-w-xl">
+            <CopyCommand command="npx create-cartwright@latest my-shop" />
+          </div>
+          <div className="mt-6 flex gap-3">
+            <ButtonLink href="/docs/getting-started/quick-start" size="lg">
+              Read the docs
+            </ButtonLink>
+            <ButtonLink href="/integrations" variant="outline" size="lg">
+              See integrations
+            </ButtonLink>
+          </div>
+        </div>
       </div>
     </main>
   );

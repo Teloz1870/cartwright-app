@@ -378,7 +378,7 @@ export default function IntegrationsPage() {
               The template is MIT and free, forever. You pay the underlying services (Vercel, Stripe processing, Turso, etc.) directly. Optional managed tiers start at $49/mo if you'd rather have us run it.
             </p>
           </div>
-          <ButtonLink href="/services" size="lg">
+          <ButtonLink href="/pricing" size="lg">
             See pricing →
           </ButtonLink>
         </div>

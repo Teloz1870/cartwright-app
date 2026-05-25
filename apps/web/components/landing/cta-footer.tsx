@@ -62,7 +62,7 @@ export function CtaFooter() {
               {isGithubPublic ? 'Star on GitHub' : 'Join the Discord'}
             </ButtonLink>
             <ButtonLink
-              href="/services"
+              href="/pricing"
               variant="outline"
               size="lg"
             >

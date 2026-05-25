@@ -12,12 +12,15 @@ const comparisonData = [
 
 export function ComparisonTable() {
   return (
-    <div className="w-full max-w-4xl mx-auto mt-24 px-6">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+    <div className="w-full mt-24">
+      <div className="max-w-2xl mb-12">
+        <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+          vs hosted SaaS
+        </p>
+        <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
           Why own your stack?
         </h2>
-        <p className="mt-4 text-cw-stone-500 dark:text-cw-stone-400">
+        <p className="mt-4 text-base sm:text-lg leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
           Traditional SaaS platforms rent you a store and tax your success. Cartwright gives you the keys.
         </p>
       </div>
