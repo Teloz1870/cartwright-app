@@ -1,7 +1,7 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
-import { Sparkles, Terminal, Globe, Code2, ShieldCheck } from 'lucide-react';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -9,6 +9,25 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.2.0',
+    date: 'May 2026',
+    title: 'Voice Shop & Local AI v2',
+    description:
+      'Customers talk directly to your shop via Gemini Live, and you can run the whole admin AI on a free local Ollama model. Every AI call is provider/model/modality-stamped in the audit log so /admin/audit can filter "voice only" or "Gemma only" in one click.',
+    icon: <Mic className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Voice Shop (Gemini Live) — floating mic-FAB on storefront, browser↔Google WebSocket with ephemeral tokens, server-side tool dispatch with same audit-log + scope-guards as text chat. Default off; opt-in per shop via brand.features.voiceShop. Default allowed tools cover products.search/get + cart.add/get_summary + discounts.try_apply (orders.create requires opt-in).',
+      'BotID-protected token-mint in production + per-IP rate-limit (3 burst, 1 per 20 min) + pre-committed setup with lockAdditionalFields so the browser can never expand the tool list mid-session.',
+      'Voice cap admin: maxMinutesPerSession + maxMinutesPerDay configurable in /admin/integrations, with VoiceUsageSection injected into the new AiStatusPill so you see today\'s minutes burned at a glance.',
+      'Local AI v2 — chatModelResolved(intent) returns {handle, provider, model, capabilities}. Backwards-compatible with the legacy chatModel(). New MODEL_CAPABILITIES matrix tiers Claude 4.5/4.6/4.7, Gemma 4 (e2b/e4b/e4b-mlx/26b/31b), Gemma 3, Llama 3.x, Qwen — read-only / low-risk-writes / all.',
+      'Ollama in admin: /admin/integrations "Hent modeller" button auto-detects Apple Silicon (offers -mlx variants), SSE-streaming pull with live progress bar, delete-with-confirm + total-disk-usage display, install-card with brew/curl/winget tabs when Ollama is offline.',
+      'AiStatusPill on every /admin/* page — fixed bottom-right badge with 30s health-check polling. Four states: 🔒 Local AI, ☁️ Cloud AI, ⚠️ Auto degraded (recently fell back), ❌ AI offline.',
+      'Setup-wizard 3-way AI step — Cloud (Anthropic) / Lokal (Ollama with live probe) / Spring over. Local branch auto-discovers and auto-selects first model when Ollama responds.',
+      'Audit-log stamps — every AI-driven tool call gets provider/model/modality/sessionMinutes stamps via AsyncLocalStorage withAuditContext. Old rows backfilled to provider="anthropic", modality="text". /admin/audit can filter by modality (text vs voice) or provider (anthropic vs local vs google).',
+      'Vibe generators always-cloud — theme + product-SEO + category-SEO use chatModelResolved("vibe") which forces Anthropic even when aiProvider="local", because structured JSON output from local models is hit-or-miss.',
+    ],
+  },
   {
     version: '3.1.0',
     date: 'May 2026',
