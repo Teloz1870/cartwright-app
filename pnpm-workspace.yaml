@@ -6,6 +6,10 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+  # Voice-shop deps (used by cartwright-template's voice client). Eksplicit
+  # false → spring postinstall over uden hard error i Vercel-build.
+  "@google/genai": false
+  protobufjs: false
 
 minimumReleaseAgeExclude:
   - fumadocs-core@16.8.12
@@ -13,5 +17,8 @@ minimumReleaseAgeExclude:
   - fumadocs-ui@16.8.12
 
 # pnpm v11+ requires explicit approval for packages with build-scripts.
+# Listed packages run their postinstall; un-listed packages skip.
 onlyBuiltDependencies:
   - esbuild
+  - sharp
+  - unrs-resolver
