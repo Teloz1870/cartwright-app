@@ -1,0 +1,103 @@
+---
+title: Picking a design
+description: How to choose a design for your Cartwright shop — via the setup wizard at first install, or via /admin/designs anytime after.
+---
+
+There are two places to pick a design: the **setup wizard** when you first scaffold a shop, and **`/admin/designs`** anytime after. Both write to the same field (`BrandingSettings.designSlug`) and take effect at the next page render.
+
+## First-install: the setup wizard
+
+When you scaffold a fresh shop and log into `/admin/setup`, the first step ("Forretningsmodel & Brand") has two related dropdowns:
+
+```
+Industry-template:  [Generic ▾]   ← seeds products, categories, pages
+Design:             [Auto ▾]      ← visual layout + palette + typography
+```
+
+**Industry-template** controls what data your shop starts with — what gets created when you run `npm run seed`. Pick the closest match to your business.
+
+**Design** controls how everything renders. Five behaviors are possible:
+
+- **Auto** (default) — Cartwright picks the v0.6.0-equivalent design for your industry. Use this if you want the "just give me something sensible" path.
+- Pick a **website design** (`saas-dark` / `studio` / `corporate-baseline`) — only shown when `ecommerceEnabled: false`
+- Pick a **webshop design** (`webshop-classic` / `webshop-minimal` / `webshop-editorial` / `webshop-bold`) — only shown when `ecommerceEnabled: true`
+- ⭐ **Pro-tier designs** (studio, webshop-editorial, webshop-bold) are still selectable on the free tier — the badge is a marketing signal for the planned Cartwright Plus tier (honor-system today).
+- Designs imported via `/admin/designs` show up here too — the registry is auto-derived.
+
+Submit the step. The choice is persisted to `BrandingSettings.designSlug` and your homepage renders the chosen design immediately.
+
+## Anytime after: `/admin/designs`
+
+The dedicated design hub at `/admin/designs` shows every installed design as a card grid:
+
+```
+┌─────────────────────────┐  ┌─────────────────────────┐
+│ Auto (infer from        │  │ Studio (tech / agency)  │
+│ industry)               │  │ ⭐ Pro          ✓ Aktiv │
+│ — Resolves to:          │  │ Premium warm-tech…      │
+│ corporate-baseline       │  │ mode: website  studio   │
+└─────────────────────────┘  └─────────────────────────┘
+```
+
+Click any card to activate it. The action calls `setActiveDesignAction` which:
+
+1. Validates the slug exists in the registry
+2. Writes `BrandingSettings.designSlug = "<slug>"`
+3. Invalidates the theme cache (so `lib/theme.ts:getActiveDesign` re-reads on next request)
+4. Revalidates `/` and `/admin/designs`
+
+Reload your homepage in a new tab to see the change.
+
+## How it resolves at render-time
+
+`app/[locale]/page.tsx` calls the design resolver:
+
+```ts
+const designSlug =
+  settings?.designSlug ??
+  inferDesignFromIndustry(industryTemplate, ecommerceEnabled);
+const design = getDesign(designSlug);
+if (!design) notFound();          // unknown slug → 404 with admin hint
+
+const Homepage = design.homepage;
+return <Homepage settings={settings} locale={locale} featured={featured} categories={categories} />;
+```
+
+Three priorities:
+
+1. **`homePage.vibeHtml`** (Software 3.0 raw HTML in DB) takes over the entire homepage — design ignored
+2. **`settings.designSlug`** wins if explicitly set (any value from /admin/setup or /admin/designs)
+3. **`inferDesignFromIndustry(...)`** is the fallback for shops upgrading from v0.6.0 without `designSlug` set
+
+If the slug points to a design that doesn't exist (e.g., you uninstalled an imported design), the route returns 404 with a `console.error` pointing at `/admin/setup` to fix it.
+
+## Per-shop palette fine-tuning
+
+Designs ship with their own palette (`tokens.palette` in `design.md`). You can layer a per-shop override on top via `BrandingSettings.themeJson` — same 6-color shape as before v0.7.0:
+
+```json
+{
+  "accent": "#0066ff",
+  "accentDeep": "#003a99",
+  "cream": "#f8f9fb",
+  "sand": "#e9ebef",
+  "ink": "#0a0a0b",
+  "muted": "#525252"
+}
+```
+
+This overrides the design pack's palette without changing the design itself. Useful when you like a layout but want your own brand colors. The override emits AFTER the design pack tokens in `app/layout.tsx` so it wins via last-write-wins CSS cascade.
+
+## Mode filtering
+
+The dropdown and `/admin/designs` grid only show designs that match your shop's `ecommerceEnabled` flag:
+
+- `ecommerceEnabled: true` (webshop) → hides website-only designs (`saas-dark`, `studio`, `corporate-baseline`)
+- `ecommerceEnabled: false` (website) → hides webshop-only designs (`webshop-classic`, `webshop-minimal`, `webshop-editorial`, `webshop-bold`)
+
+Designs with `mode: both` appear in both modes (none of the v0.7.0 shipped designs use this — it's for custom imports that genuinely work either way).
+
+## Related
+
+- [Overview](/docs/designs/overview) — why design and industry are orthogonal
+- [Writing your own design](/docs/designs/writing-your-own) — when nothing in the registry fits

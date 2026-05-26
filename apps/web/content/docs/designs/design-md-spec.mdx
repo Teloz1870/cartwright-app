@@ -1,0 +1,278 @@
+---
+title: design.md spec (cartwright-design-v1)
+description: Full schema reference for cartwright-design-v1 — the YAML-frontmatter format that powers design imports and exports in Cartwright v0.7.0.
+---
+
+`design.md` is Cartwright's portable design format. YAML frontmatter for structured config (palette, sections, metadata) + a Markdown body for designer notes. One file, no folder dependencies, round-trips cleanly between the registry and the file system.
+
+The current schema version is **`cartwright-design-v1`**. The version string lives in the frontmatter as `schema:` and is validated on every import.
+
+## File structure
+
+```yaml
+---
+schema: cartwright-design-v1
+slug: my-design                    # kebab-case, unique
+name: My Design Name
+description: One-paragraph description (max 280 chars).
+mode: website                      # website | webshop | both
+premium: false                     # optional, default false
+
+tokens:
+  prefix: my                       # CSS var prefix: --color-my-*
+  palette:
+    accent: "#0066cc"              # primary CTA / highlight
+    accentDeep: "#003a99"          # hover state
+    cream: "#fafaf9"               # page background
+    sand: "#f5f5f4"                # surface / panel background
+    ink: "#0a0a0b"                 # body text
+    muted: "#737373"               # secondary text
+  extraTokens:                     # optional, design-specific tokens
+    color-my-glow: "rgba(0, 102, 204, 0.2)"
+  fonts:                           # optional, Tailwind v4 @theme bindings
+    sans: "Inter, sans-serif"
+    mono: "JetBrains Mono, monospace"
+  animations:                      # optional, CSS @keyframes bodies
+    my-fade-in: "from { opacity: 0 } to { opacity: 1 }"
+
+sections:
+  - type: hero
+    eyebrow: "Now in beta"
+    headline: "Build something great"
+    headlineAccent: "great"        # optional inline-underline accent
+    tagline: "A short description that sits below the headline."
+    cta: { label: "Get started", href: "/contact" }
+    secondaryCta: { label: "Learn more", href: "/about" }   # optional
+    microcopy: "MIT · Open source"  # optional
+  # ... more sections
+---
+
+# My Design Name
+
+Free-form Markdown body — designer notes, screenshots, attribution,
+license info. NOT rendered on the site, only kept as reference for
+fork-shops and code reviewers.
+```
+
+## Top-level fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `schema` | `"cartwright-design-v1"` literal | Yes | Schema version pin |
+| `slug` | string (kebab-case, 1-50 chars) | Yes | Must match `^[a-z0-9][a-z0-9-]*$`, unique in registry |
+| `name` | string (1-80) | Yes | Display name in `/admin/designs` |
+| `description` | string (≤280) | Yes | One-paragraph blurb |
+| `mode` | `"website"` \| `"webshop"` \| `"both"` | Yes | Filter in SetupWizard dropdown |
+| `premium` | boolean | No | Adds ⭐ Pro badge when `brand.features.cartwrightPlus === false` |
+| `tokens` | object | Yes | See [Tokens](#tokens) |
+| `sections` | array (1-20) | Yes | See [Sections](#sections) |
+
+## Tokens
+
+The `tokens` block compiles to CSS variables injected at page render via `lib/theme.ts:designToInlineCss()`.
+
+```ts
+tokens: {
+  prefix: "cw",
+  palette: { accent, accentDeep, cream, sand, ink, muted },
+  extraTokens?: Record<string, string>,
+  fonts?: { sans?: string, mono?: string },
+  animations?: Record<string, string>,
+}
+```
+
+### `prefix`
+
+Lower-case alphanumeric token namespace. Used as `--color-{prefix}-{field}` so palette colors don't collide between designs:
+
+- `prefix: "cw"` → `--color-cw-accent`, `--color-cw-cream`, ...
+- `prefix: "bold"` → `--color-bold-accent`, ...
+- `prefix: "sol"` → reuses the legacy sol-* tokens (compatible with old themeJson overrides)
+
+Use a fresh prefix for new designs to avoid stepping on Studio (`cw`) or Webshop Classic (`sol`).
+
+### `palette`
+
+The 6 core colors. Each maps to `--color-{prefix}-{kebab(field)}`:
+
+| Field | CSS var | Typical role |
+|---|---|---|
+| `accent` | `--color-{p}-accent` | Primary CTA, highlights |
+| `accentDeep` | `--color-{p}-accent-deep` | Hover state of accent |
+| `cream` | `--color-{p}-cream` | Page background |
+| `sand` | `--color-{p}-sand` | Card / panel background |
+| `ink` | `--color-{p}-ink` | Body text |
+| `muted` | `--color-{p}-muted` | Secondary text |
+
+Per-shop overrides via `BrandingSettings.themeJson` write to these same 6 fields and emit AFTER the design pack tokens, so they win via CSS cascade.
+
+### `extraTokens`
+
+Free-form CSS variables for design-specific tokens that don't fit the 6-color palette. Key is the variable name **without** the leading `--`. Value is any valid CSS color or length:
+
+```yaml
+extraTokens:
+  color-cw-terracotta: "#d97757"
+  color-cw-oker: "#e8b339"
+  color-cw-code-bg: "#1a1a1b"
+  radius-cw-card: "16px"
+```
+
+Use these for the design-specific tokens your homepage component references directly (e.g., Studio's terracotta + oker pair, Bold's electric-yellow paper).
+
+### `fonts`
+
+Tailwind v4 reads `--font-sans` and `--font-mono` via the `font-sans` and `font-mono` classes. Override here to swap typography:
+
+```yaml
+fonts:
+  sans: "Inter, ui-sans-serif, system-ui, sans-serif"
+  mono: "JetBrains Mono, ui-monospace, monospace"
+```
+
+Caveat: this only updates the CSS variables. To actually load a non-Geist font, you still need to add it to `app/layout.tsx` via `next/font/google` (see [Custom fonts](/docs/configuration/brand-config#fonts)).
+
+### `animations`
+
+Optional `@keyframes` bodies. Codegen emits these to `themes/<slug>.css` when scaffolded via `scripts/design-import.ts`:
+
+```yaml
+animations:
+  cw-caret-blink: "0%, 60% { opacity: 1 } 61%, 100% { opacity: 0 }"
+  my-slide-up: "from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 }"
+```
+
+## Sections
+
+The `sections` array is rendered top-to-bottom on the homepage. 7 section types are supported:
+
+### `hero`
+
+```yaml
+- type: hero
+  eyebrow: "v0.6 launch"          # optional badge above headline
+  headline: "Ship software that ships itself"
+  headlineAccent: "ships"         # optional inline highlight
+  tagline: "One-paragraph lead under the headline."
+  cta: { label: "Get started", href: "/contact" }
+  secondaryCta: { label: "See docs", href: "/info" }  # optional
+  microcopy: "Next.js 16 · MIT"   # optional tagline below CTA row
+```
+
+### `value-props`
+
+3-card grid of "why us" promises. 1-6 items.
+
+```yaml
+- type: value-props
+  eyebrow: "Why us"
+  title: "Three promises. No asterisks."
+  description: "Optional intro paragraph."
+  items:
+    - { title: "Yours, forever", body: "..." }
+    - { title: "AI-native", body: "..." }
+    - { title: "Production-shaped", body: "..." }
+```
+
+### `feature-grid`
+
+Hairline-bordered grid of capabilities. 1-30 items.
+
+```yaml
+- type: feature-grid
+  eyebrow: "What's in the box"
+  title: "A real product, not a starter kit."
+  description: "Every cell is shipping code."
+  items:
+    - { title: "Admin panel", body: "..." }
+    # ... up to 30
+```
+
+### `how-it-works`
+
+Numbered 3-step process with optional code snippets. 1-6 steps.
+
+```yaml
+- type: how-it-works
+  eyebrow: "From zero to selling"
+  title: "Three steps. Five minutes."
+  items:
+    - { n: "01", title: "Scaffold", body: "...", code: "npx create-cartwright@latest my-shop" }
+    - { n: "02", title: "Setup wizard", body: "...", code: "pnpm dev → /admin/setup" }
+    - { n: "03", title: "Deploy", body: "...", code: "vercel --prod" }
+```
+
+### `stack-grid`
+
+Flat list of tech / tools rendered in monospace cells. 1-60 items.
+
+```yaml
+- type: stack-grid
+  eyebrow: "The stack"
+  title: "All current versions."
+  items:
+    - "Next.js 16"
+    - "React 19"
+    - "Tailwind v4"
+    # ...
+```
+
+### `cta-footer`
+
+Final-page conversion section. Headline + 1-2 CTAs.
+
+```yaml
+- type: cta-footer
+  title: "Ship something real this week."
+  description: "Optional lead."
+  cta: { label: "Get started", href: "/contact" }
+  secondaryCta: { label: "Read the docs", href: "/info" }  # optional
+```
+
+### `opaque`
+
+Escape hatch for designs that can't be composed from generic sections (e.g., `webshop-classic` HeroVideo + ProductGrid integration, `webshop-bold` custom brutalism layout). Points at a React component that already exists in `designs/<slug>/`.
+
+```yaml
+- type: opaque
+  component: WebshopBoldHomepage     # must export from designs/<slug>/
+  props: {}                          # optional JSON-serializable props
+```
+
+When you use `opaque` for the whole homepage, the `homepage.tsx` codegen is bypassed and the imported component is rendered as-is. This is how all three new webshop variants are structured — their layouts break too far from the generic section atoms to compose declaratively.
+
+## Validation
+
+All imports go through `lib/designs/parser.ts:parseDesignMd()` which uses Zod. Failures produce structured errors:
+
+```
+design.md schema validation fejlede:
+  - tokens.prefix: tokens.prefix skal være kebab-safe lower-case (fx 'cw', 'sol').
+  - sections.0.cta.href: Invalid input: expected string, received undefined
+
+Se lib/designs/spec.ts for full schema, eller eksisterende
+designs/<slug>/design.md som reference.
+```
+
+The full schema is at `lib/designs/spec.ts` in your repo. Cross-reference there when extending the format.
+
+## Round-trip guarantee
+
+`serializeDesignMd(spec, body)` produces output that parses back to the same `spec` via `parseDesignMd`. This means:
+
+```bash
+# Export a built-in design
+tsx scripts/design-export.ts studio > /tmp/studio.md
+
+# Re-import it into a different location
+tsx scripts/design-import.ts /tmp/studio.md --slug my-studio-copy --force
+```
+
+...gives you a working duplicate at `designs/my-studio-copy/`. Useful for forking a Cartwright-shipped design as a starting point.
+
+## Related
+
+- [Picking a design](/docs/designs/picking-a-design) — the user-facing flow
+- [Import from Gemini Stitch](/docs/designs/import-from-stitch)
+- [Import from Claude Design / v0](/docs/designs/import-from-claude-design)
+- [Writing your own design](/docs/designs/writing-your-own) — practical walkthrough

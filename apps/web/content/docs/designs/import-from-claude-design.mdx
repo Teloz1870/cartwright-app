@@ -1,0 +1,115 @@
+---
+title: Import a design from Claude Design, v0, or Loveable
+description: How to turn raw React + Tailwind output from Claude Design, Vercel v0, or Loveable into a working Cartwright DesignPack using the best-effort claude-design adapter.
+---
+
+[Claude Design](https://claude.ai/), [Vercel v0](https://v0.dev/), and [Loveable](https://lovable.dev/) all output the same thing: raw `.tsx`/`.jsx` React components with inline Tailwind classes. They don't produce structured design data like Gemini Stitch does.
+
+Cartwright's `claude-design` adapter does **best-effort extraction**: scrape hex codes for the palette, grep for headline/tagline, fall back to sensible defaults for everything else. The output is a working `design.md` that renders something — but you'll usually want to refine it via round-trip edit.
+
+## End-to-end (drag-drop, 30 seconds)
+
+1. **Generate a component.** In Claude Design / v0 / Loveable, describe the layout you want as a marketing-page hero. Get back a `.tsx` file.
+2. **Save it.** Right-click → "Save as" → `~/Downloads/hero.tsx`. Or paste the code into a new `.tsx` file locally.
+3. **In your Cartwright admin:** navigate to **`/admin/designs`**.
+4. **Drag the file** into the upload zone. Pick **"Claude Design / v0 / Loveable"** from the adapter dropdown (or leave on "Auto-detect" — files with `.tsx`/`.jsx` extensions auto-route to this adapter).
+5. The success card shows the scaffold. Activate the new design from the grid above.
+
+## CLI alternative
+
+```bash
+tsx scripts/design-import.ts ~/Downloads/hero.tsx --from claude-design --slug warm-portfolio
+```
+
+The `--slug` flag is recommended because the adapter's auto-derivation from `export function ComponentName` can be ugly (`heromainplaceholder` etc.).
+
+## What the adapter actually does
+
+`lib/designs/adapters/claude-design.ts` runs three extractors:
+
+### 1. Palette: hex-frequency analysis
+
+```ts
+extractHexColors(source + tailwindConfig)
+  → unique hex matches sorted by frequency desc
+  → top 6 mapped to {accent, accentDeep, cream, sand, ink, muted}
+  → luminance-sort picks lightest → cream, darkest → ink
+```
+
+Most-used hex codes are brand tokens; rarely-used are one-off accents. Sorting by frequency gets us reasonably close to the design's actual palette.
+
+If your component file is short (< 5 unique hex codes), the adapter pads with stone-100/50/etc fallbacks so palette is always complete.
+
+### 2. Headline + tagline: regex scrape
+
+```ts
+extractFirstText(source, /<h1[^>]*>([^<]{4,80})<\/h1>/i)
+  ?? extractFirstText(source, /\btitle:\s*["'`]([^"'`\n]{4,80})["'`]/i)
+  ?? "Imported design"
+```
+
+Hero `<h1>` tag wins. Falls back to any `title:` property in JS objects (config-style components). Falls back to a placeholder string.
+
+Tagline grabbed from the first `<p>` element of 10-200 chars.
+
+### 3. Sections: placeholder
+
+Since we can't reliably parse a JSX tree into Cartwright sections, the adapter just emits **two** sections: a `hero` (with the scraped headline/tagline) and a `cta-footer` (with placeholder copy pointing at the next-steps).
+
+You're expected to open the resulting `designs/<slug>/design.md`, look at the imported palette + fonts, and add real sections by hand.
+
+## Output quality expectations
+
+The adapter is a **bridge, not a parser**. Realistic outcomes:
+
+- ✅ Palette extraction works ~80% of the time when the input has clear brand colors
+- ✅ Fonts extraction works if the input uses `font-family: ...` declarations
+- ✅ Headline scrape works if there's a single `<h1>` in the file
+- ❌ Section composition is always placeholder — you write the real sections yourself
+- ❌ Interactive elements (forms, dropdowns, modals) aren't transferred
+
+Plan for ~30 minutes of post-import polish per design. That's still 3-5x faster than starting from scratch.
+
+## Recommended workflow
+
+The adapter is a starting point, not the finish line:
+
+1. Generate the layout in Claude Design / v0
+2. Import via adapter — get a `design.md` with palette + fonts roughly right
+3. Open `designs/<slug>/design.md` and write real sections matching what Claude/v0 actually produced
+4. Re-import with `--force` to regenerate `homepage.tsx`
+5. Repeat 3-4 as needed
+6. When happy: commit `designs/<slug>/` to your repo
+
+## Working with tailwind.config.js
+
+If your component output includes a `tailwind.config.js` snippet with `theme.extend.colors`, the adapter has a better shot at clean palette extraction. Concat them when calling the CLI:
+
+```bash
+cat ~/Downloads/hero.tsx ~/Downloads/tailwind.config.js > /tmp/combined.tsx
+tsx scripts/design-import.ts /tmp/combined.tsx --from claude-design --slug my-design
+```
+
+Future versions of the adapter will accept `--tailwind <file>` as a separate arg for cleaner extraction.
+
+## When to skip the adapter
+
+If your Claude Design / v0 output is heavily interactive (carousel, form-builder, dashboard) — the adapter only handles marketing-page heroes well. For complex components:
+
+- Drop the whole `.tsx` file into `designs/<slug>/sections/MyCustomComponent.tsx`
+- Reference it in `design.md` as `type: opaque, component: MyCustomComponent`
+- Write the rest of the design.md by hand
+
+See [Writing your own design](/docs/designs/writing-your-own) for the full hand-roll path.
+
+## Common gotchas
+
+- **Generic-sounding name.** The slug autoderives from `export function ComponentName(...)` regex. If your component is named `HomePage` or `MainHero`, you get `homepage` or `mainhero`. Use `--slug my-real-name`.
+- **No hex codes in file.** If your input uses semantic Tailwind classes (`bg-blue-500`) without ever computing the hex, the adapter falls back to a generic 6-color palette. Either run a `tailwind build` first to expand the classes, or hand-edit the palette in the generated `design.md`.
+- **Multiple `<h1>` tags.** The adapter grabs the first one. If your Claude Design output has weird repeated H1s, the wrong text wins.
+
+## Related
+
+- [Import from Gemini Stitch](/docs/designs/import-from-stitch) — for structured imports
+- [design.md spec](/docs/designs/design-md-spec) — schema reference for refining the adapter output
+- [Writing your own design](/docs/designs/writing-your-own) — when the adapter isn't worth it

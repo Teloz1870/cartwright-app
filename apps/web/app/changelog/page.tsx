@@ -1,7 +1,7 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
-import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic } from 'lucide-react';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -9,6 +9,27 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.3.0',
+    date: 'May 2026',
+    title: 'Design System: pick a design, import from any AI tool',
+    description:
+      'Decouple visual design from industry seed-data. Previously a Cartwright shop was locked to one homepage component per industry-template slug. Now design is a first-class orthogonal axis — any industry combines with any design — and you can drop a design.md from Gemini Stitch, Claude Design, or v0 into /admin/designs to install it. Ships with 4 website designs and 4 webshop designs out-of-the-box, including 3 brand-new webshop variants (minimal, editorial, bold).',
+    icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'New designs/ registry — first-class DesignPack abstraction with BrandingSettings.designSlug for explicit selection. Pick any design with any industry. Backwards-compat: shops upgraded from v0.6.0 with designSlug=NULL render identically via inferDesignFromIndustry().',
+      'cartwright-design-v1 spec — YAML frontmatter + Markdown body. Defines palette (6 core + extraTokens), fonts, animations, and a sections array (hero / value-props / feature-grid / how-it-works / stack-grid / cta-footer / opaque). Round-trips cleanly through parser + serializer.',
+      'Gemini Stitch adapter — drop a .md export from stitch.google into /admin/designs, hit "Import" with the Stitch adapter. Normalizes Stitch field names (colors.primary → palette.accent, sections[].kind="features" → "feature-grid") to cartwright-design-v1. ~30-second end-to-end.',
+      'Claude Design / v0 / Loveable adapter — drop a raw .tsx file with the claude-design adapter. Best-effort hex-frequency palette extraction + regex headline/tagline scrape + sensible placeholder sections. Bridge to round-trip-edit, not a full parser.',
+      '/admin/designs hub — card grid of installed designs with active-indicator and Auto-mode badge. Drag-drop upload with adapter selector (auto / cartwright / stitch / claude-design). Click any card to activate; revalidates / immediately.',
+      '3 new webshop design variants — webshop-minimal (Apple-like full-bleed hero + oversized typography), webshop-editorial (magazine split-screen with story-card products, ⭐ Pro), webshop-bold (neo-brutalism with terracotta + electric-yellow paper, ⭐ Pro).',
+      '4 existing implicit designs moved into the registry — saas-dark (Antigravity dark/indigo SaaS), studio (cartwright.app warm-tech, ⭐ Pro), corporate-baseline (generic cinematic), webshop-classic (the pre-v0.7.0 default). All git-mv with history preserved.',
+      'Power-user CLI — tsx scripts/design-import.ts <file> [--from <adapter>] [--force]. Offline equivalent to /admin/designs upload; same parser + codegen + registry-update pipeline.',
+      'Theme integration — lib/theme.ts:designToInlineCss() emits design pack tokens at page render. BrandingSettings.themeJson layers on top (last-write-wins) so per-shop palette fine-tuning still works on top of any design.',
+      'Setup wizard — new Design dropdown in brand-step. Filters by mode (ecommerceEnabled hides webshop designs and vice versa). Default "Auto (xxx)" preview shows what the inference would resolve to.',
+      'New docs section — /docs/designs covers overview, picking, design.md spec, Stitch import, Claude Design import, writing your own.',
+    ],
+  },
   {
     version: '3.2.0',
     date: 'May 2026',
