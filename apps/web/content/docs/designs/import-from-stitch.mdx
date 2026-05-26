@@ -1,0 +1,103 @@
+---
+title: Import a design from Gemini Stitch
+description: How to take a design generated in Google's Gemini Stitch and drop it into Cartwright as a working DesignPack — drag-drop in /admin/designs or via CLI.
+---
+
+[Gemini Stitch](https://stitch.google/) is Google's AI design tool that exports designs as `design.md` files with YAML frontmatter. Cartwright ships an **adapter** that normalizes Stitch's format to `cartwright-design-v1`, so you can drop a Stitch export straight in and have it render.
+
+The full pipeline runs in seconds: drag → adapter → parser → codegen → registered in `designs/<slug>/`.
+
+## End-to-end (drag-drop, 30 seconds)
+
+1. **Open Stitch:** [stitch.google](https://stitch.google/)
+2. **Generate a design.** Describe the brand and the kind of layout you want. Stitch produces a marketing-site design with palette, typography, and section blocks.
+3. **Export.** Hit "Export" → choose `design.md` format. (If your version of Stitch only exports JSON, paste the JSON into a `.md` file with `---` delimiters around it — the adapter handles it either way.)
+4. **In your Cartwright admin:** navigate to **`/admin/designs`**.
+5. **Drag the file** into the upload zone. Pick **"Gemini Stitch"** from the adapter dropdown (or leave it on "Auto-detect" — the adapter looks for `stitch_version:` in frontmatter as the trigger).
+6. The success card shows the scaffold:
+   ```
+   ✓ Design "acme-studio" importeret. Filer oprettet:
+     designs/acme-studio/design.md
+     designs/acme-studio/homepage.tsx
+     designs/acme-studio/index.ts
+   ```
+7. **Activate it.** Scroll back up to the design grid, find your new design, click **Set active**. Reload `/` in a new tab.
+
+That's it. Total time: ~30 seconds end-to-end.
+
+## CLI alternative
+
+If you have a Stitch export and want to install it without going through the UI:
+
+```bash
+cd my-cartwright-shop
+tsx scripts/design-import.ts ~/Downloads/stitch-export.md --from stitch
+```
+
+Output:
+
+```
+✓ Installed design "acme-studio"
+  Files:
+    designs/acme-studio/design.md
+    designs/acme-studio/homepage.tsx
+    designs/acme-studio/index.ts
+  Registry updated: true
+
+Next steps:
+  1. SET designSlug = "acme-studio" via /admin/setup eller /admin/designs
+  2. Reload / for at se den nye design
+```
+
+The CLI does the same adapter + parser + codegen + registry-update flow. It just doesn't write to `BrandingSettings.designSlug` — you still pick it in the admin or via SQL.
+
+## What the adapter actually does
+
+Stitch's format is similar to `cartwright-design-v1` but uses different field names. The adapter (`lib/designs/adapters/stitch.ts`) normalizes:
+
+| Stitch | Cartwright |
+|---|---|
+| `brand.name` | `name` |
+| `brand.description` | `description` |
+| `brand.target` (`web` / `mobile` / `both`) | `mode` (`website` / `webshop` / `both`) |
+| `colors.primary` | `tokens.palette.accent` |
+| `colors.primary_dark` | `tokens.palette.accentDeep` (fallback: darken accent 15%) |
+| `colors.background` | `tokens.palette.cream` |
+| `colors.surface` | `tokens.palette.sand` |
+| `colors.text` | `tokens.palette.ink` |
+| `colors.text_muted` | `tokens.palette.muted` |
+| `typography.body` | `tokens.fonts.sans` |
+| `typography.code` | `tokens.fonts.mono` |
+| `sections[].kind = "hero"` | `sections[].type = "hero"` |
+| `sections[].kind = "features"` | `sections[].type = "feature-grid"` |
+| `sections[].kind = "values"` | `sections[].type = "value-props"` |
+| `sections[].kind = "steps"` / `"process"` | `sections[].type = "how-it-works"` |
+| `sections[].kind = "stack"` / `"tech"` | `sections[].type = "stack-grid"` |
+| `sections[].kind = "cta"` / `"final-cta"` | `sections[].type = "cta-footer"` |
+
+**Missing-field defaults:** the adapter is aggressive. Missing `primary_dark` becomes `darken(primary, 0.15)`. Missing `target` defaults to `website`. Missing entire sections become a single hero fallback so the design at least renders something.
+
+**Section types Stitch generates that Cartwright doesn't have:** skipped silently. The adapter never crashes — worst case is fewer sections than Stitch intended. You'll see the survival rate in `/admin/designs` import-result toast (e.g., "5 of 7 Stitch sections imported, 2 unknown types skipped"; coming in a future patch).
+
+## When the adapter falls short
+
+If your Stitch design uses very Stitch-specific section types (animations, video backgrounds, custom interactive elements), the adapter will skip them. Two ways forward:
+
+1. **Round-trip edit.** Open `designs/<slug>/design.md` and add the missing sections as `type: opaque` pointing at a React component you write by hand. Re-import with `--force` to regenerate `homepage.tsx`.
+2. **Skip the adapter, write directly.** If you've imported once and Stitch isn't really adding value (because you're tweaking heavily anyway), drop the Stitch step entirely and edit the `cartwright-design-v1` file directly.
+
+## Round-trip back to Stitch
+
+There's no Cartwright-to-Stitch export adapter today. If you want to take a Cartwright-edited design back to Stitch for further iteration, copy the palette values manually from `designs/<slug>/design.md` — Stitch's UI accepts hex codes directly.
+
+## Common gotchas
+
+- **Missing frontmatter delimiters.** Stitch occasionally exports `.md` files where the `---` lines are missing or have trailing whitespace. The parser will error with "design.md mangler YAML frontmatter". Open the file in a text editor and verify the structure matches the spec.
+- **Slug collisions.** If Stitch's brand name slugifies to an existing design (`studio`, `webshop-classic`, etc.) the codegen errors with "designs/X/ findes allerede". Use `--slug my-custom-slug` on the CLI, or pre-edit the file's `slug:` field before drag-drop.
+- **Premium tier metadata.** Stitch doesn't have a concept of "premium" — all imports get `premium: false` by default. If you want the ⭐ Pro badge in `/admin/designs`, hand-edit `designs/<slug>/design.md` and re-import with `--force`.
+
+## Related
+
+- [design.md spec](/docs/designs/design-md-spec) — the format the adapter normalizes to
+- [Import from Claude Design / v0](/docs/designs/import-from-claude-design) — for raw-React imports
+- [Writing your own](/docs/designs/writing-your-own) — when Stitch isn't the right starting point

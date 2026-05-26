@@ -1,0 +1,11 @@
+{
+  "title": "Designs",
+  "pages": [
+    "overview",
+    "picking-a-design",
+    "design-md-spec",
+    "import-from-stitch",
+    "import-from-claude-design",
+    "writing-your-own"
+  ]
+}

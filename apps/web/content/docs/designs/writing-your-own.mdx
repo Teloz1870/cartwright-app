@@ -1,0 +1,203 @@
+---
+title: Writing your own design
+description: When nothing in the registry fits and the adapters can't get you close — how to hand-roll a new Cartwright design from scratch. Practical 30-minute walkthrough.
+---
+
+When you've outgrown the imports and want a fully custom design, copy an existing one as a starting point and edit. The whole workflow is 30 minutes if you already have a layout in mind.
+
+## Quickest path: fork an existing design
+
+```bash
+# 1. Copy the closest match
+cp -r designs/studio designs/my-studio
+
+# 2. Edit the slug + name in the new design.md
+sed -i '' 's/slug: studio/slug: my-studio/' designs/my-studio/design.md
+sed -i '' 's/name: Studio.*/name: My Studio Variant/' designs/my-studio/design.md
+
+# 3. Register it in the two registry files
+#    (Codegen does this automatically for imports, but hand-copied folders
+#    need a manual update — three lines total.)
+```
+
+Then add to `designs/index.ts`:
+
+```ts
+import { myStudioDesign } from "./my-studio";
+
+const DESIGNS: Record<string, DesignPack> = {
+  // ... existing entries
+  "my-studio": myStudioDesign,
+};
+```
+
+And to `designs/options.ts`:
+
+```ts
+{
+  slug: "my-studio",
+  name: "My Studio Variant",
+  description: "Studio with my brand colors.",
+  mode: "website",
+  premium: false,
+},
+```
+
+Also rename the exported const in `designs/my-studio/index.ts`:
+
+```ts
+export const myStudioDesign: DesignPack = {
+  slug: "my-studio",
+  // ...
+};
+```
+
+That's the full path. Restart `pnpm dev`, your new design shows up in `/admin/designs` immediately.
+
+## When forking, you usually only edit two files
+
+- **`design.md`** — change palette, fonts, headline/tagline copy
+- **`index.ts`** — match the slug/name/description to the design.md (this is the registration block that the registry reads at compile-time)
+
+The `homepage.tsx` and any `sections/` folder you can leave alone if the layout still works. Most custom designs are just palette + copy swaps on an existing layout.
+
+## When you need a real custom layout
+
+If the existing homepage components don't compose what you want, write your own:
+
+```tsx
+// designs/my-design/homepage.tsx
+import type { DesignHomepageProps } from "../types";
+
+export default function MyDesignHomepage({
+  settings,
+  featured = [],
+  categories = [],
+}: DesignHomepageProps) {
+  return (
+    <div className="bg-mydesign-cream text-mydesign-ink">
+      {/* Build whatever layout you want. The design.md sections array
+          becomes informational-only when you use a custom homepage. */}
+    </div>
+  );
+}
+```
+
+Then in `design.md`, mark the section as opaque so codegen doesn't try to re-emit:
+
+```yaml
+sections:
+  - type: opaque
+    component: MyDesignHomepage
+```
+
+This pattern is how all three new webshop variants (minimal, editorial, bold) are structured. Their layouts break too far from the generic section atoms to compose declaratively — so they're each a single React component referenced from design.md.
+
+## Pulling shared section atoms
+
+If you write a custom homepage, you can still reuse the Studio section atoms:
+
+```tsx
+import {
+  StudioHero,
+  StudioFeatureGrid,
+  StudioCtaFooter,
+} from "@/designs/studio/sections/_index";
+
+export default function MyDesignHomepage(props) {
+  return (
+    <div>
+      <StudioHero
+        headline="Custom headline"
+        tagline="Custom tagline"
+        ctaLabel="Custom CTA"
+        ctaHref="/contact"
+      />
+      <StudioFeatureGrid
+        title="Features"
+        features={[
+          { title: "Feature 1", body: "..." },
+          { title: "Feature 2", body: "..." },
+        ]}
+      />
+      <StudioCtaFooter
+        title="Get started"
+        ctaLabel="Sign up"
+        ctaHref="/contact"
+      />
+    </div>
+  );
+}
+```
+
+The atoms live in `designs/studio/sections/` but they're palette-token-driven so they'll pick up your design's `cw-*` / `mydesign-*` tokens automatically (if your design uses the same prefix). If you use a different prefix, you may need to either:
+
+1. Use the Studio prefix (`cw`) for compatibility — many designs do this
+2. Write your own atoms that read your design's prefix
+
+## Designing the palette
+
+Six core colors per design:
+
+| Field | Use it for |
+|---|---|
+| `accent` | CTAs, links, headline highlights |
+| `accentDeep` | Hover state of accent (typically 10-15% darker) |
+| `cream` | Page background (typically very light or very dark) |
+| `sand` | Card/panel background (one step away from cream) |
+| `ink` | Body text (high-contrast against cream) |
+| `muted` | Secondary text (gray-ish, ~50% contrast against cream) |
+
+Common pitfall: making `cream` and `sand` too close so cards disappear into the background. Aim for 5-10% lightness difference.
+
+Use [Coolors](https://coolors.co/) or [Tailwind's color palette](https://tailwindcss.com/docs/customizing-colors) for inspiration.
+
+## Adding extra tokens
+
+For design-specific colors that don't fit the 6-token palette (Studio has terracotta + oker, Bold has electric-yellow paper + black ink), add them to `extraTokens`:
+
+```yaml
+extraTokens:
+  color-mydesign-highlight: "#ff6b35"
+  color-mydesign-warm-gray: "#8b7d6b"
+  radius-mydesign-card: "20px"
+  shadow-mydesign-soft: "0 2px 12px rgba(0,0,0,0.08)"
+```
+
+Each becomes a CSS variable `--<key>` available everywhere in your homepage component.
+
+## Testing locally
+
+```bash
+pnpm dev
+# Open localhost:3000/admin/designs
+# Pick your new design from the grid
+# Open localhost:3000 in a new tab → see the result
+```
+
+For palette tweaks, just edit `designs/my-design/design.md` and re-import via CLI:
+
+```bash
+tsx scripts/design-import.ts designs/my-design/design.md --force
+```
+
+The `--force` flag overwrites the existing scaffold. Reload the page.
+
+## Sharing your design
+
+Once you're happy:
+
+1. Commit `designs/my-design/` to your repo
+2. Export the canonical design.md for sharing:
+   ```bash
+   tsx scripts/design-export.ts my-design > my-design.md  # coming in v0.7.1
+   ```
+3. Share the `.md` file with others — they drop it in `/admin/designs` and get your exact design
+
+(Coming soon: a community design marketplace at cartwright.app where you can browse and install community-uploaded designs with one command.)
+
+## Related
+
+- [design.md spec](/docs/designs/design-md-spec) — full schema reference
+- [Picking a design](/docs/designs/picking-a-design) — once you've installed yours
+- [Overview](/docs/designs/overview) — the orthogonality story

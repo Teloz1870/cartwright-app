@@ -1,0 +1,77 @@
+---
+title: Designs — overview
+description: How design and industry work as two orthogonal axes in Cartwright v0.7.0. Pick any design with any industry, import new designs from Gemini Stitch / Claude Design / v0.
+---
+
+Cartwright separates **what you sell** (industry) from **how it looks** (design). They are orthogonal axes — any industry-template combines with any design — and both can be swapped without code-deploy.
+
+This is new in **v0.7.0**. Before that, the homepage component was hardcoded from the industry slug (`saas` → SaaSHomeClient, `studio` → StudioHomeClient, everything else → a single fallback). v0.7.0 introduces a first-class `designs/` registry, a portable `design.md` format, and adapters for the three biggest AI design tools.
+
+## The two axes
+
+```
+industryTemplate ──→ seed-data (products / categories / pages)
+
+designSlug ────────┬─→ homepage component
+                   ├─→ palette tokens (cw-* / sol-* / your-prefix-*)
+                   ├─→ typography (fonts.sans / fonts.mono)
+                   └─→ optional PDP / category / cart layout overrides
+```
+
+A coffee shop can run the **Webshop Bold** brutalism layout. A SaaS site can use the warm **Studio** palette. A vintage clothing shop can pick **Webshop Editorial** (magazine-style story cards) while seeding from the generic industry template.
+
+The two axes are selected in the same admin step — see [Picking a design](/docs/designs/picking-a-design).
+
+## What ships in v0.7.0
+
+Seven designs out-of-the-box. Mode-filtered so you only see the relevant ones in the picker.
+
+### Website designs (`ecommerceEnabled: false`)
+
+| Slug | Description | Tier |
+|---|---|---|
+| `saas-dark` | Dark bg + indigo accent + animated grid + terminal hero. Built by Antigravity. | Free |
+| `studio` | Warm terracotta + oker on cream/ink. Mirrors cartwright.app's own aesthetic. | ⭐ Pro |
+| `corporate-baseline` | Generic cinematic parallax hero + 3-card services. Safe default. | Free |
+
+### Webshop designs (`ecommerceEnabled: true`)
+
+| Slug | Description | Tier |
+|---|---|---|
+| `webshop-classic` | HeroVideo + featured grid + 5-col category grid. The proven default. | Free |
+| `webshop-minimal` | Apple-like full-bleed hero + oversized typography + 2-col grid. | Free |
+| `webshop-editorial` | Magazine-style split-screen hero + story-card products. | ⭐ Pro |
+| `webshop-bold` | Neo-brutalism — thick borders, electric-yellow paper, terracotta hero. | ⭐ Pro |
+
+⭐ Pro = part of the planned **Cartwright Plus** tier (honor-system today; real Stripe-validation lands in a future release). Templates are technically selectable regardless of the flag.
+
+## How to add more
+
+Three paths, in increasing power:
+
+1. **Drag-drop a `design.md` file** in `/admin/designs` → instant install + activate. Best for Stitch / Claude Design exports.
+2. **CLI:** `tsx scripts/design-import.ts <file> [--from stitch | claude-design]` — same import pipeline, runs offline. Best for batch operations.
+3. **Hand-write a new design** under `designs/<slug>/` — copy `designs/studio/` as a starting point. Best for fully custom designs you want full control over.
+
+See the next pages for each flow.
+
+## Backwards compatibility
+
+Existing shops upgraded from v0.6.0 keep working without any action:
+
+- `BrandingSettings.designSlug` defaults to `NULL`
+- At render-time, `inferDesignFromIndustry(industry, ecommerceEnabled)` resolves a sensible default:
+  - `industry=saas` + `ecommerceEnabled=false` → `saas-dark`
+  - `industry=studio` + `ecommerceEnabled=false` → `studio`
+  - `ecommerceEnabled=true` → `webshop-classic`
+  - Anything else → `corporate-baseline`
+
+This matches the v0.6.0 hardcoded behavior 1:1 — Teloz, Northbound, solbriller all render identically until you actively pick a new design.
+
+## Related
+
+- [Picking a design](/docs/designs/picking-a-design) — the `/admin/setup` and `/admin/designs` flows
+- [design.md spec](/docs/designs/design-md-spec) — schema reference for `cartwright-design-v1`
+- [Import from Gemini Stitch](/docs/designs/import-from-stitch)
+- [Import from Claude Design / v0](/docs/designs/import-from-claude-design)
+- [Writing your own design](/docs/designs/writing-your-own)
