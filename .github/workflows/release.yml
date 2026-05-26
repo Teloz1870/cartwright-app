@@ -44,4 +44,10 @@ jobs:
           title: "chore: release create-cartwright"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Both env-vars peger på samme secret. NODE_AUTH_TOKEN bruges af
+          # setup-node's auto-genererede .npmrc (NPM_CONFIG_USERCONFIG); uden
+          # det indeholder .npmrc literal placeholder-string "XXXXX-XXXXX..."
+          # → publish fejler med E404 undefined. NPM_TOKEN bruges af
+          # changesets/action selvstændigt hvis det skal regenerere .npmrc.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
