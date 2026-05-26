@@ -28,7 +28,7 @@ Forventet first-audio-latency er **320-800ms**. Hvis du ser konsistent >2s:
 - **Network-RTT mod Google** — voice-traffic går til Google's nærmeste region. Skandinaviske brugere får ~50ms. >200ms RTT betyder dit netværk eller deres serverside er overbelastet.
 - **Mic-permission-prompt timer mid-connect** — bed om permission *før* token-mint hvis du har en custom flow.
 
-Du kan se latency-tallet for token-mint-flowet i `/admin/integrations` → Voice Shop → Test voice-forbindelse. Hvis det er <500ms men first-audio er langsom, er problemet i Google's tail eller browserens AudioContext-initialisering.
+Du kan se latency-tallet for token-mint-flowet i `/admin/integrations` → Voice Shop → Test voice-forbindelse. Hvis det er under 500ms men first-audio er langsom, er problemet i Google&apos;s tail eller browserens AudioContext-initialisering.
 
 ## "Ingen voice-tools tilgængelige"
 
