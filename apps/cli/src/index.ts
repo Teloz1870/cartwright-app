@@ -52,7 +52,7 @@ const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 // Bump together with a Changeset whenever a new template tag goes out —
 // .github/workflows/bump-template-ref.yml does this automatically by opening
 // a PR when it sees a newer tag on the public mirror.
-const DEFAULT_REF = "v0.4.0";
+const DEFAULT_REF = "v0.5.0";
 
 // Channel aliases the user can pass via --ref.
 //   stable → DEFAULT_REF (latest tag — what default `npx create-cartwright` uses)
