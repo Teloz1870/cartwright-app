@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.0.7
+
+### Patch Changes
+
+- 6228bfb: Bump default template ref to v0.7.0 (was v0.6.0).
+
 ## 2.0.6
 
 ### Patch Changes
