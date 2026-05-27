@@ -1,0 +1,145 @@
+name: Bump modern-web-guidance version
+
+# Watches the public `modern-web-guidance` npm package for new releases and
+# opens a PR bumping the pinned `MODERN_WEB_GUIDANCE_VERSION` constant in
+# apps/cli/src/skills.ts. The CLI installs this package in customer projects
+# via `npx modern-web-guidance@<PIN> install` (see apps/cli/src/skills.ts).
+#
+# The pin exists because `modern-web-guidance` is currently pre-1.0
+# (`0.0.x`) — Paul Irish + Rick Viscomi + Chrome team are iterating fast and
+# we don't want silent API drift between customer scaffolds. The cron opens
+# a PR; merging it requires manual review of upstream's CHANGELOG to confirm
+# nothing breaking landed.
+#
+# Once upstream hits 1.0 we should retire this cron and switch the constant
+# to a semver range (e.g. "^1.0.0") that npm resolves at install time.
+#
+# Three triggers:
+#   • schedule (weekly) — Sunday 04:23 UTC. Catches new upstream releases
+#     without spamming PRs on the days the maintainers actually publish.
+#   • workflow_dispatch — manual button in Actions UI for testing.
+#
+# This workflow depends on `apps/cli/src/skills.ts` existing — it ships in
+# the Phase A change (PR #30 / feat/modern-web-guidance-phase-a). If the
+# file is missing the workflow logs a no-op and exits cleanly.
+
+on:
+  schedule:
+    - cron: '23 4 * * 0'  # Sunday 04:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bump-modern-web-guidance
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve latest modern-web-guidance version
+        id: resolve
+        run: |
+          set -euo pipefail
+          if [ ! -f apps/cli/src/skills.ts ]; then
+            echo "::notice::apps/cli/src/skills.ts not present yet (Phase A unmerged) — skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LATEST=$(npm view modern-web-guidance version 2>/dev/null || true)
+          if [ -z "$LATEST" ]; then
+            echo "::error::Could not resolve latest version from npm"
+            exit 1
+          fi
+          CURRENT=$(grep -E '^export const MODERN_WEB_GUIDANCE_VERSION' apps/cli/src/skills.ts \
+            | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ -z "$CURRENT" ]; then
+            echo "::error::Could not find MODERN_WEB_GUIDANCE_VERSION in apps/cli/src/skills.ts"
+            exit 1
+          fi
+          echo "latest=$LATEST"   >> "$GITHUB_OUTPUT"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "→ no bump needed (pinned=$CURRENT, latest=$LATEST)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "→ bumping modern-web-guidance: $CURRENT → $LATEST"
+          fi
+
+      - name: Patch MODERN_WEB_GUIDANCE_VERSION
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          LATEST: ${{ steps.resolve.outputs.latest }}
+        run: |
+          set -euo pipefail
+          sed -i -E 's|^(export const MODERN_WEB_GUIDANCE_VERSION = )"[^"]+";|\1"'"$LATEST"'";|' \
+            apps/cli/src/skills.ts
+          grep -q "MODERN_WEB_GUIDANCE_VERSION = \"$LATEST\";" apps/cli/src/skills.ts
+
+      - name: Add changeset
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          LATEST: ${{ steps.resolve.outputs.latest }}
+          CURRENT: ${{ steps.resolve.outputs.current }}
+        run: |
+          set -euo pipefail
+          mkdir -p .changeset
+          SLUG=$(echo "$LATEST" | tr -c 'A-Za-z0-9' '-')
+          cat > ".changeset/mwg-bump-${SLUG}.md" <<EOF
+          ---
+          "create-cartwright": patch
+          ---
+          Bump pinned \`modern-web-guidance\` version to ${LATEST} (was ${CURRENT}).
+          EOF
+
+      - name: Open PR
+        if: steps.resolve.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: bot/modern-web-guidance-${{ steps.resolve.outputs.latest }}
+          title: "chore(cli): bump modern-web-guidance → ${{ steps.resolve.outputs.latest }}"
+          commit-message: "chore(cli): bump modern-web-guidance → ${{ steps.resolve.outputs.latest }}"
+          body: |
+            Picked up a new release of [`modern-web-guidance`](https://www.npmjs.com/package/modern-web-guidance) on npm.
+
+            - **Was:** `${{ steps.resolve.outputs.current }}`
+            - **Now:** `${{ steps.resolve.outputs.latest }}`
+
+            **Manual review required** while upstream is pre-1.0 — read the upstream CHANGELOG/release notes before merging, since `0.0.x` releases may include breaking changes to the SKILL.md contract or the CLI install path.
+
+            Upstream:
+            - npm: https://www.npmjs.com/package/modern-web-guidance
+            - source: https://github.com/GoogleChrome/modern-web-guidance-src
+            - docs:  https://developer.chrome.com/docs/modern-web-guidance
+
+            When this PR merges, the existing Changesets release workflow will publish a new `create-cartwright` patch version with the bumped pin.
+
+            _Generated automatically by `.github/workflows/bump-modern-web-guidance.yml`._
+          delete-branch: true
+          add-paths: |
+            apps/cli/src/skills.ts
+            .changeset/mwg-bump-*.md
+
+      - name: Summary
+        run: |
+          {
+            if [ "${{ steps.resolve.outputs.skip }}" = "true" ]; then
+              echo "### No bump needed"
+              echo ""
+              echo "- Pinned: \`${{ steps.resolve.outputs.current }}\`"
+              echo "- Latest on npm: \`${{ steps.resolve.outputs.latest }}\`"
+              echo "- Status: in sync ✓ (or skills.ts not yet present)"
+            else
+              echo "### Opened bump PR"
+              echo ""
+              echo "- Was: \`${{ steps.resolve.outputs.current }}\`"
+              echo "- Now: \`${{ steps.resolve.outputs.latest }}\`"
+              echo "- Branch: \`bot/modern-web-guidance-${{ steps.resolve.outputs.latest }}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
