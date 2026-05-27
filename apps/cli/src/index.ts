@@ -8,7 +8,7 @@
  *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
  *                                [--pm=pnpm|npm|yarn|bun]
- *                                [--no-install] [--no-git]
+ *                                [--no-install] [--no-git] [--skip-skills]
  *
  * Channels:
  *   --ref stable (default) → latest tagged template release
@@ -82,6 +82,7 @@ import { resolveKeyMode } from "./key-step.js";
 import { runInterview } from "./interview.js";
 import { summarizeBuild } from "./approve.js";
 import { injectBriefFiles } from "./inject.js";
+import { installModernWebGuidance } from "./skills.js";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -129,6 +130,7 @@ async function run(): Promise<void> {
       template: { type: "string" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
+      "skip-skills": { type: "boolean" },
     },
   });
 
@@ -257,6 +259,7 @@ async function run(): Promise<void> {
     (values.pm as PackageManager | undefined) ?? detected;
   const installDeps = !values["no-install"];
   const initGit = !values["no-git"];
+  const skipSkills = values["skip-skills"] === true;
   const requestedRef = values.ref ?? "stable";
   const templateRef = REF_ALIASES[requestedRef] ?? requestedRef;
 
@@ -336,6 +339,16 @@ async function run(): Promise<void> {
       );
     }
   }
+
+  // ── AI-agent skills ─────────────────────────────────────────────────────
+  // Cartwright's own skill (cartwright-guidance) ships in the template under
+  // .claude/skills/. This additional step installs Chrome team's upstream
+  // modern-web-guidance skill globally on the customer's machine. Best-effort:
+  // declines, timeouts, and errors degrade to a note — never block scaffold.
+  await installModernWebGuidance(targetDir, {
+    skip: skipSkills,
+    assumeYes: values.yes === true,
+  });
 
   // ── Next steps ──────────────────────────────────────────────────────────
   const runCmd =
