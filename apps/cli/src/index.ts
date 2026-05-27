@@ -81,7 +81,7 @@ import {
 import { resolveKeyMode } from "./key-step.js";
 import { runInterview } from "./interview.js";
 import { summarizeBuild } from "./approve.js";
-import { injectBriefFiles } from "./inject.js";
+import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -306,6 +306,11 @@ async function run(): Promise<void> {
   // known shape. Always run — for `--template generic` (the default) the
   // patches are no-ops on a generic-defaulted brand.config.
   applyTemplateDefaults(targetDir, templateSlug);
+
+  // Phase D4 — write a customer-facing MODERN_WEB.md inventory listing every
+  // modern web platform feature Cartwright wires up out of the box. Doubles
+  // as marketing copy for the customer to lift into their own product page.
+  injectModernWebDoc(targetDir);
   if (templateSlug !== "generic") {
     note(
       `Template: ${pc.bold(templateSlug)} — applied mode + features defaults to brand.config.ts`,
