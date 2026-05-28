@@ -81,6 +81,8 @@ import {
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
   patchFooterContent,
+  patchHeroVideoContent,
+  patchCatalogFiltersContent,
   isTemplateSlug,
   tryGitInit,
   tryInstall,
@@ -116,6 +118,21 @@ function patchFooter(targetDir: string, projectName: string): void {
   if (!existsSync(path)) return;
   const original = readFileSync(path, "utf8");
   const patched = patchFooterContent(original, titleCase(projectName));
+  if (patched !== original) writeFileSync(path, patched);
+}
+
+// Apply small storefront-cleanup patches to the customer's component copies:
+// remove the missing hero-video <source> tags (no 404) and gate the eyewear
+// colour filters behind a length check (no empty dropdowns on non-eyewear shops).
+function patchComponentFile(
+  targetDir: string,
+  relPath: string,
+  transform: (src: string) => string,
+): void {
+  const path = join(targetDir, relPath);
+  if (!existsSync(path)) return;
+  const original = readFileSync(path, "utf8");
+  const patched = transform(original);
   if (patched !== original) writeFileSync(path, patched);
 }
 
@@ -324,6 +341,10 @@ async function run(): Promise<void> {
     patchBrandConfig(targetDir, finalProjectName);
     patchFooter(targetDir, finalProjectName);
   }
+
+  // Storefront cleanup (template copies → customer copies; no canary impact)
+  patchComponentFile(targetDir, "components/HeroVideo.tsx", patchHeroVideoContent);
+  patchComponentFile(targetDir, "components/CatalogFilters.tsx", patchCatalogFiltersContent);
 
   // Apply per-template defaults (mode, features, industryTemplate) AFTER
   // the basic name/slug patch so the regex-based replacements act on a

@@ -237,6 +237,38 @@ export function patchBrandConfigForTemplate(
   return out;
 }
 
+/**
+ * The template's HeroVideo hardcodes <source> tags for /hero/hero-v4.webm+mp4,
+ * which are demo-specific assets NOT shipped in the base template — so a fresh
+ * scaffold 404s on both. Removing the <source> tags leaves a poster-only <video>
+ * (no network request, no 404); all refs/state stay used so the build is safe.
+ */
+export function patchHeroVideoContent(original: string): string {
+  return original.replace(
+    /\s*<source\s+src="\/hero\/hero-v4\.(?:webm|mp4)"[^>]*\/>/g,
+    "",
+  );
+}
+
+/**
+ * The catalog filters render "Frame color" / "Lens color" selects
+ * unconditionally — eyewear-specific fields that show as empty dropdowns on
+ * non-eyewear shops. Wrap each block in a length guard so it only renders when
+ * the shop actually has those attributes (eyewear keeps them; everyone else
+ * hides them). Wrapping (not deleting) keeps frameColors/lensColors used.
+ */
+export function patchCatalogFiltersContent(original: string): string {
+  return original
+    .replace(
+      /(\{\/\* Frame color \*\/\}\s*)(<div>[\s\S]*?<\/div>)/,
+      `$1{frameColors.length > 0 && (\n        $2\n      )}`,
+    )
+    .replace(
+      /(\{\/\* Lens color \*\/\}\s*)(<div>[\s\S]*?<\/div>)/,
+      `$1{lensColors.length > 0 && (\n        $2\n      )}`,
+    );
+}
+
 export function tryGitInit(targetDir: string): boolean {
   try {
     execSync(

@@ -7,6 +7,8 @@ import {
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
   patchFooterContent,
+  patchHeroVideoContent,
+  patchCatalogFiltersContent,
   patchEnvLocal,
   isTemplateSlug,
   TEMPLATE_SLUGS,
@@ -225,5 +227,50 @@ describe("TEMPLATE_DEFAULTS — invariants", () => {
         expect(a2aOn).toBe(false);
       }
     }
+  });
+});
+
+describe("patchHeroVideoContent", () => {
+  it("removes the missing hero-video <source> tags, keeps the video element", () => {
+    const input = [
+      `<video poster="/hero/hero-poster-v4.jpg" onCanPlay={handleCanPlay}>`,
+      `  <source src="/hero/hero-v4.webm" type="video/webm" />`,
+      `  <source src="/hero/hero-v4.mp4" type="video/mp4" />`,
+      `</video>`,
+    ].join("\n");
+    const out = patchHeroVideoContent(input);
+    expect(out).not.toContain("hero-v4.webm");
+    expect(out).not.toContain("hero-v4.mp4");
+    expect(out).not.toContain("<source");
+    expect(out).toContain("<video");
+    expect(out).toContain("handleCanPlay");
+  });
+});
+
+describe("patchCatalogFiltersContent", () => {
+  it("wraps Frame/Lens colour filters in a length guard", () => {
+    const input = [
+      `{/* Frame color */}`,
+      `<div>`,
+      `  <label>Frame color</label>`,
+      `  <select>{frameColors.map((fc) => fc)}</select>`,
+      `</div>`,
+      ``,
+      `{/* Lens color */}`,
+      `<div>`,
+      `  <label>Lens color</label>`,
+      `  <select>{lensColors.map((lc) => lc)}</select>`,
+      `</div>`,
+      ``,
+      `{/* Price range */}`,
+    ].join("\n");
+    const out = patchCatalogFiltersContent(input);
+    expect(out).toContain("frameColors.length > 0 &&");
+    expect(out).toContain("lensColors.length > 0 &&");
+    // vars still referenced (build-safe)
+    expect(out).toContain("frameColors.map");
+    expect(out).toContain("lensColors.map");
+    // balanced parens added
+    expect((out.match(/&& \(/g) || []).length).toBe(2);
   });
 });
