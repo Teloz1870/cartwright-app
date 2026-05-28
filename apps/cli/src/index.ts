@@ -85,6 +85,7 @@ import {
   patchCatalogFiltersContent,
   patchProxyContent,
   migratePrismaConfig,
+  regenerateMigrationBaseline,
   isTemplateSlug,
   tryGitInit,
   tryInstall,
@@ -384,6 +385,10 @@ async function run(): Promise<void> {
     const ok = tryInstall(targetDir, packageManager);
     if (ok) {
       installSpinner.stop(pc.green("Dependencies installed."));
+      // Now that the local prisma CLI exists, replace the template's drifted
+      // migration history with a clean from-empty baseline so `migrate deploy`
+      // works on a fresh DB (best-effort; `db push` works regardless).
+      regenerateMigrationBaseline(targetDir, database);
     } else {
       installSpinner.stop(
         pc.yellow(

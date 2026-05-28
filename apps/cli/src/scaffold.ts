@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -328,6 +328,44 @@ export function migratePrismaConfig(targetDir: string): void {
   delete pkg.prisma;
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
   writeFileSync(configPath, renderPrismaConfig(seedCmd));
+}
+
+/**
+ * Replace the template's drifted migration history with a single clean baseline
+ * generated from schema.prisma. The shipped migrations reference tables that no
+ * migration creates (Lead, MigrationJob, Service, Subscription — schema drifted
+ * ahead via `db push` during development), so `prisma migrate deploy` fails on a
+ * fresh DB with P3018. A from-empty baseline makes `migrate deploy` succeed
+ * while `db push` keeps working.
+ *
+ * Best-effort and sqlite/turso only (the template's schema uses the sqlite
+ * provider; postgres scaffolds switch the provider manually). Runs AFTER install
+ * so the local prisma CLI is available. If the diff fails it leaves the existing
+ * migrations untouched (db push remains the documented path either way).
+ */
+export function regenerateMigrationBaseline(targetDir: string, database: Database): void {
+  if (database === "postgres") return;
+  const schemaPath = join(targetDir, "prisma", "schema.prisma");
+  if (!existsSync(schemaPath)) return;
+
+  let sql: string;
+  try {
+    // Generate the full from-empty SQL BEFORE touching anything on disk.
+    sql = execSync(
+      "npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
+      { cwd: targetDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+  } catch {
+    return; // leave existing migrations in place
+  }
+  if (!sql.includes("CREATE TABLE")) return; // sanity guard
+
+  const migrationsDir = join(targetDir, "prisma", "migrations");
+  rmSync(migrationsDir, { recursive: true, force: true });
+  const initDir = join(migrationsDir, "00000000000000_init");
+  mkdirSync(initDir, { recursive: true });
+  writeFileSync(join(initDir, "migration.sql"), sql);
+  writeFileSync(join(migrationsDir, "migration_lock.toml"), 'provider = "sqlite"\n');
 }
 
 export function tryGitInit(targetDir: string): boolean {
