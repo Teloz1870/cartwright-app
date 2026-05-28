@@ -155,6 +155,8 @@ export function patchBrandConfigContent(original: string, projectName: string): 
   out = out
     // domain, url and every @teloz.net email → neutral, RFC-2606 placeholder
     .replace(/teloz\.net/g, "example.com")
+    // legal/company name (legalName + footer disclaimer) → the store name
+    .replaceAll("Teloz ApS", storeName)
     // SEO/OG title (consumed by layout, manifest, PDP/PLP, mcp.json)
     .replace(/(metadata:\s*\{[^}]*?\btitle:\s*)"[^"]*"/, `$1"${storeName}"`)
     // SEO/OG description (also feeds llms.txt + AI prompts)
@@ -163,6 +165,25 @@ export function patchBrandConfigContent(original: string, projectName: string): 
     .replace(/fromName:\s*"[^"]*"/, `fromName: "${storeName}"`);
 
   return out;
+}
+
+/**
+ * Strip the upstream template's hardcoded Teloz footer attribution from a
+ * components/Footer.tsx source string. The footer hardcodes "Ejet og drevet af
+ * Teloz ApS" (→ teloz.net) plus a personal GitHub link (Teloz1870) — correct
+ * for the engine repo (which IS the Teloz site) but wrong on every customer's
+ * footer. These are pure-text replacements, so they never introduce unused
+ * variables or break the customer's build.
+ */
+export function patchFooterContent(original: string, storeName: string): string {
+  return original
+    // Remove the upstream personal GitHub link block entirely
+    .replace(
+      /\s*<p>\s*<a href="https:\/\/github\.com\/Teloz1870"[\s\S]*?<\/a>\s*<\/p>/,
+      "",
+    )
+    .replaceAll("Teloz ApS", storeName)
+    .replace(/teloz\.net/g, "example.com");
 }
 
 /**
