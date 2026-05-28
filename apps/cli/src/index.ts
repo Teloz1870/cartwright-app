@@ -45,6 +45,12 @@ import { join, resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
+import { fileURLToPath } from "node:url";
+
+// Read the real version from package.json so the banner never drifts.
+const CLI_VERSION: string = JSON.parse(
+  readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../package.json"), "utf8"),
+).version;
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 
@@ -150,7 +156,7 @@ async function run(): Promise<void> {
   }
 
   intro(
-    `${pc.bgYellow(pc.black(" create-cartwright "))} ${pc.dim("v2.0.0-beta")}`,
+    `${pc.bgYellow(pc.black(" create-cartwright "))} ${pc.dim(`v${CLI_VERSION}`)}`,
   );
 
   // ── Project name ────────────────────────────────────────────────────────

@@ -63,4 +63,27 @@ describe("resolveKeyMode", () => {
       confirmManual: async () => false,
     })).rejects.toThrow(/abort/i);
   });
+
+  it("falder tilbage til manual hvis validateKey kaster (fx 404 / retired model)", async () => {
+    // Regression: en retired Gemini-model gav 404 → validateKey kastede →
+    // hele CLI'en crashede med 'Unexpected status 404'. Nu skal den degradere.
+    vi.mocked(llm.validateKey).mockRejectedValueOnce(new Error("Unexpected status 404"));
+
+    const res = await resolveKeyMode({
+      getEnvKey: () => undefined,
+      promptKey: async () => "some-key",
+      confirmManual: async () => true,
+    });
+
+    expect(res).toEqual({ type: "manual" });
+  });
+
+  it("crasher ikke når validateKey kaster — aborts pænt hvis manual afvises", async () => {
+    vi.mocked(llm.validateKey).mockRejectedValueOnce(new Error("Unexpected status 500"));
+    await expect(resolveKeyMode({
+      getEnvKey: () => undefined,
+      promptKey: async () => "some-key",
+      confirmManual: async () => false,
+    })).rejects.toThrow(/abort/i);
+  });
 });
