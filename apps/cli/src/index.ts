@@ -77,8 +77,10 @@ import {
   detectPackageManager,
   generateAuthSecret,
   patchEnvLocal,
+  titleCase,
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
+  patchFooterContent,
   isTemplateSlug,
   tryGitInit,
   tryInstall,
@@ -103,6 +105,17 @@ function patchBrandConfig(targetDir: string, projectName: string): void {
   if (!existsSync(path)) return;
   const original = readFileSync(path, "utf8");
   const patched = patchBrandConfigContent(original, projectName);
+  if (patched !== original) writeFileSync(path, patched);
+}
+
+// Strip the hardcoded Teloz attribution from the customer's footer copy.
+// Pure-text replacement on the scaffold only — the engine/template (which is
+// the live Teloz site) is untouched, so there is no canary risk.
+function patchFooter(targetDir: string, projectName: string): void {
+  const path = join(targetDir, "components", "Footer.tsx");
+  if (!existsSync(path)) return;
+  const original = readFileSync(path, "utf8");
+  const patched = patchFooterContent(original, titleCase(projectName));
   if (patched !== original) writeFileSync(path, patched);
 }
 
@@ -306,8 +319,10 @@ async function run(): Promise<void> {
     injectBriefFiles(targetDir, generatedBrief);
     // patchBrandConfig vil nu bruge briefets værdier (som vi gav videre via finalSlug)
     patchBrandConfig(targetDir, finalSlug);
+    patchFooter(targetDir, finalSlug);
   } else {
     patchBrandConfig(targetDir, finalProjectName);
+    patchFooter(targetDir, finalProjectName);
   }
 
   // Apply per-template defaults (mode, features, industryTemplate) AFTER

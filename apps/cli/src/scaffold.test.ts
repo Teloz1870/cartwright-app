@@ -6,6 +6,7 @@ import {
   titleCase,
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
+  patchFooterContent,
   patchEnvLocal,
   isTemplateSlug,
   TEMPLATE_SLUGS,
@@ -81,6 +82,38 @@ describe("scaffold helpers", () => {
     expect(out).toContain(`url: "https://example.com"`);
     // The Teloz tagline must be gone from metadata.description
     expect(out).not.toContain("lynhurtige AI");
+    // legalName / disclaimer "Teloz ApS" → store name
+    expect(out).not.toContain("Teloz ApS");
+  });
+});
+
+describe("patchFooterContent", () => {
+  const FOOTER = [
+    `<p>© {brand.footer.copyrightYear} {brand.storeName}</p>`,
+    `<p>`,
+    `  Ejet og drevet af{" "}`,
+    `  <a href="https://teloz.net" target="_blank" rel="noopener noreferrer" className="font-bold">`,
+    `    Teloz ApS`,
+    `  </a>`,
+    `</p>`,
+    `<p>`,
+    `  <a href="https://github.com/Teloz1870" target="_blank" rel="noopener noreferrer" className="font-bold">`,
+    `    <svg className="h-4 w-4"><path d="M12 2C6" /></svg>`,
+    `    GitHub Profile`,
+    `  </a>`,
+    `</p>`,
+  ].join("\n");
+
+  it("removes the personal GitHub link and rebrands the operated-by line", () => {
+    const out = patchFooterContent(FOOTER, "Mit Hegn");
+    expect(out).not.toContain("Teloz ApS");
+    expect(out).not.toContain("teloz.net");
+    expect(out).not.toContain("github.com/Teloz1870");
+    expect(out).not.toContain("GitHub Profile");
+    // Customer identity present, surrounding markup intact
+    expect(out).toContain("Ejet og drevet af");
+    expect(out).toContain("Mit Hegn");
+    expect(out).toContain("https://example.com");
   });
 });
 
