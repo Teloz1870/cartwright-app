@@ -1,12 +1,42 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   titleCase,
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
+  patchEnvLocal,
   isTemplateSlug,
   TEMPLATE_SLUGS,
   TEMPLATE_DEFAULTS,
 } from "./scaffold";
+
+describe("patchEnvLocal", () => {
+  it("writes AUTH_SECRET into .env.local and mirrors DATABASE_URL into .env for Prisma", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-env-"));
+    try {
+      writeFileSync(
+        join(dir, ".env.example"),
+        `DATABASE_URL="file:./dev.db"\nAUTH_SECRET=changeme\nANTHROPIC_API_KEY=\n`,
+      );
+
+      patchEnvLocal(dir, "deadbeef");
+
+      const local = readFileSync(join(dir, ".env.local"), "utf8");
+      expect(local).toContain(`AUTH_SECRET="deadbeef"`);
+      expect(local).toContain(`DATABASE_URL="file:./dev.db"`);
+
+      // Regression: Prisma CLI only reads .env, so DATABASE_URL must be there too.
+      expect(existsSync(join(dir, ".env"))).toBe(true);
+      const env = readFileSync(join(dir, ".env"), "utf8");
+      expect(env).toContain(`DATABASE_URL="file:./dev.db"`);
+      expect(env).not.toContain("AUTH_SECRET");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("scaffold helpers", () => {
   it("titleCase laver projektnavn til storeName", () => {
