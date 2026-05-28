@@ -83,6 +83,8 @@ import {
   patchFooterContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
+  patchProxyContent,
+  migratePrismaConfig,
   isTemplateSlug,
   tryGitInit,
   tryInstall,
@@ -345,6 +347,10 @@ async function run(): Promise<void> {
   // Storefront cleanup (template copies → customer copies; no canary impact)
   patchComponentFile(targetDir, "components/HeroVideo.tsx", patchHeroVideoContent);
   patchComponentFile(targetDir, "components/CatalogFilters.tsx", patchCatalogFiltersContent);
+  // Stop next-intl from locale-prefixing the /icon metadata route (→ 404)
+  patchComponentFile(targetDir, "proxy.ts", patchProxyContent);
+  // Migrate the deprecated package.json#prisma seed config to prisma.config.ts
+  migratePrismaConfig(targetDir);
 
   // Apply per-template defaults (mode, features, industryTemplate) AFTER
   // the basic name/slug patch so the regex-based replacements act on a
