@@ -49,6 +49,39 @@ describe("scaffold helpers", () => {
     expect(out).toContain(`storeName: "Min Shop"`);
     expect(out).toContain(`storeSlug: "min-shop"`);
   });
+
+  it("patchBrandConfigContent fjerner Teloz-identitet (domain, url, emails, SEO)", () => {
+    const input = [
+      `  storeName: "Teloz",`,
+      `  storeSlug: "teloz",`,
+      `  domain: "teloz.net",`,
+      `  url: "https://teloz.net",`,
+      `  emails: {`,
+      `    from: "noreply@teloz.net",`,
+      `    fromName: "Teloz",`,
+      `    support: "support@teloz.net",`,
+      `    admin: "admin@teloz.net",`,
+      `  },`,
+      `  metadata: {`,
+      `    title: "Teloz Agency",`,
+      `    description:`,
+      `      "Vi bygger lynhurtige AI og e-commerce løsninger.",`,
+      `  },`,
+    ].join("\n");
+    const out = patchBrandConfigContent(input, "hegn-og-laage");
+
+    // No origin-brand leakage anywhere
+    expect(out).not.toContain("teloz.net");
+    expect(out).not.toContain("Teloz Agency");
+    // Customer identity applied
+    expect(out).toContain(`title: "Hegn Og Laage"`);
+    expect(out).toContain(`fromName: "Hegn Og Laage"`);
+    expect(out).toContain(`admin: "admin@example.com"`);
+    expect(out).toContain(`domain: "example.com"`);
+    expect(out).toContain(`url: "https://example.com"`);
+    // The Teloz tagline must be gone from metadata.description
+    expect(out).not.toContain("lynhurtige AI");
+  });
 });
 
 // Sample brand.config.ts fragments that mirror the actual shape produced
@@ -94,12 +127,14 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`adminAgenticDashboard: true`);
   });
 
-  it("coffee flips webshop on, A2A off", () => {
+  it("coffee flips webshop on, A2A off, ecommerceEnabled tracks webshop", () => {
     const out = patchBrandConfigForTemplate(BRAND_FRAGMENT, "coffee");
     expect(out).toContain(`industryTemplate: "coffee"`);
     expect(out).toContain(`mode: "webshop"`);
     expect(out).toContain(`webshop: true`);
     expect(out).toContain(`a2a: false`);
+    // #5 regression: webshop mode must enable ecommerce, not leave it false.
+    expect(out).toContain(`ecommerceEnabled: true`);
   });
 
   it("sunglasses → webshop mode, legacy template name in industryTemplate", () => {
@@ -116,6 +151,8 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`webshop: false`);
     expect(out).toContain(`a2a: false`);
     expect(out).toContain(`adminAgenticDashboard: false`);
+    // website mode must keep ecommerce off
+    expect(out).toContain(`ecommerceEnabled: false`);
   });
 
   it("generic preserves webshop mode with no A2A flags on", () => {
@@ -124,6 +161,8 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`mode: "webshop"`);
     expect(out).toContain(`webshop: true`);
     expect(out).toContain(`a2a: false`);
+    // #5 regression: the default generic scaffold must be a real webshop.
+    expect(out).toContain(`ecommerceEnabled: true`);
   });
 
   it("does not touch unrelated feature flags (tryOn, aiStylist)", () => {
