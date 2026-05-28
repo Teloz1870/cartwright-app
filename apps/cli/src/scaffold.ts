@@ -117,6 +117,21 @@ export function patchEnvLocal(targetDir: string, authSecret: string): void {
     `AUTH_SECRET="${authSecret}"`,
   );
   writeFileSync(join(targetDir, ".env.local"), patched);
+
+  // The Prisma CLI (migrate/seed) only auto-loads `.env` — never `.env.local`,
+  // which is a Next.js-only convention. Without this, the documented next
+  // steps (`prisma migrate deploy` + `prisma db seed`) fail out of the box
+  // with "Environment variable not found: DATABASE_URL". Mirror DATABASE_URL
+  // into `.env` so the CLI finds it; Next.js still reads .env.local at runtime.
+  const dbUrl = patched.match(/^DATABASE_URL=.*/m);
+  if (dbUrl) {
+    writeFileSync(
+      join(targetDir, ".env"),
+      `# Prisma CLI reads .env (not .env.local). DATABASE_URL lives here so\n` +
+        `# \`prisma migrate\` / \`prisma db seed\` work; Next.js reads .env.local at runtime.\n` +
+        `${dbUrl[0]}\n`,
+    );
+  }
 }
 
 export function titleCase(projectName: string): string {
