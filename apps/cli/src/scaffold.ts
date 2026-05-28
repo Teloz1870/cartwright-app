@@ -142,9 +142,27 @@ export function titleCase(projectName: string): string {
 }
 
 export function patchBrandConfigContent(original: string, projectName: string): string {
-  return original
-    .replace(/storeName:\s*"[^"]*"/, `storeName: "${titleCase(projectName)}"`)
+  const storeName = titleCase(projectName);
+  let out = original
+    .replace(/storeName:\s*"[^"]*"/, `storeName: "${storeName}"`)
     .replace(/storeSlug:\s*"[^"]*"/, `storeSlug: "${projectName}"`);
+
+  // Strip the upstream template's own brand identity. The engine repo doubles
+  // as the live Teloz site, so its brand.config.ts ships Teloz values. Without
+  // this every scaffold leaks "Teloz Agency" as the SEO/OG title, teloz.net as
+  // the domain + canonical URL, and @teloz.net contact + seeded-admin emails
+  // (the seed creates its admin user from brand.emails.admin).
+  out = out
+    // domain, url and every @teloz.net email → neutral, RFC-2606 placeholder
+    .replace(/teloz\.net/g, "example.com")
+    // SEO/OG title (consumed by layout, manifest, PDP/PLP, mcp.json)
+    .replace(/(metadata:\s*\{[^}]*?\btitle:\s*)"[^"]*"/, `$1"${storeName}"`)
+    // SEO/OG description (also feeds llms.txt + AI prompts)
+    .replace(/(metadata:\s*\{[^}]*?\bdescription:\s*)"[^"]*"/, `$1"${storeName}"`)
+    // email sender display name
+    .replace(/fromName:\s*"[^"]*"/, `fromName: "${storeName}"`);
+
+  return out;
 }
 
 /**
@@ -185,6 +203,15 @@ export function patchBrandConfigForTemplate(
     const re = new RegExp(`(${key}:\\s*)(?:true|false)`, "g");
     out = out.replace(re, `$1${value}`);
   }
+
+  // ecommerceEnabled must track the webshop feature. The upstream template
+  // ships `ecommerceEnabled: false` (Teloz is website-mode), so a webshop
+  // scaffold would otherwise render with cart + product nav gated OFF while
+  // mode === "webshop" — an internally inconsistent config. Keep them in sync.
+  out = out.replace(
+    /ecommerceEnabled:\s*(?:true|false)/,
+    `ecommerceEnabled: ${defaults.features.webshop}`,
+  );
 
   return out;
 }
@@ -236,7 +263,7 @@ export function databaseNote(db: Database): string {
     case "sqlite":
       return [
         pc.bold("SQLite (local only):"),
-        "  No extra setup. dev.db will be created on first migration.",
+        "  No extra setup. dev.db is created by `prisma db push`.",
       ].join("\n");
   }
 }
