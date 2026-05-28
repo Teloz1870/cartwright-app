@@ -279,6 +279,57 @@ export function patchCatalogFiltersContent(original: string): string {
     );
 }
 
+/**
+ * Next's metadata icon route (`app/icon.tsx` → `/icon`) has no file extension,
+ * so the proxy matcher's `.*\..*` exclusion doesn't catch it. next-intl then
+ * locale-prefixes it to `/da/icon`, which 404s (the icon route isn't under
+ * `[locale]`). Add `icon` to the matcher's exclusion list so the request is
+ * served directly. Idempotent: skips if already excluded.
+ */
+export function patchProxyContent(original: string): string {
+  if (original.includes("favicon.ico|icon|")) return original;
+  return original.replace(/favicon\.ico\|/, "favicon.ico|icon|");
+}
+
+function renderPrismaConfig(seedCmd: string): string {
+  return `import path from "node:path";
+import { config as loadEnv } from "dotenv";
+import { defineConfig } from "prisma/config";
+
+// Prisma stops auto-loading .env once a config file exists, so load it here.
+// .env first (DATABASE_URL for the CLI), then .env.local (Next.js runtime).
+loadEnv({ path: ".env" });
+loadEnv({ path: ".env.local" });
+
+export default defineConfig({
+  schema: path.join("prisma", "schema.prisma"),
+  migrations: {
+    seed: ${JSON.stringify(seedCmd)},
+  },
+});
+`;
+}
+
+/**
+ * Migrate the deprecated `package.json#prisma` block to a `prisma.config.ts`
+ * (Prisma 7 removes the package.json key — the template currently triggers a
+ * deprecation warning on every prisma command). The generated config also loads
+ * dotenv so DATABASE_URL still resolves, because Prisma stops auto-loading
+ * `.env` once a config file exists. No-op if the template already ships a
+ * prisma.config.ts or has no `prisma` key.
+ */
+export function migratePrismaConfig(targetDir: string): void {
+  const configPath = join(targetDir, "prisma.config.ts");
+  const pkgPath = join(targetDir, "package.json");
+  if (existsSync(configPath) || !existsSync(pkgPath)) return;
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  const seedCmd: string | undefined = pkg.prisma?.seed;
+  if (!seedCmd) return;
+  delete pkg.prisma;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  writeFileSync(configPath, renderPrismaConfig(seedCmd));
+}
+
 export function tryGitInit(targetDir: string): boolean {
   try {
     execSync(

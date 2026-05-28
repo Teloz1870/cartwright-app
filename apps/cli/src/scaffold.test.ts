@@ -9,6 +9,8 @@ import {
   patchFooterContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
+  patchProxyContent,
+  migratePrismaConfig,
   patchEnvLocal,
   isTemplateSlug,
   TEMPLATE_SLUGS,
@@ -277,5 +279,47 @@ describe("patchCatalogFiltersContent", () => {
     expect(out).toContain("lensColors.map");
     // balanced parens added
     expect((out.match(/&& \(/g) || []).length).toBe(2);
+  });
+});
+
+describe("patchProxyContent", () => {
+  it("adds icon to the matcher exclusion so /icon is not locale-redirected", () => {
+    const input = `export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\\\..*|hero).*)'] };`;
+    const out = patchProxyContent(input);
+    expect(out).toContain("favicon.ico|icon|");
+    // idempotent
+    expect(patchProxyContent(out)).toBe(out);
+  });
+});
+
+describe("migratePrismaConfig", () => {
+  it("writes prisma.config.ts and removes package.json#prisma", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-prisma-"));
+    try {
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "x", prisma: { seed: "ts-node prisma/seed.ts" } }, null, 2),
+      );
+      migratePrismaConfig(dir);
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      expect(pkg.prisma).toBeUndefined();
+      const cfg = readFileSync(join(dir, "prisma.config.ts"), "utf8");
+      expect(cfg).toContain('from "prisma/config"');
+      expect(cfg).toContain("ts-node prisma/seed.ts");
+      expect(cfg).toContain('loadEnv({ path: ".env.local" })');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("is a no-op when there is no package.json#prisma key", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-prisma2-"));
+    try {
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "x" }));
+      migratePrismaConfig(dir);
+      expect(existsSync(join(dir, "prisma.config.ts"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
