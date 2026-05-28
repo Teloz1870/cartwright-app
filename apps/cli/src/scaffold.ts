@@ -206,9 +206,19 @@ export function patchBrandConfigForTemplate(
   let out = original;
 
   // industryTemplate: "xxx"   (single-line)
+  //
+  // CRITICAL: emit a union-typed cast, not a bare literal. The template ships
+  // `industryTemplate: "saas"` (a literal), and 7+ files compare it like
+  // `brand.industryTemplate === "saas"`. If we patch it to a bare literal
+  // ("generic" etc.), TypeScript narrows the type and every such comparison
+  // becomes a "no overlap" error — `next build` (and any Vercel deploy) fails,
+  // even though `next dev` silently tolerates it. The `as <union>` cast keeps
+  // every comparison valid. (Mirrors the existing `mode` cast and CLAUDE.md's
+  // demo-refresh note.) The regex also swallows any pre-existing `as ...` cast
+  // so we never double-cast.
   out = out.replace(
-    /industryTemplate:\s*"[^"]*"/,
-    `industryTemplate: "${template}"`,
+    /industryTemplate:\s*"[^"]*"(?:\s+as\s+[^,\n]+)?/,
+    `industryTemplate: "${template}" as "saas" | "coffee" | "sunglasses" | "studio" | "generic" | "website-corporate" | "agent-marketplace"`,
   );
 
   // mode: "xxx" as "website" | "webshop" | "agent-marketplace"
@@ -281,11 +291,24 @@ export function tryGitInit(targetDir: string): boolean {
   }
 }
 
+const LOCKFILE_BY_PM: Record<PackageManager, string> = {
+  npm: "package-lock.json",
+  pnpm: "pnpm-lock.yaml",
+  yarn: "yarn.lock",
+  bun: "bun.lockb",
+};
+
 export function tryInstall(targetDir: string, pm: PackageManager): boolean {
   try {
-    // Remove conflicting lockfiles from the template before installing
-    const lockfiles = ["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lockb"];
-    for (const lockfile of lockfiles) {
+    // Keep ONLY the lockfile matching the chosen package manager. The template
+    // commits a tested package-lock.json; deleting it (the old behaviour) made
+    // the install resolve `^`-ranges to newer, UNTESTED versions, causing type
+    // drift that breaks `next build` — e.g. a newer Stripe SDK rejecting the
+    // pinned `apiVersion` literal. Keeping the matching lockfile pins the exact
+    // tested versions, so a fresh scaffold builds like the template does.
+    const keep = LOCKFILE_BY_PM[pm];
+    for (const lockfile of Object.values(LOCKFILE_BY_PM)) {
+      if (lockfile === keep) continue;
       const lockPath = join(targetDir, lockfile);
       if (existsSync(lockPath)) {
         unlinkSync(lockPath);

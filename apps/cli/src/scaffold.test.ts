@@ -198,6 +198,11 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`a2a: false`);
     // #5 regression: the default generic scaffold must be a real webshop.
     expect(out).toContain(`ecommerceEnabled: true`);
+    // #15 regression: industryTemplate must be union-cast, not a bare literal,
+    // or `brand.industryTemplate === "saas"` comparisons fail `next build`.
+    expect(out).toMatch(
+      /industryTemplate: "generic" as "saas" \| "coffee" \| .*"agent-marketplace"/,
+    );
   });
 
   it("does not touch unrelated feature flags (tryOn, aiStylist)", () => {
