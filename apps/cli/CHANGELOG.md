@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.0.24
+
+### Patch Changes
+
+- b2ba50b: Bump default template ref to v0.9.5 (was v0.9.4).
+
 ## 2.0.23
 
 ### Patch Changes
