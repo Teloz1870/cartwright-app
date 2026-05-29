@@ -56,21 +56,40 @@ export function injectBriefFiles(targetDir: string, brief: ShopBrief): void {
   //    prisma/seed.ts so the customer's first `db seed` sets it.
   const seedPath = join(targetDir, "prisma", "seed.ts");
   if (existsSync(seedPath)) {
-    const themeJson = JSON.stringify({
-      accent: palette.accent,
-      accentDeep: palette.accentDeep,
-      cream: palette.cream,
-      sand: palette.sand,
-      ink: "#1a1a1a",
-      muted: "#726d62",
-    });
     const seed = readFileSync(seedPath, "utf8");
-    // Inject into the BrandingSettings.upsert create block (after storeName).
-    const patched = seed.replace(
-      /(storeName: brand\.storeName,)/,
-      `$1\n      themeJson: ${JSON.stringify(themeJson)},`,
-    );
-    if (patched !== seed) writeFileSync(seedPath, patched);
+    if (!seed.includes("themeJson:")) {
+      const themeJson = JSON.stringify({
+        accent: palette.accent,
+        accentDeep: palette.accentDeep,
+        cream: palette.cream,
+        sand: palette.sand,
+        ink: "#1a1a1a",
+        muted: "#726d62",
+      });
+      // Inject themeJson + the brief tagline into the BrandingSettings.upsert
+      // create block (after storeName). tagline drives the homepage hero
+      // sub-headline (settings?.tagline ?? …) so the landing reflects the brand.
+      const patched = seed.replace(
+        /(storeName: brand\.storeName,)/,
+        `$1\n      themeJson: ${JSON.stringify(themeJson)},\n      tagline: ${JSON.stringify(brief.tagline)},`,
+      );
+      if (patched !== seed) writeFileSync(seedPath, patched);
+    }
+  }
+
+  // 4. Hero headline: the active homepage (designs/webshop-classic/homepage.tsx)
+  //    hardcodes "Your shop starts here". Swap it for the brand name so the
+  //    landing isn't generic. Customer copy only; graceful no-op if absent.
+  const homepagePath = join(
+    targetDir,
+    "designs",
+    "webshop-classic",
+    "homepage.tsx",
+  );
+  if (existsSync(homepagePath)) {
+    const hp = readFileSync(homepagePath, "utf8");
+    const patched = hp.replace("Your shop starts here", brief.storeName);
+    if (patched !== hp) writeFileSync(homepagePath, patched);
   }
 }
 
