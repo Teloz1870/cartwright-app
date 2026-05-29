@@ -1,49 +1,79 @@
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { type ShopBrief } from "./brief.js";
-import { generateThemeCss, generatePromptModule, generateSeedData } from "./generate/index.js";
-
-export function injectBriefFiles(targetDir: string, brief: ShopBrief): void {
-  // Opret mapper
-  const cssDir = join(targetDir, "themes");
-  const promptsDir = join(targetDir, "lib", "ai", "prompts");
-  const seedsDir = join(targetDir, "industry-templates", brief.slug);
-
-  [cssDir, promptsDir, seedsDir].forEach((dir) => {
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-  });
-
-  // Skriv filer
-  writeFileSync(join(cssDir, `${brief.slug}.css`), generateThemeCss(brief));
-  writeFileSync(join(promptsDir, `${brief.slug}.ts`), generatePromptModule(brief));
-  writeFileSync(join(seedsDir, "seed-data.ts"), generateSeedData(brief));
-
-  // TODO: Opdater industry-templates/index.ts for at registrere den nye seed, men
-  // det falder måske under advanced M2 scope, eller vi kan lave et simpelt append her:
-}
+import {
+  generateThemeCss,
+  generatePromptModule,
+  generateSeedData,
+  derivePalette,
+  patchThemeCssPalette,
+} from "./generate/index.js";
 
 /**
- * Phase D4 — write `MODERN_WEB.md` into the scaffolded project listing
- * every modern web platform feature Cartwright wires up out of the box.
- *
- * The doc is meant for two audiences:
- *
- *   1. The customer's AI coding agent (Claude Code / Cursor / Copilot) —
- *      so when the agent reads the project, it has a clear inventory of
- *      the platform features available without having to grep the source.
- *   2. The customer's own marketing — every entry here is something the
- *      customer can claim about their site, lifted straight into a
- *      product page, About section, or developer blurb.
- *
- * Unconditional injection: every scaffold gets the file. Feature flags
- * are listed alongside each entry so the customer can see what is on by
- * default vs opt-in for their template (`brand.features.*`).
- *
- * Idempotent: callers can safely re-run; the file is always overwritten
- * with the current snapshot of features the CLI knows about.
+ * Apply the AI brief to the scaffold so the shop actually renders in its own
+ * design + catalog. Three activations (all on the customer's copy):
+ *   1. Catalog → overwrite the REGISTERED generic template seed-data.ts, so
+ *      `brand.industryTemplate: "generic"` seeds the brief's categories/products
+ *      (no industry-templates/index.ts patch needed).
+ *   2. Theme  → recolour the active theme file (themes/generic.css) sol-* token
+ *      VALUES with the brief palette, so the storefront renders in those colours.
+ *   3. Reference files → themes/<slug>.css + lib/ai/prompts/<slug>.ts.
  */
+export function injectBriefFiles(targetDir: string, brief: ShopBrief): void {
+  const cssDir = join(targetDir, "themes");
+  const promptsDir = join(targetDir, "lib", "ai", "prompts");
+  const genericSeedDir = join(targetDir, "industry-templates", "generic");
+
+  [cssDir, promptsDir, genericSeedDir].forEach((dir) => {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  });
+
+  // Reference theme file (correct sol-* token names) + AI prompt module.
+  writeFileSync(join(cssDir, `${brief.slug}.css`), generateThemeCss(brief));
+  writeFileSync(join(promptsDir, `${brief.slug}.ts`), generatePromptModule(brief));
+
+  // 1. Catalog: overwrite the registered generic template with the brief's
+  //    categories + products in the engine's IndustryTemplate shape.
+  writeFileSync(join(genericSeedDir, "seed-data.ts"), generateSeedData(brief));
+
+  // 2. Theme activation (compile-time base): recolour the active theme CSS in
+  //    place. On newer engines whose design layer skips sol-* tokens, this is
+  //    what renders; on the current template the design-pack injects sol-*
+  //    inline, so step 3 (themeJson) is what actually wins. Keeping both covers
+  //    every engine version.
+  const palette = derivePalette(brief.palette);
+  const genericThemePath = join(cssDir, "generic.css");
+  if (existsSync(genericThemePath)) {
+    const css = readFileSync(genericThemePath, "utf8");
+    const patched = patchThemeCssPalette(css, palette);
+    if (patched !== css) writeFileSync(genericThemePath, patched);
+  }
+
+  // 3. Theme activation (runtime override — the one that wins): seed
+  //    BrandingSettings.themeJson with the 6-token palette. getActiveTheme()
+  //    reads it and app/layout.tsx injects it as the LAST inline <style>, so it
+  //    overrides the design-pack's default sol-* palette. Patch the scaffold's
+  //    prisma/seed.ts so the customer's first `db seed` sets it.
+  const seedPath = join(targetDir, "prisma", "seed.ts");
+  if (existsSync(seedPath)) {
+    const themeJson = JSON.stringify({
+      accent: palette.accent,
+      accentDeep: palette.accentDeep,
+      cream: palette.cream,
+      sand: palette.sand,
+      ink: "#1a1a1a",
+      muted: "#726d62",
+    });
+    const seed = readFileSync(seedPath, "utf8");
+    // Inject into the BrandingSettings.upsert create block (after storeName).
+    const patched = seed.replace(
+      /(storeName: brand\.storeName,)/,
+      `$1\n      themeJson: ${JSON.stringify(themeJson)},`,
+    );
+    if (patched !== seed) writeFileSync(seedPath, patched);
+  }
+}
+
 export function injectModernWebDoc(targetDir: string): void {
   writeFileSync(join(targetDir, "MODERN_WEB.md"), MODERN_WEB_MD);
 }

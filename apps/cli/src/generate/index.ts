@@ -1,17 +1,147 @@
 import { type ShopBrief } from "../brief.js";
 
+// ───────────────────────────────────────────────────────────────────────────
+// Colour helpers — derive the engine's 6-token ThemePalette (+ accent variants)
+// from the brief's 2 colours, and adjust lightness for deep/dark/light shades.
+// ───────────────────────────────────────────────────────────────────────────
+
+function clamp(n: number): number {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
+export function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const f = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  return [
+    parseInt(f.slice(0, 2), 16),
+    parseInt(f.slice(2, 4), 16),
+    parseInt(f.slice(4, 6), 16),
+  ];
+}
+
+function rgbToHex(rgb: [number, number, number]): string {
+  return "#" + rgb.map((x) => clamp(x).toString(16).padStart(2, "0")).join("");
+}
+
+/** Adjust lightness: negative pct = darken toward black, positive = lighten toward white. */
+export function adjustHex(hex: string, pct: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const f = pct / 100;
+  const a = (c: number) => (pct < 0 ? c * (1 + f) : c + (255 - c) * f);
+  return rgbToHex([a(r), a(g), a(b)]);
+}
+
+export type DerivedPalette = {
+  accent: string;
+  accentDeep: string;
+  accentDark: string;
+  accentLight: string;
+  cream: string;
+  sand: string;
+};
+
+/** Map the brief's {primary, background} into the storefront's core sol-* shades. */
+export function derivePalette(palette: ShopBrief["palette"]): DerivedPalette {
+  return {
+    accent: palette.primary,
+    accentDeep: adjustHex(palette.primary, -32),
+    accentDark: adjustHex(palette.primary, -14),
+    accentLight: adjustHex(palette.primary, 16),
+    cream: palette.background,
+    sand: adjustHex(palette.background, -6),
+  };
+}
+
+/**
+ * Recolour the engine's active theme CSS (themes/generic.css) in place by
+ * swapping ONLY the core sol-* token values — CLAUDE.md-compliant ("only change
+ * values in themes/<slug>.css"), preserving the dark-mode block, glass/shadow
+ * scale, utilities, and neutral ink/muted/sun. Each replace targets the FIRST
+ * occurrence (the @theme block precedes the `:root.dark` overrides), so the
+ * dark-mode values (e.g. accent-deep #000000) stay intact.
+ */
+export function patchThemeCssPalette(css: string, p: DerivedPalette): string {
+  const set = (src: string, token: string, value: string) =>
+    src.replace(
+      new RegExp(`(--${token}:\\s*)#[0-9a-fA-F]{3,6}`),
+      `$1${value}`,
+    );
+  let out = css;
+  out = set(out, "color-sol-accent", p.accent);
+  out = set(out, "color-sol-accent-deep", p.accentDeep);
+  out = set(out, "color-sol-accent-dark", p.accentDark);
+  out = set(out, "color-sol-accent-light", p.accentLight);
+  out = set(out, "color-sol-cream", p.cream);
+  out = set(out, "color-sol-sand", p.sand);
+  out = set(out, "shadow-color-sol-accent", p.accent);
+  out = set(out, "shadow-color-sol-accent-deep", p.accentDeep);
+  return out;
+}
+
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Stable Unsplash placeholders (same set the generic template ships) so brief
+// products render with images until the customer uploads their own.
+const PLACEHOLDER_IMAGES = [
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
+  "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
+  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800",
+  "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800",
+];
+
+// Standard pages kept from the generic template (the brief has no pages).
+const STANDARD_PAGES = [
+  {
+    slug: "about",
+    title: "About",
+    body: "## Welcome\n\nThis is a demo page. Edit the content in /admin/sider to tell your own story.",
+  },
+  {
+    slug: "contact",
+    title: "Contact",
+    body: "## Get in touch\n\nContact us at the email address you have set in brand.config.ts.",
+  },
+  {
+    slug: "faq",
+    title: "FAQ",
+    body: "## How long do I have to return an item?\n\nThe default return window is 30 days. Adjust it in brand.config.policies.returnDays.",
+  },
+  {
+    slug: "terms",
+    title: "Terms",
+    body: "## Company information\n\nTODO: Add your company registration number, address, and contact information.",
+  },
+];
+
+/**
+ * Generate a reference themes/<slug>.css with the brief palette in the CORRECT
+ * sol-* token names. Activation happens via patchThemeCssPalette on the active
+ * theme file; this file documents the palette and is reusable.
+ */
 export function generateThemeCss(brief: ShopBrief): string {
+  const p = derivePalette(brief.palette);
   return `/**
  * Theme: ${brief.storeName}
- * Generated by create-cartwright
+ * Generated by create-cartwright from the AI brief palette.
  */
-:root {
-  --color-accent: ${brief.palette.primary};
-  --color-cream: ${brief.palette.background};
-  --color-sand: ${brief.palette.background}; /* Fallback until more colors requested */
-  --color-ink: #1a1a1a;
-  --color-muted: #726d62;
-  --color-success: ${brief.palette.primary};
+@theme {
+  --color-sol-accent: ${p.accent};
+  --color-sol-accent-deep: ${p.accentDeep};
+  --color-sol-accent-dark: ${p.accentDark};
+  --color-sol-accent-light: ${p.accentLight};
+  --color-sol-cream: ${p.cream};
+  --color-sol-sand: ${p.sand};
+  --color-sol-ink: #1a1a1a;
+  --color-sol-muted: #726d62;
 }
 `;
 }
@@ -31,15 +161,51 @@ Tone of voice: ${brief.tone}
 `;
 }
 
-export function generateSeedData(brief: ShopBrief): string {
-  return `/**
- * Seed data: ${brief.storeName}
- * Generated by create-cartwright
+/**
+ * Generate the engine-shaped IndustryTemplate from the brief, exported as
+ * `genericTemplate` so it can OVERWRITE industry-templates/generic/seed-data.ts
+ * (the registered slot prisma/seed.ts reads for brand.industryTemplate "generic").
+ * This is what makes the AI catalog actually seed.
+ *
+ * NB: priceDkk is stored in minor units (øre), and brief.priceMinor is already
+ * minor units, so priceDkk = priceMinor (no division).
  */
-export const seedData = {
-  categories: ${JSON.stringify(brief.categories, null, 2)},
-  products: ${JSON.stringify(brief.products, null, 2)},
-  pages: []
+export function generateSeedData(brief: ShopBrief): string {
+  const categories = brief.categories.map((c) => ({
+    name: c.name,
+    slug: c.slug,
+    description: c.name,
+  }));
+
+  const seen = new Set<string>();
+  const products = brief.products.map((p, i) => {
+    let slug = slugify(p.name) || `product-${i + 1}`;
+    if (seen.has(slug)) slug = `${slug}-${i + 1}`;
+    seen.add(slug);
+    return {
+      name: p.name,
+      slug,
+      description: p.blurb,
+      priceDkk: p.priceMinor,
+      images: [PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length]],
+      stock: 25,
+      categorySlug: p.categorySlug,
+      featured: i < 3,
+    };
+  });
+
+  return `import type { IndustryTemplate } from "../types";
+
+/**
+ * Generated by create-cartwright from the AI brief for "${brief.storeName}".
+ * Replace or extend via /admin once the shop is running.
+ */
+export const genericTemplate: IndustryTemplate = {
+  label: ${JSON.stringify(brief.storeName)},
+  description: ${JSON.stringify(brief.tagline)},
+  categories: ${JSON.stringify(categories, null, 2)},
+  pages: ${JSON.stringify(STANDARD_PAGES, null, 2)},
+  products: ${JSON.stringify(products, null, 2)},
 };
 `;
 }

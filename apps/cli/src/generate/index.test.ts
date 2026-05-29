@@ -19,9 +19,9 @@ const mockBrief: ShopBrief = {
 describe("generateThemeCss", () => {
   it("laver css fil med palette", () => {
     const css = generateThemeCss(mockBrief);
-    expect(css).toContain("--color-accent: #112233;");
-    expect(css).toContain("--color-cream: #ffeedd;");
-    expect(css).toContain("--color-sand: #ffeedd;"); // For nu bare bg
+    // Must emit the real storefront token names (--color-sol-*), not --color-*.
+    expect(css).toContain("--color-sol-accent: #112233;");
+    expect(css).toContain("--color-sol-cream: #ffeedd;");
   });
 });
 
@@ -43,9 +43,11 @@ describe("generateSeedData", () => {
       products: [{ name: "Bønne", categorySlug: "kaffe", priceMinor: 1000, blurb: "God" }]
     };
     const ts = generateSeedData(brief);
-    expect(ts).toContain("export const seedData = {");
+    // Engine-shaped IndustryTemplate (registered as genericTemplate), not the
+    // old inert `seedData` object.
+    expect(ts).toContain("export const genericTemplate: IndustryTemplate");
     expect(ts).toContain("Kaffe");
     expect(ts).toContain("Bønne");
-    expect(ts).toContain("1000");
+    expect(ts).toContain(`"priceDkk": 1000`);
   });
 });
