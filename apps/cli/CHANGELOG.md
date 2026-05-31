@@ -1,5 +1,85 @@
 # create-cartwright
 
+## 2.0.30
+
+### Patch Changes
+
+- 46c705d: Bump default template ref to v0.9.11 (was v0.9.10).
+
+## 2.0.29
+
+### Patch Changes
+
+- 838a2f0: Bump default template ref to v0.9.10 (was v0.9.9).
+
+## 2.0.28
+
+### Patch Changes
+
+- e8a7713: Bump default template ref to v0.9.9 (was v0.9.8).
+
+## 2.0.27
+
+### Patch Changes
+
+- e33c816: Bump default template ref to v0.9.8 (was v0.9.7).
+
+## 2.0.26
+
+### Patch Changes
+
+- ad02efc: Bump default template ref to v0.9.7 (was v0.9.6).
+
+## 2.0.25
+
+### Patch Changes
+
+- 63be864: Bump default template ref to v0.9.6 (was v0.9.5).
+
+## 2.0.24
+
+### Patch Changes
+
+- b2ba50b: Bump default template ref to v0.9.5 (was v0.9.4).
+
+## 2.0.23
+
+### Patch Changes
+
+- b495bbe: Bump default template ref to v0.9.4 (was v0.9.3).
+
+## 2.0.22
+
+### Patch Changes
+
+- 0fa3727: Bump default template ref to v0.9.3 (was v0.9.2).
+
+## 2.0.21
+
+### Patch Changes
+
+- 0179819: Bump default template ref to v0.9.2 (was v0.9.1).
+
+## 2.0.20
+
+### Patch Changes
+
+- 5ca5514: Bump default template ref to v0.9.1 (was v0.9.0).
+
+## 2.0.19
+
+### Patch Changes
+
+- ad79dc6: Bump default template ref to v0.9.0 (was v0.8.0).
+
+## 2.0.18
+
+### Patch Changes
+
+- 99ca2d9: Personalize the v2 AI shop's homepage hero with the brief's brand.
+
+  The active homepage (designs/webshop-classic/homepage.tsx) hardcoded "Your shop starts here" and the hero sub-headline only showed a generic default, so a v2 shop's landing didn't reflect the brand even after the palette + catalog were applied. `injectBriefFiles` now seeds `BrandingSettings.tagline` from the brief (drives the hero sub-headline) and swaps the hardcoded H1 for the brief's store name. The landing now reads e.g. "KaffeMekka" / "Din destination for kvalitetskaffe." in the brand palette.
+
 ## 2.0.17
 
 ### Patch Changes
