@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.0.31
+
+### Patch Changes
+
+- 8ef59da: Onboarding: the CLI now headlines the GitHub → Vercel path in its next-steps and offers an optional "Publish to GitHub now?" step (uses `gh`, fail-soft to manual instructions). Adds a `--no-github` flag (skipped under `--yes`). Links the new beginner guide at cartwright.app/docs/getting-started/from-code-to-live.
+- 0ea626e: Bump default template ref to v0.10.0 (was v0.9.11).
+
 ## 2.0.30
 
 ### Patch Changes
