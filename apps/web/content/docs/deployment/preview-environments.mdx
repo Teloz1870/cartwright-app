@@ -5,6 +5,12 @@ description: How Vercel preview deploys work for Cartwright — env var scoping,
 
 Vercel automatically creates a preview deployment for every pull request and every push to a non-production branch. Each preview gets its own unique URL (`https://my-shop-git-feature-branch-<org>.vercel.app`). This is useful for reviewing UI changes, testing admin flows, and sharing work-in-progress with stakeholders.
 
+<Callout type="info" title="Just want to use previews day-to-day?">
+The [**everyday loop**](/docs/getting-started/from-code-to-live/4-everyday-workflow) shows the
+beginner-friendly version of this — branch → open a PR → click the preview link Vercel posts →
+merge. This page is the technical detail behind that flow.
+</Callout>
+
 ## Environment variable scoping
 
 Vercel distinguishes three env var scopes: **Production**, **Preview**, and **Development**. A variable set to Production only is not present in preview deployments.

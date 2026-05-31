@@ -2,6 +2,7 @@
   "title": "Getting started",
   "pages": [
     "quick-start",
+    "from-code-to-live",
     "cli-options",
     "local-development",
     "setup-wizard",

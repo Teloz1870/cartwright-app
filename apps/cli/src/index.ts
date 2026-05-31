@@ -8,7 +8,7 @@
  *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
  *                                [--pm=pnpm|npm|yarn|bun]
- *                                [--no-install] [--no-git] [--skip-skills]
+ *                                [--no-install] [--no-git] [--no-github] [--skip-skills]
  *
  * Channels:
  *   --ref stable (default) → latest tagged template release
@@ -53,6 +53,16 @@ const CLI_VERSION: string = JSON.parse(
 ).version;
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
+
+/** True if a CLI tool is on PATH (used to offer optional gh-based publishing). */
+function commandExists(cmd: string): boolean {
+  try {
+    execSync(`${cmd} --version`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Default channel resolves to the latest tag mirrored from cartwright-private.
 // Bump together with a Changeset whenever a new template tag goes out —
@@ -169,6 +179,7 @@ async function run(): Promise<void> {
       template: { type: "string" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
+      "no-github": { type: "boolean" },
       "skip-skills": { type: "boolean" },
     },
   });
@@ -298,6 +309,9 @@ async function run(): Promise<void> {
     (values.pm as PackageManager | undefined) ?? detected;
   const installDeps = !values["no-install"];
   const initGit = !values["no-git"];
+  // Offer to publish to GitHub interactively (skipped in --yes / --no-git / --no-github).
+  const offerGithub =
+    !values["no-github"] && !values["no-git"] && values.yes !== true;
   const skipSkills = values["skip-skills"] === true;
   const requestedRef = values.ref ?? "stable";
   const templateRef = REF_ALIASES[requestedRef] ?? requestedRef;
@@ -371,10 +385,51 @@ async function run(): Promise<void> {
   }
 
   // ── Git init ────────────────────────────────────────────────────────────
+  let gitInitialized = false;
   if (initGit) {
-    const gitOk = tryGitInit(targetDir);
-    if (!gitOk) {
+    gitInitialized = tryGitInit(targetDir);
+    if (!gitInitialized) {
       note(pc.yellow("git init skipped — git not available."), "info");
+    }
+  }
+
+  // ── Optional: publish to GitHub ───────────────────────────────────────────
+  // Beginners' biggest gap is "scaffolded → now what?". Offer the next hop:
+  // put the code on GitHub (the home that Vercel deploys from). Fully optional,
+  // fail-soft, and only when we actually have a git repo + an interactive run.
+  if (gitInitialized && offerGithub) {
+    const wantsGithub = await confirm({
+      message: "Publish this shop to a private GitHub repo now?",
+      initialValue: false,
+    });
+    if (wantsGithub === true) {
+      if (commandExists("gh")) {
+        const ghSpinner = spinner();
+        ghSpinner.start("Creating private GitHub repo + pushing…");
+        try {
+          execSync(
+            `gh repo create ${finalSlug} --private --source=. --remote=origin --push`,
+            { cwd: targetDir, stdio: "ignore" },
+          );
+          ghSpinner.stop(pc.green("Pushed to GitHub."));
+        } catch {
+          ghSpinner.stop(pc.yellow("Couldn't auto-publish — do it by hand:"));
+          note(
+            "1. Create an empty PRIVATE repo at https://github.com/new (no README)\n" +
+              `2. git remote add origin https://github.com/<you>/${finalSlug}.git\n` +
+              "3. git branch -M main && git push -u origin main",
+            "GitHub",
+          );
+        }
+      } else {
+        note(
+          "The GitHub CLI (gh) isn't installed — easiest path is the desktop app:\n" +
+            "• Install GitHub Desktop: https://desktop.github.com\n" +
+            "• Add this folder, then click 'Publish repository' (keep it private)\n" +
+            "Full walkthrough: https://cartwright.app/docs/getting-started/from-code-to-live/2-publish-repo",
+          "GitHub",
+        );
+      }
     }
   }
 
@@ -436,10 +491,16 @@ async function run(): Promise<void> {
     databaseNote(database),
     aiHint,
     "",
-    pc.bold("Going to production?"),
-    pc.dim("  Deploy, custom domain, and email — the Go Live guide has the path:"),
-    pc.dim("  https://cartwright.app/docs/deployment/go-live"),
+    pc.bold("Put it online (GitHub → Vercel):"),
+    pc.dim("  1. Push this folder to a GitHub repo (private)"),
+    pc.dim("  2. Import the repo at vercel.com → it builds + gives you a live URL"),
+    pc.dim("  3. Every push to GitHub then redeploys your shop automatically"),
+    "  " +
+      pc.cyan(
+        "Full beginner guide (no terminal needed): https://cartwright.app/docs/getting-started/from-code-to-live",
+      ),
     "",
+    pc.dim("Domain + email when you're ready: https://cartwright.app/docs/deployment/go-live"),
     pc.dim("Docs:    https://cartwright.app/docs/getting-started/quick-start"),
     pc.dim("Mirror:  https://github.com/Teloz1870/cartwright-template"),
   ]

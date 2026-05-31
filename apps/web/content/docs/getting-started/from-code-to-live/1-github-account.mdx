@@ -1,0 +1,66 @@
+---
+title: 1 · Get on GitHub
+description: Create a free GitHub account and install the one tool that puts your shop online.
+---
+
+GitHub is where your shop's code will live. It's free, and you'll use the same account for
+everything from here on.
+
+<Steps>
+
+1. **Create a free GitHub account.**
+
+   Go to [github.com/signup](https://github.com/signup) and follow the prompts (email, password,
+   username). Pick a username you're happy with — it shows up in your repository's web address.
+
+   <Callout type="tip">
+   Your username becomes part of your code's address, like `github.com/yourname/my-shop`. Short
+   and lowercase is nice, but anything works.
+   </Callout>
+
+2. **Install the tool you'll use to publish your code.**
+
+<Tabs items={['Uden terminal', 'Med terminal']}>
+  <Tab value="Uden terminal">
+
+   Download **GitHub Desktop** — a friendly app with buttons, no commands:
+
+   - Go to [desktop.github.com](https://desktop.github.com) and download it for Mac or Windows.
+   - Open it and click **Sign in to GitHub.com** — use the account you just made.
+
+   That's everything. GitHub Desktop is all you need for the no-terminal path.
+
+  </Tab>
+  <Tab value="Med terminal">
+
+   Install **git** (the version-control tool) and optionally the **GitHub CLI** (`gh`, which
+   automates creating the repo):
+
+```bash
+# macOS (Homebrew)
+brew install git gh
+
+# Windows (winget)
+winget install Git.Git GitHub.cli
+```
+
+   Then log in to GitHub from the terminal:
+
+```bash
+gh auth login
+```
+
+   Pick **GitHub.com → HTTPS → Login with a web browser** and follow the link. Done.
+
+  </Tab>
+</Tabs>
+
+</Steps>
+
+<Callout type="info" title="Why bother with GitHub at all?">
+Two reasons. First, it's a **backup with history** — every change is saved, and you can roll back
+to any earlier version of your shop. Second, it's the **trigger for going live** — once Vercel is
+connected (next steps), publishing a change is as simple as saving it to GitHub.
+</Callout>
+
+Next: [Step 2 — Publish your shop](/docs/getting-started/from-code-to-live/2-publish-repo).

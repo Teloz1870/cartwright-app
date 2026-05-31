@@ -1,0 +1,78 @@
+---
+title: 2 · Publish your shop to GitHub
+description: Put your scaffolded shop into a private GitHub repository — its safe home with full history.
+---
+
+`create-cartwright` already saved your shop as a first version on your computer (a "commit").
+Now you'll send that to GitHub so it lives online, privately, with every future change tracked.
+
+<Callout type="info" title="Repository = your shop's folder on GitHub">
+A **repository** (or "repo") is just your project folder, stored on GitHub. Keep it **private**
+so only you can see the code — your live shop is still public, but the source stays yours.
+</Callout>
+
+<Tabs items={['Uden terminal', 'Med terminal']}>
+  <Tab value="Uden terminal">
+
+<Steps>
+
+1. **Open your shop in GitHub Desktop.**
+
+   In GitHub Desktop: **File → Add Local Repository**, then choose the folder `create-cartwright`
+   made (e.g. `my-shop`). GitHub Desktop recognizes it's already a git project.
+
+2. **Publish it.**
+
+   Click the blue **Publish repository** button at the top.
+   - **Name** — your shop's name (e.g. `my-shop`).
+   - **Keep "Keep this code private" checked.** ✅
+   - Click **Publish repository**.
+
+3. **Done.**
+
+   Your code is now on GitHub. Click **View on GitHub** to see it in your browser — that web page
+   is your repo. Keep this tab handy; you'll point Vercel at it in the next step.
+
+</Steps>
+
+  </Tab>
+  <Tab value="Med terminal">
+
+<Steps>
+
+1. **Create the repo and push, in one command** (needs the GitHub CLI from Step 1).
+
+   From inside your shop folder:
+
+```bash
+cd my-shop
+gh repo create my-shop --private --source=. --remote=origin --push
+```
+
+   This creates a private repo named `my-shop` on GitHub and uploads your code to it.
+
+2. **No GitHub CLI? Do it in two parts.**
+
+   Create an empty private repo at [github.com/new](https://github.com/new) (don't add a README),
+   then connect and push:
+
+```bash
+git remote add origin https://github.com/YOUR-USERNAME/my-shop.git
+git branch -M main
+git push -u origin main
+```
+
+   Replace `YOUR-USERNAME` with your GitHub username.
+
+</Steps>
+
+  </Tab>
+</Tabs>
+
+<Callout type="warn" title="Your secret keys are NOT uploaded — that's correct">
+Cartwright is set up to **never** push your `.env.local` (where API keys and database passwords
+live) to GitHub. You'll add those directly to Vercel in the next step. If you ever see a warning
+about committing a `.env` file, stop — keys should never go to GitHub.
+</Callout>
+
+Next: [Step 3 — Connect Vercel](/docs/getting-started/from-code-to-live/3-connect-vercel).

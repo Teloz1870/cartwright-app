@@ -1,0 +1,74 @@
+---
+title: 3 · Connect Vercel and go live
+description: Import your GitHub repo into Vercel, add your keys, and get your first live URL.
+---
+
+Vercel turns the code in your GitHub repo into a real, fast website — and rebuilds it every time
+you push a change. The free plan is plenty to launch.
+
+<Steps>
+
+1. **Create a free Vercel account — sign in with GitHub.**
+
+   Go to [vercel.com/signup](https://vercel.com/signup) and choose **Continue with GitHub**. This
+   links the two accounts so Vercel can see your repos. (One click, no extra password.)
+
+2. **Import your shop's repository.**
+
+<Tabs items={['Uden terminal', 'Med terminal']}>
+  <Tab value="Uden terminal">
+
+   In the Vercel dashboard: **Add New… → Project**. You'll see a list of your GitHub repos —
+   find `my-shop` and click **Import**. If it's not listed, click **Adjust GitHub App Permissions**
+   and give Vercel access to the repo.
+
+  </Tab>
+  <Tab value="Med terminal">
+
+   From inside your shop folder:
+
+```bash
+npm i -g vercel
+vercel link
+```
+
+   Follow the prompts to create/link the Vercel project to this repo.
+
+  </Tab>
+</Tabs>
+
+3. **Add your environment variables (your keys and database).**
+
+   Before the first build, Vercel needs a few values. In the import screen (or **Project →
+   Settings → Environment Variables**), add at least:
+
+   - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` — your production database. See
+     [Deployment → Turso](/docs/deployment/turso) to create one in two minutes (free tier).
+   - `AUTH_SECRET` — a random secret for logins. Generate one with `openssl rand -hex 32`
+     (or any 32+ character random string).
+
+   <Callout type="tip" title="Optional keys can wait">
+   Stripe, Anthropic, Gemini, Resend and the rest are optional — your shop runs without them and
+   you can add them anytime in `/admin/integrations` or here in Vercel. The full list is in your
+   project's `.env.example`.
+   </Callout>
+
+4. **Deploy.**
+
+   Click **Deploy** (or it starts automatically after import). Vercel builds your shop — about a
+   minute — and gives you a live URL like `my-shop.vercel.app`. **That's your shop, on the
+   internet.** 🎉
+
+5. **Finish setup in the admin.**
+
+   Open `https://my-shop.vercel.app/admin/setup` and walk the wizard (brand, theme, first
+   products). See [Go live](/docs/deployment/go-live) for the launch checklist.
+
+</Steps>
+
+<Callout type="info" title="From now on, publishing is automatic">
+Vercel is now watching your GitHub repo. **Every time you push a change to GitHub, Vercel
+rebuilds your live shop.** The next page shows the safe, everyday way to make changes.
+</Callout>
+
+Next: [Step 4 — The everyday loop](/docs/getting-started/from-code-to-live/4-everyday-workflow).

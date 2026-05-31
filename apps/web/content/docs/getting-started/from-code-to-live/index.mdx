@@ -1,0 +1,63 @@
+---
+title: From code to live
+description: The complete path from a scaffolded shop on your laptop to a live store on the internet — using GitHub and Vercel, the free stack you own.
+---
+
+You ran `npx create-cartwright` and you have a shop on your computer. This guide takes you the
+rest of the way: onto **GitHub**, connected to **Vercel**, and **live on the internet** — with
+a workflow you can use forever to change your shop safely.
+
+It's written for people who have **never used GitHub or the command line**. Every step has two
+tabs: **Uden terminal** (point-and-click, no typing commands) and **Med terminal** (for when you
+want the command-line way). Pick whichever you like — they end in the same place.
+
+<Callout type="info" title="What are these three things?">
+- **Cartwright** — your shop's code, already on your laptop.
+- **GitHub** — a free home on the internet for that code. It remembers every version, so you can
+  always undo. Think of it as Google Drive for code, plus a time machine.
+- **Vercel** — a free service that takes the code from GitHub and turns it into a real website.
+  Push a change to GitHub → Vercel rebuilds your live shop automatically.
+
+GitHub and Vercel both have a **free plan that never expires**, and you own everything. No
+monthly rent, no lock-in.
+</Callout>
+
+## The journey
+
+<Cards>
+  <Card title="1 · Get on GitHub" href="/docs/getting-started/from-code-to-live/1-github-account" description="Create a free account and install the one app you need." />
+  <Card title="2 · Publish your shop" href="/docs/getting-started/from-code-to-live/2-publish-repo" description="Put your scaffolded code into a private GitHub repository." />
+  <Card title="3 · Connect Vercel" href="/docs/getting-started/from-code-to-live/3-connect-vercel" description="Import the repo into Vercel and get your first live URL." />
+  <Card title="4 · The everyday loop" href="/docs/getting-started/from-code-to-live/4-everyday-workflow" description="Change something → preview it safely → publish. The skill you keep." />
+  <Card title="5 · Sign in with GitHub (optional)" href="/docs/getting-started/from-code-to-live/5-sign-in-with-github" description="Add a 'Continue with GitHub' button to your shop's login." />
+</Cards>
+
+## The whole flow at a glance
+
+<Steps>
+
+1. **Scaffold** — `npx create-cartwright` (done — your shop is on your laptop).
+
+2. **Publish to GitHub** — your code gets a safe home with full history.
+
+3. **Connect to Vercel** — Vercel watches your GitHub repo.
+
+4. **Set your keys** — database + secrets go into Vercel (once).
+
+5. **First deploy** — Vercel builds your shop and gives you a live URL.
+
+6. **The loop, forever** — edit → save a version → preview it on its own URL → publish to your
+   real site. Nothing risky ever touches the live shop until you say so.
+
+7. **Your own domain** — point `yourshop.com` at it.
+
+</Steps>
+
+<Callout type="tip">
+Already comfortable with Git and Vercel? You can skip straight to
+[Deployment → Vercel](/docs/deployment/vercel) and
+[Custom domain](/docs/deployment/custom-domain). This guide exists so that **nobody gets stuck**
+between "scaffolded" and "live".
+</Callout>
+
+Ready? Start with [Step 1 — Get on GitHub](/docs/getting-started/from-code-to-live/1-github-account).
