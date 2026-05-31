@@ -1,0 +1,94 @@
+---
+title: 4 · The everyday loop
+description: The safe, repeatable way to change your shop — preview every change on its own URL before it touches your live store.
+---
+
+This is the skill that makes everything else worth it. Once you've got it, you can change your
+shop confidently, forever — because **nothing risky ever hits your live store until you approve
+it.**
+
+<Callout type="info" title="The idea in one sentence">
+Make changes on a **branch** (a safe copy) → Vercel gives that branch its **own preview URL** →
+when it looks right, **merge** it → your live shop updates.
+</Callout>
+
+## The loop
+
+<Steps>
+
+1. **Start a branch** (a safe parallel copy of your shop).
+
+<Tabs items={['Uden terminal', 'Med terminal']}>
+  <Tab value="Uden terminal">
+
+   In GitHub Desktop: **Current Branch → New Branch**, name it something like
+   `new-homepage`, and click **Create Branch**. You're now editing the copy, not the live shop.
+
+  </Tab>
+  <Tab value="Med terminal">
+
+```bash
+git checkout -b new-homepage
+```
+
+  </Tab>
+</Tabs>
+
+2. **Make your change** — edit text, swap an image, add a product, change a colour. Save the files.
+
+3. **Save a version (a "commit") and send it to GitHub.**
+
+<Tabs items={['Uden terminal', 'Med terminal']}>
+  <Tab value="Uden terminal">
+
+   GitHub Desktop lists what you changed. Type a short summary at the bottom-left (e.g.
+   "New homepage headline"), click **Commit to new-homepage**, then click **Publish branch** (or
+   **Push origin**) at the top.
+
+  </Tab>
+  <Tab value="Med terminal">
+
+```bash
+git add -A
+git commit -m "New homepage headline"
+git push -u origin new-homepage
+```
+
+  </Tab>
+</Tabs>
+
+4. **Open a Pull Request** — this asks "please consider these changes for the live shop".
+
+   On your repo's GitHub page you'll see a **Compare & pull request** button — click it, then
+   **Create pull request**. (In GitHub Desktop, use **Branch → Create Pull Request**.)
+
+5. **Preview it on its own URL.**
+
+   Within a minute, **Vercel posts a comment on your Pull Request with a preview link** — a
+   complete, live copy of your shop *with your change*, at its own address. Click it, click
+   around, share it with someone. Your real store is untouched.
+
+6. **Publish — merge the Pull Request.**
+
+   Happy with the preview? Click **Merge pull request** on GitHub. Vercel rebuilds your **live**
+   shop with the change. Done.
+
+</Steps>
+
+<Callout type="tip" title="Made a mistake? Undo it.">
+Because every version is saved, you can always go back. In Vercel: **Project → Deployments**,
+find a previous good one, and click **⋯ → Promote to Production** (an instant rollback). Or revert
+the change on GitHub. Nothing is ever truly broken.
+</Callout>
+
+## When do I just push to `main`?
+
+For tiny, confident changes you can commit straight to your `main` branch — it deploys to
+production directly, skipping the preview. The branch-and-preview loop above is the safe default,
+especially while you're learning. Use previews for anything you're unsure about.
+
+That's the whole craft. You now have everything: a shop, a home on GitHub, automatic deploys on
+Vercel, and a safe way to change anything.
+
+Optional next: add a [**Sign in with GitHub**](/docs/getting-started/from-code-to-live/5-sign-in-with-github)
+button to your shop's login.

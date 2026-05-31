@@ -1,0 +1,71 @@
+---
+title: 5 · Sign in with GitHub (optional)
+description: Add a "Continue with GitHub" button to your shop's login, alongside the built-in magic-link.
+---
+
+By default, customers sign in to your shop with a **magic link** (a one-tap email link) — no
+passwords, nothing to configure. If you'd also like a **"Continue with GitHub"** button, you can
+turn it on. It's optional and **off by default**.
+
+<Callout type="info" title="When is this useful?">
+Developer-facing or technical shops whose customers already have GitHub accounts. For a normal
+consumer store, the built-in magic-link is usually all you need — feel free to skip this page.
+</Callout>
+
+## Turn it on
+
+<Steps>
+
+1. **Create a GitHub OAuth App.**
+
+   Go to [github.com/settings/developers](https://github.com/settings/developers) →
+   **OAuth Apps → New OAuth App**:
+
+   - **Application name** — your shop's name.
+   - **Homepage URL** — `https://yourshop.com` (or your `.vercel.app` URL).
+   - **Authorization callback URL** — `https://yourshop.com/api/auth/callback/github`
+     (use your real domain).
+
+   Click **Register application**, then **Generate a new client secret**. Copy the **Client ID**
+   and **Client secret**.
+
+2. **Add the two keys to Vercel.**
+
+   In **Project → Settings → Environment Variables**, add:
+
+   - `GITHUB_CLIENT_ID`
+   - `GITHUB_CLIENT_SECRET`
+
+   (Add them locally to `.env.local` too if you want to test on `localhost` — use a second OAuth
+   App with the `http://localhost:3000/...` callback.)
+
+3. **Enable the feature flag.**
+
+   In `brand.config.ts`, set:
+
+```ts
+features: {
+  // …
+  githubAuth: true,
+}
+```
+
+   Commit and push (the [everyday loop](/docs/getting-started/from-code-to-live/4-everyday-workflow)).
+   Vercel redeploys, and a **Continue with GitHub** button appears on your login page next to the
+   magic-link form.
+
+</Steps>
+
+<Callout type="warn" title="Admin access is still yours alone">
+Signing in with GitHub creates (or links) a **customer** account. It does **not** grant admin
+rights — admin is a separate role you control in the database. So enabling this is safe: a random
+GitHub user can register as a customer, never as an admin.
+</Callout>
+
+<Callout type="tip" title="Same email = same account">
+If someone already has a magic-link account with the same email as their GitHub account, the two
+are linked automatically — they end up as one customer, however they sign in.
+</Callout>
+
+That's it — you've completed the full journey, from a folder on your laptop to a live shop with
+your choice of logins. Back to the [overview](/docs/getting-started/from-code-to-live).

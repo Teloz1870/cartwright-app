@@ -35,7 +35,8 @@ export type BrandSlug =
   | 'zapier'
   | 'shipstation'
   | 'algolia'
-  | 'firecrawl';
+  | 'firecrawl'
+  | 'github';
 
 type Registry = Record<
   BrandSlug,
@@ -74,6 +75,7 @@ const REGISTRY: Registry = {
   slack: { kind: 'svg', file: 'slack.svg', brandColor: '#4A154B', bgOnDark: true },
   zapier: { kind: 'svg', file: 'zapier.svg', brandColor: '#FF4F00' },
   algolia: { kind: 'svg', file: 'algolia.svg', brandColor: '#003DFF', bgOnDark: true },
+  github: { kind: 'svg', file: 'github.svg', brandColor: '#181717', bgOnDark: true },
 
   // letter-mark fallback for brands without an available SVG mark
   nextauth: { kind: 'letter', mark: 'A', brandColor: '#7B5CFF' },

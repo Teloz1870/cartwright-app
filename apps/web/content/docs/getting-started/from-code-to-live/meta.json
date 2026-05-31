@@ -1,0 +1,11 @@
+{
+  "title": "From code to live",
+  "pages": [
+    "index",
+    "1-github-account",
+    "2-publish-repo",
+    "3-connect-vercel",
+    "4-everyday-workflow",
+    "5-sign-in-with-github"
+  ]
+}
