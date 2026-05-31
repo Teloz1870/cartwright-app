@@ -12,7 +12,7 @@ import { baseOptions } from '@/lib/layout.shared';
 export const metadata: Metadata = {
   title: 'Showcase',
   description:
-    'Northbound Coffee Roasters — a live specialty-coffee storefront built on the Cartwright template. Browse it, check out in Stripe test mode, and talk to the AI Brew Guide.',
+    'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from, now running every feature. Plus Northbound Coffee and the Teloz B2B site.',
 };
 
 const buildFacts = [
@@ -72,6 +72,33 @@ const templateFacts = [
   },
 ];
 
+const solbrillenFacts = [
+  {
+    term: 'The shop Cartwright grew out of',
+    description:
+      'Solbrillen.dk is the real eyewear store the engine was extracted from — now running on the latest template.',
+  },
+  {
+    term: 'Every feature, on',
+    description:
+      'Voice shopping, AI Stylist, reviews, wishlist, blog, tax & shipping, ACP agent-checkout, currency switcher — the max-features build.',
+  },
+  {
+    term: 'Real Stripe-test checkout',
+    description: (
+      <>
+        A working cart + checkout. Pay with test card{' '}
+        <code className="font-mono">4242 4242 4242 4242</code>.
+      </>
+    ),
+  },
+  {
+    term: 'Legacy fields still work',
+    description:
+      'The original eyewear data model (frame/lens colour) and ~340 legacy CSS tokens — carried forward, untouched.',
+  },
+];
+
 function ExternalArrow() {
   return (
     <svg
@@ -94,6 +121,7 @@ function BrowserFrame({
   height,
   alt,
   sizes,
+  domain = 'demo.cartwright.app',
   className = '',
   frameShadow = 'shadow-2xl',
   glow = false,
@@ -103,6 +131,7 @@ function BrowserFrame({
   height: number;
   alt: string;
   sizes: string;
+  domain?: string;
   className?: string;
   frameShadow?: 'shadow-2xl' | 'shadow-xl';
   glow?: boolean;
@@ -117,7 +146,7 @@ function BrowserFrame({
           <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
           <span className="size-2.5 rounded-full bg-cw-stone-300 dark:bg-cw-stone-700" />
           <div className="ml-3 flex-1 rounded-md bg-cw-paper dark:bg-cw-ink border border-cw-stone-200 dark:border-cw-stone-800 px-2.5 py-1 text-[11px] font-mono text-cw-stone-500 dark:text-cw-stone-400">
-            demo.cartwright.app
+            {domain}
           </div>
         </div>
         <Image
@@ -148,25 +177,92 @@ export default function ShowcasePage() {
           <div className="relative mx-auto max-w-2xl text-center">
             <Badge tone="terracotta" className="mb-6">
               <span className="size-1.5 rounded-full bg-cw-terracotta" />
-              First shop is live
+              Three live shops
             </Badge>
             <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
               Shops built with Cartwright.
             </h1>
             <p className="mt-5 text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
-              The showcase starts with a real one.{' '}
+              They&apos;re all real, and they all run the same engine.{' '}
               <strong className="font-semibold text-cw-stone-700 dark:text-cw-stone-300">
-                Northbound Coffee Roasters
+                Solbrillen.dk
               </strong>{' '}
-              is a live specialty-coffee storefront — scaffolded from the
-              Cartwright template, themed, and shipped. Browse it, run a checkout
-              in Stripe test mode, and ask its AI Brew Guide for a pour-over
-              recipe.
+              is the eyewear store Cartwright was extracted from — now running
+              every feature. Alongside it: a specialty-coffee shop and a B2B
+              agency site. Browse them, check out in Stripe test mode, talk to
+              their AI assistants.
             </p>
           </div>
         </Section>
 
         <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
+          <SectionHeader
+            eyebrow="Flagship · the origin shop"
+            title="Solbrillen.dk"
+            description="The real eyewear store Cartwright was extracted from — refreshed onto the latest engine with the full feature set turned on. Voice shopping, AI Stylist, reviews, wishlist, blog, tax & shipping, agent-checkout (ACP), multi-currency. A genuine production shop, not a demo skin."
+          />
+          <div className="mt-12 grid gap-12 lg:grid-cols-[1.25fr_1fr] items-start">
+            <div>
+              <BrowserFrame
+                src="/showcase/solbrillen-hero.jpg"
+                width={2880}
+                height={1800}
+                sizes="(min-width: 1024px) 56vw, 100vw"
+                alt="Solbrillen.dk eyewear storefront hero in a browser frame"
+                domain="solbrillen.dk"
+                glow
+              />
+              <BrowserFrame
+                src="/showcase/solbrillen-products.jpg"
+                width={2880}
+                height={1800}
+                sizes="(min-width: 1024px) 56vw, 100vw"
+                alt="Solbrillen.dk product catalogue in a browser frame"
+                domain="solbrillen.dk"
+                className="mt-5"
+                frameShadow="shadow-xl"
+              />
+            </div>
+
+            <Card>
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+                The build
+              </p>
+              <ul className="mt-4 space-y-3.5">
+                {solbrillenFacts.map((fact) => (
+                  <li key={fact.term} className="flex gap-3">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                    <div>
+                      <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                        {fact.term}
+                      </p>
+                      <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                        {fact.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 border-t border-cw-stone-200 dark:border-cw-stone-800" />
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <ButtonLink
+                  href="https://solbrillen.dk"
+                  size="lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Visit the live shop
+                  <ExternalArrow />
+                </ButtonLink>
+              </div>
+              <div className="mt-3">
+                <Badge tone="oker">max-features · the origin vertical</Badge>
+              </div>
+            </Card>
+          </div>
+        </Section>
+
+        <Section>
           <SectionHeader
             eyebrow="Featured shop"
             title="Northbound Coffee Roasters"
