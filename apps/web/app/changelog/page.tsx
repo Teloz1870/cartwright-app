@@ -10,6 +10,27 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.4.0',
+    date: 'May 2026',
+    title: 'The big one: 12 feature tracks (engine v0.10.0)',
+    description:
+      'The largest single release — twelve subsystems land in one tag, every one opt-in and default-off so an upgrade behaves exactly as before until you flip a flag. The authoritative flag list is lib/feature-flags/manifest.ts, and the customer-facing /built-with-cartwright tour now renders itself from that manifest, so it can never go stale at release time again.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Resolvable Genome (genomeResolve) — copy fields render override ?? resolved-cache ?? brand anchor, harmonised against your identity anchors. Render never calls an LLM; resolution is triggered in /admin/genome. Respawn a shop\'s whole voice from a sentence.',
+      'SEO/GEO Autopilot (seoAutopilot, ⭐ Pro) — measures search performance (GSC) + AI-citation share, then runs self-improving genome experiments: apply → measure → keep or revert. /admin/seo-performance.',
+      'Hoptify (hoptify + logoGenerator) — a tongue-in-cheek Shopify pendant: a familiar storefront design plus a parody "import from Shopify" onboarding that genuinely brings your palette (design-import) and products (Firecrawl scraper) across when a key is set, fail-soft to a demo otherwise. Includes a Gemini raster logo generator.',
+      'Firecrawl scraper + Design import (designImport) — scrape product data from a URL, or pull a colour palette from any site into a live theme in ~2 minutes. /admin/design-import.',
+      'Blog (blog) — /blog + RSS + BlogPosting JSON-LD + sitemap, edited from /admin/blog. Content marketing without a second CMS.',
+      'Shipping & fulfillment (shippingZones) — zone/weight rates with delivery times + dropship-supplier routing, or a flat rate. /admin/shipping.',
+      'Tax / VAT (stripeTax) — managed multi-country VAT via Stripe Tax (EU OSS, VAT-ID) with invoicing, or the built-in single-rate. Correct at checkout either way.',
+      'WooCommerce parity — wishlist, abandoned-cart recovery, admin redirects, product CSV import/export, and a translation-management UI. The migration toolkit.',
+      'GDPR / DSAR — data-subject export + soft-erasure, retention crons, and a processor register at /admin/processors. Compliance built in, not bolted on.',
+      'Backup + indexing controls — automated DB backup cron, plus per-shop noindex + AI-crawler allow/block toggles wired into robots.txt and meta robots.',
+      'All flags default-off and ship in the engine v0.10.0 tag — npx create-cartwright pulls them once the template ref bumps. See the engine CHANGELOG for per-feature setup + required keys (FIRECRAWL_API_KEY, BLOB_READ_WRITE_TOKEN).',
+    ],
+  },
+  {
     version: '3.3.0',
     date: 'May 2026',
     title: 'Design System: pick a design, import from any AI tool',

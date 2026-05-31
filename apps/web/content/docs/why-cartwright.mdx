@@ -13,6 +13,12 @@ next-forge is a SaaS starter. It solves a different shape of problem: accounts, 
 
 The main tradeoff is maintenance. Cartwright gives you code ownership, but ownership includes upgrades, bug fixes, integration drift, migrations, observability, and security. There is no commerce-specific support contract baked into the template. Community and paid setup help exist, but this is not a managed platform. When you outgrow the self-hosted setup, [Plus and Cloud tiers](/pricing) layer on hosted services, premium MCP integrations, and (in Cloud) managed Vercel + Turso without breaking the open-source spine.
 
+## Migrating from Shopify or WooCommerce
+
+Switching shouldn't mean rebuilding from scratch. **Hoptify** — the engine's tongue-in-cheek Shopify pendant — ships a parody "import from Shopify" onboarding (`/admin/hoptify`) that, with a Firecrawl key, genuinely brings your brand palette (via design-import) and products across, fail-soft to a demo otherwise. It's a self-hosted on-ramp; the full agentic five-step migration (customers, deploy) ships with [Plus](/pricing).
+
+Coming from **WooCommerce**, the parity toolkit covers the everyday surface you'd miss: a wishlist, abandoned-cart recovery email, admin-managed redirects (so old URLs keep their SEO), product CSV import/export, and a translation-management UI. Tax/VAT (Stripe Tax or built-in single-rate) and zone/weight shipping are in the box too — the things that are usually an app-chain on the incumbents.
+
 ## When NOT to pick Cartwright
 
 Do not pick Cartwright if you want zero ops. Shopify or another hosted tool is usually better when uptime, checkout, apps, tax, and hosting should be somebody else's problem.

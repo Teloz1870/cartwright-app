@@ -36,7 +36,7 @@ const jsonLd = {
         priceCurrency: 'USD',
       },
       license: 'https://opensource.org/license/mit',
-      softwareVersion: '0.1.0-beta',
+      softwareVersion: '0.10.0',
     },
   ],
 };

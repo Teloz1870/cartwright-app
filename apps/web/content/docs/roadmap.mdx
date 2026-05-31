@@ -9,6 +9,7 @@ Cartwright is v0.1 today. The roadmap is intentionally short. Items are marked `
 
 These landed in v0.2 and are live in production today.
 
+- **Engine v0.10.0 — 12 feature tracks** `[shipped]` — Resolvable Genome, SEO/GEO Autopilot (Pro), Firecrawl scraper + design-import, **Hoptify** (parody Shopify design + "import from Shopify" onboarding + Gemini logo generator), GDPR/DSAR, backup, blog, indexing controls, tax/VAT, shipping/fulfillment, and WooCommerce parity. All opt-in, default-off. See the engine [CHANGELOG](/changelog).
 - **[`/integrations`](/integrations) top-nav page** — 15 core integrations + 10 Plus-tier MCP integrations with real brand logos and category eyebrows.
 - **[`/onboarding`](/onboarding) Plus-tier preview** — type a URL, watch the five-agent migration demo, join the waitlist.
 - **[`/pricing`](/pricing) with four tiers** — Self-hosted $0, Plus $49/mo, Cloud $199/mo, Enterprise. Resend-backed waitlist for Plus and Cloud.
@@ -27,7 +28,7 @@ These landed in v0.2 and are live in production today.
 ## Soon (v0.2 → v1.0)
 
 - **Cartwright template public** `[planned, gated]` — flip when the [contributing milestones](/docs/contributing) are met. Expected 4-8 weeks after Solbrillen.dk launch.
-- **Shopify migration with Plus** `[shipping Q3 2026]` — agentic five-step migration: scrape source URL, map products + customers + brand palette, deploy. Live preview already at [/onboarding](/onboarding). The agent ships with Plus; manual scripts remain available for self-hosted forks.
+- **Shopify migration** `[self-hosted on-ramp shipped in v0.10.0; full agentic flow Plus Q3 2026]` — the **Hoptify** "import from Shopify" onboarding shipped in v0.10.0: with a Firecrawl key it brings your palette (design-import) + products (scraper) across, fail-soft to a demo otherwise. The full five-step agentic migration (customers, deploy) still ships with Plus; live preview at [/onboarding](/onboarding).
 - **API auto-reference** `[planned]` — generate the `/docs/api/mcp-tools` page from `lib/tools/registry.ts` at build time instead of hand-maintaining it. The current page will drift; this fixes it.
 - **Algolia search** `[committed, Plus Q3 2026]` — confirmed Plus-tier MCP integration. Instant product search wired to the storefront and agent-callable for typed queries. Orama-based search stays for self-hosted forks under ~1000 products.
 
