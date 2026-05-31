@@ -182,6 +182,13 @@ const secondary: Secondary[] = [
     pitch: 'Hero image search from inside the admin theme generator.',
     brandUrl: 'https://unsplash.com',
   },
+  {
+    brand: 'firecrawl',
+    name: 'Firecrawl',
+    category: 'Web scraping',
+    pitch: 'Scrape product data + brand palette from any URL — the engine behind design-import and the Hoptify "import from Shopify" onboarding.',
+    brandUrl: 'https://firecrawl.dev',
+  },
 ];
 
 const foundationStack: { brand: BrandSlug; name: string }[] = [
@@ -281,7 +288,7 @@ export default function IntegrationsPage() {
             Pre-wired
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
-            Fifteen integrations.{' '}
+            Sixteen integrations.{' '}
             <span className="relative inline-block text-cw-terracotta">
               <span className="relative z-10">Wired. Validated. Ready to take an order.</span>
               <span

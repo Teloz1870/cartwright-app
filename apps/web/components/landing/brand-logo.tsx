@@ -34,7 +34,8 @@ export type BrandSlug =
   | 'slack'
   | 'zapier'
   | 'shipstation'
-  | 'algolia';
+  | 'algolia'
+  | 'firecrawl';
 
 type Registry = Record<
   BrandSlug,
@@ -80,6 +81,7 @@ const REGISTRY: Registry = {
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
   klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
   shipstation: { kind: 'letter', mark: 'S', brandColor: '#0078D2' },
+  firecrawl: { kind: 'letter', mark: 'F', brandColor: '#FA5D19' },
 };
 
 interface BrandLogoProps {

@@ -73,6 +73,30 @@ Gemini is wired separately for image-aware tasks: palette extraction, Vibe trans
 
 The MCP server at `/api/mcp` exposes a typed tool registry to external agents — discover by `/.well-known/mcp.json`, connect with any MCP-speaking client. Auth is API-key based with per-key scopes; rate limiting is already on.
 
+## Migration & import → Firecrawl
+
+`FIRECRAWL_API_KEY` powers three things. `lib/scrape/` scrapes product data from a URL into a structured product (`/admin/produkter/scrape`). `lib/design-import/` pulls a colour palette from any site into a live theme (`/admin/design-import`). And **Hoptify** (`/admin/hoptify`) is the tongue-in-cheek "import from Shopify" onboarding — with a key it genuinely brings your palette + products across, fail-soft to a demo otherwise. All three are default-off flags (`designImport`, `hoptify`), so an upgrade adds nothing visible until you turn them on.
+
+## Tax & VAT → Stripe Tax (or built-in)
+
+`stripeTax` toggles between managed multi-country VAT via Stripe Tax (EU OSS, VAT-ID validation, invoicing) and the built-in single-rate (`policies.vatRatePct`, `pricesIncludeVat`). VAT is computed correctly at checkout either way; configured in `/admin/integrations`.
+
+## Shipping & fulfillment → built-in
+
+`shippingZones` turns on zone/weight-based rates with delivery-time estimates and optional dropship-supplier routing (`Supplier` + `FulfillmentOrder` models, manual + email modes). Off = a single flat rate. Managed in `/admin/shipping`.
+
+## Content → Blog + Resolvable Genome
+
+`blog` mounts `/blog` + an RSS feed + `BlogPosting` JSON-LD + sitemap entries, edited from `/admin/blog`. Separately, the **Resolvable Genome** (`genomeResolve`) makes copy fields render `override ?? resolved-cache ?? brand anchor`, harmonised against your identity anchors — render never calls an LLM; resolution is triggered in `/admin/genome`. Respawn a shop's whole voice from a sentence.
+
+## Growth → SEO/GEO Autopilot (Pro)
+
+`seoAutopilot` (needs `cartwrightPlus`) measures search performance (GSC) and AI-citation share, then runs self-improving genome experiments — apply → measure → keep or revert. `/admin/seo-performance`. Per-shop `seoIndexing` (public/noindex) + `aiCrawlers` (allow/block) wire into robots.txt + meta robots.
+
+## Compliance & ops → GDPR/DSAR, backup
+
+`lib/gdpr/` ships data-subject export + soft-erasure, retention crons, and a processor register at `/admin/processors`. A DB backup cron runs on `CRON_SECRET`. The WooCommerce-parity set (`wishlist`, `abandonedCart`, admin redirects, product CSV import/export, translation management) rounds out the migration toolkit. A Gemini logo generator (`logoGenerator`) needs `BLOB_READ_WRITE_TOKEN`.
+
 ## How fast can you actually go live?
 
 The path looks like this:
