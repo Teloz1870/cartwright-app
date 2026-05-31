@@ -98,6 +98,54 @@ const features = [
     title: 'Phone.inc telephony',
     body: 'IVR + voicemail + transcription scaffolded at /admin/telefon. (Phone.inc API spec evolving — current integration is preview.)',
   },
+  {
+    title: 'Resolvable Genome',
+    body: 'Copy fields resolve from override ?? cache ?? brand anchor, harmonised to your identity. Respawn a shop’s whole voice from a sentence. /admin/genome.',
+  },
+  {
+    title: 'SEO/GEO Autopilot',
+    body: 'Measures search (GSC) + AI-citation share, then runs self-improving experiments — apply, measure, keep or revert. Pro feature.',
+  },
+  {
+    title: 'Hoptify',
+    body: 'A tongue-in-cheek Shopify pendant: familiar storefront design + a parody “import from Shopify” onboarding that genuinely brings your look + products across.',
+  },
+  {
+    title: 'Logo generator',
+    body: 'Generate a real raster logo from a prompt (gemini-2.5-flash-image), upload to Blob, set as your brand mark — in one step.',
+  },
+  {
+    title: 'Design import',
+    body: 'Pull a colour palette from any URL (Firecrawl + AI) into a live theme in ~2 minutes. /admin/design-import.',
+  },
+  {
+    title: 'Firecrawl scraper',
+    body: 'Scrape product data from a URL into a structured product — the migration on-ramp behind design-import and Hoptify.',
+  },
+  {
+    title: 'Blog',
+    body: '/blog + RSS + BlogPosting JSON-LD + sitemap, edited from the admin. Content marketing without a second CMS.',
+  },
+  {
+    title: 'Shipping & fulfillment',
+    body: 'Zone/weight rates with delivery times + dropship-supplier routing — or a flat rate. /admin/shipping.',
+  },
+  {
+    title: 'Tax / VAT',
+    body: 'Managed multi-country VAT via Stripe Tax (EU OSS, VAT-ID) with invoicing, or built-in single-rate. Correct at checkout either way.',
+  },
+  {
+    title: 'WooCommerce parity',
+    body: 'Wishlist, abandoned-cart recovery, admin redirects, product CSV import/export, translation management — the migration toolkit.',
+  },
+  {
+    title: 'GDPR / DSAR',
+    body: 'Data-subject export + soft-erasure, retention crons, processor register at /admin/processors. Compliance built in, not bolted on.',
+  },
+  {
+    title: 'Backup + indexing controls',
+    body: 'Automated DB backup cron, plus per-shop noindex + AI-crawler allow/block toggles wired into robots.txt and meta robots.',
+  },
 ];
 
 export function FeatureGrid() {
