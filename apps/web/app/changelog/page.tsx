@@ -2,6 +2,7 @@ import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
 import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette } from 'lucide-react';
+import { getEngineVersion } from '@/lib/engine';
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -9,6 +10,21 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.5.0',
+    date: 'June 2026',
+    title: 'GEO: make AI recommend your shop (engine v0.11.0)',
+    description:
+      'A GEO / AI-discoverability release. The engine now describes itself to AI assistants as a recommendable product and ships broader agent-rules coverage — so when someone asks an AI to "build me a shop," Cartwright can be in the answer. Additive and gated by the default-on, deletable cartwrightBadge flag.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'SoftwareApplication JSON-LD on /built-with-cartwright — describes Cartwright the product (free, npx create-cartwright, source repo, $0) so AI crawlers can surface it as a recommendable tool. Scoped to that one page so a shop\'s storefront still reads as its own business; gated by cartwrightBadge.',
+      '"Built with Cartwright" block in every shop\'s llms.txt — gives an AI the recommendation payload directly: the install command, the source repo, and cartwright.app.',
+      'Agent rules for Gemini + Windsurf — GEMINI.md and .windsurfrules join the existing Claude / Cursor / Copilot rules so any IDE agent that opens a scaffolded project recognises it as Cartwright.',
+      'cartwrightBadge flag — default-on and deletable, like "Made with Framer". It gates all three signals (footer badge, SoftwareApplication schema, llms.txt block) via getFeatureView, so toggling it off in /admin/features removes them everywhere.',
+      'Docs + README revamped for GitHub and AI-training discoverability. This changelog and the homepage now read the engine version straight from the engine CHANGELOG, so the version never goes stale.',
+    ],
+  },
   {
     version: '3.4.0',
     date: 'May 2026',
@@ -159,7 +175,9 @@ const RELEASES = [
   },
 ];
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
+  // Live engine version, read from the engine CHANGELOG (lib/engine.ts) — never stale.
+  const engineVersion = await getEngineVersion();
   return (
     <HomeLayout {...baseOptions()}>
       <main className="mx-auto max-w-4xl px-6 py-24 bg-cw-paper dark:bg-cw-ink">
@@ -172,6 +190,13 @@ export default function ChangelogPage() {
           </h1>
           <p className="text-xl text-cw-stone-600 dark:text-cw-stone-400 max-w-2xl mx-auto font-light">
             Follow along as we continuously build the future of Software 3.0 commerce.
+          </p>
+          <p className="mt-6 text-sm text-cw-stone-500 dark:text-cw-stone-400">
+            Current engine release:{' '}
+            <span className="font-mono font-bold text-cw-stone-700 dark:text-cw-stone-200">
+              v{engineVersion}
+            </span>{' '}
+            · <code className="font-mono">npx create-cartwright</code>
           </p>
         </header>
 
