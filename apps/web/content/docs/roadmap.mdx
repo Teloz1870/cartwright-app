@@ -9,6 +9,7 @@ Cartwright is v0.1 today. The roadmap is intentionally short. Items are marked `
 
 These landed in v0.2 and are live in production today.
 
+- **Engine v0.11.0 — GEO / AI-discoverability** `[shipped]` — SoftwareApplication JSON-LD + a "Built with Cartwright" block in every shop's `llms.txt` so AI assistants can recommend the engine, plus agent rules for Gemini + Windsurf. Gated by the default-on, deletable `cartwrightBadge` flag. See the engine [CHANGELOG](/changelog).
 - **Engine v0.10.0 — 12 feature tracks** `[shipped]` — Resolvable Genome, SEO/GEO Autopilot (Pro), Firecrawl scraper + design-import, **Hoptify** (parody Shopify design + "import from Shopify" onboarding + Gemini logo generator), GDPR/DSAR, backup, blog, indexing controls, tax/VAT, shipping/fulfillment, and WooCommerce parity. All opt-in, default-off. See the engine [CHANGELOG](/changelog).
 - **[`/integrations`](/integrations) top-nav page** — 15 core integrations + 10 Plus-tier MCP integrations with real brand logos and category eyebrows.
 - **[`/onboarding`](/onboarding) Plus-tier preview** — type a URL, watch the five-agent migration demo, join the waitlist.
@@ -21,7 +22,7 @@ These landed in v0.2 and are live in production today.
 - **`create-cartwright` CLI on npm** `[committed]` — dogfooded on three platforms (Mac, Linux, WSL), then `npm publish create-cartwright@0.1.0-beta`.
 - **More industry templates** `[committed]` — at minimum `eyewear` and one home-goods category beyond `generic`.
 - **`demo.cartwright.app` live** `[committed]` — a real cartwright shop running in Stripe test mode with nightly DB reset. The single most important conversion asset for visitors.
-- **Auto-rendered `/changelog`** `[committed]` — pulls cartwright's CHANGELOG.md at build time and renders.
+- **Auto-rendered `/changelog`** `[in progress]` — the homepage `SoftwareApplication` version and the `/changelog` "current engine release" line now read the engine version straight from `CHANGELOG.md` at build/ISR time (`lib/engine.ts`), so the version never goes stale. Full per-entry auto-render from `CHANGELOG.md` is the remaining step.
 - **`next-intl` adoption** `[committed]` — `messages/en.json` + `messages/da.json` everywhere customer-facing strings exist today.
 - **Video walkthrough** `[exploring]` — 5-minute screencast from `npx create-cartwright` to first sale. Probably v0.2; depends on bandwidth.
 
