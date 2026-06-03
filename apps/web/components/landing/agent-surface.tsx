@@ -94,7 +94,7 @@ export function AgentSurface() {
         Agentic Commerce Protocol checkout, A2A negotiation, escrow with PoTE.
         ACP is gated behind <span className="font-mono">brand.features.acp</span> and
         A2A behind <span className="font-mono">brand.features.a2a</span>, so your
-        storefront stays clean if you don't want either surface.
+        storefront stays clean if you don&apos;t want either surface.
       </p>
     </Section>
   );

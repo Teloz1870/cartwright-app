@@ -68,7 +68,7 @@ export function ContactForm({ className }: { className?: string }) {
           <div>
             <p className="font-medium">Message sent — thanks {name}.</p>
             <p className="mt-1 text-cw-stone-500 dark:text-cw-stone-400">
-              We'll get back within 48 hours, usually faster. Check your inbox
+              We&apos;ll get back within 48 hours, usually faster. Check your inbox
               for the confirmation.
             </p>
           </div>
@@ -129,7 +129,7 @@ export function ContactForm({ className }: { className?: string }) {
             htmlFor="contact-subject"
             className="block text-xs font-medium text-cw-stone-700 dark:text-cw-stone-300 mb-1.5"
           >
-            What's this about?
+            What&apos;s this about?
           </label>
           <select
             id="contact-subject"

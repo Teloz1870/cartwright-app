@@ -268,31 +268,6 @@ export function VoiceShopDemoClient() {
     sessionRef.current.playbackCursor = startAt + buffer.duration;
   }
 
-  // Countdown — inside-the-interval setState pattern to avoid set-state-in-effect lint
-  useEffect(() => {
-    if (state !== "listening" && state !== "speaking" && state !== "thinking")
-      return;
-    const id = setInterval(() => {
-      setSecondsLeft((s) => {
-        const next = Math.max(0, s - 1);
-        if (next === 0 && s > 0) {
-          stopDemo();
-        }
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopDemo();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function stopDemo() {
     const r = sessionRef.current;
     try {
@@ -315,6 +290,29 @@ export function VoiceShopDemoClient() {
     };
     setState((prev) => (prev === "error" ? prev : "ended"));
   }
+
+  // Countdown — inside-the-interval setState pattern to avoid set-state-in-effect lint
+  useEffect(() => {
+    if (state !== "listening" && state !== "speaking" && state !== "thinking")
+      return;
+    const id = setInterval(() => {
+      setSecondsLeft((s) => {
+        const next = Math.max(0, s - 1);
+        if (next === 0 && s > 0) {
+          stopDemo();
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [state]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopDemo();
+    };
+  }, []);
 
   const active =
     state === "listening" || state === "thinking" || state === "speaking";

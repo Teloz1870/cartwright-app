@@ -180,7 +180,7 @@ export function FeatureGrid() {
           href="/integrations"
           className="font-medium text-cw-terracotta hover:underline"
         >
-          See what's in the box →
+          See what&apos;s in the box →
         </Link>
       </p>
     </Section>
