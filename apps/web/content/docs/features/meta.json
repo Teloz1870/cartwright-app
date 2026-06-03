@@ -2,6 +2,7 @@
   "title": "Features",
   "pages": [
     "admin-panels",
+    "order-management",
     "customer-storefront",
     "ai-assistant",
     "local-ai-ollama",

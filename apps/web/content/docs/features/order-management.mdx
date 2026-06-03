@@ -1,0 +1,56 @@
+---
+title: Order management
+description: An HPOS-grade operator cockpit for orders — workspace, returns/RMA, pick-list PDFs, and AI next-best-action. All flag-gated, default-off.
+---
+
+Every Cartwright shop already stored orders in proper relational tables (not a posts/meta hack), so the order *data layer* was never the bottleneck — the operator *experience* was. The order-management set turns `/admin/ordrer` from a flat list into a real back office: a scalable Orders workspace, a per-order lifecycle, admin-initiated returns, printable pick lists, and rule-based next-best-action suggestions.
+
+Everything ships behind four **default-off, ecommerce-gated** runtime flags. An upgrade behaves exactly as before until you flip a flag, website-mode shops never mount any of it, and with `orderWorkspace` off the legacy order table is unchanged.
+
+<Callout type="info">
+"HPOS" is a nod to WooCommerce's High-Performance Order Storage. Cartwright orders were already in dedicated, indexed tables — this release brings the *operator surface* up to that bar: server-side filtering, cursor pagination, bulk actions, and a proper order-notes/timeline model.
+</Callout>
+
+## Order workspace
+
+`brand.features.orderWorkspace` — the cockpit.
+
+- **Status tabs** over a 12-status lifecycle. The nine existing statuses are kept verbatim; three admin-only ones (`processing`, `delivered`, `completed`) are added. A pure state machine governs which transitions an operator may make — illegal moves are rejected with a reason, and the Stripe webhook keeps writing payment/refund/dispute statuses unguarded (they're facts about the world, not operator intent).
+- **Server-side search + cursor pagination** over indexed columns (email / order id / date range), so the screen stays fast at thousands of orders.
+- **Bulk status actions** with per-order skip reporting (an illegal transition in the batch is skipped and reported, not silently dropped).
+- **Exception flags** computed per row: delayed shipment, low stock on a line, or "needs attention" (flagged-review / disputed).
+- **Per-order timeline + internal notes** in one model (system entries for status changes, refunds, tracking, emails; private operator notes interleaved).
+- **Tracking entry, resend-confirmation, and send-shipping-notification** — the carrier/number/URL fields were always on the `Order`; now they're editable and drive a customer email.
+- **Manual refund** — issues a Stripe refund from the order; the `charge.refunded` webhook stays the single writer of refund status (and now resolves the order via the payment intent, so dashboard refunds finalize too).
+
+## Fulfillment & pick lists
+
+`brand.features.fulfillmentPdf` (needs `orderWorkspace`).
+
+A print-friendly packing-slip / pick-list route renders as `@media print` HTML — the operator hits ⌘P → "Save as PDF". No PDF dependency, nothing to cold-start on serverless. A one-click "create fulfillment" reuses the existing supplier-routing so multi-supplier orders split into per-supplier slips.
+
+## Returns / RMA
+
+`brand.features.returns` (needs `orderWorkspace`). Admin-initiated — no customer portal.
+
+Create a return against an order's lines with a reason, then move it through `requested → approved → received → refunded` (or `rejected`). Receiving a return restocks the items **idempotently** — a `restocked` flag inside the transaction guarantees stock increments exactly once even on a double-click or retry. Refunds reuse the same Stripe path as the workspace.
+
+<Callout type="warn">
+Refund and restock are deliberately decoupled: a **refund** returns money (webhook-finalized), a **return** returns money *and* stock. This avoids the un-keyable "did the webhook already restock?" race.
+</Callout>
+
+## AI next-best-action
+
+`brand.features.orderAi` (needs `orderWorkspace`).
+
+A deterministic rule engine reads each order's state and surfaces a ranked list of the next sensible action — *ship now (overdue)*, *follow up on delivery*, *review a flagged payment*, *submit dispute evidence*, *process a return* — as chips that deep-link to the relevant control. It's pure and free (no LLM call), so it works in every shop; an optional model-backed "ask AI about this order" layer can sit on top when a provider key is present.
+
+## Enabling it
+
+All four flags are off by default. Flip them per shop in `/admin/features` (they're runtime-toggleable once the shop is in webshop mode), or set them in `brand.config.ts`. Run `pnpm db:push` once to add the additive `OrderNote` / `Return` / `ReturnItem` tables and the nullable billing-address columns — lossless, safe to apply to a live database before deploying.
+
+<Cards>
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+  <Card title="Checkout (Stripe)" href="/docs/features/checkout-stripe" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>
