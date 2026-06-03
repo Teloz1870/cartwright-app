@@ -1,7 +1,7 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
-import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette } from 'lucide-react';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package } from 'lucide-react';
 import { getEngineVersion } from '@/lib/engine';
 
 export const metadata: Metadata = {
@@ -10,6 +10,21 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.6.0',
+    date: 'June 2026',
+    title: 'Order management: an HPOS-grade back office (engine v0.13.0)',
+    description:
+      'Turns /admin/ordrer from a flat list into a real back office: a scalable Orders workspace, admin-initiated returns/RMA, printable pick lists, and rule-based next-best-action. Everything ships behind four default-off, ecommerce-gated flags — an upgrade behaves exactly as before until you flip one, and website-mode shops never mount any of it.',
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Order workspace (orderWorkspace) — status tabs over a 12-status lifecycle governed by a pure state machine (the 9 existing statuses kept verbatim; new admin-only processing/delivered/completed), server-side search + cursor pagination, bulk status actions with per-order skip reporting, exception flags (delayed / low-stock / needs-attention), an order notes + status timeline, tracking entry, resend-confirmation + send-shipping-notification, and a manual refund button. Off → the legacy order table is unchanged.',
+      'Fulfillment & pick lists (fulfillmentPdf) — a print-friendly packing-slip / pick-list route (browser → "Save as PDF", no PDF dependency) plus a one-click create-fulfillment that reuses supplier routing.',
+      'Returns / RMA (returns) — admin-initiated returns: create → approve/reject → receive + restock → refund. Receiving restocks idempotently (a return restocks exactly once, even on a retry); refund reuses Stripe with the webhook as the single status-writer. Refund returns money, a return returns money AND stock — deliberately decoupled.',
+      'AI next-best-action (orderAi) — a deterministic rule engine surfaces the next sensible action per order (ship now, follow up on delivery, review a flagged payment, process a return) as ranked, deep-linking chips. Pure and free; an optional model-backed layer sits on top when a provider key is present.',
+      'Manual + dashboard refunds finalize reliably — charge.refunded now resolves the order via the payment intent when the charge has no orderId metadata (Stripe doesn\'t copy it). All four flags default-off; run pnpm db:push once to add the additive OrderNote / Return / ReturnItem tables + nullable billing-address columns (lossless).',
+    ],
+  },
   {
     version: '3.5.0',
     date: 'June 2026',
