@@ -119,7 +119,7 @@ export default function ContactPage() {
             </ul>
 
             <p className="text-xs text-cw-stone-500 dark:text-cw-stone-400 pt-2">
-              For bug reports, GitHub Issues is the fastest path — it's where
+              For bug reports, GitHub Issues is the fastest path — it&apos;s where
               we live during the day.
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function ContactPage() {
             Or scaffold a shop right now.
           </h2>
           <p className="mt-4 max-w-xl text-base text-cw-stone-500 dark:text-cw-stone-400">
-            Self-hosted, free, MIT. Start exploring before you write — we'll be
+            Self-hosted, free, MIT. Start exploring before you write — we&apos;ll be
             here when you have specific questions.
           </p>
           <div className="mt-8 w-full max-w-xl">

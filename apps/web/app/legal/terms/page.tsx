@@ -60,7 +60,7 @@ export default function TermsPage() {
           Trademarks
         </h2>
         <p className="mt-3 text-cw-stone-700 dark:text-cw-stone-300">
-          The name "cartwright" and the cartwright wordmark are unregistered
+          The name &quot;cartwright&quot; and the cartwright wordmark are unregistered
           marks of Teloz. The MIT license covers code; it does not grant
           permission to use the name to imply official endorsement of forked
           shops.

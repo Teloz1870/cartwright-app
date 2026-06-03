@@ -499,7 +499,7 @@ export default function IntegrationsPage() {
               All wired. Self-hosted at $0 per Cartwright.
             </h2>
             <p className="mt-2 text-sm text-cw-stone-500 dark:text-cw-stone-400 max-w-xl">
-              The template is MIT and free, forever. You pay the underlying services (Vercel, Stripe processing, Turso, etc.) directly. Optional managed tiers start at $49/mo if you'd rather have us run it.
+              The template is MIT and free, forever. You pay the underlying services (Vercel, Stripe processing, Turso, etc.) directly. Optional managed tiers start at $49/mo if you&apos;d rather have us run it.
             </p>
           </div>
           <ButtonLink href="/pricing" size="lg">
