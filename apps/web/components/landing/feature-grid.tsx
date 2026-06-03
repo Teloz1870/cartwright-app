@@ -7,6 +7,14 @@ const features = [
     body: '12 admin routes — products, orders, content, integrations, AI prompts, analytics.',
   },
   {
+    title: 'In-place AI editing',
+    body: 'Toggle edit mode on your live storefront, click any copy, write a note — AI proposes new text with a before/after diff before it applies. Admin-only, default-off. /admin/features → annotateEdit.',
+  },
+  {
+    title: 'Order management',
+    body: 'HPOS-grade back office: Orders workspace, returns/RMA, printable pick lists, and rule-based next-best-action. Four default-off, ecommerce-gated flags.',
+  },
+  {
     title: 'Customer storefront',
     body: '11 customer routes — landing, PDP, cart, checkout, account, magic-link auth.',
   },

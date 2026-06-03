@@ -3,6 +3,7 @@
   "pages": [
     "admin-panels",
     "order-management",
+    "in-place-editing",
     "customer-storefront",
     "ai-assistant",
     "local-ai-ollama",
