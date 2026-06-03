@@ -1,0 +1,46 @@
+---
+title: Multi-currency
+description: Charge customers in their own currency — Stripe presentment currency, an order-time snapshot, and a single conversion path shared by display and checkout.
+---
+
+Cartwright has two layers of currency support:
+
+1. **Display only** (`currencySwitcher`) — show prices in the customer's currency, but still charge in the base currency.
+2. **True multi-currency** (`multiCurrency`) — charge the customer in their selected currency and record it on the order.
+
+## Base currency & rate table
+
+Prices are stored as base-currency minor units (øre for `DKK`). The base currency and the static rate table live in `brand.config.ts`:
+
+```ts
+policies: {
+  currency: "DKK",
+  supportedCurrencies: {
+    DKK: { rate: 1, label: "Danske kroner" },
+    EUR: { rate: 0.134, label: "Euro" },
+    USD: { rate: 0.145, label: "US Dollar" },
+  },
+}
+```
+
+Rates are unit-per-1-base-unit (1 DKK = 0.134 EUR); the base currency must be `rate: 1`. Update them manually — an auto-refresh cron (`fxAutoUpdate`) is planned.
+
+## Enable it
+
+1. Add ≥2 entries to `supportedCurrencies`.
+2. Turn on `currencySwitcher` in `/admin/features` (display only).
+3. Turn on `multiCurrency` to charge in the selected currency (depends on `currencySwitcher`, needs ≥2 currencies).
+4. Run the migration first — `Order` gains `currency` + `fxRate`:
+   ```bash
+   pnpm db:push
+   ```
+5. Your Stripe account must support the presentment currencies.
+
+## At checkout
+
+`getCheckoutCurrency()` resolves the presentment currency, `convertMinor()` (`lib/money.ts`) converts the total, the Stripe PaymentIntent is created in that currency, and the order snapshots `currency` + `fxRate`. Display and charge share one conversion path, so the shown price always equals the charged price. The confirmation email renders in the order's currency, and the Stripe webhook verifies the paid amount against the snapshot.
+
+## Limits
+
+- 2-decimal currencies only (DKK/EUR/USD/GBP/SEK/NOK); a zero-decimal currency throws a guard rather than silently mis-charging.
+- Partial refunds in a non-base currency need conversion (full refunds are fine).

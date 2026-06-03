@@ -11,6 +11,20 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.8.0',
+    date: 'June 2026',
+    title: 'Sell in every currency, in every language (engine v0.15.0)',
+    description:
+      'Day-one internationalisation, both halves. Checkout now charges in the customer\'s currency — not just shows the price in it — and the storefront translates Pages, Services and blog posts, not only products. All additive: a single-currency, single-language shop is byte-identical to before.',
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'True multi-currency (multiCurrency) — the Stripe charge is created in the customer\'s selected presentment currency with the converted amount, and the order snapshots currency + FX rate so receipts, refunds and exports reproduce exactly what they paid. currencySwitcher stays the display-only gate; flip multiCurrency to upgrade from "show in EUR" to "charge in EUR".',
+      'One conversion path (lib/money.ts) shared by display, charge and receipt — the shown price is always the charged price. 2-decimal-safe with a guard rather than a silent mis-charge.',
+      'Multi-language breadth — supported locales live in brand.config.ts (add German in one line: ["da","en","de"]); routing + hreflang light up automatically. The /admin/translations editor and render path extend from products/categories to Pages, Services and blog posts.',
+      'Migration: the Order table gains currency + fxRate — run pnpm db:push before enabling multiCurrency. Multi-language needs no migration.',
+    ],
+  },
+  {
     version: '3.7.0',
     date: 'June 2026',
     title: 'In-place AI editing: edit your live storefront by clicking it (engine v0.14.0)',
