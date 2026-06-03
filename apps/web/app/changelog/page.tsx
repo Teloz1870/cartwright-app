@@ -1,7 +1,7 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
-import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package } from 'lucide-react';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package, Pencil } from 'lucide-react';
 import { getEngineVersion } from '@/lib/engine';
 
 export const metadata: Metadata = {
@@ -10,6 +10,20 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.7.0',
+    date: 'June 2026',
+    title: 'In-place AI editing: edit your live storefront by clicking it (engine v0.14.0)',
+    description:
+      'Cartwright\'s owned take on click-to-edit, on infrastructure you own. Logged in as admin, toggle edit mode on your live storefront, click a copy element, type a plain-language note ("make this headline shorter"), and an AI proposes new copy shown as a before→after diff before it applies. One default-off, admin-only, base-locale-only flag — the storefront is byte-identical for everyone else.',
+    icon: <Pencil className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'In-place editing (annotateEdit) — an admin-only overlay highlights editable copy on the live storefront; click one → write a note → AI proposes → before/after diff → confirm. Wired across footer copy, hero headline/sub-line, product name/description, page title/body, and category name. Off → no data attributes and no overlay render at all.',
+      'The model never picks a tool. During propose it runs with no tools (a pure text transformer); a deterministic allowlist (lib/annotate/targets.ts) maps each target → write-tool and excludes anchored legal copy. Apply reuses the plan-first confirmation-token spine (args-hash bound, owner-scoped, one-time-use), so tampered copy is rejected — and every edit lands in the audit log under an annotation: actor.',
+      'New settings.update_copy tool for the hero headline/tagline (single-column read-modify-write) — single-field edits never blank sibling branding columns, and the existing settings.update_branding the admin chat uses is untouched.',
+      'Base-locale only in v1 (the write tools have no locale param yet); per-block page editing and localized editing are deliberately out of scope. Default-off — flip annotateEdit in /admin/features to dogfood it.',
+    ],
+  },
   {
     version: '3.6.0',
     date: 'June 2026',

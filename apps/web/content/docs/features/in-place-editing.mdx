@@ -1,0 +1,54 @@
+---
+title: In-place AI editing
+description: Edit your live storefront by clicking it — admin toggles edit mode, clicks a copy element, writes a note, and an AI proposes new copy with a before/after diff before it applies. Flag-gated, default-off.
+---
+
+Cartwright's owned take on click-to-edit, on infrastructure you own. While logged in as admin, toggle **edit mode** on your *live* storefront, click a highlighted copy element, type a plain-language note ("make this headline shorter", "rewrite this friendlier"), and an AI proposes new copy shown as a **before→after diff**. Confirm to apply.
+
+It ships behind one **default-off, admin-only** runtime flag — `brand.features.annotateEdit`. With the flag off there are no `data-cw-edit` attributes in the DOM and no overlay renders at all, so the storefront is byte-identical for every visitor. It's also **base-locale only** in v1.
+
+<Callout type="info">
+This is the opposite of a hosted page-builder: the edit happens on *your* deploy, against *your* database, through the *same* audited tool-registry your admin chat uses. Nothing leaves your infrastructure.
+</Callout>
+
+## How it works
+
+1. **Toggle "Rediger side."** An admin-only button appears on the live storefront (gated on `isAdmin && annotateEdit && default-locale`). Turning it on highlights every editable copy element.
+2. **Click an element.** A small anchored panel opens. Editable surfaces: footer copy (genome fields), hero headline / sub-line, product name + description, page title + body, and category name.
+3. **Write a note.** Plain language — what you want changed.
+4. **Review the diff.** The endpoint fetches the current value authoritatively, asks the AI for a rewrite, validates it, and returns a **before→after diff**. Nothing is written yet.
+5. **Confirm.** The edit is applied through the write-tool for that target and the page revalidates.
+
+## The security model
+
+The model **never selects a tool**. The design is deliberately narrow:
+
+- **Propose runs with no tools.** During the propose step the model is given *no* tool surface — it's reduced to a pure text transformer that returns one string. It cannot call anything.
+- **Targets map to tools deterministically.** A single server-side allowlist (`lib/annotate/targets.ts`) maps each edit target → its write-tool. Anchored legal copy (e.g. the footer disclaimer) is excluded so AI can't rewrite it.
+- **Apply is gated by a confirmation token.** It reuses the same plan-first confirmation-token spine as admin chat: args-hash bound, owner-scoped, one-time-use, 5-minute TTL. If the proposed copy is tampered with between propose and apply, the hash mismatches and the edit is rejected. `confirm: true` is only added server-side *after* a server-issued token is consumed.
+- **Everything is audited.** Each applied edit lands in the audit log under a distinct `annotation:` actor, so in-place edits are filterable alongside (and distinct from) admin-chat and server-action writes.
+
+<Callout type="warn">
+Even a fully jailbroken model can at most return bad copy — which is schema-validated and shown in a human-confirmed diff before anything is written. It can never pivot to a destructive tool.
+</Callout>
+
+## The hero-copy tool
+
+The hero headline/tagline live in individual `BrandingSettings` columns, so v0.14.0 adds a small additive **`settings.update_copy`** tool: a single-field copy edit (`field` enum + `value`) that read-modify-writes only that column. Single-field hero edits never blank sibling branding columns, and the existing `settings.update_branding` tool the admin chat uses is left untouched.
+
+## Enabling it
+
+`brand.features.annotateEdit` is **off by default**. Flip it per shop in `/admin/features` (runtime-toggleable), or set it in `brand.config.ts`. Editing footer **genome** copy additionally requires `genomeResolve` to be on (otherwise the anchor renders and an override wouldn't show). The propose step needs an AI provider key (Anthropic) — fail-soft otherwise (apply needs no key, since the copy was already generated at propose).
+
+### Known v1 limits
+
+- **Base-locale only** — the write tools have no `locale` param yet, so edits target the default-language copy.
+- **Per-block page editing is out of scope** — the whole page body is edited as one target.
+- **Hero editing** works on designs that render `settings.websiteHeadline` (most); a design that renders `brand.uiLabels.heroTitle` (e.g. `webshop-classic`) has no write-tool for that yet.
+
+<Cards>
+  <Card title="Admin panels" href="/docs/features/admin-panels" />
+  <Card title="Resolvable Genome" href="/docs/features/admin-panels" />
+  <Card title="Audit + revert" href="/docs/features/audit-log-revert" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>
