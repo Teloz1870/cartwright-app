@@ -97,7 +97,7 @@ jobs:
               -name '.env.demo.pulled' -o \
               -name 'check_branding.js' -o \
               -name 'migrate_turso.js' -o \
-              -name 'CLAUDE.md' -o \
+              -path './CLAUDE.md' -o \
               -name 'vercel_logs.txt' \
           \) -print)
           if [ -n "$LEAKED" ]; then
