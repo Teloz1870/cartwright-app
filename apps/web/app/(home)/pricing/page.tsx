@@ -131,23 +131,30 @@ const tiers: Tier[] = [
 ];
 
 type Addon = {
+  /** Stable key → maps to the Stripe Payment Link env var (see PAYMENT_LINKS). */
+  key: 'concierge' | 'migration' | 'aiCredits';
   name: string;
   description: string;
   price: string;
   period: string;
   icon: typeof Wrench;
   includes: string[];
+  /** Label shown when a real Stripe Payment Link is wired (env var set). */
+  buyLabel: string;
+  /** Fallback CTA when no Payment Link is configured yet. */
   cta: { href: string; label: string };
 };
 
 const addons: Addon[] = [
   {
+    key: 'aiCredits',
     name: 'AI Credits Pack',
     description:
       'Anthropic + Gemini credits delivered via Vercel AI Gateway. Skip the BYOK setup and the per-provider quota juggling. Stack on any tier.',
     price: '$25',
     period: '/mo',
     icon: Cpu,
+    buyLabel: 'Subscribe — $25/mo',
     includes: [
       'Pooled credits across Claude and Gemini',
       'Routed through Vercel AI Gateway',
@@ -161,12 +168,14 @@ const addons: Addon[] = [
     },
   },
   {
+    key: 'concierge',
     name: 'Concierge Setup',
     description:
       'We set up your entire stack and hand over the keys: Vercel, Turso, Stripe, Upstash, GitHub, brand theme. You start at a working shop.',
     price: '$249',
     period: ' one-time',
     icon: Zap,
+    buyLabel: 'Buy — $249',
     includes: [
       'Vercel + Turso DB provisioning',
       'Stripe + Upstash configuration',
@@ -180,12 +189,14 @@ const addons: Addon[] = [
     },
   },
   {
+    key: 'migration',
     name: 'Domain Migration',
     description:
       'Already have a domain elsewhere? We handle the full DNS transfer, SSL setup, and email routing so your site goes live without downtime.',
     price: '$199',
     period: ' one-time',
     icon: Globe,
+    buyLabel: 'Buy — $199',
     includes: [
       'Full DNS migration + configuration',
       'SSL certificate provisioning',
@@ -199,6 +210,19 @@ const addons: Addon[] = [
     },
   },
 ];
+
+/**
+ * Stripe Payment Link URLs per add-on, read server-side from env at build.
+ * Set these in the cartwright-app Vercel project (Phase 1 of the billing plan)
+ * and redeploy — the CTA flips from a mailto inquiry to a real "Buy" button.
+ * Each link's success-redirect should point at https://cartwright.app/tak.
+ * Leave unset → graceful fallback to the existing contact-email CTA.
+ */
+const PAYMENT_LINKS: Record<Addon['key'], string | undefined> = {
+  concierge: process.env.STRIPE_LINK_CONCIERGE,
+  migration: process.env.STRIPE_LINK_MIGRATION,
+  aiCredits: process.env.STRIPE_LINK_AI_CREDITS,
+};
 
 export default function ServicesPage() {
   return (
@@ -414,12 +438,12 @@ export default function ServicesPage() {
                 </ul>
 
                 <ButtonLink
-                  href={addon.cta.href}
-                  variant="outline"
+                  href={PAYMENT_LINKS[addon.key] ?? addon.cta.href}
+                  variant={PAYMENT_LINKS[addon.key] ? 'primary' : 'outline'}
                   size="md"
                   className="w-full justify-center"
                 >
-                  {addon.cta.label}
+                  {PAYMENT_LINKS[addon.key] ? addon.buyLabel : addon.cta.label}
                 </ButtonLink>
               </div>
             ))}
