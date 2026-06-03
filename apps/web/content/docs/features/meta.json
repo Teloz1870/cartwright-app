@@ -11,6 +11,8 @@
     "setup-wizard",
     "video-generation",
     "checkout-stripe",
+    "multi-currency",
+    "internationalization",
     "auth-magiclink",
     "image-upload-blob",
     "email-resend",

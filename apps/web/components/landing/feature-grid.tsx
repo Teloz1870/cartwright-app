@@ -35,6 +35,14 @@ const features = [
     body: 'NextAuth with Resend. No third-party identity vendor lock-in.',
   },
   {
+    title: 'Multi-currency',
+    body: 'Charge customers in their own currency — Stripe presentment currency + an order-time FX snapshot. Display and charge share one path.',
+  },
+  {
+    title: 'Multi-language',
+    body: 'Locales in brand.config, automatic hreflang, and per-entity content translation (products, categories, pages, services, blog).',
+  },
+  {
     title: 'Image uploads',
     body: 'Vercel Blob, signed URLs, image variants. Drop-in, no S3 buckets.',
   },

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ComparisonTable } from '@/components/landing/comparison-table';
 import { FeatureMatrix } from '@/components/landing/feature-matrix';
+import JsonLd from '@/components/JsonLd';
 
 const ALL_INTEGRATION_LOGOS: BrandSlug[] = [
   'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
@@ -30,6 +31,7 @@ export const metadata = {
   title: 'Pricing',
   description:
     'Cartwright is MIT and free, forever. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise) layer hosted services on top.',
+  alternates: { canonical: '/pricing' },
 };
 
 type Tier = {
@@ -224,9 +226,33 @@ const PAYMENT_LINKS: Record<Addon['key'], string | undefined> = {
   aiCredits: process.env.STRIPE_LINK_AI_CREDITS,
 };
 
+// SoftwareApplication + tiered Offers, derived from the `tiers` data above so
+// the structured-data prices never drift from the visible pricing table.
+const pricingJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Cartwright',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Node.js 22+',
+  description:
+    'Open-source, AI-first Next.js commerce engine. Free and MIT-licensed, with optional paid tiers (Plus, Cloud, Enterprise).',
+  url: 'https://cartwright.app/pricing',
+  offers: tiers.map((t) => {
+    const isNumeric = /\d/.test(t.price);
+    const price = t.price.replace(/[^0-9.]/g, '');
+    return {
+      '@type': 'Offer',
+      name: t.name,
+      description: t.description,
+      ...(isNumeric ? { price: price || '0', priceCurrency: 'USD' } : {}),
+    };
+  }),
+};
+
 export default function ServicesPage() {
   return (
     <main className="relative min-h-screen overflow-hidden pb-32">
+      <JsonLd data={pricingJsonLd} />
       {/* Background pattern */}
       <div aria-hidden className="absolute inset-0 cw-grid-bg opacity-50" />
 

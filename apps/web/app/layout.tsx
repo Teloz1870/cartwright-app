@@ -2,6 +2,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import { Geist, Geist_Mono } from 'next/font/google';
 import SearchDialog from '@/components/search';
+import JsonLd from '@/components/JsonLd';
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -31,6 +32,28 @@ export const metadata = {
     siteName: 'cartwright',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'cartwright — the AI-first webshop template you actually own',
+    description:
+      'A production-shaped Next.js commerce template with an AI-native admin, MCP server, and Stripe checkout.',
+  },
+};
+
+// Organization JSON-LD — sitewide. Lets Google + AI crawlers resolve the brand
+// entity (name, logo, repo, social) on every page without executing JS.
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Cartwright',
+  url: 'https://cartwright.app',
+  logo: 'https://cartwright.app/opengraph-image',
+  description:
+    'Cartwright is an open-source, AI-first Next.js commerce engine: scaffold a webshop, website, or agent-marketplace with one command.',
+  sameAs: [
+    'https://github.com/Teloz1870/cartwright-template',
+    'https://www.npmjs.com/package/create-cartwright',
+  ],
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
@@ -41,6 +64,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen font-sans antialiased">
+        <JsonLd data={organizationJsonLd} />
         <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
       </body>
     </html>
