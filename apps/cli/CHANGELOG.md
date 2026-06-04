@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.0.33
+
+### Patch Changes
+
+- de78837: Bump default template ref to v0.14.0 (was v0.11.0).
+- a797f48: Bump default template ref to v0.17.0 (was v0.14.0). Ships v0.15.0 (true multi-currency + multi-language), v0.16.0 (AI-agent editability), and v0.17.0 (per-page Open Graph share cards) — all additive / default-off.
+
 ## 2.0.32
 
 ### Patch Changes
