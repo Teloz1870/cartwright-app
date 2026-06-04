@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import JsonLd from '@/components/JsonLd';
+import { pageOg } from '@/lib/og';
+
+const GLOSSARY_DESCRIPTION =
+  'Plain-English definitions of the AI-commerce terms Cartwright is built around: AEO, GEO, MCP, ACP, A2A, presentment currency, structured data, and llms.txt.';
 
 export const metadata: Metadata = {
   title: 'Commerce & AI Glossary',
-  description:
-    'Plain-English definitions of the AI-commerce terms Cartwright is built around: AEO, GEO, MCP, ACP, A2A, presentment currency, structured data, and llms.txt.',
+  description: GLOSSARY_DESCRIPTION,
   alternates: { canonical: '/glossary' },
+  ...pageOg('Commerce & AI Glossary', GLOSSARY_DESCRIPTION),
 };
 
 const TERMS: { term: string; def: string }[] = [

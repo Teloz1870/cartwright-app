@@ -2,12 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import JsonLd from '@/components/JsonLd';
 import { USE_CASES } from '@/lib/use-cases';
+import { pageOg } from '@/lib/og';
+
+const USE_CASES_DESCRIPTION =
+  'What you can build with Cartwright — the open-source, AI-first commerce engine: AI-first webshops, agent-commerce, multi-currency European shops, and Shopify migrations.';
 
 export const metadata: Metadata = {
   title: 'Use cases',
-  description:
-    'What you can build with Cartwright — the open-source, AI-first commerce engine: AI-first webshops, agent-commerce, multi-currency European shops, and Shopify migrations.',
+  description: USE_CASES_DESCRIPTION,
   alternates: { canonical: '/use-cases' },
+  ...pageOg('Use cases', USE_CASES_DESCRIPTION),
 };
 
 export default function UseCasesHubPage() {

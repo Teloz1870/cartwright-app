@@ -18,6 +18,7 @@ import {
 import { ComparisonTable } from '@/components/landing/comparison-table';
 import { FeatureMatrix } from '@/components/landing/feature-matrix';
 import JsonLd from '@/components/JsonLd';
+import { pageOg } from '@/lib/og';
 
 const ALL_INTEGRATION_LOGOS: BrandSlug[] = [
   'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
@@ -27,11 +28,14 @@ const ALL_INTEGRATION_LOGOS: BrandSlug[] = [
 
 const PLUS_PREMIUM_LOGOS: BrandSlug[] = ['klaviyo', 'mailchimp', 'quickbooks', 'notion'];
 
+const PRICING_DESCRIPTION =
+  'Cartwright is MIT and free, forever. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise) layer hosted services on top.';
+
 export const metadata = {
   title: 'Pricing',
-  description:
-    'Cartwright is MIT and free, forever. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise) layer hosted services on top.',
+  description: PRICING_DESCRIPTION,
   alternates: { canonical: '/pricing' },
+  ...pageOg('Pricing', PRICING_DESCRIPTION),
 };
 
 type Tier = {

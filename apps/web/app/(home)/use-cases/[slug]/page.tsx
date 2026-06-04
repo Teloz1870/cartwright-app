@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import JsonLd from '@/components/JsonLd';
 import { USE_CASES, getUseCase } from '@/lib/use-cases';
+import { ogImageUrl } from '@/lib/og';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const u = getUseCase(slug);
   if (!u) return {};
+  const og = ogImageUrl(u.title, u.description);
   return {
     title: u.title,
     description: u.description,
@@ -23,7 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: u.description,
       url: `https://cartwright.app/use-cases/${u.slug}`,
       type: 'article',
+      images: [{ url: og, width: 1200, height: 630, alt: u.title }],
     },
+    twitter: { card: 'summary_large_image', title: u.title, description: u.description, images: [og] },
   };
 }
 
