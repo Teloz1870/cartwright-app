@@ -16,6 +16,20 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.10.0',
+    date: 'June 2026',
+    title: 'Marketing automations, Prisma 7 & a security-docs pass (engine v0.18.0)',
+    description:
+      'A platform-hardening release. Resend — already your transactional transport — becomes an opt-in lifecycle email engine; the ORM jumps to Prisma 7\'s Rust-free client; and the security surface gets documented end to end. All additive and default-off: a shop that does not opt in is byte-identical to before.',
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Marketing automations (marketingAutomations) — emit welcome, abandoned-cart, and post-purchase events to Resend Automations, which runs the drip sequences you wire in its dashboard. Cartwright emits events only (it stays the source of truth, not a marketing-automation platform), and emission is consent-gated to confirmed newsletter subscribers. The abandoned-cart cron emits the event instead of a single mail — no double-send. Default-off; inert without a Resend key.',
+      'Prisma 7 — the data layer moves to Prisma 7\'s Rust-free prisma-client generator and driver adapters (libSQL/Turso for production, a local file adapter for dev). No schema changes, so existing databases need no migration; new scaffolds db push from zero as before.',
+      'Security & architecture docs — four new guides ship in the box: API-key security (HMAC-SHA256 keys peppered with AUTH_SECRET so a DB leak alone yields no usable key), the scope model + per-tool map, the MCP endpoint architecture (stateless transport, curated introspection — never your DB schema), and an advanced Supabase/Postgres path (RLS on, Data API off).',
+      'Dependency refresh — Stripe apiVersion 2026-05-27.dahlia (SDK 22.2.0), native Tailwind v4.3 scrollbar utilities on the storefront panels, and removal of a stale npm lockfile (the project is pnpm-only).',
+    ],
+  },
+  {
     version: '3.9.0',
     date: 'June 2026',
     title: 'Agent-editable shop: structure, theme & catalog by AI + JSON (engine v0.16.0)',
