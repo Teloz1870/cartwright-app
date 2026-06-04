@@ -50,9 +50,10 @@ const featured: Featured[] = [
     brand: 'resend',
     name: 'Resend',
     category: 'Email',
-    pitch: 'Transactional email + magic-link templates. SPF/DKIM/DMARC verified in the setup wizard.',
+    pitch: 'Transactional email + magic-link templates, plus opt-in marketing automations (lifecycle drips) via Resend Automations.',
     bullets: [
       'Order confirmation + shipping update + magic-link templates',
+      'Marketing automations — emit welcome / abandoned-cart / post-purchase events to Resend Automations (opt-in, consent-gated)',
       '.mail-previews/ dev fallback — no credits burned locally',
       'Domain auth (SPF/DKIM/DMARC) verified via setup wizard',
     ],
