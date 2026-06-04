@@ -21,6 +21,8 @@ Resend handles every transactional email a shop sends — order confirmation, sh
 
 Custom domain setup is part of the same setup wizard that handles Vercel DNS: pick a domain, Cartwright generates the SPF, DKIM, and DMARC records, then polls Resend until verification reports green. From the merchant's seat it's "fill in a domain, wait a minute"; the underlying flow is the same one you'd otherwise read three blog posts to assemble.
 
+Beyond transactional mail, an opt-in `marketingAutomations` flag turns Resend into the shop's lifecycle email engine: Cartwright emits welcome, abandoned-cart, and post-purchase events to [Resend Automations](https://resend.com/features/automations), which runs the drip sequences you wire in its dashboard. Cartwright emits events only — it stays the source of truth without becoming a marketing-automation platform — and emission is consent-gated to confirmed newsletter subscribers. Default-off; inert without a Resend key.
+
 ## Authentication → NextAuth + Resend
 
 Magic-link sign-in via NextAuth (Auth.js). Resend ships the actual email; NextAuth runs the token machinery. No password store, no third-party identity vendor, no SOC 2 dependency on someone else's auth provider. Your `User` and `Session` tables live in your own database; users own their accounts.

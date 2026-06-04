@@ -20,6 +20,16 @@ Additional templates (order shipped, refund processed, etc.) are scaffolded but 
 The exact template inventory and naming may differ slightly between cartwright versions. Always read `ls lib/mailer/` in your fork to confirm what is actually present before promising a customer template behaviour.
 </Callout>
 
+## Marketing automations (opt-in)
+
+Resend isn't only the transactional transport — an opt-in `marketingAutomations` flag turns it into the shop's **lifecycle email engine** too. When on (and a Resend key is set), Cartwright **emits three events** to [Resend Automations](https://resend.com/features/automations):
+
+- `cartwright.user.created` — welcome series
+- `cartwright.cart.abandoned` — recovery drip (the abandoned-cart cron emits the event instead of sending a single mail; no double-send)
+- `cartwright.order.placed` — post-purchase series
+
+Resend runs the actual sequences you wire in its dashboard against those event names — Cartwright **emits events only**, so it stays the source of truth without becoming a marketing-automation platform itself. Events are **consent-gated** (confirmed newsletter subscribers), and the whole policy lives in one helper so you can broaden it. Default-off; inert without a Resend key. See `docs/marketing-automations.md` in your fork.
+
 ## Dev fallback
 
 Without `RESEND_API_KEY`, the mailer writes every outbound email to `.mail-previews/` as an HTML file. The path is `.mail-previews/<timestamp>-<template>.html`. Open in a browser to inspect rendering or grab a magic link without leaving local dev.
