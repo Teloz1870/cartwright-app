@@ -11,6 +11,20 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.9.0',
+    date: 'June 2026',
+    title: 'Agent-editable shop: structure, theme & catalog by AI + JSON (engine v0.16.0)',
+    description:
+      'Where in-place editing (v0.14.0) lets you click and rewrite copy, this makes the shop\'s structure editable by agents and machine config — homepage section order, theme tokens, and the catalog itself. All default-off / additive: a shop that does not opt in is byte-identical to before.',
+    icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Section layout (sectionLayout / layoutJson) — an AI agent reorders or hides studio homepage sections via the design.set_layout MCP tool, with required sections (hero, CTA) protected. Default-off, runtime-toggleable, and revertible via the audit log. Flag off → the hardcoded section order is byte-identical.',
+      'Extended themeJson — fonts and corner-radius are now an injection-guarded superset of the 6-colour palette, so an agent can set --font-sans / --radius-sol-* from the same theme override the colour palette already used. A current palette renders identically.',
+      'products.json machine-seed — seed an entire catalog from a validated JSON file (pnpm seed) instead of editing TypeScript. Prices are in øre (machine-precise), with per-row validation errors that fail fast.',
+      'Setup safety — a fail-fast env preflight surfaces a missing AUTH_SECRET / database URL on boot with a one-line fix, instead of a confusing downstream error.',
+    ],
+  },
+  {
     version: '3.8.0',
     date: 'June 2026',
     title: 'Sell in every currency, in every language (engine v0.15.0)',

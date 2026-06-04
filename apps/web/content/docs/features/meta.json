@@ -4,6 +4,7 @@
     "admin-panels",
     "order-management",
     "in-place-editing",
+    "agent-editability",
     "customer-storefront",
     "ai-assistant",
     "local-ai-ollama",
