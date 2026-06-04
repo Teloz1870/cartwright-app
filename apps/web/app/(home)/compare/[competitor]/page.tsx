@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import JsonLd from '@/components/JsonLd';
 import { COMPARISONS, getComparison } from '@/lib/comparisons';
+import { ogImageUrl } from '@/lib/og';
 
 type Props = { params: Promise<{ competitor: string }> };
 
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { competitor } = await params;
   const c = getComparison(competitor);
   if (!c) return {};
+  const og = ogImageUrl(c.title, c.description);
   return {
     title: c.title,
     description: c.description,
@@ -23,7 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: c.description,
       url: `https://cartwright.app/compare/${c.slug}`,
       type: 'article',
+      images: [{ url: og, width: 1200, height: 630, alt: c.title }],
     },
+    twitter: { card: 'summary_large_image', title: c.title, description: c.description, images: [og] },
   };
 }
 

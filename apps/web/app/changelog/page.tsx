@@ -3,10 +3,15 @@ import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
 import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package, Pencil } from 'lucide-react';
 import { getEngineVersion } from '@/lib/engine';
+import { pageOg } from '@/lib/og';
+
+const CHANGELOG_DESCRIPTION =
+  'Release history of the Cartwright engine — multi-currency, multi-language, agent editability, AI-search-ready commerce, and more.';
 
 export const metadata: Metadata = {
   title: 'Changelog',
-  description: 'Release history of the Cartwright template.',
+  description: CHANGELOG_DESCRIPTION,
+  ...pageOg('Changelog', CHANGELOG_DESCRIPTION),
 };
 
 const RELEASES = [

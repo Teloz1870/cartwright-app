@@ -2,12 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import JsonLd from '@/components/JsonLd';
 import { COMPARISONS } from '@/lib/comparisons';
+import { pageOg } from '@/lib/og';
+
+const COMPARE_DESCRIPTION =
+  'How Cartwright — the open-source, AI-first Next.js commerce engine you own — compares to Shopify, Medusa, Vercel Commerce, and WooCommerce.';
 
 export const metadata: Metadata = {
   title: 'Compare Cartwright',
-  description:
-    'How Cartwright — the open-source, AI-first Next.js commerce engine you own — compares to Shopify, Medusa, Vercel Commerce, and WooCommerce.',
+  description: COMPARE_DESCRIPTION,
   alternates: { canonical: '/compare' },
+  ...pageOg('Compare Cartwright', COMPARE_DESCRIPTION),
 };
 
 export default function CompareHubPage() {
