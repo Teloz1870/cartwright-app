@@ -18,7 +18,7 @@ const RAW_CHANGELOG =
   'https://raw.githubusercontent.com/Teloz1870/cartwright-template/main/CHANGELOG.md';
 
 /** Safety net if the live fetch fails. Bump on each release. */
-export const FALLBACK_ENGINE_VERSION = '0.15.0';
+export const FALLBACK_ENGINE_VERSION = '0.16.0';
 
 /**
  * Latest engine release version (e.g. "0.11.0"), read from the engine CHANGELOG.
