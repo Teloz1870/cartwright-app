@@ -1,0 +1,40 @@
+---
+title: Google Docs import
+description: Import a Google Doc as a draft blog post or info page — converted to safe engine markdown (never raw HTML), so shared docs can't carry stored XSS.
+---
+
+`docsImport` turns a Google Doc into a draft blog **Post** or `/info` **Page**, via the [Google Workspace connector](/docs/features/google-workspace) (Docs API v1).
+
+## Enable it
+
+<Steps>
+<Step>Connect the [Google Workspace connector](/docs/features/google-workspace).</Step>
+<Step>Turn on `docsImport` in `/admin/features` (runtime).</Step>
+<Step>In `/admin/docs-import`, paste a Doc ID/URL, pick **post** or **page**, and import.</Step>
+</Steps>
+
+## Safe by construction — no stored XSS
+
+The converter emits **Cartwright engine markdown** (`## ` headings, `> ` quotes, `**bold**`, `- ` bullets) — **never HTML**. Imported content is stored in `body` with `bodyFormat="text"` and rendered through the existing safe `renderContentBlocks()` path (React text nodes, no `dangerouslySetInnerHTML`).
+
+<Callout type="warn">
+Because body is rendered as text, a shared Doc containing `<script>`, `<img onerror>` or a `javascript:` link cannot become stored XSS — those appear as literal escaped text. Raw-HTML rendering remains only for the trusted admin `vibeHtml` field, which import never writes. Malicious/unsafe link URLs are dropped during conversion (the visible text is kept).
+</Callout>
+
+## Tool & defaults
+
+The AI/MCP surface gains `docs.import` (`pages:write` scope). Imported posts/pages land as **drafts** for review before publishing.
+
+| | |
+|---|---|
+| Flag | `docsImport` |
+| Tier | runtime |
+| Default | **off** |
+| Needs | Workspace connector + Docs scope |
+
+Existing posts/pages (no `bodyFormat`) render exactly as before — the new column is additive and defaults to text.
+
+<Cards>
+  <Card title="Google Workspace (connector)" href="/docs/features/google-workspace" />
+  <Card title="Blog & content" href="/docs/features/customer-storefront" />
+</Cards>

@@ -5,6 +5,8 @@ description: sitemap, robots, structured data, OG images, and AI-assisted catego
 
 Cartwright ships the search-engine boring stuff so a fork does not have to think about it on day one.
 
+A Google Shopping product feed is also available behind the `merchantFeed` flag (runtime, default off, ecommerce): a `g:`-namespaced RSS feed at `/feed/google.xml` for Google Merchant Center.
+
 ## sitemap.ts and robots.ts
 
 `app/sitemap.ts` returns the URL list at build time — landing, all product pages, all category pages, and any pages in the admin Sider CRUD. `app/robots.ts` returns a permissive `robots.txt` with the sitemap URL.

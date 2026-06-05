@@ -1,0 +1,57 @@
+---
+title: API keys
+description: Mint, store, verify and revoke Bearer API keys for the REST and MCP tool surfaces — HMAC-peppered storage, scope-gated, audited.
+---
+
+Cartwright exposes its full operational tool surface (catalog, orders, discounts, pages, campaigns, …) over two authenticated programmatic interfaces:
+
+- **REST** — `POST /api/v1/tools/<name>` (one tool per call).
+- **MCP** — `POST /api/mcp` (Model Context Protocol; see [MCP server](/docs/architecture/mcp-server)).
+
+Both authenticate the same way: a **Bearer API key** in the `Authorization` header. Source: `lib/api-auth.ts`, `lib/scopes.ts`.
+
+## Key format
+
+```
+sb_live_<24 random bytes, base64url>
+```
+
+The `sb_live_` prefix makes keys greppable in logs and recognizable in the admin UI; entropy is `randomBytes(24)` (192 bits). Keys are created in **`/admin/api-keys`** (shop-owner only). The plaintext is shown **exactly once** at creation — only the hash is persisted.
+
+## Storage — the database never holds a usable key
+
+Cartwright stores a keyed hash, not the key:
+
+```
+keyHash = HMAC-SHA256(key_plaintext, pepper = AUTH_SECRET)
+```
+
+<Callout type="info">
+A database leak alone cannot forge a key: the HMAC pepper is `AUTH_SECRET`, which lives only in the server environment, never in the DB. Plain SHA-256 was rejected for exactly this reason. `AUTH_SECRET` is reused deliberately — it's already required by Auth.js, so there's no new secret to rotate.
+</Callout>
+
+## Verification flow
+
+`authenticateApiKey(req)` and `requireApiScope(req, scope)` are the entry points every REST/MCP route calls first:
+
+1. **Extract** the bearer token — missing/malformed → `401`.
+2. **Prefix check** — must start with `sb_live_` (cheap reject before any DB hit).
+3. **Hash + lookup** — HMAC the token, look up `ApiKey.keyHash` (unique index). No row → `401`.
+4. **Revocation** — `revokedAt` set → `401 API key revoked`.
+5. **Last-used stamp** — `lastUsedAt` updated fire-and-forget; never fails the request.
+6. **Scopes** — the key's `scopes` JSON is parsed; malformed → `401`.
+
+The function never throws — it returns `{ actor }` or `{ error }`. `requireApiScope` then checks the key carries the tool's required scope (`hasScope`); missing → `403` naming the scope. See [Scopes & tools](/docs/api/mcp-tools).
+
+## Audit identity & revocation
+
+Each authenticated actor is `apikey:<id>` in the audit log (distinct from `user:<id>` and `storefront-chat:<sid>`). Revoke by setting `revokedAt` via `/admin/api-keys`; verification rejects revoked keys immediately.
+
+<Callout type="warn">
+`AUTH_SECRET` is mandatory — `getKeyPepper()` throws if it's missing. Rotating it invalidates **all** existing API keys (and sessions).
+</Callout>
+
+<Cards>
+  <Card title="Scopes & MCP tools" href="/docs/api/mcp-tools" />
+  <Card title="MCP server" href="/docs/architecture/mcp-server" />
+</Cards>

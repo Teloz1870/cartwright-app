@@ -1,0 +1,28 @@
+---
+title: Answer-first product content (AEO)
+description: Emit answer-first product fields — summary, FAQ, use-cases, comparison — so products are quotable by AI answer engines.
+---
+
+`aeoContent` (Answer Engine Optimization) adds **answer-first** fields to products so they're easy for AI answer engines and search to quote directly: a short summary, FAQ entries, use-cases, and a comparison block.
+
+When on, these fields appear in the product admin (`ProductForm`) and are emitted on the product page (rendered + as structured data), giving crawlers and assistants a concise, citable answer rather than only marketing prose.
+
+## Enable it
+
+Turn on `aeoContent` in `/admin/features` (runtime, default off; ecommerce only), then fill the answer-first fields per product.
+
+| | |
+|---|---|
+| Flag | `aeoContent` |
+| Tier | runtime |
+| Default | **off** |
+| Precondition | ecommerce |
+
+<Callout type="info">
+Part of Cartwright's "built to be cited by AI" surface, alongside JSON-LD, `llms.txt`, the Google Merchant feed and the MCP server.
+</Callout>
+
+<Cards>
+  <Card title="SEO automation" href="/docs/features/seo-automation" />
+  <Card title="MCP server" href="/docs/architecture/mcp-server" />
+</Cards>

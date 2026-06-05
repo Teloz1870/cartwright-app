@@ -1,0 +1,66 @@
+---
+title: Authentication & accounts
+description: Every sign-in method (magic link, password, GitHub, Google), password rules, the forgot/reset flow, and the iron rule that admin is never granted via OAuth.
+---
+
+Cartwright uses NextAuth v5 (Auth.js), configured in `lib/auth.ts` + `lib/auth.config.ts`. This page is the authoritative reference for all sign-in methods and account management. For a magic-link deep-dive see [Auth (magic link)](/docs/features/auth-magiclink).
+
+## Sign-in methods
+
+| Method | For | Gate |
+|---|---|---|
+| **Magic link** | customers + admins | default; Resend (`RESEND_API_KEY`), falls back to `.mail-previews/` in dev |
+| **Password (credentials)** | customers + admins | always wired; uses `User.passwordHash` |
+| **Continue with GitHub** | customers | `githubAuth` flag + `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
+| **Continue with Google** | customers | `googleAuth` flag + `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |
+
+The credentials provider compares with a constant-time dummy-hash fallback so a wrong email and a wrong password take the same time (no timing oracle).
+
+<Callout type="warn">
+**Admin is never granted via OAuth.** Admin is a database role. GitHub/Google sign-in always create or link a **customer**. The only path to admin is the DB role (set during the setup wizard or via Prisma Studio) — you cannot accidentally create an admin-via-OAuth bypass.
+</Callout>
+
+## Passwords
+
+- **Minimum 12 characters**, validated by `validatePasswordStrength()` (`lib/auth/password.ts`).
+- The seed generates a **strong random admin password** (no hardcoded default); the new owner is forced to change it on first login at `/admin/konto` (`User.mustChangePassword`).
+- Customers set or change a password at `/account/settings`; magic-link-only accounts can set one via the reset flow.
+
+## Forgot / reset password
+
+The flow lives in `lib/auth/password-reset.ts`:
+
+<Steps>
+<Step>`/account/forgot-password` → `requestPasswordReset(email)` emails a link (Resend).</Step>
+<Step>The link opens `/account/reset-password` → `consumePasswordResetToken()` validates and sets the new password.</Step>
+</Steps>
+
+Security properties:
+
+- **No account-existence leak** — the request returns the same response whether or not the email exists.
+- **HMAC-SHA256 token** peppered with `AUTH_SECRET`; only the hash is stored.
+- **1-hour TTL**, **single-use** (`usedAt` stamped on consume).
+- A magic-link-only account can use this flow to set its first password.
+
+## Environment
+
+```bash
+AUTH_SECRET=            # required — signs sessions + peppers reset tokens & API keys
+GITHUB_CLIENT_ID=       # optional — Continue with GitHub
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=       # optional — Continue with Google (customer sign-in, T1)
+GOOGLE_CLIENT_SECRET=
+RESEND_API_KEY=         # optional in dev (.mail-previews fallback); required in prod
+```
+
+<Callout type="info">
+`GOOGLE_CLIENT_ID`/`SECRET` (customer sign-in) are **separate** from `GOOGLE_OAUTH_CLIENT_ID`/`SECRET` (the server-side [Google Workspace connector](/docs/features/google-workspace) for Sheets/Drive/Docs). Different OAuth client, different purpose.
+</Callout>
+
+Rotating `AUTH_SECRET` invalidates every active session and API key.
+
+<Cards>
+  <Card title="Auth (magic link)" href="/docs/features/auth-magiclink" />
+  <Card title="Google Sign-In" href="/docs/features/google-sign-in" />
+  <Card title="Secrets management" href="/docs/configuration/secrets-management" />
+</Cards>

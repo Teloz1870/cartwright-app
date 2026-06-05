@@ -1,0 +1,44 @@
+---
+title: FX auto-refresh
+description: Refresh exchange rates daily from the ECB feed into a DB override, read as dbRate ?? staticAnchor — display and checkout always resolve the same rate.
+---
+
+`fxAutoUpdate` keeps multi-currency exchange rates current by refreshing them daily from the European Central Bank's no-key feed into a database override, instead of relying on the static rates in `brand.config.ts`. It builds on [Multi-currency](/docs/features/multi-currency).
+
+## Why a DB override
+
+The static rates in `brand.config.ts` are compile-time constants — a cron can't rewrite a `.ts` file. So `fxAutoUpdate` writes refreshed rates to `IntegrationSettings.fxRatesJson` and the rate resolver reads:
+
+```ts
+dbRate ?? staticAnchor
+```
+
+When the flag is **off** (or no rates have been fetched), resolution falls back to the static `brand.config` anchors — behaviour is byte-identical to before.
+
+## Same rate for display and charge
+
+The override is read through the one conversion path in `lib/money.ts` (`fxRate`/`convertMinor`), shared by storefront display, checkout, the order snapshot, and the receipt email — so there's **no drift** between the price shown and the amount charged. (The order also snapshots `Order.fxRate`, so receipts match the charge even if rates move later.)
+
+## Enable it
+
+<Steps>
+<Step>Have ≥2 entries in `supportedCurrencies` and multi-currency working.</Step>
+<Step>Turn on `fxAutoUpdate` in `/admin/features` (runtime).</Step>
+<Step>Set `CRON_SECRET` — `/api/cron/fx-refresh` runs daily and no-ops when the flag is off.</Step>
+</Steps>
+
+| | |
+|---|---|
+| Flag | `fxAutoUpdate` |
+| Tier | runtime (needs ≥2 currencies) |
+| Default | **off** |
+| Env | none for rates (ECB is keyless); `CRON_SECRET` for the cron |
+
+<Callout type="info">
+Fail-soft: if the ECB feed is unreachable the last good rates are kept; the static anchors are never dropped.
+</Callout>
+
+<Cards>
+  <Card title="Multi-currency" href="/docs/features/multi-currency" />
+  <Card title="Checkout (Stripe)" href="/docs/features/checkout-stripe" />
+</Cards>

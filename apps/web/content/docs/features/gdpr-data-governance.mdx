@@ -1,0 +1,49 @@
+---
+title: GDPR & data governance
+description: PII inventory, data-subject export & erasure, retention controls and the processor register — the human view of lib/gdpr.
+---
+
+The machine-readable source is `lib/gdpr/pii-map.ts`; this is the human view plus governance context.
+
+## Where customer PII lives
+
+| Model | Subject link | PII fields | On erasure |
+|---|---|---|---|
+| **User** | `userId` | email, name, phone, shipping*, passwordHash | anonymise (keep row — FKs) |
+| **Order** | `userId` | email, shipping*, phone | anonymise PII, **keep amount + `stripePaymentIntentId`** (bookkeeping) |
+| **ProductReview** | `userId` | authorName, authorEmail | anonymise author, keep rating/body |
+| **Subscription** | `userId` | stripeCustomerId | keep (cancel separately at Stripe) |
+| **Lead** | email | name, email, phone, company, message | delete whole row |
+| **AcpCheckoutSession** | email | buyer*, shipping* | delete whole row |
+| **AuditLog** | actor `user:<id>` | ip (argsJson redacted on write) | null the ip |
+
+Strategies: `null` (nullable), `redact` → `[slettet]`, `hash` (salted email hash — keeps uniqueness/linkage without PII), `keep` (financial/legal).
+
+## Why some data is kept after erasure
+
+- **Order amounts + payment references** — bookkeeping law (5-year retention). Recipient PII is anonymised, but the transaction is kept.
+- **AuditLog** — accountability (art. 5(2)); `argsJson` is already redacted on write (`lib/audit.ts`).
+
+## Data-subject rights
+
+- **Export (art. 15/20)** — `/api/account/export` (self-service) + admin export. Bundles User + Orders + Reviews + Leads + Subscription + Cart as JSON.
+- **Erasure (art. 17)** — admin action `anonymizeCustomer(userId)`: soft, typed, audited. Never automatic — the admin triggers it per request.
+
+## Retention
+
+- `brand.policies.retentionMonths` (default `null` = no auto-retention).
+- `brand.policies.auditRetentionDays` (default `null` = keep forever).
+- The cleanup cron only deletes **already-expired** tokens/sessions — never active data.
+
+## Processor register (art. 28)
+
+`brand.policies.processors` is shown read-only at `/admin/processors` — purpose, shared data, and DPA status per processor. Fork shops tailor it.
+
+<Callout type="info">
+External data (Stripe customer, OAuth tokens at the provider) must be deleted at each processor — erasure here only removes local references/PII. The email `hash` strategy salts with `AUTH_SECRET`, so history can still be de-duped without revealing the address.
+</Callout>
+
+<Cards>
+  <Card title="Processor register (admin)" href="/docs/features/admin-panels" />
+  <Card title="Audit log & revert" href="/docs/features/audit-log-revert" />
+</Cards>

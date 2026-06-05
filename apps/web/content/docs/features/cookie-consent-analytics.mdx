@@ -1,0 +1,28 @@
+---
+title: Cookie consent & analytics
+description: An EU 3-category cookie-consent banner and consent-gated Google Analytics 4 — both compile-time flags, off by default.
+---
+
+Two privacy-related flags, both compile-time (set in `brand.config.ts`, redeploy to change), both off by default.
+
+## Cookie consent (`consentBanner`)
+
+An EU-style 3-category cookie-consent banner (necessary / analytics / marketing). Consent state is read server-side via `lib/consent-server.ts` and gates anything that needs it. Off by default — a shop with no analytics or marketing scripts doesn't need it.
+
+## Google Analytics 4 (`analyticsGa4`)
+
+Loads the GA4 script — but **only after** the visitor accepts the analytics category, so it depends on `consentBanner`. Off by default.
+
+| Flag | Tier | Default | Depends on |
+|---|---|---|---|
+| `consentBanner` | compile-time | off | — |
+| `analyticsGa4` | compile-time | off | `consentBanner` |
+
+<Callout type="info">
+Cookie consent is per-browser and cannot address a customer by email, so it is **not** the gate for [marketing automations](/docs/features/marketing-automations) — the newsletter opt-in is.
+</Callout>
+
+<Cards>
+  <Card title="Marketing automations" href="/docs/features/marketing-automations" />
+  <Card title="GDPR & data governance" href="/docs/features/gdpr-data-governance" />
+</Cards>

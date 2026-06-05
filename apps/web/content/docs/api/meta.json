@@ -2,6 +2,7 @@
   "title": "API reference",
   "pages": [
     "mcp-tools",
+    "api-keys",
     "brand-config-schema"
   ]
 }

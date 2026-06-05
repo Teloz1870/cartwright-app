@@ -6,6 +6,7 @@
     "turso",
     "custom-domain",
     "preview-environments",
-    "migrations"
+    "migrations",
+    "backup-restore"
   ]
 }

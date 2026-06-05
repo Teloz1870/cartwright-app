@@ -1,0 +1,40 @@
+---
+title: Google Drive media & backup
+description: Import images from a Drive folder into the media library, and push DB/media backups to Drive — reusing the existing media pipeline and backup dump.
+---
+
+`googleDrive` adds two Drive (API v3) capabilities on top of the [Google Workspace connector](/docs/features/google-workspace): importing images into the media library, and pushing backups to Drive. It depends on `mediaLibrary`.
+
+## Enable it
+
+<Steps>
+<Step>Connect the [Google Workspace connector](/docs/features/google-workspace) and ensure `mediaLibrary` is on.</Step>
+<Step>Turn on `googleDrive` in `/admin/features` (runtime).</Step>
+<Step>Configure the Drive folder in `/admin/drive`.</Step>
+</Steps>
+
+## What it does
+
+- **Media import** — pulls images from a configured Drive folder into the media library, reusing the existing `MediaAsset` + Vercel Blob pipeline with sha256 de-duplication (no parallel storage path).
+- **Backup to Drive** — pushes the logical DB/media [backup](/docs/deployment/backup-restore) (reuses `lib/backup/dump.ts`) to Drive as an off-Vercel copy.
+
+## Scheduled backup
+
+`/api/cron/drive-backup` runs on a schedule (`vercel.json`), gated by `CRON_SECRET`, and no-ops when the flag is off. Admin actions under `/admin/drive` are `requireAdmin`-gated. Tools: `drive.import_folder`, `drive.backup_now`.
+
+| | |
+|---|---|
+| Flag | `googleDrive` |
+| Tier | runtime (depends on `mediaLibrary`) |
+| Default | **off** |
+| Needs | Workspace connector + Drive scope, `CRON_SECRET` for the cron |
+
+<Callout type="info">
+Fail-soft: with no connection, import/backup no-op. Drive backup complements [Backup & restore](/docs/deployment/backup-restore) — it doesn't replace Turso's physical backups.
+</Callout>
+
+<Cards>
+  <Card title="Google Workspace (connector)" href="/docs/features/google-workspace" />
+  <Card title="Backup & restore" href="/docs/deployment/backup-restore" />
+  <Card title="Image upload (Blob)" href="/docs/features/image-upload-blob" />
+</Cards>

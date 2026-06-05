@@ -1,0 +1,33 @@
+---
+title: Modern web platform
+description: Native-platform storefront enhancements — container queries, the Popover/dialog API, and View Transitions — each behind a runtime flag with a graceful fallback.
+---
+
+Cartwright prefers native web-platform APIs over JavaScript libraries. Three are exposed as runtime flags so you can adopt them per shop; each degrades gracefully where unsupported.
+
+## Container queries (`containerQueries`)
+
+The product card adapts to **its own width** via CSS `@container`, not the viewport — so the same card looks right in a wide grid, a narrow sidebar, or a cart drawer. Flag off → standard media-query layout.
+
+## Popover / dialog API (`popoverApi`)
+
+Modal and popover surfaces (the AI stylist panel, the mobile menu) use the native `<dialog>` element and the Popover API, with a React fallback when the browser lacks support. Flag off → the React fallback everywhere.
+
+## View Transitions (`viewTransitions`)
+
+Smooth morphing transitions between routes — e.g. a product card animating into the product page. Uses the View Transitions API where available and is a no-op (instant navigation) where not. Flag off → plain navigation.
+
+## Defaults
+
+| Flag | Tier | Default |
+|---|---|---|
+| `containerQueries` | runtime | off |
+| `popoverApi` | runtime | off |
+| `viewTransitions` | runtime | off |
+
+All three are toggled in `/admin/features` and are byte-identical to the classic behaviour when off.
+
+<Cards>
+  <Card title="Live Canvas (3D)" href="/docs/features/live-canvas-3d" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>

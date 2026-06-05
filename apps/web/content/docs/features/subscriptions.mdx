@@ -1,0 +1,38 @@
+---
+title: Subscriptions
+description: Recurring billing via Stripe Billing — admin management and a self-service customer portal, additive and flag-gated so one-off checkout is unchanged when off.
+---
+
+`subscriptions` adds recurring billing on top of Stripe Billing, using the existing `Subscription` model. It is additive and flag-gated: with the flag off, one-off checkout and the Stripe webhook behave exactly as before.
+
+## Enable it
+
+<Steps>
+<Step>Run the migration — `pnpm db:push` (the `Subscription` model gains a few additive columns).</Step>
+<Step>Set `brand.features.subscriptions = true` (compile-time — redeploy). Requires ecommerce mode.</Step>
+<Step>Create your recurring Prices in Stripe (they are currency-locked on Stripe's side).</Step>
+</Steps>
+
+## What ships
+
+- **Admin** — `/admin/subscriptions`: list subscriptions with status, customer, plan and next renewal; cancel-at-period-end.
+- **Customer** — `/account/subscriptions`: start, pause, resume and cancel, **scoped to the signed-in user** (queries are keyed by `userId`, so one customer can never act on another's subscription).
+- **Webhook** — subscription/invoice events (`customer.subscription.*`, `invoice.*`) are handled additively and only when the flag is on; the existing one-off `payment_intent` path, signature verification and idempotency are untouched.
+
+## Tier & defaults
+
+| | |
+|---|---|
+| Flag | `subscriptions` |
+| Tier | compile-time (redeploy); precondition: ecommerce |
+| Default | **off** |
+| Tools | `subscriptions.list`, `subscriptions.cancel` (scope-gated) |
+
+<Callout type="info">
+Subscription Prices are currency-locked on Stripe — there's no local currency conversion for recurring charges, so it does not interact with [multi-currency](/docs/features/multi-currency) one-off pricing.
+</Callout>
+
+<Cards>
+  <Card title="Checkout (Stripe)" href="/docs/features/checkout-stripe" />
+  <Card title="Order management" href="/docs/features/order-management" />
+</Cards>
