@@ -318,6 +318,35 @@ export default async function ChangelogPage() {
           </p>
         </header>
 
+        {/* On `next` — security/maintenance foundation. Not a tagged npm
+            release yet, so it lives here as a note rather than a version entry:
+            a scaffold from the current release does not carry the marker until
+            the next tag ships. */}
+        <div className="mb-16 rounded-2xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50 dark:bg-[#111] p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-lg bg-white dark:bg-white/5 border border-cw-stone-200 dark:border-white/10 shadow-sm">
+              <ShieldCheck className="w-5 h-5 text-cw-terracotta" />
+            </div>
+            <h2 className="text-2xl font-bold text-cw-stone-900 dark:text-cw-stone-50">
+              Every shop knows its engine version
+            </h2>
+            <span className="ml-auto text-xs font-mono font-semibold uppercase tracking-wider text-cw-terracotta">
+              on next
+            </span>
+          </div>
+          <p className="text-cw-stone-600 dark:text-cw-stone-300 text-lg leading-relaxed font-light">
+            Every Cartwright shop now ships a{' '}
+            <code className="font-mono text-cw-stone-700 dark:text-cw-stone-200">.cartwright/release.json</code>{' '}
+            marker recording the exact engine version it was scaffolded from — auto-stamped at release, so it
+            never drifts. Paired with a published{' '}
+            <strong className="font-semibold text-cw-stone-700 dark:text-cw-stone-200">security advisories</strong>{' '}
+            index in the engine changelog, a known fix can always be matched to the shops that need it — even
+            though you own the code and nothing auto-updates it. Live on the{' '}
+            <code className="font-mono text-cw-stone-700 dark:text-cw-stone-200">next</code> channel now; ships
+            in the next tagged release.
+          </p>
+        </div>
+
         <div className="space-y-16">
           {RELEASES.map((release, index) => (
             <article key={release.version} className="relative grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 md:gap-12">
