@@ -1,0 +1,52 @@
+---
+title: Marketing automations
+description: Emit lifecycle events (welcome, abandoned-cart, post-purchase) to Resend Automations — consent-gated, flag-off by default.
+---
+
+The `marketingAutomations` feature drives lifecycle email sequences — welcome, abandoned-cart recovery, post-purchase — through [Resend Automations](https://resend.com/features/automations).
+
+Cartwright's job is small and self-contained: it **emits events** at the right moments. Resend runs the actual sequences (timing, steps, content) you wire in the Resend dashboard. Cartwright never owns the drip content or scheduling. Source: `lib/marketing/automations.ts`.
+
+## Turning it on
+
+<Steps>
+<Step>Set a **Resend API key** (`/admin/integrations`, or `RESEND_API_KEY`) — the same key Cartwright already uses for transactional email.</Step>
+<Step>Enable **`marketingAutomations`** in `/admin/features` (or `brand.features.marketingAutomations = true`). Default off.</Step>
+<Step>In the Resend dashboard, create one Automation per sequence, each with a trigger whose event name matches the table below.</Step>
+</Steps>
+
+Without a Resend key the feature is inert — every emit is a no-op.
+
+## Events Cartwright emits
+
+| Event name | Fired when | Payload |
+|---|---|---|
+| `cartwright.user.created` | a customer registers | `{ name }` |
+| `cartwright.cart.abandoned` | the abandoned-cart cron finds a logged-in cart idle ≥ 24h | `{ cartUrl, itemCount, items }` |
+| `cartwright.order.placed` | an order is marked paid (Stripe webhook) | `{ orderId, totalDkk, currency, itemCount }` |
+
+Resend auto-creates the contact from the event's email and runs the matching automation. Use the payload fields in your templates.
+
+## Consent
+
+Marketing events fire **only for customers with marketing consent** — defined as a confirmed newsletter subscriber (`Subscriber.status === "confirmed"`), including `order.placed`. The whole policy lives in one function, `hasMarketingConsent(email)` — change it there to broaden the rule. Cookie consent is per-browser and can't address an email server-side, so the newsletter opt-in is the gate.
+
+## Relationship to the abandoned-cart cron
+
+With `marketingAutomations` on, the existing `abandonedCart` cron emits `cartwright.cart.abandoned` (Resend runs a multi-step drip) instead of sending its own single recovery email — no double send.
+
+| `abandonedCart` | `marketingAutomations` | Behavior |
+|---|---|---|
+| on | off | Direct single recovery email |
+| off | on | Emit `cart.abandoned` → Resend drip |
+| on | on | Emit `cart.abandoned` → Resend drip (no direct send) |
+| off | off | Cron no-ops |
+
+<Callout type="info">
+Resend-specific by design — Resend is already the transport. There is no ESP-agnostic event bus.
+</Callout>
+
+<Cards>
+  <Card title="Email (Resend)" href="/docs/features/email-resend" />
+  <Card title="Newsletter & subscribers" href="/docs/features/customer-storefront" />
+</Cards>

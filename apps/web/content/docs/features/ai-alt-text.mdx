@@ -1,0 +1,30 @@
+---
+title: AI alt-text
+description: Auto-generate image alt-text with Gemini vision on upload, via a cron — accessibility and SEO without manual captioning.
+---
+
+`altTextAi` generates descriptive **alt-text** for images using Gemini vision, so uploads get accessible, SEO-friendly captions without manual work. It depends on the media library (`mediaLibrary`).
+
+## How it works
+
+New media assets are queued and a cron (`/api/cron/media-ai`) calls Gemini vision to generate alt-text, written back to the `MediaAsset`. Editors can override any generated caption.
+
+## Enable it
+
+<Steps>
+<Step>Enable `mediaLibrary` (alt-text writes to `MediaAsset`).</Step>
+<Step>Set `altTextAi = true` in `brand.config.ts` (compile-time — redeploy).</Step>
+<Step>Provide a Gemini API key (`/admin/integrations`) and `CRON_SECRET` for the cron.</Step>
+</Steps>
+
+| | |
+|---|---|
+| Flag | `altTextAi` |
+| Tier | compile-time (depends on `mediaLibrary`) |
+| Default | **off** |
+| Needs | Gemini key, `CRON_SECRET` |
+
+<Cards>
+  <Card title="Image upload (Blob)" href="/docs/features/image-upload-blob" />
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+</Cards>

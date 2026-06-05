@@ -16,6 +16,48 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.13.0',
+    date: 'June 2026',
+    title: 'Google Sheets, Drive & Docs + Stripe Subscriptions (engine v0.21.0)',
+    description:
+      'The Google Workspace modules on top of the v0.20.0 connector, plus recurring billing. Everything is additive and default-off, so a shop that does not opt in is byte-identical to before.',
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Google Sheets sync (sheetsSync) — two-way sync between a Google Sheet and your catalog via the Sheets API v4: pull upserts products by SKU and never deletes; push clears the range first so a shrunk catalog leaves no stale rows; each run reports added/updated/skipped. CRON_SECRET-gated cron + /admin/sheets. Default-off.',
+      'Google Drive media + backup (googleDrive) — import images from a Drive folder into the media library (reusing the MediaAsset + Blob pipeline with sha256 de-dupe) and push the logical DB/media backup to Drive as an off-Vercel copy. CRON_SECRET-gated cron + /admin/drive. Default-off.',
+      'Google Docs import (docsImport) — turn a Doc into a draft blog post or info page. The converter emits Cartwright engine markdown (never HTML); content is stored as text and rendered through the safe renderContentBlocks path, so a shared Doc with <script>/javascript: cannot become stored XSS. Default-off.',
+      'Stripe Subscriptions (subscriptions) — recurring billing on Stripe Billing with an admin list (cancel-at-period-end) and a self-service customer portal (start/pause/resume/cancel, scoped to the signed-in user). Webhook handling is additive and flag-gated; one-off checkout is unchanged when off. Run pnpm db:push before enabling. Default-off.',
+    ],
+  },
+  {
+    version: '3.12.0',
+    date: 'June 2026',
+    title: 'Google Workspace connector, Sign-In, FX auto-refresh & storefront i18n (engine v0.20.0)',
+    description:
+      'The Google integration foundation plus two gap-closers. The connector is fail-soft infrastructure (inert without credentials); the rest ship flag-off, so an existing shop is byte-identical until it opts in.',
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Google Workspace OAuth2 connector (no flag) — one shared server-side connector (lib/google) behind Sheets/Drive/Docs: bring your own Google Cloud client (encrypted in IntegrationSettings or env), incremental per-module scopes, CSRF/PKCE-protected flow, skew-aware single-flight token refresh, local-authoritative disconnect. Fail-soft: no credentials means every Google surface is inert.',
+      'Google Sign-In (googleAuth) — a "Continue with Google" button on customer login via NextAuth, mirroring the GitHub provider (uses the OAuth-ready Account table, no new model). Admin is never granted via OAuth. Default-off; needs GOOGLE_CLIENT_ID/SECRET.',
+      'FX auto-refresh (fxAutoUpdate) — refresh exchange rates daily from the ECB no-key feed into a DB override, read as dbRate ?? staticAnchor. Display, checkout and the receipt resolve the same rate (no drift). Flag off → static brand.config anchors, exactly as before.',
+      'Storefront translation rendering — saved Product/Category translations now render on the storefront (PDP/PLP/category: name, description, metadata, alt text, breadcrumbs, JSON-LD), closing the v0.15 gap where translations were saved but not displayed.',
+    ],
+  },
+  {
+    version: '3.11.0',
+    date: 'June 2026',
+    title: 'Secure-by-default accounts & onboarding (engine v0.19.0)',
+    description:
+      'The "finished package" customer surfaces and an onboarding/credential revamp. The headline: no more hardcoded admin password. Most items are additive; a few columns need pnpm db:push before enabling.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Secure-by-default admin credentials — the seed generates a strong random admin password (no hardcoded default) and forces a change on first login at /admin/konto; the password is also written to a gitignored file so a new owner can always find it.',
+      'Password reset & account settings — /account/forgot-password → email → /account/reset-password (HMAC-SHA256 single-use token peppered with AUTH_SECRET, 1h TTL, no account-existence leak), plus /account/settings to edit profile and set/change a password.',
+      'Contact-form image attachments (contactAttachments, default-off) — image-only, size-capped, magic-byte-validated uploads to Vercel Blob, shown in the admin inbox.',
+      'Default legal pages + self-service GDPR export — privacy/terms/cookie pages render from templated defaults when no CMS page exists, and customers can download their full data as JSON from /account.',
+    ],
+  },
+  {
     version: '3.10.0',
     date: 'June 2026',
     title: 'Marketing automations, Prisma 7 & a security-docs pass (engine v0.18.0)',

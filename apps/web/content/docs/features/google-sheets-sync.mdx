@@ -1,0 +1,44 @@
+---
+title: Google Sheets sync
+description: Two-way sync between a Google Sheet and your product catalog — pull (upsert by SKU, never deletes) and push (clears stale rows), with a CRON_SECRET-gated cron.
+---
+
+`sheetsSync` syncs products, stock and prices between your catalog and a Google Sheet via the Sheets API v4, on top of the [Google Workspace connector](/docs/features/google-workspace). Merchants who live in spreadsheets get bulk editing without leaving the sheet.
+
+## Enable it
+
+<Steps>
+<Step>Connect the [Google Workspace connector](/docs/features/google-workspace) in `/admin/integrations`.</Step>
+<Step>Turn on `sheetsSync` in `/admin/features` (runtime — no redeploy).</Step>
+<Step>Set the spreadsheet ID in `/admin/sheets` and run a sync.</Step>
+</Steps>
+
+## How sync works
+
+- **Pull** (sheet → catalog): upserts products **by SKU**, with a slug fallback. It **never deletes** catalog rows — a row removed from the sheet is left alone.
+- **Push** (catalog → sheet): writes the current catalog, **clearing the range first** so a shrunk catalog leaves no stale trailing rows.
+- Each run reports **added / updated / skipped** counts; `needsUpdate` diffing keeps it idempotent (re-running changes nothing).
+
+## Scheduled sync
+
+`/api/cron/sheets-sync` runs on a schedule (`vercel.json`), gated by `CRON_SECRET`, and no-ops when the flag is off or no spreadsheet/connection is configured.
+
+## Tools
+
+The AI/MCP surface gains `sheets.sync_now`, `sheets.pull`, `sheets.push` (scope-gated).
+
+| | |
+|---|---|
+| Flag | `sheetsSync` |
+| Tier | runtime |
+| Default | **off** |
+| Needs | Workspace connector + Sheets scope, `CRON_SECRET` for the cron |
+
+<Callout type="info">
+Fail-soft: with no connection the sync is inert. Reuses the existing product CSV import/export logic where possible.
+</Callout>
+
+<Cards>
+  <Card title="Google Workspace (connector)" href="/docs/features/google-workspace" />
+  <Card title="Product variants" href="/docs/features/product-variants" />
+</Cards>

@@ -1,0 +1,28 @@
+---
+title: Contact-form attachments
+description: Let visitors attach an image to the contact form — image-only, size-capped, magic-byte-validated, stored in Vercel Blob and shown in the admin inbox.
+---
+
+`contactAttachments` lets visitors attach an image to the contact form (e.g. a photo of a damaged item or a reference design).
+
+## Behaviour
+
+- **Image-only**, size-capped, and **magic-byte-validated** (the file's real type is checked, not just its extension or MIME header).
+- Uploaded to **Vercel Blob**; the URL is attached to the `Lead` and shown as a thumbnail in `/admin/henvendelser` (the inquiries inbox).
+- The contact endpoint also gains a per-IP spam rate-limit.
+
+## Enable it
+
+Turn on `contactAttachments` in `/admin/features` (runtime, default off). It needs `BLOB_READ_WRITE_TOKEN` for uploads; without it the form still works text-only.
+
+| | |
+|---|---|
+| Flag | `contactAttachments` |
+| Tier | runtime |
+| Default | **off** |
+| Needs | `BLOB_READ_WRITE_TOKEN` |
+
+<Cards>
+  <Card title="Image upload (Blob)" href="/docs/features/image-upload-blob" />
+  <Card title="GDPR & data governance" href="/docs/features/gdpr-data-governance" />
+</Cards>

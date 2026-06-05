@@ -23,7 +23,7 @@ policies: {
 }
 ```
 
-Rates are unit-per-1-base-unit (1 DKK = 0.134 EUR); the base currency must be `rate: 1`. Update them manually — an auto-refresh cron (`fxAutoUpdate`) is planned.
+Rates are unit-per-1-base-unit (1 DKK = 0.134 EUR); the base currency must be `rate: 1`. Update them manually, or enable [`fxAutoUpdate`](/docs/features/fx-auto-refresh) to refresh them daily from the ECB feed into a DB override (read as `dbRate ?? staticAnchor`).
 
 ## Enable it
 

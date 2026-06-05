@@ -1,0 +1,60 @@
+---
+title: Backup & restore
+description: A portable logical backup (JSON dump of every table) on top of Turso's physical backups, plus a documented, destructive-by-explicit-confirm restore path.
+---
+
+Cartwright's data lives in **Turso (libSQL)** (database) + **Vercel Blob** (media). Turso has its own physical backups; this adds a **portable logical backup** — a JSON dump of every table — that you control, plus a documented restore path. Source: `lib/backup/dump.ts`, `scripts/backup-turso.ts`, `scripts/restore-turso.ts`.
+
+## What gets backed up
+
+- **Database** — every table as JSON rows, including a `mediaAssetInventory` (the `MediaAsset` rows: Blob URLs + metadata).
+- **Not** the Blob binaries themselves — those live in Vercel Blob (its own redundancy). The inventory lets you re-link them on restore.
+
+<Callout type="warn">
+A dump contains **PII**. It is written to `backups/` (gitignored) and, when uploaded, stored as a **private** Vercel Blob. Never commit it, never make it public.
+</Callout>
+
+## Backup
+
+```bash
+# Dry-run (default) — counts per table, writes nothing:
+TURSO_DATABASE_URL="libsql://…" TURSO_AUTH_TOKEN="…" \
+  npx tsx scripts/backup-turso.ts
+
+# Write a local dump:
+… npx tsx scripts/backup-turso.ts --write          # → backups/backup-<ts>.json
+
+# Write + upload to Vercel Blob (private):
+BLOB_READ_WRITE_TOKEN="…" … npx tsx scripts/backup-turso.ts --write --upload
+```
+
+### Scheduled
+
+`/api/cron/backup` runs daily at 02:00 UTC (`vercel.json`), uploading a private Blob. It needs `CRON_SECRET`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BLOB_READ_WRITE_TOKEN` on the Vercel project. Preview without writing: `GET /api/cron/backup?dryRun=1` with `Authorization: Bearer $CRON_SECRET`.
+
+## Restore
+
+Restore is **destructive** and **never automatic** — `scripts/restore-turso.ts` requires an explicit `--confirm`; without it, it's a dry-run.
+
+<Steps>
+<Step>Create/target a **fresh** Turso DB and apply the schema: `npx tsx scripts/migrate-turso.ts`.</Step>
+<Step>Dry-run the restore (shows tables + counts): `npx tsx scripts/restore-turso.ts backups/backup-<ts>.json`.</Step>
+<Step>Restore for real: append `--confirm`.</Step>
+</Steps>
+
+The restore disables foreign keys during insert (order-independent), re-enables after, and skips `_prisma_migrations`.
+
+### Media
+
+Blob files are not in the dump. If the Blob store is intact, restored `MediaAsset.url` rows still point at the live CDN — nothing to do. If you lost the store, re-upload from your mirror and update `url` / `blobPathname`.
+
+## Safety notes
+
+- These are **operator commands** — not run by CI or agents; the cron only writes, never restores.
+- Default modes are non-destructive (backup dry-run; restore dry-run).
+- Always restore into a **fresh** DB, never over a live one. Then dry-run a backup against it and smoke-test `/da` + `/admin`.
+
+<Cards>
+  <Card title="Turso database" href="/docs/deployment/turso" />
+  <Card title="Migrations" href="/docs/deployment/migrations" />
+</Cards>

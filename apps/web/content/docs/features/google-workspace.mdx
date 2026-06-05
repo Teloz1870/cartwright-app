@@ -1,0 +1,38 @@
+---
+title: Google Workspace
+description: One shared OAuth2 connector behind Sheets sync, Drive media/backup and Docs import — bring your own Google Cloud client, fail-soft when not connected.
+---
+
+Cartwright integrates with Google Workspace through **one shared server-side OAuth2 connector** (`lib/google/`). Three feature modules sit on top of it; each is a separate, default-off flag. Customer "Continue with Google" sign-in is a **separate** system — see [Google Sign-In](/docs/features/google-sign-in).
+
+## The connector (infrastructure, no flag)
+
+You bring your own Google Cloud OAuth client. Paste the client ID/secret in `/admin/integrations` (stored encrypted in `IntegrationSettings`, same AES-256-GCM pattern as Stripe), or set `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in the environment. Then connect your Google account once from the admin UI.
+
+- **Incremental scopes** — only the scopes the enabled modules need are requested (Sheets / Drive / Docs).
+- **Fail-soft** — with no credentials or no connection, every Google surface is silently inert; nothing throws at render.
+- **Tokens** are stored encrypted on a `GoogleConnection` singleton; refresh is skew-aware and single-flight (concurrent refreshes can't clobber the rotated token). Disconnect is local-authoritative (remote revoke is best-effort; local state always clears).
+
+<Callout type="info">
+The connector requires no `brand.features` flag — it's inert until you add credentials and connect. The **modules** below are each flag-gated and default OFF.
+</Callout>
+
+## The modules
+
+<Cards>
+  <Card title="Sheets ↔ catalog sync" href="/docs/features/google-sheets-sync" description="sheetsSync — two-way product/stock/price sync" />
+  <Card title="Drive media + backup" href="/docs/features/google-drive" description="googleDrive — import images, push DB backups" />
+  <Card title="Docs → content import" href="/docs/features/google-docs-import" description="docsImport — a Doc becomes a draft post/page" />
+  <Card title="Google Sign-In (separate)" href="/docs/features/google-sign-in" description="googleAuth — customer login, different OAuth client" />
+</Cards>
+
+## Required environment
+
+```bash
+# Shared Workspace connector (Sheets / Drive / Docs):
+GOOGLE_OAUTH_CLIENT_ID=        # or set in /admin/integrations (encrypted)
+GOOGLE_OAUTH_CLIENT_SECRET=
+CRON_SECRET=                   # for the sheets-sync / drive-backup crons
+```
+
+Each module's page lists its specific scope and admin surface. With every flag off, an existing shop is byte-identical — none of these change behaviour until you opt in.

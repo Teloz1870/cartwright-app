@@ -1,0 +1,32 @@
+---
+title: Live Canvas (3D)
+description: An AI-configurable Three.js / WebGL2 3D hero, managed from the admin and gated behind the threeD flag.
+---
+
+`threeD` adds a **Live Canvas** — an interactive Three.js (WebGL2) 3D hero on the storefront, configurable from the admin without writing shader code.
+
+## Enable & configure
+
+<Steps>
+<Step>Turn on `threeD` in `/admin/features` (runtime).</Step>
+<Step>Configure the scene, intensity and palette in `/admin/three-d` — or let the AI assistant set it via the `three.configure` tool.</Step>
+</Steps>
+
+The scene reads the shop's theme palette so it matches your brand. With the flag off, the storefront renders its normal (non-3D) hero — byte-identical to before.
+
+| | |
+|---|---|
+| Flag | `threeD` |
+| Tier | runtime |
+| Default | **off** |
+| Admin | `/admin/three-d` |
+| Tools | `three.get`, `three.configure` |
+
+<Callout type="info">
+WebGL2 only — browsers without it fall back to the standard hero. Keep an eye on Core Web Vitals when enabling a heavy scene.
+</Callout>
+
+<Cards>
+  <Card title="Modern web platform" href="/docs/features/modern-web-platform" />
+  <Card title="Designs & themes" href="/docs/designs/overview" />
+</Cards>

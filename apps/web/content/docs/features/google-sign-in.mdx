@@ -1,0 +1,35 @@
+---
+title: Google Sign-In
+description: A "Continue with Google" button for customer login via NextAuth — flag-gated, env-gated, and never a path to admin.
+---
+
+`googleAuth` adds a **"Continue with Google"** button to the customer login, mirroring the existing GitHub provider. It is a NextAuth v5 Google provider — completely separate from the [Google Workspace connector](/docs/features/google-workspace) (which is server-side and uses a different OAuth client).
+
+## Enable it
+
+<Steps>
+<Step>Create an OAuth client in Google Cloud and set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`.</Step>
+<Step>Set `brand.features.googleAuth = true` (compile-time — requires a redeploy).</Step>
+</Steps>
+
+The button only renders when both the flag is on **and** both env keys are present (`isGoogleAuthEnabled` in `lib/auth.ts`). No new database model — it uses the OAuth-ready `Account` table.
+
+<Callout type="warn">
+Google Sign-In creates or links a **customer**. Admin is a database role and is **never** granted via OAuth — see [Authentication & accounts](/docs/features/authentication).
+</Callout>
+
+## Tier & defaults
+
+| | |
+|---|---|
+| Flag | `googleAuth` |
+| Tier | compile-time (redeploy to change) |
+| Default | **off** |
+| Env | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+
+With the flag off, the login page is unchanged.
+
+<Cards>
+  <Card title="Authentication & accounts" href="/docs/features/authentication" />
+  <Card title="Google Workspace (connector)" href="/docs/features/google-workspace" />
+</Cards>

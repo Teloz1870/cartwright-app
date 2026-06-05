@@ -1,0 +1,26 @@
+---
+title: Storefront UX toggles
+description: Small storefront UX flags — the first-visit welcome guide and the promo announcement bar — both runtime, default-off, ecommerce-only.
+---
+
+Two lightweight storefront toggles, both runtime flags in `/admin/features`, both default-off, and both gated to ecommerce mode.
+
+## Welcome guide (`welcomeGuide`)
+
+A first-visit welcome modal that orients new shoppers (and shows off the shop). Shown once per visitor; off by default so it never surprises an existing storefront.
+
+## Announcement bar (`announcementBar`)
+
+A dismissible promo banner pinned to the top of the storefront — free-shipping thresholds, sales, launch messaging. Content is editable; off by default.
+
+| Flag | Tier | Default | Precondition |
+|---|---|---|---|
+| `welcomeGuide` | runtime | off | ecommerce |
+| `announcementBar` | runtime | off | ecommerce |
+
+With both off, the storefront header is byte-identical to a fresh shop.
+
+<Cards>
+  <Card title="Customer storefront" href="/docs/features/customer-storefront" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>
