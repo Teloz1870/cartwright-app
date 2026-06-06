@@ -433,7 +433,11 @@ async function run(): Promise<void> {
     }
   }
 
-  // ── Install ─────────────────────────────────────────────────────────────
+  // ── Install + DB bootstrap ────────────────────────────────────────────────
+  // When deps install cleanly we go all the way: create the schema and seed the
+  // admin + demo data, so the shop is sign-in-ready before the user opens it.
+  // `dbReady` drives whether "Next steps" still lists db push/seed as required.
+  let dbReady = false;
   if (installDeps) {
     const installSpinner = spinner();
     installSpinner.start(`Installing dependencies with ${packageManager}…`);
@@ -444,6 +448,23 @@ async function run(): Promise<void> {
       // migration history with a clean from-empty baseline so `migrate deploy`
       // works on a fresh DB (best-effort; `db push` works regardless).
       regenerateMigrationBaseline(targetDir, database);
+      // Create the schema + seed the admin/demo data. The seed prints the admin
+      // login banner and writes .admin-credentials. Non-fatal: on any failure we
+      // fall back to listing the manual commands in "Next steps".
+      try {
+        console.log(
+          pc.dim("\nSetting up the database (schema + demo data + admin login)…\n"),
+        );
+        execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+        execSync("npx prisma db seed", { cwd: targetDir, stdio: "inherit" });
+        dbReady = true;
+      } catch {
+        console.log(
+          pc.yellow(
+            "\nCouldn't auto-set-up the database — run `npx prisma db push` then `npx prisma db seed` yourself (see Next steps).",
+          ),
+        );
+      }
     } else {
       installSpinner.stop(
         pc.yellow(
@@ -471,22 +492,42 @@ async function run(): Promise<void> {
     ? `\n  ${pc.dim("Add ANTHROPIC_API_KEY (+ optional GEMINI keys) to .env.local before pnpm dev,")}\n  ${pc.dim("or configure them later in /admin/integrations after first sign-in.")}`
     : "";
 
+  const nextSteps = dbReady
+    ? [
+        pc.bold("Next steps:"),
+        `  cd ${finalSlug}`,
+        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
+      ]
+    : [
+        pc.bold("Next steps (required):"),
+        `  cd ${finalSlug}`,
+        `  npx prisma db push          ${pc.dim("# create the DB schema")}`,
+        `  npx prisma db seed          ${pc.dim("# create the admin + demo data (prints your login)")}`,
+        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
+      ];
+
   const lines = [
     pc.green("✓") +
       ` Created ${pc.bold(finalProjectName)} at ${pc.dim(targetDir)}`,
     pc.green("✓") + ` AUTH_SECRET generated and written to .env.local`,
     pc.green("✓") + ` brand.config.ts patched (name, branding, SEO, emails)`,
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
+    dbReady
+      ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
+      : "",
     "",
-    pc.bold("Next steps:"),
-    `  cd ${finalSlug}`,
-    `  npx prisma db push          ${pc.dim("# create the DB schema (fresh project)")}`,
-    `  npx prisma db seed          ${pc.dim("# seed demo products + categories")}`,
-    `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
+    ...nextSteps,
     "",
-    pc.bold("Admin login:"),
-    pc.dim("  Open /account/login and enter the admin email from brand.config.ts"),
-    pc.dim("  (brand.emails.admin). In dev the magic link is written to .mail-previews/."),
+    pc.bold("Sign in (password):"),
+    pc.dim("  Open /account/login → the Password tab."),
+    pc.dim("  Email:    brand.emails.admin (from brand.config.ts)"),
+    pc.dim("  Password: in .admin-credentials at the project root — `cat .admin-credentials`"),
+    pc.dim("  First login asks you to set your own password; then the /admin/setup wizard opens."),
+    pc.dim("  (Magic-link appears once RESEND_API_KEY is set; in dev the link → .mail-previews/.)"),
+    "  " +
+      pc.cyan(
+        "First-login guide: https://cartwright.app/docs/getting-started/first-login",
+      ),
     "",
     databaseNote(database),
     aiHint,

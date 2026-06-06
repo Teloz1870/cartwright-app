@@ -1,0 +1,73 @@
+---
+title: Sign in for the first time
+description: Create the admin, find your password, and log into /admin — for any setup path (CLI, IDE agent, or a manual clone).
+---
+
+Your storefront is public, but `/admin` is locked. This page gets you signed in the first time — whichever way you set the project up.
+
+## TL;DR
+
+```bash
+npx create-cartwright my-shop   # scaffolds, installs, AND creates + seeds the DB
+cd my-shop && pnpm dev
+# open http://localhost:3000/account/login → Password tab
+# email = brand.emails.admin (from brand.config.ts); password = cat .admin-credentials
+```
+
+The seed prints your admin **email + password** once and saves them to **`.admin-credentials`** (gitignored) in the project root. First login makes you set your own password, then the `/admin/setup` wizard opens.
+
+## Step by step
+
+<Steps>
+
+1. **Create the database + admin.** `npx create-cartwright` does this for you — it runs `prisma db push` + `prisma db seed` after installing dependencies. If you cloned manually or used `--no-install`, run them yourself from the project root:
+
+```bash
+npx prisma db push      # create the SQLite schema (dev.db)
+npx prisma db seed      # create the admin user + demo data
+```
+
+`db seed` prints a banner with your admin email + password and writes them to `.admin-credentials`.
+
+2. **Start the app.**
+
+```bash
+pnpm dev                # http://localhost:3000
+```
+
+3. **Sign in with the password.** Open `/account/login` and use the **Password** tab:
+   - **Email** — `brand.emails.admin` from `brand.config.ts`.
+   - **Password** — the value in `.admin-credentials` (`cat .admin-credentials`), or the `db seed` output.
+
+4. **Set your own password.** First login redirects to `/admin/konto` and requires a new password. After that you land in the `/admin/setup` wizard (brand → theme → keys → first category).
+
+</Steps>
+
+<Callout type="info" title="Why password, not magic-link?">
+A brand-new shop has no email provider, so the login page shows **only the Password tab** — magic-link can't deliver yet. Once you set `RESEND_API_KEY`, the magic-link tab appears; in local dev the link is written to `.mail-previews/` instead of being sent. Password is the intended first-run path.
+</Callout>
+
+## Choose your own password
+
+Set `ADMIN_PASSWORD` before seeding and the admin is created with exactly that (and no forced change):
+
+```bash
+ADMIN_PASSWORD="your-strong-password" npx prisma db seed
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| "Wrong email or password" / no admin exists | You haven't seeded. Run `npx prisma db seed`. |
+| Can't find the password | `cat .admin-credentials` in the project root (it's gitignored), or re-read the `db seed` output. |
+| Login page shows only Password (no magic-link) | Expected until `RESEND_API_KEY` is set. |
+| Magic-link "sent" but no email arrives | In dev there's no real send — open the newest file in `.mail-previews/`. |
+| Boot error: `Missing required env: AUTH_SECRET` | Set `AUTH_SECRET` (`openssl rand -hex 32`) in `.env.local`. `create-cartwright` sets it; manual clones must. |
+| `/admin/setup` bounces you to `/account/login` | That's the auth gate — sign in first, then it opens. |
+
+<Cards>
+  <Card title="Setup wizard" href="/docs/getting-started/setup-wizard" />
+  <Card title="Authentication reference" href="/docs/features/authentication" />
+  <Card title="From code to live" href="/docs/getting-started/from-code-to-live" />
+</Cards>
