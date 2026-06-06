@@ -1,0 +1,47 @@
+---
+title: Vercel v0 generation
+description: Use Vercel v0 as a second AI engine in the Vibe Sandbox — text-to-UI generation whose code is normalized, sanitized, and stored as governed vibeHtml, never written to disk.
+---
+
+[Vercel v0](https://v0.dev) turns a prompt into UI. Cartwright wires it in as a **second generation engine** in the [Vibe Sandbox](/docs/features/vibe-coding), alongside Anthropic — but keeps the **data-not-code** doctrine intact: v0 emits code, and Cartwright **normalizes it to HTML, sanitizes it, and persists it as `vibeHtml`**. No TSX ever lands on disk.
+
+<Callout type="info">
+Ships in engine **v0.23.0** (currently on the `next` channel) behind the `v0Generator` flag — runtime-toggleable, `default-off`, and inert without a key.
+</Callout>
+
+## How it fits
+
+The Vibe Sandbox already accepts AI-generated layout. v0 becomes a selectable engine on the generate route:
+
+```
+POST /api/admin/vibe/generate   { engine: "anthropic" | "v0", ... }
+```
+
+When `engine: "v0"` is chosen, Cartwright calls the v0 Platform API, takes the returned code, runs it through the **same sanitisation pipeline** the rest of Vibe uses (strip `<script>`/handlers/`javascript:`, enforce semantic colour tokens), and stores the result as `vibeHtml`. From there it behaves like any Vibe block — including Gemini auto-translation across your locales.
+
+## Bring your own key
+
+The v0 key is stored encrypted (AES-256-GCM, the same pattern as your Stripe and Anthropic keys) or read from `V0_API_KEY`:
+
+- Set it in `/admin/integrations` (encrypted in the database), or
+- Provide `V0_API_KEY` in the environment.
+
+A **daily-usage guard** counts requests and fails cheap before hitting v0's limits. Without a key, the engine is simply unavailable — the Anthropic engine is unaffected.
+
+## Privacy & governance
+
+Because v0 is an external processor, enabling it adds a **"Vercel (v0 Platform API)"** entry to your GDPR processor register, with a configurable privacy tier (`opt-out` by default). Only admin prompts and brand tokens are sent — never customer PII.
+
+## Enabling it
+
+`v0Generator` is runtime-toggleable in `/admin/features`. Run a schema push first to add the four additive `IntegrationSettings` columns (`v0ApiKey`, `v0UsageJson`, `v0PrivacyTier`, `v0DefaultDesignSystemId`):
+
+```bash
+pnpm db:push
+```
+
+<Cards>
+  <Card title="Visual Builder" href="/docs/features/visual-builder" />
+  <Card title="Vibe Coding" href="/docs/features/vibe-coding" />
+  <Card title="GDPR & data governance" href="/docs/features/gdpr-data-governance" />
+</Cards>

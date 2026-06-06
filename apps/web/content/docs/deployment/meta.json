@@ -4,6 +4,7 @@
     "go-live",
     "vercel",
     "turso",
+    "postgres-supabase",
     "custom-domain",
     "preview-environments",
     "migrations",

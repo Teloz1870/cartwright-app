@@ -36,6 +36,14 @@ The tool list the chat sees is filtered by scope at registry-call time. Tools th
 
 Responses stream via Vercel AI SDK's `streamText`. The storefront component reads the stream token-by-token. Tool calls within a stream are surfaced as structured events; the UI can render "Looking up products..." indicators while a tool runs.
 
+## Generative product UI
+
+The assistant doesn't just return text — it can choose **how** to present products. The whitelisted `ui.present_products` tool lets the model pick one of three layouts — `grid`, `spotlight`, or `comparison` — plus the product slugs; the server then fetches the real data from the database. The model never emits markup, so there's no XSS surface: it selects a layout and products, and a deterministic renderer (`AIStylistPanel`) draws it. The note text renders as React-escaped strings, and the tool is `catalog:read` only.
+
+## Token-level cost metering
+
+Every AI call on the admin and assistant chat routes is metered for token usage (`lib/ai/usage.ts`), so spend is observable per request rather than a monthly surprise on a provider invoice. Combined with the [audit log](/docs/features/audit-log-revert) — which already stamps provider, model, and modality — you can attribute AI cost down to the individual tool call.
+
 ## What runs on Gemini instead
 
 Cartwright also integrates Google Gemini, but **not** for storefront chat. `lib/ai/gemini.ts` is used for:

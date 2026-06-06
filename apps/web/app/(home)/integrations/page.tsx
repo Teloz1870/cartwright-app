@@ -113,10 +113,42 @@ type Secondary = {
 
 const secondary: Secondary[] = [
   {
+    brand: 'v0',
+    name: 'Vercel v0',
+    category: 'AI UI generation',
+    pitch: 'Generate storefront sections from a prompt. v0\'s code is normalized, sanitized, and stored as vibeHtml — governed data you own, never files dumped to disk.',
+    brandUrl: 'https://v0.dev',
+    docsHref: '/docs/features/v0-generation',
+  },
+  {
+    brand: 'supabase',
+    name: 'Supabase',
+    category: 'Postgres + pgvector',
+    pitch: 'The managed-Postgres scale path: point Cartwright at Supabase and a pgvector HNSW index powers semantic search on large catalogs. Opt-in — Turso stays the default.',
+    brandUrl: 'https://supabase.com',
+    docsHref: '/docs/deployment/postgres-supabase',
+  },
+  {
+    brand: 'google',
+    name: 'Google Workspace',
+    category: 'Workspace sync',
+    pitch: 'One OAuth connector behind three modules: Sheets ↔ catalog sync, Drive media import + DB backup, and Docs → content import.',
+    brandUrl: 'https://workspace.google.com',
+    docsHref: '/docs/features/google-workspace',
+  },
+  {
+    brand: 'googleanalytics',
+    name: 'Google Analytics 4',
+    category: 'Analytics',
+    pitch: 'Consent-gated GA4 with Google Consent Mode v2 — anonymous pings until the visitor accepts analytics.',
+    brandUrl: 'https://marketingplatform.google.com/about/analytics/',
+    docsHref: '/docs/configuration/env-vars',
+  },
+  {
     brand: 'nextauth',
     name: 'Auth.js',
     category: 'Authentication',
-    pitch: 'Magic-link sign-in via NextAuth + Resend. No password store, no vendor lock-in.',
+    pitch: 'Magic-link sign-in via NextAuth + Resend, plus optional GitHub and Google social sign-in. No password store, no vendor lock-in.',
     brandUrl: 'https://authjs.dev',
     docsHref: '/docs/features/auth-magiclink',
   },
@@ -271,9 +303,9 @@ const plusIntegrations: PlusIntegration[] = [
 ];
 
 const marqueeSlugs: BrandSlug[] = [
-  'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
-  'nextauth', 'upstash', 'i18nexus', 'gemini', 'ollama', 'mcp',
-  'phone-inc', 'luma', 'unsplash',
+  'stripe', 'vercel', 'v0', 'resend', 'turso', 'supabase', 'anthropic', 'sentry',
+  'nextauth', 'upstash', 'i18nexus', 'gemini', 'google', 'ollama', 'mcp',
+  'googleanalytics', 'phone-inc', 'luma', 'unsplash',
 ];
 
 export default function IntegrationsPage() {
@@ -289,7 +321,7 @@ export default function IntegrationsPage() {
             Pre-wired
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
-            Sixteen integrations.{' '}
+            Twenty integrations.{' '}
             <span className="relative inline-block text-cw-terracotta">
               <span className="relative z-10">Wired. Validated. Ready to take an order.</span>
               <span
@@ -384,7 +416,7 @@ export default function IntegrationsPage() {
         <div className="mt-24 sm:mt-32">
           <div className="max-w-2xl">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
-              And another nine
+              And another fourteen
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
               The supporting cast.

@@ -92,7 +92,7 @@ Sessions are stateful (DB-backed) but the protocol is request-idempotent. Send t
 - `GET /api/acp/v1/checkout_sessions/{id}` — read current state
 - `POST /api/acp/v1/checkout_sessions/{id}/update` — change line items or shipping
 - `POST /api/acp/v1/checkout_sessions/{id}/cancel` — abandon
-- `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise → creates an `Order` row, fires the same downstream as a human checkout (Stripe charge, audit log, fulfilment hooks)
+- `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise the session. Gated behind `ACP_PAYMENT_COMPLETION=1` (default off): the gate and the `ready_for_payment` status validation are live, but the delegated-payment charge is a structured scaffold (see the note below) until Stripe Shared Payment Tokens are wired — so it can never accidentally move money
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjAaP1eZvKYlo2C0/complete \
@@ -102,7 +102,19 @@ curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjAaP1eZv
   -d '{ "payment_method_id": "pm_card_visa" }'
 ```
 
-`complete` returns the order id and a status — `succeeded`, `requires_action`, or `failed`. ACP buyer agents look for `requires_action` to surface a 3DS or SCA challenge URL back to the originating chat thread.
+When fully wired, `complete` returns the order id and a status — `succeeded`, `requires_action`, or `failed`; ACP buyer agents look for `requires_action` to surface a 3DS or SCA challenge URL back to the originating chat thread.
+
+<Callout type="warn">
+**Completion is a default-off scaffold today.** `/complete` ships behind `ACP_PAYMENT_COMPLETION=1` (default off). The verifiable parts — the env gate and the `ready_for_payment` status validation — are real; the one external step (charging via a shared payment token) throws `payment_not_wired` until Stripe Shared Payment Token access and ChatGPT merchant onboarding are connected. The endpoint therefore cannot charge a card while the integration is still being finished. `create` / `update` / `retrieve` / `cancel` are fully live.
+</Callout>
+
+## UCP: native_commerce capability
+
+Google's Unified Commerce Protocol (UCP) lets agents discover which catalogue products are *native-buyable*. When `acp` is on, the Google Merchant feed (`/feed/google.xml`) emits `<g:native_commerce>enabled</g:native_commerce>` per item, and `/.well-known/ucp` advertises a `native_commerce` capability — gated on `acp` **plus** `merchantFeed`. The gating is deliberate: the shop never advertises a capability it can't honour.
+
+<Callout type="info">
+The exact `native_commerce` attribute is an emerging March-2026 Google spec — verify the attribute string against Google's current Merchant Center docs before go-live. The structure and gating are correct.
+</Callout>
 
 ## Authentication
 

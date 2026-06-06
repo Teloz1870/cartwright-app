@@ -34,7 +34,7 @@ Three routes under `/api/admin/vibe/*`:
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/admin/vibe/generate` | Server-side generation via the configured AI provider (Anthropic by default; Ollama if `aiProvider = "local"`). Returns sanitised HTML. |
+| `POST /api/admin/vibe/generate` | Server-side generation via the configured AI engine — Anthropic by default, Ollama if `aiProvider = "local"`, or [Vercel v0](/docs/features/v0-generation) when `v0Generator` is on (`engine: "v0"`). Returns sanitised HTML. |
 | `POST /api/admin/vibe/push` | External tools (Cursor, v0) send finished HTML here. Sanitised, attached to the target entity, queued for translation. |
 | `POST /api/admin/vibe/translate` | Manual re-trigger of the Gemini translation pass — useful when you've added a new locale post-publish. |
 
@@ -96,7 +96,8 @@ A reject returns 422 with the specific rule that fired — so external tools can
 Software 3.0's premise: you describe the vibe of what you want, the AI tool produces the code, the platform accepts the code as a first-class artefact. Cartwright is one of the few commerce platforms where AI-generated layout actually persists end-to-end — most platforms make you re-do it through their own builder.
 
 <Cards>
+  <Card title="Visual Builder" href="/docs/features/visual-builder" />
+  <Card title="Vercel v0 generation" href="/docs/features/v0-generation" />
   <Card title="AI assistant" href="/docs/features/ai-assistant" />
   <Card title="Local AI / Ollama" href="/docs/features/local-ai-ollama" />
-  <Card title="Industry templates" href="/docs/features/industry-templates" />
 </Cards>

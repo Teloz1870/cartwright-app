@@ -1,0 +1,59 @@
+---
+title: Visual Builder
+description: A governed, three-panel no-code page builder. Compose pages from a whitelisted section registry; output is stored as audited data in Page.layoutJson, never code written to disk.
+---
+
+The Visual Builder is a no-code page editor that stays true to Cartwright's **data-not-code** doctrine: you arrange sections in a UI, and the result is saved as a validated **section tree** — auditable, revertible data — not generated files. It's `default-off` behind the `visualBuilderEnabled` flag and changes nothing about a shop until you build a page.
+
+<Callout type="info">
+Ships in engine **v0.23.0** (currently on the `next` channel). Default-off and canary-safe — a `null` layout renders exactly as before.
+</Callout>
+
+## The three panels
+
+`/admin/visual-builder` is a three-panel surface:
+
+- **Left — sections.** Add, reorder, and hide sections. The catalog is a fixed registry (see below), so the builder can never produce an unknown layout.
+- **Center — live preview.** An iframe (`/[locale]/builder-preview`) renders the working tree against your real design tokens, so what you see is what ships.
+- **Right — inspector.** Edit the selected section's fields; an AI "generate section" action can fill them for you.
+
+A shared `PageSections` component renders both the preview and the published page, so the preview is the production output — not an approximation.
+
+## The section registry
+
+Sections are a whitelist, each with a typed (Zod) props schema:
+
+| Section | Purpose |
+|---|---|
+| `hero` | Headline, sub-line, call-to-action. |
+| `featureGrid` | A grid of features / value props. |
+| `ctaFooter` | Closing call-to-action band. |
+| `richText` | Free prose block. |
+
+Because every section validates against its own schema, an AI generation can fill a section's props but can **never emit arbitrary markup**.
+
+## Stored as audited data
+
+Published layouts live in `Page.layoutJson` — a validated section tree. When it's `null` (the default), the page renders from your existing `body` / `vibeHtml`, so nothing changes until you build.
+
+Every write goes through the `pages.set_layout` tool, which means it inherits Cartwright's governance spine:
+
+1. **Plan-first confirmation token** — the change is described, then confirmed.
+2. **Audit-log entry** — who changed what, when.
+3. **One-click revert** — restore the previous layout from the audit trail.
+
+## Enabling it
+
+`visualBuilderEnabled` is a compile-time flag (default-off). Before enabling, run a schema push to add the additive `Page.layoutJson` column:
+
+```bash
+pnpm db:push
+```
+
+With the flag off, `/admin/visual-builder` is not mounted and the storefront is byte-identical.
+
+<Cards>
+  <Card title="Vercel v0 generation" href="/docs/features/v0-generation" />
+  <Card title="Vibe Coding" href="/docs/features/vibe-coding" />
+  <Card title="Audit log & revert" href="/docs/features/audit-log-revert" />
+</Cards>

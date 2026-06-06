@@ -36,7 +36,11 @@ export type BrandSlug =
   | 'shipstation'
   | 'algolia'
   | 'firecrawl'
-  | 'github';
+  | 'github'
+  | 'supabase'
+  | 'v0'
+  | 'google'
+  | 'googleanalytics';
 
 type Registry = Record<
   BrandSlug,
@@ -76,14 +80,18 @@ const REGISTRY: Registry = {
   zapier: { kind: 'svg', file: 'zapier.svg', brandColor: '#FF4F00' },
   algolia: { kind: 'svg', file: 'algolia.svg', brandColor: '#003DFF', bgOnDark: true },
   github: { kind: 'svg', file: 'github.svg', brandColor: '#181717', bgOnDark: true },
+  supabase: { kind: 'svg', file: 'supabase.svg', brandColor: '#3FCF8E', bgOnDark: true },
+  v0: { kind: 'svg', file: 'v0.svg', brandColor: '#000000', bgOnDark: true },
+  google: { kind: 'svg', file: 'google.svg', brandColor: '#4285F4', bgOnDark: true },
+  googleanalytics: { kind: 'svg', file: 'googleanalytics.svg', brandColor: '#E37400', bgOnDark: true },
+  nextauth: { kind: 'svg', file: 'authjs.svg', brandColor: '#000000' },
+  firecrawl: { kind: 'svg', file: 'firecrawl.svg', brandColor: '#FA5D19' },
 
   // letter-mark fallback for brands without an available SVG mark
-  nextauth: { kind: 'letter', mark: 'A', brandColor: '#7B5CFF' },
   'phone-inc': { kind: 'letter', mark: 'P', brandColor: '#0EA5E9' },
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
   klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
   shipstation: { kind: 'letter', mark: 'S', brandColor: '#0078D2' },
-  firecrawl: { kind: 'letter', mark: 'F', brandColor: '#FA5D19' },
 };
 
 interface BrandLogoProps {

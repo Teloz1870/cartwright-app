@@ -1,0 +1,59 @@
+---
+title: Postgres & Supabase
+description: The opt-in Postgres path — pgvector-accelerated semantic search for large catalogs, runnable on Supabase. Turso/libSQL stays the zero-config default.
+---
+
+Cartwright runs on **Turso (libSQL)** by default — managed, edge-replicated, sub-50ms, zero config. You do not need Postgres to run a shop. This page is for one specific case: **scaling semantic search on a large catalog** by moving the vector nearest-neighbour query into Postgres + [pgvector](https://github.com/pgvector/pgvector), with [Supabase](https://supabase.com) as an easy managed host.
+
+<Callout type="warn">
+This is an advanced, opt-in path. If you're not running tens of thousands of products with semantic search, stay on Turso — it's simpler and the default everywhere.
+</Callout>
+
+## Why Postgres for search
+
+[Semantic search](/docs/features/semantic-search) ranks products by vector similarity. On the default path that scoring runs in TypeScript over the embedding table — linear in catalog size. With pgvector, an **HNSW index** does approximate-nearest-neighbour search inside the database, so query time scales logarithmically. The ranking formula is identical, so results match the Turso path exactly.
+
+## Switch the driver
+
+The driver is selected at runtime — the Turso/SQLite branch always fires first, so existing shops and the canaries are untouched until you opt in.
+
+```bash
+# .env
+DATABASE_DRIVER=postgres
+DATABASE_URL=postgresql://...   # your Supabase/Postgres connection string
+```
+
+The Prisma datasource provider must be `postgresql` for this path (a provider fork, not the default schema). Embeddings are **dual-written**: the portable `ProductEmbedding.vectorJson` *and* a native `vector(768)` column, so you can move between drivers without re-embedding.
+
+## One-time pgvector setup
+
+The extension, the vector column, and the HNSW index live outside Prisma's migration model, so there's a dedicated idempotent script:
+
+```bash
+pnpm pgvector:setup
+```
+
+It creates the `vector` extension, adds the `embedding vector(768)` column to `ProductEmbedding`, and builds the HNSW index. Safe to re-run.
+
+Then backfill embeddings (if you haven't already):
+
+```bash
+pnpm embeddings:backfill
+```
+
+## Supabase specifics
+
+Supabase is plain Postgres with pgvector available, so the steps above apply directly. Two hardening notes for a Supabase project that backs a Cartwright shop:
+
+- **Keep Row Level Security on** for your tables; Cartwright connects with a privileged server-side connection string, not the anon key.
+- **Turn the public Data API off** (or restrict it) — the storefront and admin reach the database only through Cartwright's server, never the browser.
+
+<Callout type="info">
+Falling back is safe: if the Postgres path is unavailable, search degrades to lexical ranking rather than erroring. No data is lost — `vectorJson` remains the source of truth.
+</Callout>
+
+<Cards>
+  <Card title="Semantic search" href="/docs/features/semantic-search" />
+  <Card title="Turso (default DB)" href="/docs/deployment/turso" />
+  <Card title="Migrations" href="/docs/deployment/migrations" />
+</Cards>

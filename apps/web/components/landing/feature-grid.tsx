@@ -95,6 +95,18 @@ const features = [
     body: 'Software 3.0 page builder: external AI tools (Cursor, v0, Lovable) push raw Tailwind HTML to /api/admin/vibe/push; Gemini auto-translates.',
   },
   {
+    title: 'Visual Builder',
+    body: 'A governed three-panel page builder — section list, live preview, inspector. Output is audited data in Page.layoutJson, never code on disk. Default-off (visualBuilderEnabled).',
+  },
+  {
+    title: 'Vercel v0 generation',
+    body: 'v0 as a second engine in the Vibe Sandbox: prompt → UI, normalized + sanitized → vibeHtml. Code becomes governed data. Default-off (v0Generator).',
+  },
+  {
+    title: 'Semantic search',
+    body: 'Hybrid vector + lexical product search with a soft lexical fallback. Gemini or local Ollama embeddings; opt-in pgvector/Postgres acceleration on Supabase for large catalogs.',
+  },
+  {
     title: 'Setup wizard',
     body: '/admin/setup walks through brand, theme, API keys, first category. DB-first secrets — no env file editing required.',
   },

@@ -1,0 +1,54 @@
+---
+title: Semantic Search
+description: Hybrid vector + lexical product search with a soft lexical fallback — embeddings from Gemini or local Ollama, and an opt-in pgvector/Postgres path for large catalogs.
+---
+
+Cartwright product search is **hybrid**: it ranks by vector cosine-similarity *and* a lexical boost, so a query like "warm waterproof jacket for hiking" finds the right products even when none of those exact words appear in the title. When embeddings aren't ready, it falls back softly to pure lexical search — there is no hard dependency and no regression.
+
+## How ranking works
+
+Each product gets an embedding built from its name, brand, category, description, and attributes — one searchable haystack. At query time:
+
+1. The query is embedded with the same model.
+2. Candidates are scored by **cosine similarity** (semantic) plus a **lexical boost** for direct token matches.
+3. Results are ordered by the combined score.
+
+The same path powers both the storefront search API (`/api/products/search`) and the agent-callable `products.search` tool, so a human and an AI agent get identically ranked results.
+
+## Embedding providers
+
+Embeddings are produced by `lib/ai/embeddings.ts`, which routes by your AI configuration:
+
+| Provider | Model | Notes |
+|---|---|---|
+| Google Gemini | `text-embedding-004` (768-dim) | Default when a Gemini key is set. |
+| Ollama (local) | `nomic-embed-text` | On-device fallback — no cloud calls. |
+| _none_ | — | Returns `null` → search uses lexical-only ranking. |
+
+Backfill or re-embed your whole catalog after a model change:
+
+```bash
+pnpm embeddings:backfill
+```
+
+New and updated products are re-embedded on a best-effort hook, so the index stays current as you edit the catalog.
+
+<Callout type="info">
+Embeddings are stored in `ProductEmbedding.vectorJson` — portable JSON that works on every database driver, including the default Turso/libSQL.
+</Callout>
+
+## Scaling: pgvector / Postgres (opt-in)
+
+The default ranking runs in TypeScript over the embedding table — perfect for typical catalogs. For **large catalogs** (tens of thousands of products), an opt-in path pushes the nearest-neighbour search down into **Postgres + a pgvector HNSW index**, so search scales logarithmically instead of linearly.
+
+- Same ranking formula as the TS path → **identical results**.
+- Gated behind `DATABASE_DRIVER=postgres`; the default Turso/SQLite path always fires first.
+- Dual-write: the portable `vectorJson` *and* a native `vector(768)` column.
+
+See [Postgres & Supabase](/docs/deployment/postgres-supabase) for the full setup (`pnpm pgvector:setup`, Supabase notes).
+
+<Cards>
+  <Card title="Postgres & Supabase" href="/docs/deployment/postgres-supabase" />
+  <Card title="AI assistant" href="/docs/features/ai-assistant" />
+  <Card title="Local AI / Ollama" href="/docs/features/local-ai-ollama" />
+</Cards>
