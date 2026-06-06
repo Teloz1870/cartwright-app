@@ -12,8 +12,8 @@ If you've never used a command line before, don't worry! Here is how to get star
 3. **Copy the command:** Copy the `npx create-cartwright@latest my-shop` command below, paste it into your terminal, and press Enter. The interactive AI wizard will guide you through the rest!
 </Callout>
 
-<Callout type="tip" title="After scaffolding: hit /admin/setup">
-The canonical post-scaffold path is the five-step wizard at `/admin/setup`. It collects your brand, theme, API keys, and first category through a DB-first flow — no env editing required. See [Setup wizard](/docs/features/setup-wizard) for the full walkthrough.
+<Callout type="tip" title="First time? Sign in, then the setup wizard">
+`create-cartwright` creates your database and seeds an admin — your login is printed and saved to `.admin-credentials`. Sign in at `/account/login` (Password tab), and the five-step `/admin/setup` wizard opens automatically. Full detail: [Sign in for the first time](/docs/getting-started/first-login).
 </Callout>
 
 <Steps>
@@ -44,8 +44,7 @@ bunx create-cartwright@latest my-shop
   </Tab>
 </Tabs>
 
-The CLI downloads the public sanitized template mirror, creates `.env.local` from `.env.example`, optionally initializes git, and installs dependencies with the detected package manager.
-Node.js 22 or newer is required by the public monorepo.
+The CLI downloads the public sanitized template mirror, writes `.env.local` (with a generated `AUTH_SECRET` + `DATABASE_URL=file:./dev.db`), optionally initializes git, installs dependencies, and then **creates the database and seeds an admin + demo data** — so the shop is sign-in-ready. Your admin login is printed and saved to `.admin-credentials`. Node.js 22 or newer is required.
 
 2. Start the dev server.
 
@@ -56,15 +55,14 @@ pnpm dev
 
 If you chose another package manager during scaffolding, use that one for `dev`. The template's package scripts are standard Next.js scripts, so `npm run dev` and `bun run dev` work when those package managers installed the dependencies.
 
-3. Open the setup wizard.
+3. Sign in.
 
-Visit:
+Open [`http://localhost:3000/account/login`](http://localhost:3000/account/login) and use the **Password** tab:
 
-```bash
-http://localhost:3000/admin/setup
-```
+- **Email** — `brand.emails.admin` from `brand.config.ts`.
+- **Password** — the value in `.admin-credentials` (`cat .admin-credentials`).
 
-The admin layout automatically redirects fresh forks to `/admin/setup` when setup is not complete and the product table is empty. Existing stores with products are not blocked.
+First login asks you to set your own password (`/admin/konto`), then the `/admin/setup` wizard opens automatically. Full detail + troubleshooting: [Sign in for the first time](/docs/getting-started/first-login).
 
 </Steps>
 

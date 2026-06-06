@@ -5,6 +5,10 @@ description: NextAuth v5 with Resend magic link plus an optional password-creden
 
 Cartwright uses NextAuth v5 (Auth.js) configured in `lib/auth.ts` + `lib/auth.config.ts`. The default sign-in path is a magic link emailed via Resend. A credentials provider is also wired, used by accounts that opted to set a password.
 
+<Callout type="info">
+On a **brand-new shop** there's no `RESEND_API_KEY` yet, so the login page hides magic-link and shows only the password tab. For your very first admin login, use the seeded password — see [Sign in for the first time](/docs/getting-started/first-login).
+</Callout>
+
 ## Magic link flow
 
 1. Customer enters email on `/konto`.
