@@ -19,6 +19,12 @@ POST /api/admin/vibe/generate   { engine: "anthropic" | "v0", ... }
 
 When `engine: "v0"` is chosen, Cartwright calls the v0 Platform API, takes the returned code, runs it through the **same sanitisation pipeline** the rest of Vibe uses (strip `<script>`/handlers/`javascript:`, enforce semantic colour tokens), and stores the result as `vibeHtml`. From there it behaves like any Vibe block — including Gemini auto-translation across your locales.
 
+## Inside the Visual Builder
+
+v0 isn't only a sandbox engine — it's wired directly into the [Visual Builder](/docs/features/visual-builder). The builder has a whitelisted `vibe` section, and when `v0Generator` is on, the builder's **"generate section"** action routes that section through v0: generate → extract HTML → sanitize → `{ html }` props.
+
+The point is governance. Free-form v0 output flows through the **same** section-schema validation, the **same** `pages.set_layout` audit / confirmation / one-click-revert path, and the **same** `PageSections` render path as every structured section — and it sanitizes again on render as an always-on XSS boundary. So you get v0's generation quality *inside* a no-code builder, without ever dropping ungoverned code onto a page. Every other section keeps the structured Anthropic generation path.
+
 ## Bring your own key
 
 The v0 key is stored encrypted (AES-256-GCM, the same pattern as your Stripe and Anthropic keys) or read from `V0_API_KEY`:

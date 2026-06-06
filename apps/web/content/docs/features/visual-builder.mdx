@@ -29,8 +29,9 @@ Sections are a whitelist, each with a typed (Zod) props schema:
 | `featureGrid` | A grid of features / value props. |
 | `ctaFooter` | Closing call-to-action band. |
 | `richText` | Free prose block. |
+| `vibe` | Sanitized HTML block — the bridge for [Vercel v0](/docs/features/v0-generation) generation. |
 
-Because every section validates against its own schema, an AI generation can fill a section's props but can **never emit arbitrary markup**.
+Because every section validates against its own schema, an AI generation can fill a section's props but can **never emit arbitrary markup**. The structured sections are filled by Anthropic; the `vibe` section is filled by [Vercel v0](/docs/features/v0-generation) when `v0Generator` is on — v0's HTML is sanitized into the section's `{ html }` props and sanitized again on render, so even generated markup stays inside the same governance and render path.
 
 ## Stored as audited data
 
