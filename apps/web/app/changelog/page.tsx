@@ -18,7 +18,7 @@ const RELEASES = [
   {
     version: '3.15.0',
     date: 'June 2026',
-    title: 'Visual Builder + Vercel v0 (engine v0.23.0, on next)',
+    title: 'Visual Builder + Vercel v0 (engine v0.23.0)',
     description:
       'A governed, no-code page builder — and Vercel v0 as a native generation engine. Design a page in a three-panel UI, or let v0 turn a prompt into UI; either way the output lands as audited data you own, never code dumped to disk. Both ship default-off and canary-safe, so a shop that does not opt in is byte-identical to before.',
     icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
@@ -26,13 +26,13 @@ const RELEASES = [
       'Visual Builder (visualBuilderEnabled) — a three-panel editor at /admin/visual-builder: a section list (add / reorder / hide), a live-preview iframe, and an inspector. Output is stored as a validated section tree in Page.layoutJson (hero / featureGrid / ctaFooter / richText) — audited data, never TSX written to disk. A null layout renders from your existing body/vibeHtml, so the storefront is unchanged until you build a page.',
       'Governed writes — every change goes through the pages.set_layout tool with a plan-first confirmation token, an audit-log entry, and one-click revert. The AI "generate section" action fills a section\'s own schema-validated props, so the model can never emit arbitrary markup. A shared PageSections component renders both the preview and production, so what you see is what ships.',
       'Vercel v0 generator (v0Generator) — a second AI engine in the Vibe Sandbox alongside Anthropic, and wired directly into the Visual Builder as a governed vibe section. v0 turns text into UI; Cartwright normalizes the result to HTML, sanitizes it, and persists it as vibeHtml — code becomes governed data, nothing is written to disk. Bring your own v0 key (encrypted in the DB or via V0_API_KEY); a daily-usage guard keeps you under v0\'s limits, and a GDPR processor entry is added automatically.',
-      'Default-off and canary-safe — both flags ship off. Run pnpm db:push to add the additive Page.layoutJson + four IntegrationSettings columns before enabling. Currently on the next channel, pending the tagged release.',
+      'Default-off and canary-safe — both flags ship off. Run pnpm db:push to add the additive Page.layoutJson + four IntegrationSettings columns before enabling.',
     ],
   },
   {
     version: '3.14.0',
     date: 'June 2026',
-    title: 'AI-native commerce: semantic search, generative UI & agent surfaces (engine v0.22.0, on next)',
+    title: 'AI-native commerce: semantic search, generative UI & agent surfaces (engine v0.22.0)',
     description:
       'Your catalog becomes semantically searchable, the storefront assistant composes its own product UI, and the agent-commerce surfaces (ACP, UCP) move closer to complete. All additive — semantic search falls back to lexical when embeddings are not primed, so there is no regression.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
