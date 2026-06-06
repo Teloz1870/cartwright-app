@@ -16,6 +16,34 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.15.0',
+    date: 'June 2026',
+    title: 'Visual Builder + Vercel v0 (engine v0.23.0, on next)',
+    description:
+      'A governed, no-code page builder — and Vercel v0 as a native generation engine. Design a page in a three-panel UI, or let v0 turn a prompt into UI; either way the output lands as audited data you own, never code dumped to disk. Both ship default-off and canary-safe, so a shop that does not opt in is byte-identical to before.',
+    icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Visual Builder (visualBuilderEnabled) — a three-panel editor at /admin/visual-builder: a section list (add / reorder / hide), a live-preview iframe, and an inspector. Output is stored as a validated section tree in Page.layoutJson (hero / featureGrid / ctaFooter / richText) — audited data, never TSX written to disk. A null layout renders from your existing body/vibeHtml, so the storefront is unchanged until you build a page.',
+      'Governed writes — every change goes through the pages.set_layout tool with a plan-first confirmation token, an audit-log entry, and one-click revert. The AI "generate section" action fills a section\'s own schema-validated props, so the model can never emit arbitrary markup. A shared PageSections component renders both the preview and production, so what you see is what ships.',
+      'Vercel v0 generator (v0Generator) — a second AI engine in the Vibe Sandbox alongside Anthropic, and wired directly into the Visual Builder as a governed vibe section. v0 turns text into UI; Cartwright normalizes the result to HTML, sanitizes it, and persists it as vibeHtml — code becomes governed data, nothing is written to disk. Bring your own v0 key (encrypted in the DB or via V0_API_KEY); a daily-usage guard keeps you under v0\'s limits, and a GDPR processor entry is added automatically.',
+      'Default-off and canary-safe — both flags ship off. Run pnpm db:push to add the additive Page.layoutJson + four IntegrationSettings columns before enabling. Currently on the next channel, pending the tagged release.',
+    ],
+  },
+  {
+    version: '3.14.0',
+    date: 'June 2026',
+    title: 'AI-native commerce: semantic search, generative UI & agent surfaces (engine v0.22.0, on next)',
+    description:
+      'Your catalog becomes semantically searchable, the storefront assistant composes its own product UI, and the agent-commerce surfaces (ACP, UCP) move closer to complete. All additive — semantic search falls back to lexical when embeddings are not primed, so there is no regression.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Hybrid semantic search — vector cosine-similarity + lexical boost over a product-embedding index, wired into both the search API and the products.search tool, with a soft fallback to lexical search when embeddings are not ready. Embeddings come from Gemini (text-embedding-004) with a local Ollama fallback; backfill with pnpm embeddings:backfill.',
+      'pgvector / Postgres acceleration (opt-in) — for large catalogs, push the nearest-neighbour search into Postgres with a pgvector HNSW index — same ranking, identical results, logarithmic instead of linear. Enabled with DATABASE_DRIVER=postgres and pnpm pgvector:setup; the default Turso/SQLite path is untouched. Runs on Supabase Postgres.',
+      'Model-selectable generative UI — the storefront chat now lets the model choose how to present products — grid, spotlight, or comparison — via a whitelisted tool (it picks a layout + product slugs; the server fetches the data, never arbitrary markup). XSS-safe and read-only.',
+      'Agent-commerce surfaces — a UCP native_commerce capability marks catalog products as native-buyable by agents (gated so the shop never advertises what it can\'t honor), and the ACP checkout session gains a structured, inert /complete scaffold behind a default-off env gate (it can never accidentally move money). Plus token-level cost-metering on the AI chat routes, so spend is observable.',
+    ],
+  },
+  {
     version: '3.13.0',
     date: 'June 2026',
     title: 'Google Sheets, Drive & Docs + Stripe Subscriptions (engine v0.21.0)',

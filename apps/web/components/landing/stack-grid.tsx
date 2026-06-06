@@ -7,12 +7,14 @@ const stack = [
   'Tailwind v4',
   'Prisma',
   'Turso',
+  'Postgres + pgvector',
   'NextAuth',
   'Stripe',
   'Anthropic SDK',
   'Gemini SDK',
   'Ollama',
   'Vercel AI SDK',
+  'v0 SDK',
   'Vercel Blob',
   'Resend',
   'Sentry',
@@ -40,7 +42,7 @@ export function StackGrid() {
       <SectionHeader
         eyebrow="The stack"
         title="All current versions. No legacy."
-        description="Thirty current-major dependencies — from Next 16 and React 19 to Ollama, Phone.inc, and Luma Dream Machine. We track upstream, you get the upgrades."
+        description="Thirty-plus current-major dependencies — from Next 16 and React 19 to Ollama, Phone.inc, and Luma Dream Machine. We track upstream, you get the upgrades."
       />
       <ul className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px overflow-hidden rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-200 dark:bg-cw-stone-800">
         {stack.map((name) => (
