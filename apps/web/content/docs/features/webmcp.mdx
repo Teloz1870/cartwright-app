@@ -1,0 +1,40 @@
+---
+title: WebMCP (in-browser agent tools)
+description: Expose storefront actions — search, cart, navigate — as browser-native tools to in-browser AI agents via document.modelContext, so they act reliably instead of scraping the DOM.
+---
+
+Where the [MCP server](/docs/architecture/mcp-server) lets *external* agents call your shop over HTTP, **WebMCP** brings agent tools into the browser tab itself. An in-browser AI agent (a browser assistant, an on-page agent) can call your storefront's declared tools directly — `search_products`, `add_to_cart` — instead of guessing which button to click or scraping the DOM.
+
+It's gated behind `brand.features.webMcp` (default-off) and only mounts on a webshop. When off, nothing is registered and every other browser is unaffected.
+
+<Callout type="warn">
+**Experimental, by design.** WebMCP is a Chromium-only origin-trial feature (Chrome 149) and a W3C Web Machine Learning Community Group **draft** — not a shipped standard. The namespace is still moving (`document.modelContext`, with `navigator.modelContext` deprecated in Chrome 150). Cartwright feature-detects both and no-ops everywhere else, but this flag is **kept off the canary mosaic** until the spec stabilises.
+</Callout>
+
+## What it exposes
+
+When `webMcp` is on, a small client component registers these tools via `document.modelContext.registerTool()` (falling back to the deprecated `navigator.modelContext`):
+
+| Tool | Effect |
+|---|---|
+| `search_products` | Free-text catalogue search (read-only) — returns matching products |
+| `get_cart` | Read the current cart: line items, quantities, total (read-only) |
+| `add_to_cart` | Add a product (optionally a variant) — reuses the same server action as the Add-to-cart button |
+| `navigate` | Go to an internal page (e.g. `/produkter?q=oak`) — **same-origin only**; external and protocol-relative paths are rejected |
+
+Each tool declares a JSON-Schema input and runs the same server-side validation and stock logic the storefront already uses — there's no separate, less-guarded path. Read-only tools are marked so the agent knows they're safe to call freely; cleanup uses an `AbortSignal` (WebMCP has no `unregisterTool`).
+
+## Trying it
+
+In Chrome 146+ enable `chrome://flags/#enable-webmcp-testing` (no origin-trial token needed for the flag path), open a webshop with `webMcp` on, and visit **`/<locale>/webmcp-check`** — a flag-gated page that reports whether WebMCP is available and lists the registered tool names. For a real origin trial, set `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN` and the token is server-emitted into the document head.
+
+<Callout type="info">
+Following the modern-web-guidance pattern: tools are atomic and composable, destructive actions aren't auto-submitted without confirmation, and `add_to_cart` is allowed un-gated only because it's reversible from the cart page.
+</Callout>
+
+<Cards>
+  <Card title="MCP server" href="/docs/architecture/mcp-server" />
+  <Card title="MCP tools" href="/docs/api/mcp-tools" />
+  <Card title="UCP identity-linking" href="/docs/features/ucp-identity-linking" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>

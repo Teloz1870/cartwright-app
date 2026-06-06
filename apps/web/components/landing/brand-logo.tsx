@@ -40,7 +40,10 @@ export type BrandSlug =
   | 'supabase'
   | 'v0'
   | 'google'
-  | 'googleanalytics';
+  | 'googleanalytics'
+  | 'acp'
+  | 'ucp'
+  | 'webmcp';
 
 type Registry = Record<
   BrandSlug,
@@ -92,6 +95,11 @@ const REGISTRY: Registry = {
   luma: { kind: 'letter', mark: 'L', brandColor: '#E11D48' },
   klaviyo: { kind: 'letter', mark: 'K', brandColor: '#FFD400' },
   shipstation: { kind: 'letter', mark: 'S', brandColor: '#0078D2' },
+
+  // Agentic-commerce protocols — letter-marks (nascent specs with no official logos).
+  acp: { kind: 'letter', mark: 'A', brandColor: '#10A37F' },
+  ucp: { kind: 'letter', mark: 'U', brandColor: '#4285F4' },
+  webmcp: { kind: 'letter', mark: 'W', brandColor: '#D97757' },
 };
 
 interface BrandLogoProps {

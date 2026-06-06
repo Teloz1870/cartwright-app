@@ -88,7 +88,15 @@ const features = [
   },
   {
     title: 'ACP endpoints',
-    body: '/api/acp/feed + /api/acp/v1/checkout_sessions — stateless agentic checkout per the Agentic Commerce Protocol spec. ChatGPT Instant Checkout-compatible.',
+    body: '/api/acp/feed + /api/acp/v1/checkout_sessions — stateless agentic checkout per the Agentic Commerce Protocol spec, with /complete wired for delegated payment via Stripe Shared Payment Tokens (default-off env gate). ChatGPT Instant Checkout-compatible.',
+  },
+  {
+    title: 'UCP identity-linking',
+    body: 'A built-in OAuth 2.0 (Authorization Code + PKCE) server implementing UCP dev.ucp.common.identity_linking — agents act on a shopper’s behalf with consent, scoped tokens, refresh-rotation + reuse-detection. Default-off (ucpIdentityLinking).',
+  },
+  {
+    title: 'WebMCP',
+    body: 'In-browser agent tools via document.modelContext — search_products, get_cart, add_to_cart, navigate. Agents act on the storefront instead of scraping the DOM. Experimental, default-off (webMcp).',
   },
   {
     title: 'Vibe Coding',
