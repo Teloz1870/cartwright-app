@@ -455,13 +455,27 @@ async function run(): Promise<void> {
         console.log(
           pc.dim("\nSetting up the database (schema + demo data + admin login)…\n"),
         );
-        execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+        // Prisma 7's schema engine can fail transiently on first invocation
+        // ("Schema engine error") — retry `db push` once before giving up.
+        try {
+          execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+        } catch {
+          console.log(pc.dim("\nRetrying database setup (transient Prisma engine error)…\n"));
+          execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+        }
         execSync("npx prisma db seed", { cwd: targetDir, stdio: "inherit" });
         dbReady = true;
       } catch {
+        // The real Prisma error was printed above (stdio: inherit). Make the
+        // consequence explicit: no admin exists yet, so login can't work until
+        // the user runs these.
         console.log(
           pc.yellow(
-            "\nCouldn't auto-set-up the database — run `npx prisma db push` then `npx prisma db seed` yourself (see Next steps).",
+            "\nCouldn't auto-set-up the database (the Prisma error is shown above).\n" +
+              "No admin was created yet — `.admin-credentials` appears only after you run:\n" +
+              "  npx prisma db push\n" +
+              "  npx prisma db seed\n" +
+              'If you saw a blank "Schema engine error", just run them again — it\'s transient.',
           ),
         );
       }
