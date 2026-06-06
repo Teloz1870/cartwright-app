@@ -16,6 +16,34 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.17.0',
+    date: 'June 2026',
+    title: 'Agentic commerce, completed: buy-in-ChatGPT, agent identity-linking & in-browser tools (engine v0.25.0)',
+    description:
+      'Three agentic-web surfaces move from scaffold to wired: ACP delegated-payment completion, a full UCP OAuth identity-linking server, and WebMCP in-browser tools. All default-off and canary-safe — an existing shop is byte-identical until it opts in — and the ACP payment path ships code-ready but inert until external Stripe + ChatGPT access lands.',
+    icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'ACP delegated-payment completion (acp + env ACP_PAYMENT_COMPLETION, default-off) — the last piece of the ACP checkout lifecycle: /complete now charges via a Stripe Shared Payment Token (off-session PaymentIntent) and builds the order from the ACP session line items, with idempotency replay and refund-on-failure. Wired and unit-tested behind the env gate; it responds 501 (inert) until Stripe SPT access and ChatGPT merchant onboarding are connected, so it can never accidentally move money.',
+      'UCP identity-linking — an OAuth 2.0 server (ucpIdentityLinking, default-off) — implements dev.ucp.common.identity_linking: a full Authorization Code + PKCE server so an agentic platform can act on a shopper’s behalf across merchants. Ships RFC 8414/9728 metadata, RFC 7591 dynamic registration, /oauth/{authorize,token,revoke}, a consent screen, and a sample protected resource (/api/ucp/orders). Only token hashes are stored; run pnpm db:push and set AUTH_URL before enabling.',
+      'Security-hardened after an adversarial review — refresh-token reuse detection (a reused rotated token revokes the whole family), client-bound revocation, a canonical issuer (never the Host header — so issuer-spoofing and metadata cache-poisoning are out), and a least-privilege registration default with an unverified-app consent warning.',
+      'WebMCP in-browser tools (webMcp, default-off) — the storefront registers search_products, get_cart, add_to_cart and a same-origin navigate via document.modelContext, so an in-browser AI agent acts reliably instead of scraping the DOM. Experimental (Chrome 149 origin-trial, W3C draft) — kept off the canary mosaic.',
+    ],
+  },
+  {
+    version: '3.16.0',
+    date: 'June 2026',
+    title: 'Onboarding clarity, secure first-run & dark-mode polish (engine v0.24.0–v0.24.2)',
+    description:
+      'A DX + polish run across three patch releases: a fresh shop is sign-in-ready regardless of approach (CLI, IDE agent, or manual clone), the migration baseline is clean again, and the admin — plus the storefront — renders correctly in dark mode.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Onboarding & first-login clarity (v0.24.0) — create-cartwright now bootstraps the DB (db push + seed) so the admin exists and .admin-credentials is written before you open the app, and every surface points at password-first login (magic-link appears once Resend is set).',
+      'Reliable first-run (v0.24.1) — the auto db push retries once on the transient Prisma 7.8 engine error and surfaces real failures; the migration baseline was regenerated from ~50-migration drift into a single clean from-empty baseline (db push stays the canonical path, so the live canaries are unaffected).',
+      'Admin dark-mode contrast (v0.24.2) — a 33-page admin audit replaced hardcoded Tailwind colors with theme-flipping sol-* tokens so form/tool surfaces are readable in both themes; the /admin/hoptify nav item is now gated on its flag (no more 404).',
+      'Storefront dark-mode scoping (v0.24.2) — dark mode is admin-only now: the root ThemeProvider no longer follows OS dark (defaultTheme="light", enableSystem=false), so brand storefronts always render their designed palette instead of a half-dark mess. The admin toggle still works; the Teloz showcase stays dark by design.',
+    ],
+  },
+  {
     version: '3.15.0',
     date: 'June 2026',
     title: 'Visual Builder + Vercel v0 (engine v0.23.0)',

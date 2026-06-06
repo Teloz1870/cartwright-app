@@ -1,0 +1,57 @@
+---
+title: UCP identity-linking (OAuth 2.0)
+description: A built-in OAuth 2.0 Authorization Code + PKCE server implementing UCP dev.ucp.common.identity_linking — so an agentic platform can act on a shopper's behalf, with consent, scoped tokens, and revocation.
+---
+
+The Universal Commerce Protocol defines **`dev.ucp.common.identity_linking`**: the standard way an agentic platform (Google, Shopify, and others) gets *delegated, scoped* permission to act on a shopper's behalf — read their orders, place an order — without ever handling their password. Cartwright ships it as a **full OAuth 2.0 Authorization Code + PKCE server**, in the box.
+
+It's gated behind `brand.features.ucpIdentityLinking` (default-off). When off, every `/oauth/*` and `/.well-known/oauth-*` route returns 404 and `/.well-known/ucp` does not advertise the capability — so a shop never promises account-linking it hasn't turned on.
+
+<Callout type="warn">
+**Run `pnpm db:push` and set `AUTH_URL` before enabling.** Three additive tables (`OAuthClient`, `OAuthAuthCode`, `OAuthToken`) back the server, and the issuer is derived from `AUTH_URL` / your `brand.config` site URL (never the request `Host` header) so discovery metadata can't be spoofed.
+</Callout>
+
+## The flow
+
+It's textbook OAuth 2.0 **Authorization Code + PKCE (S256 only)** — the same pattern "Sign in with Google" uses, but here *your shop* is the authorization server:
+
+1. **Discovery** — the platform fetches `/.well-known/oauth-authorization-server` (RFC 8414) for your endpoints.
+2. **Registration** — `POST /oauth/register` (RFC 7591 dynamic registration) for a public client + PKCE; least-privilege by default (`dev.ucp.shopping.order:read`, never `…:manage`, unless explicitly requested).
+3. **Authorize** — `/oauth/authorize` shows the signed-in shopper a **consent screen** listing the requested scopes (and an "unverified third-party app" warning), then issues a single-use code bound to the client, redirect URI, and PKCE challenge.
+4. **Token** — `POST /oauth/token` exchanges the code (with the PKCE `code_verifier`) for an access + refresh token. Refreshing rotates the pair.
+5. **Use** — the platform calls a protected resource with `Authorization: Bearer …`. A token without the right scope gets `insufficient_scope` (403); a missing/expired token gets `identity_required` (401).
+
+## Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /.well-known/oauth-authorization-server` | RFC 8414 authorization-server metadata |
+| `GET /.well-known/oauth-protected-resource` | RFC 9728 protected-resource metadata |
+| `POST /oauth/register` | RFC 7591 dynamic client registration (public clients) |
+| `GET /oauth/authorize` | Consent screen → issues the authorization code |
+| `POST /oauth/token` | `authorization_code` + `refresh_token` grants |
+| `POST /oauth/revoke` | RFC 7009 revocation |
+| `GET /api/ucp/orders` | Sample protected resource — the shopper's order history (scope `dev.ucp.shopping.order:read`) |
+
+`/.well-known/ucp` advertises the spec-shaped `dev.ucp.common.identity_linking` capability (with its `config.scopes`) when the flag is on.
+
+## Built to be safe
+
+Cartwright's implementation went through an adversarial security review; the hardening that came out of it ships by default:
+
+- **Only hashes are stored.** Tokens and authorization codes are persisted as HMAC-SHA256 hashes (peppered with `AUTH_SECRET`) — a database leak alone yields no usable token.
+- **Refresh reuse-detection.** Refresh tokens carry a family id; reusing an already-rotated refresh revokes the **whole family** (RFC 9700 §4.14.2) — the standard defence against token theft for public clients.
+- **PKCE S256 is mandatory.** Plain PKCE is rejected; authorization codes are single-use and short-lived.
+- **Exact redirect-URI matching** (no normalization) and a **canonical issuer** (from `AUTH_URL`/`brand.config`, never the `Host` header) close open-redirect and metadata cache-poisoning vectors.
+- **Client-bound revocation** — one client can't revoke another's tokens.
+
+<Callout type="info">
+v1 ships **public clients** (`token_endpoint_auth_methods_supported: ["none"]` + PKCE), which is the realistic path for agentic platforms. Confidential-client auth (`private_key_jwt` / `tls_client_auth`) and a token-cleanup cron are documented follow-ups.
+</Callout>
+
+<Cards>
+  <Card title="Agentic Commerce Protocol (ACP)" href="/docs/features/agentic-commerce-protocol" />
+  <Card title="WebMCP (in-browser tools)" href="/docs/features/webmcp" />
+  <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
+  <Card title="Feature flags" href="/docs/configuration/feature-flags" />
+</Cards>

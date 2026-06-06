@@ -192,6 +192,31 @@ const secondary: Secondary[] = [
     docsHref: '/docs/architecture/mcp-server',
   },
   {
+    brand: 'acp',
+    name: 'Agentic Commerce Protocol',
+    category: 'Agent checkout',
+    pitch: 'JSONL feed + stateless checkout sessions, with /complete wired for delegated payment via Stripe Shared Payment Tokens. ChatGPT Instant Checkout-compatible. Default-off.',
+    brandUrl: 'https://www.agenticcommerce.dev',
+    docsHref: '/docs/features/agentic-commerce-protocol',
+  },
+  {
+    brand: 'ucp',
+    name: 'UCP identity-linking',
+    category: 'Agent surface',
+    pitch: 'A built-in OAuth 2.0 (Authorization Code + PKCE) server implementing dev.ucp.common.identity_linking — agents act on a shopper’s behalf with consent + scoped tokens. Default-off.',
+    brandUrl: 'https://ucp.dev',
+    docsHref: '/docs/features/ucp-identity-linking',
+  },
+  {
+    brand: 'webmcp',
+    name: 'WebMCP',
+    category: 'In-browser agents',
+    pitch: 'Storefront actions as browser-native tools via document.modelContext, so in-browser agents act instead of scraping the DOM. Experimental, default-off.',
+    brandUrl: 'https://developer.chrome.com/docs/ai/webmcp',
+    docsHref: '/docs/features/webmcp',
+    preview: true,
+  },
+  {
     brand: 'phone-inc',
     name: 'Phone.inc',
     category: 'Telephony',
@@ -321,7 +346,7 @@ export default function IntegrationsPage() {
             Pre-wired
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
-            Twenty integrations.{' '}
+            Twenty-three integrations.{' '}
             <span className="relative inline-block text-cw-terracotta">
               <span className="relative z-10">Wired. Validated. Ready to take an order.</span>
               <span
@@ -416,7 +441,7 @@ export default function IntegrationsPage() {
         <div className="mt-24 sm:mt-32">
           <div className="max-w-2xl">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
-              And another fourteen
+              And another seventeen
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
               The supporting cast.

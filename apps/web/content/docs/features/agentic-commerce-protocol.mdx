@@ -92,20 +92,19 @@ Sessions are stateful (DB-backed) but the protocol is request-idempotent. Send t
 - `GET /api/acp/v1/checkout_sessions/{id}` — read current state
 - `POST /api/acp/v1/checkout_sessions/{id}/update` — change line items or shipping
 - `POST /api/acp/v1/checkout_sessions/{id}/cancel` — abandon
-- `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise the session. Gated behind `ACP_PAYMENT_COMPLETION=1` (default off): the gate and the `ready_for_payment` status validation are live, but the delegated-payment charge is a structured scaffold (see the note below) until Stripe Shared Payment Tokens are wired — so it can never accidentally move money
+- `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise the session. Gated behind `ACP_PAYMENT_COMPLETION=1` (default off). The full flow is now **wired**: it charges via a Stripe **Shared Payment Token** (off-session PaymentIntent), builds the order from the session line items (not the cart), replays on the idempotency key, and refunds if order creation fails. It stays **inert (501)** until external Stripe SPT access + ChatGPT merchant onboarding are connected — so it can never accidentally move money before you go live
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjAaP1eZvKYlo2C0/complete \
   -H "Authorization: Bearer <api-key>" \
-  -H "Idempotency-Key: 7f3e9a1b-4d8c-4e5a-9b2f-1a3c5d7e9f0a" \
   -H "Content-Type: application/json" \
-  -d '{ "payment_method_id": "pm_card_visa" }'
+  -d '{ "shared_payment_token": "spt_…", "idempotency_key": "7f3e9a1b-…" }'
 ```
 
-When fully wired, `complete` returns the order id and a status — `succeeded`, `requires_action`, or `failed`; ACP buyer agents look for `requires_action` to surface a 3DS or SCA challenge URL back to the originating chat thread.
+When live, `complete` returns the completed session plus an `order` reference; the off-session charge resolves to `succeeded` or fails cleanly (a card requiring 3DS/SCA can't be resolved off-session, so it's treated as a failed charge with an automatic refund).
 
 <Callout type="warn">
-**Completion is a default-off scaffold today.** `/complete` ships behind `ACP_PAYMENT_COMPLETION=1` (default off). The verifiable parts — the env gate and the `ready_for_payment` status validation — are real; the one external step (charging via a shared payment token) throws `payment_not_wired` until Stripe Shared Payment Token access and ChatGPT merchant onboarding are connected. The endpoint therefore cannot charge a card while the integration is still being finished. `create` / `update` / `retrieve` / `cancel` are fully live.
+**Completion is wired but inert by default.** `/complete` ships behind `ACP_PAYMENT_COMPLETION=1` (default off). The full path is now code-complete and unit-tested — Stripe **Shared Payment Token** charge (off-session PaymentIntent), order creation from the session line items, idempotency replay, and refund-on-failure. It only goes live once you connect **Stripe SPT access + ChatGPT merchant onboarding**; until then the endpoint responds **501** (it can never charge a card while the external integration is pending). `create` / `update` / `retrieve` / `cancel` are fully live.
 </Callout>
 
 ## UCP: native_commerce capability
@@ -115,6 +114,10 @@ Google's Unified Commerce Protocol (UCP) lets agents discover which catalogue pr
 <Callout type="info">
 The exact `native_commerce` attribute is an emerging March-2026 Google spec — verify the attribute string against Google's current Merchant Center docs before go-live. The structure and gating are correct.
 </Callout>
+
+## UCP: identity-linking (OAuth 2.0)
+
+UCP also defines **`dev.ucp.common.identity_linking`** — how an agentic platform gets delegated, scoped permission to act on a shopper's behalf across merchants. Cartwright ships it as a full OAuth 2.0 Authorization Code + PKCE server behind the `ucpIdentityLinking` flag (default-off): RFC 8414/9728 discovery metadata, RFC 7591 dynamic registration, `/oauth/{authorize,token,revoke}` with a consent screen, and a sample protected resource at `/api/ucp/orders`. See **[UCP identity-linking](/docs/features/ucp-identity-linking)** for the endpoints, scopes, and setup.
 
 ## Authentication
 
@@ -139,6 +142,8 @@ ACP is the **purchase** surface. A2A is the **negotiation** surface. The two sit
 A shop with only `features.acp = true` ships a "just-buy-it" surface (fixed prices, no haggling). A shop with both `acp` and `a2a` lets agents discover, negotiate, then settle via either ACP checkout or A2A escrow.
 
 <Cards>
+  <Card title="UCP identity-linking" href="/docs/features/ucp-identity-linking" />
+  <Card title="WebMCP (in-browser tools)" href="/docs/features/webmcp" />
   <Card title="A2A endpoints" href="/docs/features/a2a-endpoints" />
   <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
   <Card title="Industry templates" href="/docs/features/industry-templates" />

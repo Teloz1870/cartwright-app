@@ -56,6 +56,18 @@ const proofs = [
     title: 'Verify-then-Pay with Proof of Task',
     body: "Funds held in escrow at checkout, released only when the buyer submits a Proof-of-Task-Execution (hash match, delivery confirmation, ed25519 signature, or webhook event). Every state transition writes to an A-JWT audit log; disputes route to a human in /admin/agentic.",
   },
+  {
+    badge: 'Identity-linked',
+    endpoint: 'GET /.well-known/oauth-authorization-server',
+    title: 'OAuth 2.0 identity-linking (UCP)',
+    body: "A full Authorization Code + PKCE server implements UCP dev.ucp.common.identity_linking, so an agentic platform can act on a shopper's behalf across merchants — a consent screen, scoped tokens, refresh reuse-detection, and hashed-only storage. Default-off (ucpIdentityLinking); run db:push + set AUTH_URL to turn it on.",
+  },
+  {
+    badge: 'In-browser',
+    endpoint: 'document.modelContext',
+    title: 'WebMCP tools in the tab',
+    body: "The storefront registers search_products, get_cart, add_to_cart and a same-origin navigate as browser-native WebMCP tools, so an in-browser agent acts reliably instead of scraping the DOM. Experimental (Chrome 149 origin-trial), default-off (webMcp).",
+  },
 ];
 
 export function AgentSurface() {
@@ -88,13 +100,14 @@ export function AgentSurface() {
         ))}
       </div>
       <p className="mt-6 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
-        Nine endpoints. One signed Agent Card. One deterministic negotiation engine. One
-        Guardian middleware that enforces shop legislation before any money moves.
-        Cartwright v0.2 ships the full Headless Merchant architecture —
-        Agentic Commerce Protocol checkout, A2A negotiation, escrow with PoTE.
-        ACP is gated behind <span className="font-mono">brand.features.acp</span> and
-        A2A behind <span className="font-mono">brand.features.a2a</span>, so your
-        storefront stays clean if you don&apos;t want either surface.
+        A dozen agent endpoints. One signed Agent Card. One deterministic negotiation engine.
+        One Guardian middleware that enforces shop legislation before any money moves — plus a
+        full OAuth 2.0 identity-linking server (UCP) and in-browser WebMCP tools.
+        Cartwright ships the full Headless Merchant architecture —
+        Agentic Commerce Protocol checkout, A2A negotiation, escrow with PoTE, UCP
+        identity-linking. Every surface is gated behind its own{' '}
+        <span className="font-mono">brand.features</span> flag and default-off, so your
+        storefront stays clean until you opt in.
       </p>
     </Section>
   );
