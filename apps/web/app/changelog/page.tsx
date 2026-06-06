@@ -346,10 +346,9 @@ export default async function ChangelogPage() {
           </p>
         </header>
 
-        {/* On `next` — security/maintenance foundation. Not a tagged npm
-            release yet, so it lives here as a note rather than a version entry:
-            a scaffold from the current release does not carry the marker until
-            the next tag ships. */}
+        {/* Security/maintenance foundation. Shipped in the v0.23.0 tag — kept as a
+            standalone note (rather than folded into a version entry) because it
+            describes an ongoing mechanism, not a one-off feature. */}
         <div className="mb-16 rounded-2xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-stone-50 dark:bg-[#111] p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-white dark:bg-white/5 border border-cw-stone-200 dark:border-white/10 shadow-sm">
@@ -359,7 +358,7 @@ export default async function ChangelogPage() {
               Every shop knows its engine version
             </h2>
             <span className="ml-auto text-xs font-mono font-semibold uppercase tracking-wider text-cw-terracotta">
-              on next
+              v0.23.0
             </span>
           </div>
           <p className="text-cw-stone-600 dark:text-cw-stone-300 text-lg leading-relaxed font-light">
@@ -369,9 +368,7 @@ export default async function ChangelogPage() {
             never drifts. Paired with a published{' '}
             <strong className="font-semibold text-cw-stone-700 dark:text-cw-stone-200">security advisories</strong>{' '}
             index in the engine changelog, a known fix can always be matched to the shops that need it — even
-            though you own the code and nothing auto-updates it. Live on the{' '}
-            <code className="font-mono text-cw-stone-700 dark:text-cw-stone-200">next</code> channel now; ships
-            in the next tagged release.
+            though you own the code and nothing auto-updates it. Live as of v0.23.0.
           </p>
         </div>
 
