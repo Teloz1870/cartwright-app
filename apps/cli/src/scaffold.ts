@@ -348,17 +348,27 @@ export function regenerateMigrationBaseline(targetDir: string, database: Databas
   const schemaPath = join(targetDir, "prisma", "schema.prisma");
   if (!existsSync(schemaPath)) return;
 
-  let sql: string;
-  try {
-    // Generate the full from-empty SQL BEFORE touching anything on disk.
-    sql = execSync(
-      "npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
-      { cwd: targetDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
-    );
-  } catch {
-    return; // leave existing migrations in place
+  // Generate the full from-empty SQL BEFORE touching anything on disk. Two Prisma 7
+  // gotchas handled here: (1) the flag is `--to-schema` (7.x renamed it from the old
+  // `--to-schema-datamodel`, which silently made this a no-op), and (2) the schema
+  // engine can fail transiently on first invocation ("Schema engine error"), so we
+  // retry once.
+  let sql = "";
+  for (let attempt = 0; attempt < 2 && !sql; attempt++) {
+    try {
+      const out = execSync(
+        "npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script",
+        { cwd: targetDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      );
+      // Prisma's config loader prints dotenv banners to stdout before the SQL; keep
+      // only from the first statement so the written migration file is valid SQL.
+      const start = out.indexOf("-- CreateTable");
+      if (start !== -1) sql = out.slice(start);
+    } catch {
+      // transient schema-engine error → retry once; if both fail, leave migrations as-is
+    }
   }
-  if (!sql.includes("CREATE TABLE")) return; // sanity guard
+  if (!sql.includes("CREATE TABLE")) return; // sanity guard / both attempts failed
 
   const migrationsDir = join(targetDir, "prisma", "migrations");
   rmSync(migrationsDir, { recursive: true, force: true });
