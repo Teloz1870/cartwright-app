@@ -451,31 +451,46 @@ async function run(): Promise<void> {
       // Create the schema + seed the admin/demo data. The seed prints the admin
       // login banner and writes .admin-credentials. Non-fatal: on any failure we
       // fall back to listing the manual commands in "Next steps".
+      const pmRun = packageManager === "npm" ? "npm run" : packageManager;
       try {
         console.log(
           pc.dim("\nSetting up the database (schema + demo data + admin login)…\n"),
         );
-        // Prisma 7's schema engine can fail transiently on first invocation
-        // ("Schema engine error") — retry `db push` once before giving up.
+        // Prefer the engine's robust `db:setup` (v0.27.0+): it tries `prisma db
+        // push`, and on the intermittent Prisma 7.8 "Schema engine error" it
+        // falls back to applying the schema via the libSQL client (bypassing the
+        // flaky schema engine), then seeds — so first-run can't get stuck.
+        let hasDbSetup = false;
         try {
-          execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+          const pkg = JSON.parse(readFileSync(join(targetDir, "package.json"), "utf8"));
+          hasDbSetup = Boolean(pkg?.scripts?.["db:setup"]);
         } catch {
-          console.log(pc.dim("\nRetrying database setup (transient Prisma engine error)…\n"));
-          execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+          /* fall through to the legacy path */
         }
-        execSync("npx prisma db seed", { cwd: targetDir, stdio: "inherit" });
+        if (hasDbSetup) {
+          execSync(`${pmRun} db:setup`, { cwd: targetDir, stdio: "inherit" });
+        } else {
+          // Legacy template without db:setup — best-effort push (+1 retry) + seed.
+          try {
+            execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+          } catch {
+            console.log(pc.dim("\nRetrying database setup (transient Prisma engine error)…\n"));
+            execSync("npx prisma db push", { cwd: targetDir, stdio: "inherit" });
+          }
+          execSync("npx prisma db seed", { cwd: targetDir, stdio: "inherit" });
+        }
         dbReady = true;
       } catch {
         // The real Prisma error was printed above (stdio: inherit). Make the
         // consequence explicit: no admin exists yet, so login can't work until
-        // the user runs these.
+        // setup succeeds.
         console.log(
           pc.yellow(
             "\nCouldn't auto-set-up the database (the Prisma error is shown above).\n" +
-              "No admin was created yet — `.admin-credentials` appears only after you run:\n" +
-              "  npx prisma db push\n" +
-              "  npx prisma db seed\n" +
-              'If you saw a blank "Schema engine error", just run them again — it\'s transient.',
+              "No admin was created yet — `.admin-credentials` appears only after setup succeeds. Run:\n" +
+              `  ${pmRun} db:setup\n` +
+              "It falls back to applying the schema via the libSQL client if `prisma db push` hits the\n" +
+              "intermittent Prisma 7.8 schema-engine error. If that still fails, try Node 22 LTS (`nvm use 22`).",
           ),
         );
       }
@@ -515,8 +530,7 @@ async function run(): Promise<void> {
     : [
         pc.bold("Next steps (required):"),
         `  cd ${finalSlug}`,
-        `  npx prisma db push          ${pc.dim("# create the DB schema")}`,
-        `  npx prisma db seed          ${pc.dim("# create the admin + demo data (prints your login)")}`,
+        `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
       ];
 
