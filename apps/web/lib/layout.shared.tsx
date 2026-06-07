@@ -13,6 +13,7 @@ export function baseOptions(): BaseLayoutProps {
       { text: 'Onboarding', url: '/onboarding' },
       { text: 'Docs', url: '/docs' },
       { text: 'Integrations', url: '/integrations' },
+      { text: 'Designs', url: '/designs' },
       { text: 'Pricing', url: '/pricing' },
       { text: 'Showcase', url: '/showcase' },
       { text: 'Changelog', url: '/changelog' },

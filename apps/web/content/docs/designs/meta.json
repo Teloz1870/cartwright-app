@@ -6,6 +6,7 @@
     "design-md-spec",
     "import-from-stitch",
     "import-from-claude-design",
-    "writing-your-own"
+    "writing-your-own",
+    "build-with-an-ide-agent"
   ]
 }
