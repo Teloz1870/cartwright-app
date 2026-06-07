@@ -68,7 +68,7 @@ function commandExists(cmd: string): boolean {
 // Bump together with a Changeset whenever a new template tag goes out —
 // .github/workflows/bump-template-ref.yml does this automatically by opening
 // a PR when it sees a newer tag on the public mirror.
-const DEFAULT_REF = "v0.27.0";
+const DEFAULT_REF = "v0.27.1";
 
 // Channel aliases the user can pass via --ref.
 //   stable → DEFAULT_REF (latest tag — what default `npx create-cartwright` uses)
