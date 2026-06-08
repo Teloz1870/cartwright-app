@@ -14,6 +14,7 @@ export function baseOptions(): BaseLayoutProps {
       { text: 'Docs', url: '/docs' },
       { text: 'Integrations', url: '/integrations' },
       { text: 'Designs', url: '/designs' },
+      { text: 'Voices', url: '/verticals' },
       { text: 'Parts', url: '/parts' },
       { text: '3D', url: '/scenes' },
       { text: 'Pricing', url: '/pricing' },
