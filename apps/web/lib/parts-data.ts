@@ -24,7 +24,10 @@ export type PartShape =
   | 'logos'
   | 'gallery'
   | 'cta'
-  | 'text';
+  | 'text'
+  | 'configurator'
+  | 'cinema'
+  | 'showroom';
 
 export type PartEntry = {
   /** section-registry key (engine). */
@@ -38,6 +41,8 @@ export type PartEntry = {
   isNew?: boolean;
   /** true when the part embeds a palette-reactive 3D scene (Live Canvas). */
   is3d?: boolean;
+  /** Cartwright Pro Part — a premium breakthrough element (configurator, scroll-cinema, 3D showroom). */
+  pro?: boolean;
 };
 
 export const PART_CATEGORIES: PartCategory[] = [
@@ -217,6 +222,40 @@ export const PARTS: PartEntry[] = [
     category: 'Conversion',
     shape: 'cta',
   },
+
+  // ───── Pro — breakthrough interactive elements (cartwrightPlus / $5 each)
+  {
+    key: 'configurator',
+    label: 'Configurator (build-your-own)',
+    description:
+      'An interactive "build your own" product configurator: pick a finish / size / extras and the preview recolours + the price updates live. The killer commerce primitive — a $100k-feeling configurator on any page.',
+    category: 'Conversion',
+    shape: 'configurator',
+    isNew: true,
+    pro: true,
+  },
+  {
+    key: 'scrollStory',
+    label: 'Scroll-cinema',
+    description:
+      'Scroll-driven cinematic storytelling: full-viewport "beats" whose copy fades and glides in as you scroll, Apple-product-page style — native CSS scroll-driven animation, no JavaScript, with a content-visible fallback.',
+    category: 'Content',
+    shape: 'cinema',
+    isNew: true,
+    pro: true,
+  },
+  {
+    key: 'showroom3d',
+    label: '3D product showroom',
+    description:
+      'A premium product showroom on the Live Canvas: a palette-reactive 3D centrepiece framed with the product name, spec rail and CTA — the "see it in 3D" moment. WebGL2 / reduced-motion gated, three.js lazy-loaded.',
+    category: 'Content',
+    shape: 'showroom',
+    isNew: true,
+    is3d: true,
+    pro: true,
+  },
 ];
 
 export const NEW_PARTS_COUNT = PARTS.filter((p) => p.isNew).length;
+export const PRO_PARTS_COUNT = PARTS.filter((p) => p.pro).length;

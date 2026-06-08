@@ -188,6 +188,55 @@ export function PartSchematic({ shape }: { shape: PartShape }) {
           </div>
         </Frame>
       );
+    case 'configurator':
+      return (
+        <Frame>
+          <div className="flex w-full items-center gap-3">
+            <div className={`h-full flex-1 ${ACCENT}`} />
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="flex gap-1.5">
+                <div className="size-3.5 rounded-full bg-cw-terracotta" />
+                <div className={`size-3.5 rounded-full ${MUTED}`} />
+                <div className={`size-3.5 rounded-full ${FAINT}`} />
+              </div>
+              <div className="flex gap-1.5">
+                <div className={`h-4 w-10 rounded-full bg-cw-terracotta`} />
+                <div className={`h-4 w-12 rounded-full ${FAINT}`} />
+              </div>
+              <div className={`mt-1 h-2 w-full ${FAINT}`} />
+              <div className="mt-1 flex items-center justify-between">
+                <div className={`h-4 w-12 ${MUTED}`} />
+                <div className={`h-4 w-14 ${ACCENT}`} />
+              </div>
+            </div>
+          </div>
+        </Frame>
+      );
+    case 'cinema':
+      return (
+        <Frame glow>
+          <div className="m-auto flex w-full flex-col items-center gap-2">
+            <div className={`h-2 w-14 rounded bg-cw-terracotta`} />
+            <div className={`h-4 w-3/5 rounded bg-cw-stone-700 dark:bg-cw-stone-300`} />
+            <div className={`h-2 w-2/5 ${MUTED}`} />
+          </div>
+        </Frame>
+      );
+    case 'showroom':
+      return (
+        <Frame glow>
+          <div className="relative flex h-full w-full items-center justify-center">
+            <div className="size-20 rounded-full bg-gradient-to-br from-cw-stone-400 to-cw-stone-700 shadow-lg dark:from-cw-stone-500 dark:to-cw-stone-800" />
+            <div className="absolute inset-x-3 bottom-2 flex items-center justify-between">
+              <div className="flex gap-2">
+                <div className={`h-3 w-6 ${MUTED}`} />
+                <div className={`h-3 w-6 ${FAINT}`} />
+              </div>
+              <div className={`h-4 w-10 ${ACCENT}`} />
+            </div>
+          </div>
+        </Frame>
+      );
     default:
       return <Frame>{null}</Frame>;
   }
