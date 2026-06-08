@@ -1,5 +1,8 @@
 // AUTO-GENERATED from the Cartwright engine design registry (designs/options.ts +
 // each pack tokens). Regenerate when designs change. Do not hand-edit entries.
+// NOTE: `threeD` is NOT in options.ts — it is maintained here by hand and means
+// "this pack wires a three.js / WebGL hero". True only for aurora-site, saas-dark,
+// nocturne, and engineered; keep it in sync with the actual design packs.
 
 export type DesignEntry = {
   slug: string;
@@ -170,7 +173,7 @@ export const DESIGNS: DesignEntry[] = [
       "ink": "#2c1810",
       "muted": "#8a7560"
     },
-    "threeD": true
+    "threeD": false
   },
   {
     "slug": "atelier",
@@ -298,6 +301,6 @@ export const DESIGNS: DesignEntry[] = [
       "ink": "#0c1322",
       "muted": "#5b6577"
     },
-    "threeD": true
+    "threeD": false
   }
 ];
