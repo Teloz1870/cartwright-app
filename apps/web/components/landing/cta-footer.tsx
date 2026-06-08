@@ -101,7 +101,11 @@ export function SiteFooter() {
             </p>
             <ul className="mt-4 space-y-2.5 text-sm">
               {col.links.map((l) => (
-                <li key={l.href}>
+                // Key by label, not href: `social.discord` is a placeholder that
+                // equals `social.github`, so the Community column has two links
+                // with the same href — href keys would collide. Labels are unique
+                // within each column.
+                <li key={l.label}>
                   <Link
                     href={l.href}
                     className="text-cw-stone-700 dark:text-cw-stone-300 hover:text-cw-terracotta transition-colors"
