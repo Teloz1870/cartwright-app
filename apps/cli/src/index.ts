@@ -10,6 +10,11 @@
  *                                [--pm=pnpm|npm|yarn|bun]
  *                                [--no-install] [--no-git] [--no-github] [--skip-skills]
  *
+ * Subcommands:
+ *   npx create-cartwright design install <slug> [--ref <tag>] [--force]
+ *     Install a marketplace design (cartwright.app/designs) into an existing
+ *     project: fetches designs/<slug>/ and registers it. See ./design-install.ts.
+ *
  * Channels:
  *   --ref stable (default) → latest tagged template release
  *   --ref next             → bleeding-edge main branch from cartwright-private
@@ -106,6 +111,7 @@ import { runInterview } from "./interview.js";
 import { summarizeBuild } from "./approve.js";
 import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
 import { installModernWebGuidance } from "./skills.js";
+import { runDesignInstall } from "./design-install.js";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -166,6 +172,14 @@ function applyTemplateDefaults(
 }
 
 async function run(): Promise<void> {
+  // Subcommand: `cartwright design install <slug>` — fetch a marketplace design
+  // pack into an existing project. Everything below is the project scaffolder.
+  const argv = process.argv.slice(2);
+  if (argv[0] === "design" && argv[1] === "install") {
+    await runDesignInstall(argv.slice(2));
+    return;
+  }
+
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
