@@ -80,10 +80,13 @@ jobs:
           # Escape regex specials in tag (semver dots etc.) — sed treats . as literal in the
           # replacement string, so only the search pattern needs care. The search is anchored
           # so we're not at risk of matching anything else.
+          # DEFAULT_REF lives in two files (index.ts = scaffolder, design-install.ts
+          # = `cartwright design install`). Bump both so they never drift.
           sed -i -E 's|^const DEFAULT_REF = "[^"]+";|const DEFAULT_REF = "'"$LATEST"'";|' \
-            apps/cli/src/index.ts
-          # Sanity check the substitution actually happened:
+            apps/cli/src/index.ts apps/cli/src/design-install.ts
+          # Sanity check the substitution actually happened in both:
           grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/index.ts
+          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/design-install.ts
 
       - name: Add changeset
         if: steps.resolve.outputs.skip != 'true'
@@ -121,6 +124,7 @@ jobs:
           delete-branch: true
           add-paths: |
             apps/cli/src/index.ts
+            apps/cli/src/design-install.ts
             .changeset/template-bump-*.md
 
       - name: Summary

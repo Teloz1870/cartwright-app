@@ -15,7 +15,8 @@
   ],
   "type": "module",
   "bin": {
-    "create-cartwright": "dist/index.js"
+    "create-cartwright": "dist/index.js",
+    "cartwright": "dist/index.js"
   },
   "files": [
     "dist",
