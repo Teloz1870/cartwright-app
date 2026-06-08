@@ -10,9 +10,11 @@ import { PromptBlock } from '@/components/designs/prompt-block';
 import { LikeButton } from '@/components/designs/like-button';
 import { DesignHeroImage } from '@/components/designs/design-hero-image';
 import { baseOptions } from '@/lib/layout.shared';
-import { ogImageUrl } from '@/lib/og';
+import JsonLd from '@/components/JsonLd';
 import { DESIGNS, type DesignEntry } from '@/lib/designs-data';
 import { DESIGN_PROMPTS } from '@/lib/design-prompts';
+
+const SITE = 'https://cartwright.app';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const d = getDesign(slug);
   if (!d) return {};
-  const og = ogImageUrl(d.name, d.description);
+  // Share the real homepage screenshot — sharing a design link shows the design.
+  const og = `${SITE}/designs/${d.slug}.jpg`;
   return {
     title: `${d.name} — Cartwright design`,
     description: d.description,
@@ -36,9 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: d.name,
       description: d.description,
-      url: `https://cartwright.app/designs/${d.slug}`,
+      url: `${SITE}/designs/${d.slug}`,
       type: 'article',
-      images: [{ url: og, width: 1200, height: 630, alt: d.name }],
+      images: [{ url: og, width: 1280, height: 800, alt: `${d.name} homepage preview` }],
     },
     twitter: { card: 'summary_large_image', title: d.name, description: d.description, images: [og] },
   };
@@ -54,8 +57,26 @@ export default async function DesignDetailPage({ params }: Props) {
     ? [d.palette.accent, d.palette.accentDeep, d.palette.ink, d.palette.sand, d.palette.cream, d.palette.muted]
     : [];
 
+  // Structured data so search + AI agents can cite this design.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: d.name,
+    description: d.description,
+    url: `${SITE}/designs/${d.slug}`,
+    image: `${SITE}/designs/${d.slug}.jpg`,
+    genre: d.mode,
+    isAccessibleForFree: !d.premium,
+    keywords: [d.mode, d.premium ? 'premium' : 'free', d.threeD ? '3D' : null]
+      .filter(Boolean)
+      .join(', '),
+    creator: { '@type': 'Organization', name: 'Cartwright', url: SITE },
+    isPartOf: { '@type': 'CollectionPage', name: 'Cartwright design marketplace', url: `${SITE}/designs` },
+  };
+
   return (
     <HomeLayout {...baseOptions()}>
+      <JsonLd data={jsonLd} />
       <Section>
         <Link
           href="/designs"

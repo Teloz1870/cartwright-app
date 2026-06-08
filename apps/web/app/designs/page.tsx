@@ -8,10 +8,26 @@ import { baseOptions } from '@/lib/layout.shared';
 import { DESIGNS } from '@/lib/designs-data';
 import { DesignsGallery } from '@/components/designs/designs-gallery';
 
+const OG = 'https://cartwright.app/designs/engineered.jpg';
+
 export const metadata: Metadata = {
   title: 'Design marketplace',
   description:
     'A slaraffenland of premium Cartwright designs — whole-page, code-owned, three.js-ready. Search, preview, copy the prompt that built it, or have an AI agent build your own. Free + Pro.',
+  alternates: { canonical: '/designs' },
+  openGraph: {
+    title: 'Cartwright design marketplace',
+    description:
+      'Whole-page, code-owned, three.js-ready designs for your Cartwright store. Browse, preview, copy the build prompt, or install with one command.',
+    url: 'https://cartwright.app/designs',
+    images: [{ url: OG, width: 1280, height: 800, alt: 'Cartwright design marketplace' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cartwright design marketplace',
+    description: 'Whole-page, code-owned, three.js-ready designs for your Cartwright store.',
+    images: [OG],
+  },
 };
 
 export default function DesignsPage() {
