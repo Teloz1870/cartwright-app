@@ -14,6 +14,9 @@
  *   npx create-cartwright design install <slug> [--ref <tag>] [--force]
  *     Install a marketplace design (cartwright.app/designs) into an existing
  *     project: fetches designs/<slug>/ and registers it. See ./design-install.ts.
+ *   npx create-cartwright vertical install <slug> [--ref <tag>] [--force]
+ *     Install a marketplace Voice (cartwright.app/verticals) into an existing
+ *     project: fetches verticals/<slug>/ and registers it. See ./vertical-install.ts.
  *
  * Channels:
  *   --ref stable (default) → latest tagged template release
@@ -112,6 +115,7 @@ import { summarizeBuild } from "./approve.js";
 import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
 import { installModernWebGuidance } from "./skills.js";
 import { runDesignInstall } from "./design-install.js";
+import { runVerticalInstall } from "./vertical-install.js";
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -177,6 +181,10 @@ async function run(): Promise<void> {
   const argv = process.argv.slice(2);
   if (argv[0] === "design" && argv[1] === "install") {
     await runDesignInstall(argv.slice(2));
+    return;
+  }
+  if (argv[0] === "vertical" && argv[1] === "install") {
+    await runVerticalInstall(argv.slice(2));
     return;
   }
 
