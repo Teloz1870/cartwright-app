@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { DesignEntry } from "@/lib/designs-data";
 
 type ModeFilter = "all" | "website" | "webshop";
 type TierFilter = "all" | "pro" | "free";
+type Sort = "featured" | "popular" | "az";
 
 function Swatches({ palette }: { palette: DesignEntry["palette"] }) {
   if (!palette) return null;
@@ -55,10 +56,28 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
   const [mode, setMode] = useState<ModeFilter>("all");
   const [tier, setTier] = useState<TierFilter>("all");
   const [only3D, setOnly3D] = useState(false);
+  const [sort, setSort] = useState<Sort>("featured");
+  const [likes, setLikes] = useState<Record<string, number>>({});
+  const [likesOn, setLikesOn] = useState(false);
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/designs/likes")
+      .then((r) => r.json())
+      .then((d: { configured?: boolean; likes?: Record<string, number> }) => {
+        if (!alive) return;
+        setLikes(d.likes ?? {});
+        setLikesOn(Boolean(d.configured));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return designs.filter((d) => {
+    const out = designs.filter((d) => {
       if (mode !== "all" && d.mode !== mode && d.mode !== "both") return false;
       if (tier === "pro" && !d.premium) return false;
       if (tier === "free" && d.premium) return false;
@@ -66,7 +85,10 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
       if (q && !`${d.name} ${d.description} ${d.slug}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [designs, query, mode, tier, only3D]);
+    if (sort === "az") out.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === "popular") out.sort((a, b) => (likes[b.slug] ?? 0) - (likes[a.slug] ?? 0));
+    return out;
+  }, [designs, query, mode, tier, only3D, sort, likes]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,14 +112,24 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
           <span className="mx-1 h-5 w-px bg-cw-stone-200 dark:bg-cw-stone-700" aria-hidden />
           <Chip active={only3D} onClick={() => setOnly3D((v) => !v)}>3D ✦</Chip>
         </div>
-        <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
-          {filtered.length} {filtered.length === 1 ? "design" : "designs"}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+            {results.length} {results.length === 1 ? "design" : "designs"}
+          </p>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-cw-stone-400">Sort</span>
+            <Chip active={sort === "featured"} onClick={() => setSort("featured")}>Featured</Chip>
+            {likesOn && (
+              <Chip active={sort === "popular"} onClick={() => setSort("popular")}>Popular</Chip>
+            )}
+            <Chip active={sort === "az"} onClick={() => setSort("az")}>A–Z</Chip>
+          </div>
+        </div>
       </div>
 
       {/* Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((d) => (
+        {results.map((d) => (
           <Link
             key={d.slug}
             href={`/designs/${d.slug}`}
@@ -115,14 +147,19 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
             <p className="flex-1 text-sm leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
               {d.description}
             </p>
-            <span className="text-sm font-medium text-cw-terracotta">
-              View design →
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-cw-terracotta">View design →</span>
+              {likesOn && (likes[d.slug] ?? 0) > 0 && (
+                <span className="text-sm text-cw-stone-400" aria-label={`${likes[d.slug]} likes`}>
+                  ♥ {likes[d.slug]}
+                </span>
+              )}
+            </div>
           </Link>
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {results.length === 0 && (
         <p className="py-12 text-center text-cw-stone-500 dark:text-cw-stone-400">
           No designs match those filters.
         </p>

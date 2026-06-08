@@ -7,6 +7,7 @@ import { Section } from '@/components/landing/section';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { PromptBlock } from '@/components/designs/prompt-block';
+import { LikeButton } from '@/components/designs/like-button';
 import { baseOptions } from '@/lib/layout.shared';
 import { ogImageUrl } from '@/lib/og';
 import { DESIGNS, type DesignEntry } from '@/lib/designs-data';
@@ -74,6 +75,10 @@ export default async function DesignDetailPage({ params }: Props) {
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-cw-stone-500 dark:text-cw-stone-400 sm:text-lg">
           {d.description}
         </p>
+
+        <div className="mt-5">
+          <LikeButton slug={d.slug} />
+        </div>
 
         {/* Palette */}
         {swatches.length > 0 && (
