@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { PromptBlock } from '@/components/designs/prompt-block';
 import { LikeButton } from '@/components/designs/like-button';
+import { DesignHeroImage } from '@/components/designs/design-hero-image';
 import { baseOptions } from '@/lib/layout.shared';
 import { ogImageUrl } from '@/lib/og';
 import { DESIGNS, type DesignEntry } from '@/lib/designs-data';
@@ -79,6 +80,9 @@ export default async function DesignDetailPage({ params }: Props) {
         <div className="mt-5">
           <LikeButton slug={d.slug} />
         </div>
+
+        {/* Homepage preview screenshot */}
+        <DesignHeroImage slug={d.slug} name={d.name} swatches={swatches} />
 
         {/* Palette */}
         {swatches.length > 0 && (

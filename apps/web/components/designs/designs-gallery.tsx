@@ -26,6 +26,29 @@ function Swatches({ palette }: { palette: DesignEntry["palette"] }) {
   );
 }
 
+function Preview({ slug, palette }: { slug: string; palette: DesignEntry["palette"] }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="flex aspect-[16/10] w-full items-center justify-center rounded-xl border border-cw-stone-200 bg-cw-stone-50 dark:border-cw-stone-700 dark:bg-cw-stone-800/40">
+        <Swatches palette={palette} />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`/designs/${slug}.jpg`}
+      width={1280}
+      height={800}
+      loading="lazy"
+      decoding="async"
+      alt=""
+      onError={() => setFailed(true)}
+      className="aspect-[16/10] w-full rounded-xl border border-cw-stone-200 object-cover object-top dark:border-cw-stone-700"
+    />
+  );
+}
+
 function Chip({
   active,
   onClick,
@@ -135,7 +158,7 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
             href={`/designs/${d.slug}`}
             className="group flex flex-col gap-4 rounded-2xl border border-cw-stone-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-cw-terracotta/50 hover:shadow-lg dark:border-cw-stone-700 dark:bg-cw-stone-900"
           >
-            <Swatches palette={d.palette} />
+            <Preview slug={d.slug} palette={d.palette} />
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold text-cw-stone-900 group-hover:text-cw-terracotta dark:text-cw-stone-50">
                 {d.name}
