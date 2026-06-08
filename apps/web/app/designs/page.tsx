@@ -82,14 +82,11 @@ export default function DesignsPage() {
         <SectionHeader
           eyebrow="Share"
           title="Share your design"
-          description="Designs are portable. Download any design as a cartwright-design-v1 design.md from your admin (Settings → Designs → Download design.md), then re-import it on another shop — or submit it back to the community."
+          description="Designs are portable. Download any design as a cartwright-design-v1 design.md from your admin (Settings → Designs → Download design.md), then re-import it on another shop — or submit it back to the community and see it in this marketplace."
         />
         <div className="mt-8 flex flex-wrap gap-3">
-          <ButtonLink
-            href="https://github.com/Teloz1870/cartwright-template"
-            variant="secondary"
-          >
-            Submit a design on GitHub →
+          <ButtonLink href="/designs/submit" variant="primary">
+            Submit your design →
           </ButtonLink>
           <ButtonLink href="/docs/designs/design-md-spec" variant="ghost">
             The design.md format
