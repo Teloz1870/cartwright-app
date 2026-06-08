@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PartSchematic } from '@/components/parts/part-schematic';
 import { PART_CATEGORIES, type PartEntry, type PartCategory } from '@/lib/parts-data';
 
-type Filter = 'All' | PartCategory;
+type Filter = 'All' | 'Pro' | PartCategory;
 
 function PartCard({ part }: { part: PartEntry }) {
   return (
@@ -15,7 +15,12 @@ function PartCard({ part }: { part: PartEntry }) {
         <h3 className="text-lg font-semibold text-cw-stone-900 group-hover:text-cw-terracotta dark:text-cw-stone-50">
           {part.label}
         </h3>
-        {part.isNew ? <Badge tone="terracotta">New</Badge> : null}
+        {part.pro ? (
+          <span className="rounded-full bg-cw-terracotta px-2 py-0.5 text-[11px] font-semibold text-white">
+            ⭐ Pro
+          </span>
+        ) : null}
+        {part.isNew && !part.pro ? <Badge tone="terracotta">New</Badge> : null}
         {part.is3d ? <Badge tone="oker">3D</Badge> : null}
         <Badge>{part.category}</Badge>
       </div>
@@ -30,9 +35,14 @@ function PartCard({ part }: { part: PartEntry }) {
 export function PartsGallery({ parts }: { parts: PartEntry[] }) {
   const [filter, setFilter] = useState<Filter>('All');
 
-  const filters: Filter[] = useMemo(() => ['All', ...PART_CATEGORIES], []);
+  const filters: Filter[] = useMemo(() => ['All', 'Pro', ...PART_CATEGORIES], []);
   const shown = useMemo(
-    () => (filter === 'All' ? parts : parts.filter((p) => p.category === filter)),
+    () =>
+      filter === 'All'
+        ? parts
+        : filter === 'Pro'
+          ? parts.filter((p) => p.pro)
+          : parts.filter((p) => p.category === filter),
     [parts, filter],
   );
 
@@ -41,7 +51,12 @@ export function PartsGallery({ parts }: { parts: PartEntry[] }) {
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => {
           const active = f === filter;
-          const count = f === 'All' ? parts.length : parts.filter((p) => p.category === f).length;
+          const count =
+            f === 'All'
+              ? parts.length
+              : f === 'Pro'
+                ? parts.filter((p) => p.pro).length
+                : parts.filter((p) => p.category === f).length;
           return (
             <button
               key={f}
