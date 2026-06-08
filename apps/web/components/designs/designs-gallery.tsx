@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { DesignEntry } from "@/lib/designs-data";
+import { hasVideo } from "@/lib/design-media";
 
 type ModeFilter = "all" | "website" | "webshop";
 type TierFilter = "all" | "pro" | "free";
@@ -23,6 +24,70 @@ function Swatches({ palette }: { palette: DesignEntry["palette"] }) {
         />
       ))}
     </div>
+  );
+}
+
+function Preview({ slug, palette }: { slug: string; palette: DesignEntry["palette"] }) {
+  const [failed, setFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const imgClass =
+    "aspect-[16/10] w-full rounded-xl border border-cw-stone-200 object-cover object-top dark:border-cw-stone-700";
+
+  if (failed) {
+    return (
+      <div className="flex aspect-[16/10] w-full items-center justify-center rounded-xl border border-cw-stone-200 bg-cw-stone-50 dark:border-cw-stone-700 dark:bg-cw-stone-800/40">
+        <Swatches palette={palette} />
+      </div>
+    );
+  }
+
+  // Animated (WebGL) designs: static screenshot as poster, play the loop on hover.
+  if (hasVideo(slug)) {
+    return (
+      <div
+        className="relative"
+        onMouseEnter={() => videoRef.current?.play().catch(() => {})}
+        onMouseLeave={() => {
+          const v = videoRef.current;
+          if (v) {
+            v.pause();
+            v.currentTime = 0;
+          }
+        }}
+      >
+        <video
+          ref={videoRef}
+          poster={`/designs/${slug}.jpg`}
+          width={1280}
+          height={800}
+          muted
+          loop
+          playsInline
+          preload="none"
+          onError={() => setFailed(true)}
+          className={imgClass}
+        >
+          <source src={`/designs/${slug}.webm`} type="video/webm" />
+          <source src={`/designs/${slug}.mp4`} type="video/mp4" />
+        </video>
+        <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-cw-stone-900/70 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+          ▶ Live
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`/designs/${slug}.jpg`}
+      width={1280}
+      height={800}
+      loading="lazy"
+      decoding="async"
+      alt=""
+      onError={() => setFailed(true)}
+      className={imgClass}
+    />
   );
 }
 
@@ -135,7 +200,7 @@ export function DesignsGallery({ designs }: { designs: DesignEntry[] }) {
             href={`/designs/${d.slug}`}
             className="group flex flex-col gap-4 rounded-2xl border border-cw-stone-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-cw-terracotta/50 hover:shadow-lg dark:border-cw-stone-700 dark:bg-cw-stone-900"
           >
-            <Swatches palette={d.palette} />
+            <Preview slug={d.slug} palette={d.palette} />
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold text-cw-stone-900 group-hover:text-cw-terracotta dark:text-cw-stone-50">
                 {d.name}
