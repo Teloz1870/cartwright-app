@@ -237,6 +237,19 @@ export function PartSchematic({ shape }: { shape: PartShape }) {
           </div>
         </Frame>
       );
+    case 'compare':
+      return (
+        <Frame>
+          <div className="relative h-full w-full overflow-hidden rounded">
+            <div className={`absolute inset-0 ${MUTED}`} />
+            <div className="absolute inset-y-0 left-0 w-[42%] overflow-hidden">
+              <div className={`h-full w-full ${FAINT}`} />
+            </div>
+            <div className="absolute inset-y-0 left-[42%] w-0.5 -translate-x-1/2 bg-white dark:bg-cw-stone-200" />
+            <div className="absolute left-[42%] top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cw-terracotta" />
+          </div>
+        </Frame>
+      );
     default:
       return <Frame>{null}</Frame>;
   }

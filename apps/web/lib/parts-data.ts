@@ -27,7 +27,8 @@ export type PartShape =
   | 'text'
   | 'configurator'
   | 'cinema'
-  | 'showroom';
+  | 'showroom'
+  | 'compare';
 
 export type PartEntry = {
   /** section-registry key (engine). */
@@ -253,6 +254,16 @@ export const PARTS: PartEntry[] = [
     shape: 'showroom',
     isNew: true,
     is3d: true,
+    pro: true,
+  },
+  {
+    key: 'compare',
+    label: 'Before/after slider',
+    description:
+      'Drag the handle (or arrow-keys) to wipe between two states — before/after, plain/premium, with/without. Works with two images or pure-CSS gradient panels. Accessible and touch-friendly.',
+    category: 'Content',
+    shape: 'compare',
+    isNew: true,
     pro: true,
   },
 ];
