@@ -1,0 +1,80 @@
+---
+title: Build a design with an IDE agent
+description: Use Claude Code, Codex, or any AI coding agent to build a bespoke, premium Cartwright design in real code — the "build your own" path. Ships with a skill that teaches the agent the house rules.
+---
+
+Cartwright is built to be driven by an AI coding agent. Unlike a hosted page builder, **you own the code** — so an agent (Claude Code, Codex, Cursor, …) can build you a genuinely bespoke, premium homepage design directly in your repo, with full creative freedom.
+
+There are two paths; this page is about the second:
+
+| | In-product builder (`/admin`) | **IDE agent (this page)** |
+| --- | --- | --- |
+| Who | non-technical shop owner | **you + an AI coding agent** |
+| Output | governed section **data** | **real code** (a DesignPack) |
+| Freedom | whitelisted sections | **total** |
+
+## 1. Scaffold + open in your editor
+
+```bash
+npx create-cartwright my-store
+cd my-store
+```
+
+Open the project in your IDE. A fresh Cartwright project ships with two agent skills already installed:
+
+- **`cartwright-guidance`** — storefront/admin conventions.
+- **`cartwright-premium-design`** — *how to hand-build a premium DesignPack* (the design contract, the locked-theme rule, three.js opt-in, fonts, a11y). Your agent reads it automatically when you ask for a design.
+
+## 2. Ask for a design
+
+Just describe what you want. The agent will read the `cartwright-premium-design` skill, copy the reference pack (`designs/engineered/`), and build a new `designs/<slug>/` pack. Some starter prompts:
+
+```text
+Build me a dark-luxe agency homepage as a Cartwright design pack:
+deep navy canvas, warm cream text, one mint-teal accent, a three.js
+aurora hero, editorial display type, glassmorphism nav, a bento
+services grid, and a bold CTA. English copy. Register it and show it.
+```
+
+```text
+Create a light editorial / magazine design pack: warm paper, ink text,
+a characterful serif display, generous whitespace, a big pull-quote,
+asymmetric columns. No 3D. Then set it as my homepage.
+```
+
+```text
+Build a neo-brutalist design pack: stark black on paper, thick borders,
+an acid-lime accent, monospace labels, hard shadows, a marquee. Make it
+loud but usable.
+```
+
+```text
+Give my homepage a 3D hero: add <DesignHero /> behind the hero content
+with a CSS gradient fallback, and keep prefers-reduced-motion working.
+```
+
+The agent should: create the pack, register it in `designs/index.ts` + `designs/options.ts`, run `pnpm exec tsc --noEmit` + `pnpm test`, and let you preview it.
+
+## 3. The house rules the agent follows
+
+The skill enforces the things that make a Cartwright design feel premium *and* not break:
+
+- **Locked theme** — explicit color tokens, no Tailwind `dark:` variants (those follow the OS and flip under the user).
+- **three.js is opt-in + perf-safe** — `<DesignHero />` is lazy, respects reduced-motion / saveData, and degrades to your CSS background when WebGL is unavailable.
+- **Distinctive type** via `next/font` (not Inter/Roboto/Arial).
+- **Additive + default-off** — a new pack is just *available*; your site only adopts it when you set `designSlug`.
+
+## 4. Preview, switch, and share
+
+- Preview/switch any design in **`/admin/designs`** (or set `designSlug` in `brand.config.ts`).
+- **Download** any design as a portable `design.md` from `/admin/designs` (palette + identity), and re-import it on another shop — or share it back to the community.
+
+## 5. Verify before you ship
+
+```bash
+pnpm exec tsc --noEmit
+pnpm test
+pnpm build
+```
+
+Then open a PR. See [Writing your own design](/docs/designs/writing-your-own) for the from-scratch walkthrough and [design.md spec](/docs/designs/design-md-spec) for the portable format.
