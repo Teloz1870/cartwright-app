@@ -7,6 +7,7 @@ import { Section } from '@/components/landing/section';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { PromptBlock } from '@/components/designs/prompt-block';
+import { CopyCommand } from '@/components/landing/copy-command';
 import { LikeButton } from '@/components/designs/like-button';
 import { DesignHeroImage } from '@/components/designs/design-hero-image';
 import { baseOptions } from '@/lib/layout.shared';
@@ -159,12 +160,17 @@ export default async function DesignDetailPage({ params }: Props) {
             Use this design
           </h2>
           <p className="mb-3 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
-            Pick it in <code className="font-mono">/admin/designs</code>, or set it in{' '}
-            <code className="font-mono">brand.config.ts</code>:
+            Install it into an existing Cartwright project with one command — it
+            fetches the design&rsquo;s code and registers it for you:
           </p>
-          <div className="rounded-lg bg-cw-stone-100 px-4 py-3 font-mono text-sm text-cw-stone-700 dark:bg-cw-stone-800/60 dark:text-cw-stone-300">
-            designSlug: <span className="text-cw-terracotta">&quot;{d.slug}&quot;</span>
-          </div>
+          <CopyCommand command={`npx create-cartwright design install ${d.slug}`} />
+          <p className="mt-3 max-w-2xl text-sm text-cw-stone-500 dark:text-cw-stone-400">
+            Then activate it: set{' '}
+            <code className="font-mono">designSlug: &quot;{d.slug}&quot;</code> in{' '}
+            <code className="font-mono">brand.config.ts</code>, or pick it in{' '}
+            <code className="font-mono">/admin/designs</code>. New project?{' '}
+            <code className="font-mono">npx create-cartwright</code> first.
+          </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <ButtonLink href="/docs/designs/build-with-an-ide-agent" variant="primary">
               Build your own with an AI agent →
