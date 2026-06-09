@@ -34,3 +34,23 @@ Use that form only after checking the installed CLI version supports it:
 ```bash
 npx create-cartwright@latest --help
 ```
+
+## Marketplace subcommands
+
+Inside a scaffolded project, the `cartwright` CLI can pull individual **designs** and **Voices** from the marketplace into your repo:
+
+```bash
+# Install a design pack (a Skin) — see /designs for the catalogue
+npx cartwright design install <slug>     # e.g. apex, halo, jungle
+
+# Install a Voice (a vertical preset) — see /verticals
+npx cartwright vertical install <slug>   # e.g. kindergarten, carpenter, cafe
+```
+
+Both resolve a template ref. By default they use `stable`, which maps to the current `DEFAULT_REF` (the latest engine release); pass `--ref next` to track the development branch, or `--ref vX.Y.Z` to pin a tag:
+
+```bash
+npx cartwright design install apex --ref next
+```
+
+Each command scaffolds the pack into `designs/<slug>/` (or `verticals/<slug>/`) and registers it, so you can select it in `/admin/designs` (or apply it from `/admin/verticals`) right away.

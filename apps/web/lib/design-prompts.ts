@@ -42,6 +42,18 @@ export const DESIGN_PROMPTS: Record<string, string> = {
     "Build me a Cartwright design pack like 'stack': a dark-mode-first developer-tools landing page — a terminal hero with a typed command + animated output, code-block feature cards, monospace everywhere. For dev SaaS / AI APIs. English copy.",
   hoptify:
     "Build me a Cartwright webshop design like 'hoptify': a clean, familiar big-box-webshop look — but with a fresh signature green and a wink. Friendly, conversion-first, broadly familiar. English copy.",
+  apex:
+    "Build me a Cartwright flagship super-pro webshop design 'apex': a single palette-adaptive homepage (cw-* atoms + applyPaletteAsTheme, default luxe violet) that composes everything — a 3D Live-Canvas aurora hero, a rotatable 3D product showroom with a spec rail, value props, a build-your-own configurator with a live preview + live price (:has(:checked), no JS), the real featured-product grid, a scroll-cinema story (animation-timeline: view()), and a closing CTA. Every section AND every Pro element re-skins to the brand palette. Webshop mode, premium, mixable. English copy.",
+  aerospace:
+    "Build me a Cartwright design pack 'aerospace': a cinematic aerospace / mission-control website — near-black space canvas, one ice-blue accent, a dry technical voice. A pure-CSS starfield hero, condensed uppercase headlines, monospace telemetry chips, a vehicle/systems 'fleet' grid, and a countdown mission-sequence timeline. Locked dark theme, no 3D. English copy.",
+  halo:
+    "Build me a Cartwright webshop design pack 'halo': ultra-minimal product luxury — a light-grey canvas, oversized tight-tracked headlines, a signature alternating full-bleed light / near-black panel rhythm, a pure-CSS hero 'device' with a metallic sheen, one restrained product-blue accent, and a tidy spec grid. Locked light theme, no 3D. English copy — think a flagship consumer-hardware store.",
+  flux:
+    "Build me a Cartwright design pack 'flux': a developer-first payments/infra SaaS site — white canvas, deep-navy text, one vivid indigo accent. A bold animated multi-hue gradient mesh with an angled clip, crisp white hairline cards, syntax-tinted monospace code cards, and a gradient stat band. Locked light theme, no 3D. English copy — Stripe-adjacent confidence.",
+  drive:
+    "Build me a Cartwright design pack 'drive': a full-bleed automotive / silent-luxury website — a vertical stack of full-viewport panels, each a beautiful atmospheric CSS backdrop with a centered top headline and bottom-anchored pill CTAs. Ultra-minimal, almost no body copy. Locked theme, no 3D. English copy.",
+  jungle:
+    "Build me a Cartwright website design 'jungle': friendly and organic, atom-composed and palette-adaptive, trimmed to the human sections (hero, value-props, features, CTA). A lush green palette + the palette-reactive 'waves' Live-Canvas scene make it read like a canopy. Warm and approachable — for kindergartens, cafés, wellness and consumer brands. English copy.",
 };
 
 export type PromptCategory =

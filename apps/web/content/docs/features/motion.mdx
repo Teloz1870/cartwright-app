@@ -1,0 +1,53 @@
+---
+title: Motion & Effects
+description: A flag-gated layer of modern CSS scroll-driven animations, an animated palette-adaptive aurora gradient, and a per-section motion vocabulary the builder can assign. Compositor-thread, no JS jank, default-off.
+---
+
+Motion & Effects adds tasteful, modern movement to a Cartwright site — **without** a JavaScript animation library and without touching the main thread. Everything runs on the compositor (transform/opacity only), respects `prefers-reduced-motion`, and ships **default-off**, so a shop that doesn't opt in is byte-identical to before.
+
+<Callout type="info">
+Ships in engine **v0.31.0**. Gated by the `motionEffects` flag — when off, no `data-motion` attribute is set, no rule matches, and the render is unchanged.
+</Callout>
+
+## Turning it on
+
+Two switches, both in `brand.config.ts`:
+
+- **`brand.features.motionEffects`** — the master flag (default `false`).
+- **`brand.motionPreset`** — the intensity: `"subtle"`, `"bold"`, or `"off"`.
+
+`lib/motion.ts` resolves these into a `data-motion` attribute on `<html>`; `themes/motion.css` holds the preset CSS-variables, the scroll-driven reveal classes, the animated aurora gradient, and a glassmorphism utility. Because every rule is scoped to `:root[data-motion=…]`, the default-off state matches no rule and renders identically.
+
+## What you get
+
+- **Scroll-driven reveals.** Sections fade/slide/zoom into place as they enter the viewport, driven by the native CSS `animation-timeline: view()` — no scroll listeners, no layout thrash.
+- **An animated Aurora hero.** The `aurora-site` design wraps its hero in an animated, palette-adaptive aurora gradient (`.motion-aurora-bg`), with the optional three.js hero mounted behind it. The gradient is the guaranteed fallback.
+- **Glassmorphism.** A frosted-surface utility for nav bars and cards.
+
+## Per-section effect vocabulary
+
+When you build pages in the [Visual Builder](/docs/features/visual-builder), each section can carry one whitelisted effect — a governed `enum`, not arbitrary CSS:
+
+| Effect | Motion |
+|---|---|
+| `fade-up` | Fades in while rising a few pixels. |
+| `fade` | Opacity only. |
+| `zoom-in` | Scales up slightly into place. |
+| `slide-left` / `slide-right` | Enters from the side. |
+| `parallax` | Subtle depth on scroll. |
+| `none` | No effect. |
+
+The builder's AI planner can assign a tasteful effect per section automatically, or you can set it in the inspector.
+
+## Safety by construction
+
+- **Compositor-only** — every animation is `transform`/`opacity`, so it never blocks the main thread.
+- **Reduced-motion aware** — all motion sits inside `@media (prefers-reduced-motion: no-preference)`.
+- **Progressive enhancement** — scroll-driven effects are behind `@supports ((animation-timeline: view()) and (animation-range: entry))`. Browsers without support render the page static; there's no polyfill and no jank.
+- **Canary-safe** — because the rules are scoped to `:root[data-motion=…]`, leaving the flag off is provably byte-identical.
+
+## Related
+
+- [Visual Builder](/docs/features/visual-builder) — assign per-section effects
+- [Live Canvas 3D](/docs/features/live-canvas-3d) — the WebGL hero that mounts behind the aurora gradient
+- [Designs](/docs/designs/overview) — palette-adaptive designs that the motion layer rides on
