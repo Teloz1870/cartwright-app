@@ -5,6 +5,16 @@ import { contactEmail, isGithubPublic, social } from '@/lib/shared';
 
 const docsCols = [
   {
+    heading: 'Explore',
+    links: [
+      { label: 'Designs', href: '/designs' },
+      { label: 'Voices', href: '/verticals' },
+      { label: 'Parts', href: '/parts' },
+      { label: '3D scenes', href: '/scenes' },
+      { label: 'Pro', href: '/pro' },
+    ],
+  },
+  {
     heading: 'Docs',
     links: [
       { label: 'Quick start', href: '/docs/getting-started/quick-start' },
@@ -80,7 +90,7 @@ export function CtaFooter() {
 export function SiteFooter() {
   return (
     <footer className="bg-cw-stone-50 dark:bg-cw-stone-900/30 border-b border-cw-stone-200 dark:border-cw-stone-800">
-      <div className="mx-auto max-w-6xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <div className="mx-auto max-w-6xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div>
           <Wordmark />
           <p className="mt-3 max-w-sm text-sm text-cw-stone-500 dark:text-cw-stone-400">

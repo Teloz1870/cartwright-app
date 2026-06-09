@@ -188,13 +188,16 @@ The `--force` flag overwrites the existing scaffold. Reload the page.
 Once you're happy:
 
 1. Commit `designs/my-design/` to your repo
-2. Export the canonical design.md for sharing:
+2. Export the canonical design.md for sharing — from the admin, click **Download design.md** in
+   `/admin/designs` (or hit the export API directly):
    ```bash
-   tsx scripts/design-export.ts my-design > my-design.md  # coming in v0.7.1
+   curl -H "Cookie: <your-admin-session>" \
+     https://your-shop.com/api/admin/designs/my-design/export > my-design.md
    ```
 3. Share the `.md` file with others — they drop it in `/admin/designs` and get your exact design
 
-(Coming soon: a community design marketplace at cartwright.app where you can browse and install community-uploaded designs with one command.)
+The [community design marketplace](/designs) is **live**: browse every built-in design, copy the
+prompt that builds it, or submit your own via a GitHub PR.
 
 ## Related
 

@@ -1,0 +1,63 @@
+---
+title: Webshop overrides & the shell model
+description: A design can own every page — not just the homepage. Per-design product cards and PDP layouts, plus site-wide chrome and per-page templates.
+---
+
+Early Cartwright designs only styled the **homepage**; cart, product, contact and info pages fell back to a shared default. From engine **v0.33.0** a design pack can own the **whole** site — its own chrome, its own per-page templates, and bespoke commerce layouts — while a design that *doesn't* opt in still gets the shared defaults, byte-for-byte.
+
+<Callout type="info">
+Ships in engine **v0.33.0**. Every override is optional and default-safe: an undefined seam falls back to the shared chrome / default body, so existing designs are unchanged.
+</Callout>
+
+## The shell model — a design owns every page
+
+A `DesignPack` can declare a `siteChrome` and per-page `pages`:
+
+```ts
+const myDesign: DesignPack = {
+  // …homepage, tokens…
+  siteChrome: {
+    Shell,   // wraps every route
+    Header,  // bespoke header
+    Footer,  // bespoke footer
+  },
+  pages: {
+    contact,   // a custom /contact body
+    info,      // a custom /info/[slug] body (FAQ, legal…)
+    notFound,  // a custom 404
+  },
+};
+```
+
+Each seam is optional. Leave `siteChrome` undefined and the design uses the shared header/footer; leave a `pages` entry undefined and that route renders the default body. So **opting in is purely additive** — it can never regress a design that doesn't.
+
+The four recognizable premium packs that ship with this model — `halo`, `flux`, `drive` (and the flagship `apex`) — carry their own chrome plus contact/info/404 templates, so the whole site feels designed, not just the landing page.
+
+## Webshop overrides — bespoke commerce layouts
+
+For shops, a `DesignPack.webshop` block lets a design replace the two surfaces that matter most for a storefront's feel:
+
+```ts
+const myDesign: DesignPack = {
+  // …
+  webshop: {
+    productCard,  // the card used in product grids (PLP, featured)
+    pdpLayout,    // a wrapper around the product detail page
+  },
+};
+```
+
+- **`productCard`** is threaded into the shared `ProductGrid` via its `card?` prop, so the same grid renders your bespoke card everywhere products are listed.
+- **`pdpLayout`** wraps the product-detail tree, so a design can frame the PDP (breadcrumbs, canvas, panels) without forking the commerce logic.
+
+`halo` ships both — an Apple-minimal product card and a PDP layout — as the reference implementation.
+
+## Palette-adaptive designs need none of this
+
+The shell model and webshop overrides are how a **distinct-identity** design (a locked theme, its own token prefix) takes over the whole site. A **palette-adaptive** design (`apex`, `aurora-*`, `jungle`, …) usually doesn't need them: with `applyPaletteAsTheme`, the shared chrome and the default product cards already re-skin to the brand palette automatically. Reach for overrides when you want a bespoke *structure*, not just bespoke *colours*.
+
+## Related
+
+- [Designs overview](/docs/designs/overview) — the design pack model
+- [Writing your own design](/docs/designs/writing-your-own) — build a pack from scratch
+- [design.md spec](/docs/designs/design-md-spec) — the portable design format

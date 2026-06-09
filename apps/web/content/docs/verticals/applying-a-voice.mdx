@@ -1,0 +1,49 @@
+---
+title: Applying a Voice
+description: Apply a vertical Voice from the admin — it merges identity + genome overrides idempotently, optionally sets a design, and is fully audited and revertible.
+---
+
+A Voice is applied from the admin, and the operation is **idempotent** — applying the same Voice twice leaves the shop in the same state, so it's safe to re-run.
+
+<Callout type="info">
+Requires the `verticalPresets` flag (default-off). Applying a Voice is admin-only and audited.
+</Callout>
+
+## From the admin
+
+1. Enable `verticalPresets` in `/admin/features`.
+2. Open **`/admin/verticals`** and browse the catalogue.
+3. Pick a Voice and choose what to apply — the copy/identity always, and optionally its suggested design and a starter page layout.
+4. Confirm. The change is written through the genome, recorded in the [audit log](/docs/features/audit-log-revert), and can be reverted.
+
+## What "apply" does
+
+Under the hood, `applyVertical(slug, opts)`:
+
+1. **Validates** every genome key it's about to write.
+2. **Merges** the Voice's identity anchors + copy overrides into the genome (it never blindly overwrites unrelated fields).
+3. Optionally **sets the design** (`designSlug`) to the Voice's suggestion.
+4. Optionally **applies a starter page layout** via `pages.set_layout`.
+5. Wraps the whole thing in an audit entry and invalidates the relevant caches.
+
+Because copy is resolved at render through the genome (`override ?? resolved ?? anchor`), a Voice changes the **rendered** copy immediately, and you can still hand-edit any field afterward — your edit wins.
+
+## Reverting
+
+Every apply is an audited mutation, so you can undo it from the audit log, or apply a different Voice to re-tone again. Nothing is destructive.
+
+## The CLI
+
+A Voice can also be installed into a fresh project from the marketplace:
+
+```bash
+npx cartwright vertical install <slug>
+```
+
+This resolves the `stable` tag (currently the latest engine release) and scaffolds the preset into your repo. See [CLI options](/docs/getting-started/cli-options).
+
+## Related
+
+- [Voices overview](/docs/verticals/overview) — what a Voice is
+- [In-place editing & the genome](/docs/features/in-place-editing) — how resolved copy works
+- [Audit log & revert](/docs/features/audit-log-revert) — undoing any change

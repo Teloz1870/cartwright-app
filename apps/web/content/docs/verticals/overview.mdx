@@ -1,0 +1,39 @@
+---
+title: Voices (verticals)
+description: A Voice re-tones any design for an industry — identity + genome copy + palette + an optional 3D scene — applied idempotently from the admin. Content and design stay orthogonal.
+---
+
+In Cartwright, **content and design are orthogonal**: a design pack controls *how the page looks*, and the copy is resolved separately through the genome. A **Voice** (a "vertical" preset) is the content half — it re-tones any compatible design for an industry without changing the design itself.
+
+<Callout type="info">
+Ships in engine **v0.33.0**, gated by the `verticalPresets` flag (default-off). Browse the live catalogue at [/verticals](/verticals).
+</Callout>
+
+## What a Voice carries
+
+A `VerticalPreset` bundles everything that makes a page *sound and feel* like a given industry:
+
+- **Identity anchors** — tone, audience, formality, vibe.
+- **Genome copy overrides** — the hero headline, value props, feature copy, CTA, etc., resolved at render through the [Resolvable Genome](/docs/features/in-place-editing).
+- **A suggested palette** and an optional **3D scene** (e.g. `waves` for a calm, organic feel).
+- Optionally a **suggested design**, an **industry template**, and a **default page layout**.
+
+So a single Voice — say *kindergarten* — can set warm, friendly copy, a green palette, and a canopy-like 3D scene, then be dropped onto **any** palette-adaptive design and have the whole page re-tone.
+
+## Skin × Voice × Parts
+
+A Voice is one of the three orthogonal layers that compose a Cartwright page:
+
+| Layer | What it controls | Where |
+|---|---|---|
+| **Skin** | The look — a [design pack](/docs/designs/overview). | `/designs` |
+| **Voice** | The tone — this preset. | `/verticals` |
+| **Parts** | The structure — swappable [sections](/docs/features/visual-builder). | `/parts` |
+
+Mix all three and you get a complete, on-brand page for an industry in minutes — that's the **Page Mixer**.
+
+## Related
+
+- [Applying a Voice](/docs/verticals/applying-a-voice) — how to apply one in the admin
+- [Designs](/docs/designs/overview) — the Skin half
+- [Visual Builder](/docs/features/visual-builder) — the Parts half

@@ -1,8 +1,9 @@
 // AUTO-GENERATED from the Cartwright engine design registry (designs/options.ts +
 // each pack tokens). Regenerate when designs change. Do not hand-edit entries.
 // NOTE: `threeD` is NOT in options.ts — it is maintained here by hand and means
-// "this pack wires a three.js / WebGL hero". True only for aurora-site, saas-dark,
-// nocturne, and engineered; keep it in sync with the actual design packs.
+// "this pack wires a three.js / WebGL hero". True for aurora-site, saas-dark,
+// nocturne, engineered, apex (3D hero + showroom) and jungle (waves scene);
+// keep it in sync with the actual design packs.
 
 export type DesignEntry = {
   slug: string;
@@ -18,7 +19,7 @@ export const DESIGNS: DesignEntry[] = [
   {
     "slug": "aurora-site",
     "name": "Aurora — Website (Cartwright default)",
-    "description": "The flagship Cartwright website default. Light, airy, modern — built on the shared section atoms (same as the Magic Builder) and adopts your brand palette automatically.",
+    "description": "The flagship Cartwright website default. Light, airy, modern — built on the shared section atoms (same as the Visual Builder) and adopts your brand palette automatically.",
     "mode": "website",
     "premium": false,
     "palette": {
@@ -302,5 +303,101 @@ export const DESIGNS: DesignEntry[] = [
       "muted": "#5b6577"
     },
     "threeD": false
+  },
+  {
+    "slug": "apex",
+    "name": "Apex (flagship · super-pro)",
+    "description": "The flagship super-pro webshop — one page composing a 3D hero, a 3D product showroom, value props, a build-your-own configurator, the live product grid, a scroll-cinema story and a CTA. Palette-adaptive: every section + Pro element adopts your brand palette. Complete out of the box.",
+    "mode": "webshop",
+    "premium": true,
+    "palette": {
+      "accent": "#7c5cff",
+      "accentDeep": "#5a3fd6",
+      "cream": "#faf8ff",
+      "sand": "#ece8f9",
+      "ink": "#16101f",
+      "muted": "#6e6680"
+    },
+    "threeD": true
+  },
+  {
+    "slug": "aerospace",
+    "name": "Aerospace (cinematic deep-tech)",
+    "description": "Premium cinematic aerospace / mission-control website skin — near-black space canvas, one ice-blue accent, a dry technical voice. CSS starfield hero, condensed uppercase headlines, mono telemetry chips, a vehicle/systems fleet grid, a countdown mission-sequence timeline. Locked dark theme, no 3D.",
+    "mode": "website",
+    "premium": true,
+    "palette": {
+      "accent": "#4d9fff",
+      "accentDeep": "#1b3a8f",
+      "cream": "#080b12",
+      "sand": "#141b28",
+      "ink": "#eef3fb",
+      "muted": "#8a97ad"
+    },
+    "threeD": false
+  },
+  {
+    "slug": "halo",
+    "name": "Halo (minimal product luxury)",
+    "description": "Premium ultra-minimal product-luxury storefront — light-grey canvas, oversized tight-tracked headlines, signature alternating full-bleed light / near-black panels, a pure-CSS hero device with a metallic sheen, one restrained product-blue accent, a tidy spec grid. Locked light theme, no 3D.",
+    "mode": "webshop",
+    "premium": true,
+    "palette": {
+      "accent": "#0a84ff",
+      "accentDeep": "#0050a0",
+      "cream": "#f5f5f7",
+      "sand": "#d2d2d7",
+      "ink": "#1d1d1f",
+      "muted": "#6e6e73"
+    },
+    "threeD": false
+  },
+  {
+    "slug": "flux",
+    "name": "Flux (vibrant gradient SaaS)",
+    "description": "Premium developer-first payments/infra SaaS design — white canvas, deep-navy text, one vivid indigo accent, a bold animated multi-hue gradient mesh with an angled clip, crisp white hairline cards, syntax-tinted mono code cards, a gradient stat band. Locked light theme, no 3D.",
+    "mode": "website",
+    "premium": true,
+    "palette": {
+      "accent": "#635bff",
+      "accentDeep": "#4b45c6",
+      "cream": "#ffffff",
+      "sand": "#e3e8ee",
+      "ink": "#0a2540",
+      "muted": "#425466"
+    },
+    "threeD": false
+  },
+  {
+    "slug": "drive",
+    "name": "Drive (full-bleed automotive)",
+    "description": "Premium full-bleed automotive / silent-luxury website skin — a vertical stack of full-viewport panels, each a beautiful atmospheric CSS backdrop with a centered top headline and bottom-anchored pill CTAs. Ultra-minimal, almost no body copy. Locked theme, no 3D.",
+    "mode": "website",
+    "premium": true,
+    "palette": {
+      "accent": "#171a20",
+      "accentDeep": "#000000",
+      "cream": "#ffffff",
+      "sand": "#e2e3e5",
+      "ink": "#171a20",
+      "muted": "#5c5e62"
+    },
+    "threeD": false
+  },
+  {
+    "slug": "jungle",
+    "name": "Jungle (playful · nature)",
+    "description": "A friendly, organic website design — atom-composed and palette-adaptive, trimmed to the human sections (hero, value-props, features, CTA). A lush green palette + the waves scene read like a canopy. Great for kindergartens, cafés, wellness, and warm consumer brands.",
+    "mode": "website",
+    "premium": false,
+    "palette": {
+      "accent": "#16a34a",
+      "accentDeep": "#15803d",
+      "cream": "#f6fef0",
+      "sand": "#dcfce7",
+      "ink": "#13251a",
+      "muted": "#6f8e7c"
+    },
+    "threeD": true
   }
 ];

@@ -1,0 +1,43 @@
+---
+title: Agent Optimization
+description: The design system is optimized for AI agents end to end — they can read it (registry + schemas), build with it (the builder tools), and cite it (Schema.org JSON-LD).
+---
+
+Cartwright treats AI agents — ChatGPT, Perplexity, Google AI Overviews, IDE coding agents — as first-class consumers of your site. The design system (Aurora + the [Visual Builder](/docs/features/visual-builder) + the section catalogue) is optimised so an agent can **read** it, **build** with it, and **cite** it.
+
+<Callout type="info">
+Ships in engine **v0.30.0**. The pieces below are additive and flag-gated — nothing advertises a disabled endpoint.
+</Callout>
+
+## Cite it — section JSON-LD
+
+Pages built from a section layout emit Schema.org structured data **server-side**, so AI search engines can quote them with attribution:
+
+| Section | Emits |
+|---|---|
+| `faq` | `FAQPage` |
+| `howItWorks` | `HowTo` |
+| `galleryGrid` | `ImageGallery` |
+| `testimonials` | `Review` |
+| `pricingTable` | `ItemList` |
+
+It's **honest by construction** — no fabricated ratings or prices — and only emitted on pages that actually have a section layout. The JSON-LD is injected through the same injection-safe helper the rest of the site uses.
+
+## Read it — the component registry
+
+- **`/api/registry`** serves a read-only, **`npx shadcn add`-compatible** registry. With `componentRegistryShipsSource` on, it returns real, MIT-licensed TSX for a curated, self-contained subset of section atoms (source embedded at build time). The always-on `componentRegistryPublic` serves the **prop JSON-Schema** contract for every section, so an external agent or IDE knows exactly what props each section takes.
+- **`section-vocabulary` skill** — a packaged skill that teaches an external AI agent the whitelisted section types **and** the data-not-code doctrine *before* it generates, so its output is valid and on-brand. It ships in every scaffolded shop.
+
+## Build with it — the builder tools
+
+The `magic.plan_page` / `magic.generate_page` MCP tools let an agent propose a page as a **plan of whitelisted section keys** with Zod-validated props. Publishing still goes through the confirm-gated `pages.set_layout`, so an agent can draft but never silently ship.
+
+## Discovery surfaces
+
+`llms.txt` gains a component-registry + "agentic design" block, and `/.well-known/mcp.json` points agents at the registry. Both are flag-gated, so a shop that hasn't enabled the registry doesn't advertise it.
+
+## Related
+
+- [Visual Builder](/docs/features/visual-builder) — the governed builder the agent tools drive
+- [MCP tools](/docs/api/mcp-tools) — the full tool registry + scopes
+- [Modern web platform](/docs/features/modern-web-platform) — the native-first foundation these atoms are built on

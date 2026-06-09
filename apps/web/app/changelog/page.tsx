@@ -16,6 +16,91 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.23.0',
+    date: 'June 2026',
+    title: 'The Page Mixer + the Apex flagship (engine v0.33.0)',
+    description:
+      'Content and design are orthogonal in Cartwright, so this release lets a shop mix a vertical Voice (kindergarten, carpenter, café…) with any palette-adaptive design and compose the page from swappable Parts — plus a much deeper premium-design layer: a design now owns every page, four breakthrough Pro elements, per-design webshop overrides, and Apex, a flagship super-pro storefront that composes all of it on one palette-adaptive page. Additive and default-off end to end — an existing shop is byte-identical until it opts in.',
+    icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Voice layer (genome) — the homepage hero + section copy now resolves through the Resolvable Genome, so a Voice can re-tone the whole page; the value-prop and feature cards are voiceable too. Gated by genomeResolve; every anchor equals the current brand copy, so flag-off is byte-identical.',
+      'Vertical / Voice presets — a verticals/ registry where a Voice carries the full vibe (identity + genome copy + palette + 3D scene), applied idempotently from /admin/verticals. The Page Mixer (mixer-preview) renders any Skin × Voice composition in the real storefront layout, noindex + double-gated.',
+      'Four recognizable premium designs — aerospace (cinematic deep-tech), halo (minimal product luxury), flux (vibrant gradient SaaS), drive (full-bleed automotive) — plus jungle, a friendly palette-adaptive site. A design now owns every page via the shell model (siteChrome + per-page contact/info/404 templates).',
+      'Four Pro elements (honor-system cartwrightPlus) — a build-your-own configurator (live price, :has(:checked), no JS), a scroll-cinema story (animation-timeline: view()), a 3D product showroom, and a before/after compare slider. Per-design webshop overrides (productCard + PDP) land too.',
+      'Apex — the flagship super-pro design: one palette-adaptive webshop homepage composing every breakthrough above, where every section and Pro element re-skins to your brand palette via applyPaletteAsTheme.',
+    ],
+  },
+  {
+    version: '3.22.0',
+    date: 'June 2026',
+    title: 'Design Slaraffenland — the design marketplace (engine v0.32.0)',
+    description:
+      'The premium-design marketplace foundation: a growing catalogue of code-built design packs, reusable three.js, design.md import and export/share, an agent-buildable design path, and a companion /designs marketplace on cartwright.app.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Five new code-built premium designs — engineered (dark-luxe agency, three.js GLSL aurora hero) as the flagship, plus editorial-ink, brutalist, nocturne (+3D) and meridian. Each a real designs/<slug>/ pack, English-first, locked theme, three.js opt-in.',
+      'A reusable three.js aurora scene + DesignHero wrapper so any pack gets a palette-driven 3D hero (inherits WebGL2 / reduced-motion / save-data gating).',
+      'design.md export / download + share — the missing half of design import: a serializer + an export API + a download button, so a shop can share a design. Plus a prompt → design pipeline and a cartwright-premium-design skill teaching agents to hand-build bespoke packs.',
+      'The cartwright.app /designs marketplace — a Figma-Community-style gallery with search + filter, per-design detail pages, build prompts, and a prompt library.',
+    ],
+  },
+  {
+    version: '3.21.0',
+    date: 'June 2026',
+    title: 'Motion & effects — pages that feel alive (engine v0.31.0)',
+    description:
+      'A flag-gated layer of modern CSS scroll-driven animations (compositor-thread, no JS jank), an animated palette-adaptive aurora gradient + glassmorphism, and an optional per-section motion vocabulary the Visual Builder can assign. Default-off and canary-safe end to end.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Motion foundation — a new motionEffects flag + a motionPreset block in brand.config.ts (subtle | bold | off). Off ⇒ no rule matches ⇒ byte-identical render.',
+      'Per-section effect vocabulary — a governed enum (fade-up | fade | zoom-in | slide-left | slide-right | parallax | none) the Magic Builder planner can assign per section.',
+      'An animated Aurora hero — aurora-site wraps its hero in the animated gradient with the three.js hero behind it as an opt-in; the gradient is the guaranteed fallback.',
+      'Every animation is compositor-only, inside prefers-reduced-motion: no-preference, with scroll-driven effects behind an @supports guard — unsupported browsers stay static.',
+    ],
+  },
+  {
+    version: '3.20.0',
+    date: 'June 2026',
+    title: 'Agent-optimized design — read it, build with it, cite it (engine v0.30.0)',
+    description:
+      'The design system (Aurora + the Magic Builder + the section catalogue) is now optimised for AI agents end to end: they can read it (registry + schemas), build with it (the builder tools), and cite it (Schema.org JSON-LD).',
+    icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Section JSON-LD — pages built from a section layout now emit Schema.org structured data server-side (faq → FAQPage, howItWorks → HowTo, galleryGrid → ImageGallery, testimonials → Review, pricingTable → ItemList) so AI search engines can cite them. Honest by construction — no fabricated ratings or prices.',
+      'An installable component registry — /api/registry serves real, MIT-licensed, npx shadcn add-able TSX for a curated subset of section atoms, alongside the always-on prop JSON-Schema for every section.',
+      'A section-vocabulary skill teaching external AI agents the whitelisted section types + the data-not-code doctrine before they generate, so their output is valid and on-brand.',
+      'Discovery surfaces (llms.txt, /.well-known/mcp.json) advertise the new capabilities — flag-gated so nothing links a disabled endpoint.',
+    ],
+  },
+  {
+    version: '3.19.0',
+    date: 'June 2026',
+    title: 'Magic Builder + the Aurora flagship design (engine v0.29.0)',
+    description:
+      'Two big additions: a prompt-driven page builder, and a new flagship default design system — built on one shared set of section atoms, so the two are the same components.',
+    icon: <Pencil className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Magic Builder (magicBuilder, default-off, admin-only) — describe a page in plain language and it builds itself, section by section, live in the Visual Builder preview. The prompt can only emit a plan of whitelisted section keys, each filled by AI with Zod-validated props — the model never picks a tag, colour or font. Output lives as governed, audited, one-click-revertible data, never code on disk.',
+      'A ~20-section curated catalogue (hero, value-props, feature-grid, how-it-works, testimonials, pricing-table, FAQ, gallery, CTA…) — client-safe, accessible, and shared by both the builder and the new default design.',
+      'Aurora — the new flagship default design for both website (aurora-site) and webshop (aurora-shop), composed from the catalogue and palette-adaptive: one design renders every brand in its own colours (applyPaletteAsTheme), retiring the old "every webshop looks the same" default.',
+      'A public, shadcn-compatible component registry (/api/registry) exposing each section\'s prop JSON-Schema so external AI agents and IDEs can target Cartwright sections.',
+    ],
+  },
+  {
+    version: '3.18.0',
+    date: 'June 2026',
+    title: 'Admin, restructured & re-skinned + bulletproof first-run (engine v0.26.0–v0.28.0)',
+    description:
+      'A run of admin + developer-experience releases: the admin sidebar becomes a calm, grouped information architecture; the whole /admin backend is re-skinned to a clean light Shopify-Polaris look; and first-run database setup is made deterministic so onboarding can never get stuck. Admin-only and storefront-neutral — the three canaries render identically.',
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Grouped admin IA (v0.26.0) — the flat ~40-item sidebar becomes two pinned items above seven ordered, collapsible groups (Sales · Content · Intelligence · Marketing · Connections · Appearance · System). Nav is a single typed source of truth; a group auto-hides when all its items are flag-gated off. No schema change, default-equivalent.',
+      'A modern admin skin (v0.28.0) — a scoped [data-admin-skin] token override re-skins every admin surface to a light Polaris palette (white cards, fine borders, dense tables, a sticky top bar with ⌘K global search) without renaming a single storefront token and with zero storefront impact. ~58 admin pages migrated to shared primitives.',
+      'Bulletproof first-run DB setup (v0.27.0–v0.27.1) — a new pnpm db:setup routes around an intermittent Prisma 7.8 schema-engine flake by applying the schema via the libSQL client, so a brand-new shop reaches admin login with no manual recovery. Postgres-aware, fails loudly on real errors, and re-running never wipes data.',
+      'pnpm admin:reset — recover a lost or drifted admin password (resets only the password, keeps all data, and rewrites .admin-credentials so it always matches the DB).',
+    ],
+  },
+  {
     version: '3.17.0',
     date: 'June 2026',
     title: 'Agentic commerce, completed: buy-in-ChatGPT, agent identity-linking & in-browser tools (engine v0.25.0)',
