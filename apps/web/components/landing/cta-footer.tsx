@@ -9,6 +9,7 @@ const docsCols = [
     links: [
       { label: 'Designs', href: '/designs' },
       { label: 'Voices', href: '/verticals' },
+      { label: 'Looks', href: '/looks' },
       { label: 'Parts', href: '/parts' },
       { label: '3D scenes', href: '/scenes' },
       { label: 'Pro', href: '/pro' },
