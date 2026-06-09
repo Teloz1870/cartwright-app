@@ -1,4 +1,20 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import {
+  Palette,
+  Mic,
+  Wand2,
+  Blocks,
+  Box,
+  Sparkles,
+  Image as ImageIcon,
+  GraduationCap,
+  Rocket,
+  Plug,
+  Briefcase,
+  GitCompare,
+  BookOpen,
+  History,
+} from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
 import { appName, gitConfig, isGithubPublic, social } from './shared';
 
@@ -9,17 +25,18 @@ export function baseOptions(): BaseLayoutProps {
       url: '/',
     },
     links: [
-      // Explore ▾ — the "what you build with" cluster (designs, voices, parts, 3D, Pro).
+      // Explore ▾ — the "what you build with" cluster (designs, voices, looks, parts, 3D, Pro).
       {
         type: 'menu',
         text: 'Explore',
         items: [
-          { text: 'Designs', url: '/designs', description: '24 whole-page design packs' },
-          { text: 'Voices', url: '/verticals', description: 'Re-tone any design for your industry' },
-          { text: 'Parts', url: '/parts', description: 'Swappable page sections' },
-          { text: '3D scenes', url: '/scenes', description: 'Live-Canvas WebGL heroes' },
-          { text: 'Pro', url: '/pro', description: 'Breakthrough premium elements' },
-          { text: 'Showcase', url: '/showcase', description: 'Real sites built with Cartwright' },
+          { icon: <Palette className="size-4" />, text: 'Designs', url: '/designs', description: '24 whole-page design packs' },
+          { icon: <Mic className="size-4" />, text: 'Voices', url: '/verticals', description: 'Re-tone any design for your industry' },
+          { icon: <Wand2 className="size-4" />, text: 'Looks', url: '/looks', description: 'Curated Skin × Voice combinations' },
+          { icon: <Blocks className="size-4" />, text: 'Parts', url: '/parts', description: 'Swappable page sections' },
+          { icon: <Box className="size-4" />, text: '3D scenes', url: '/scenes', description: 'Live-Canvas WebGL heroes' },
+          { icon: <Sparkles className="size-4" />, text: 'Pro', url: '/pro', description: 'Breakthrough premium elements' },
+          { icon: <ImageIcon className="size-4" />, text: 'Showcase', url: '/showcase', description: 'Real sites built with Cartwright' },
         ],
       },
       // Docs — promoted to a direct, prominent top-level item.
@@ -29,13 +46,13 @@ export function baseOptions(): BaseLayoutProps {
         type: 'menu',
         text: 'Resources',
         items: [
-          { text: 'Learn', url: '/learn', description: 'Guides & deep-dives' },
-          { text: 'Onboarding', url: '/onboarding', description: 'From zero to live' },
-          { text: 'Integrations', url: '/integrations', description: 'Stripe, Resend, Turso & more' },
-          { text: 'Use cases', url: '/use-cases', description: 'Cartwright by industry' },
-          { text: 'Compare', url: '/compare', description: 'Cartwright vs the alternatives' },
-          { text: 'Glossary', url: '/glossary', description: 'Terms, defined' },
-          { text: 'Changelog', url: '/changelog', description: "What's new in the engine" },
+          { icon: <GraduationCap className="size-4" />, text: 'Learn', url: '/learn', description: 'Guides & deep-dives' },
+          { icon: <Rocket className="size-4" />, text: 'Onboarding', url: '/onboarding', description: 'From zero to live' },
+          { icon: <Plug className="size-4" />, text: 'Integrations', url: '/integrations', description: 'Stripe, Resend, Turso & more' },
+          { icon: <Briefcase className="size-4" />, text: 'Use cases', url: '/use-cases', description: 'Cartwright by industry' },
+          { icon: <GitCompare className="size-4" />, text: 'Compare', url: '/compare', description: 'Cartwright vs the alternatives' },
+          { icon: <BookOpen className="size-4" />, text: 'Glossary', url: '/glossary', description: 'Terms, defined' },
+          { icon: <History className="size-4" />, text: 'Changelog', url: '/changelog', description: "What's new in the engine" },
         ],
       },
       { text: 'Pricing', url: '/pricing' },
