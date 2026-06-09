@@ -53,7 +53,6 @@ export function FlagshipSpotlight() {
         <div className="relative">
           <div className="rounded-xl border border-cw-stone-200 dark:border-cw-stone-800 bg-cw-paper dark:bg-cw-stone-900 shadow-2xl shadow-cw-stone-900/10 overflow-hidden">
             <video
-              src="/designs/fable.webm"
               poster="/designs/fable.jpg"
               autoPlay
               muted
@@ -61,6 +60,7 @@ export function FlagshipSpotlight() {
               playsInline
               className="block w-full"
             >
+              <source src="/designs/fable.webm" type="video/webm" />
               <source src="/designs/fable.mp4" type="video/mp4" />
             </video>
           </div>
