@@ -80,13 +80,15 @@ jobs:
           # Escape regex specials in tag (semver dots etc.) — sed treats . as literal in the
           # replacement string, so only the search pattern needs care. The search is anchored
           # so we're not at risk of matching anything else.
-          # DEFAULT_REF lives in two files (index.ts = scaffolder, design-install.ts
-          # = `cartwright design install`). Bump both so they never drift.
+          # DEFAULT_REF lives in three files (index.ts = scaffolder, design-install.ts
+          # = `cartwright design install`, vertical-install.ts = `cartwright vertical
+          # install`). Bump all three so they never drift.
           sed -i -E 's|^const DEFAULT_REF = "[^"]+";|const DEFAULT_REF = "'"$LATEST"'";|' \
-            apps/cli/src/index.ts apps/cli/src/design-install.ts
-          # Sanity check the substitution actually happened in both:
+            apps/cli/src/index.ts apps/cli/src/design-install.ts apps/cli/src/vertical-install.ts
+          # Sanity check the substitution actually happened in all three:
           grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/index.ts
           grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/design-install.ts
+          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/vertical-install.ts
 
       - name: Add changeset
         if: steps.resolve.outputs.skip != 'true'
@@ -125,6 +127,7 @@ jobs:
           add-paths: |
             apps/cli/src/index.ts
             apps/cli/src/design-install.ts
+            apps/cli/src/vertical-install.ts
             .changeset/template-bump-*.md
 
       - name: Summary

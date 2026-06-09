@@ -25,9 +25,9 @@ import pc from "picocolors";
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 
 // Keep DEFAULT_REF in sync with src/index.ts + design-install.ts — the
-// bump-template-ref workflow seds them on each template release. Note: verticals
-// shipped after v0.32.0, so until the next tag, install with `--ref next`.
-const DEFAULT_REF = "v0.32.0";
+// bump-template-ref workflow seds all three on each template release. Verticals
+// first shipped in v0.33.0 (the registry exists from that tag onward).
+const DEFAULT_REF = "v0.33.0";
 const REF_ALIASES: Record<string, string> = { stable: DEFAULT_REF, next: "next" };
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
