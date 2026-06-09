@@ -10,6 +10,7 @@ export const DESIGNS_WITH_VIDEO = new Set<string>([
   'saas-dark',
   'aurora-site',
   'aurora-shop',
+  'fable',
 ]);
 
 export function hasVideo(slug: string): boolean {

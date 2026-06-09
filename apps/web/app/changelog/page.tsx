@@ -16,6 +16,21 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.24.0',
+    date: 'June 2026',
+    title: 'FABLE — the metamorphosis flagship',
+    description:
+      'A launch-day flagship celebrating Claude Fable 5: a 25th design where an instanced flock of 3D butterflies flutters behind an airy ivory story page, paired with its own launch-announcement Voice and a curated Look. Premium, website-mode, and palette-adaptive end to end — the whole flock and every section re-tone to your brand.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'A new butterflies 3D Live-Canvas scene — an instanced, palette-reactive flock with procedural wings, flap/glide motion, pointer scatter, and a reading-clearing around the headline. Inherits the WebGL2 / reduced-motion / save-data gating like every scene.',
+      'The FABLE design (premium, website-mode) — ivory + morpho violet-blue, a Fraunces serif display hero over the flock, a scroll-cinema metamorphosis timeline (animation-timeline: view(), caterpillar → chrysalis → imago), a stat band, a safeguards story and a CTA.',
+      'The fable Voice — the Fable 5 launch story as a vertical preset: metamorphic, luminous, precise, with its own genome copy, palette, and the butterflies scene.',
+      'The Metamorphosis Look — the curated Skin × Voice pairing: the FABLE design carrying its own launch-announcement Voice, in your brand colours.',
+      'Gallery hover-video — the /designs gallery now plays FABLE’s recorded scroll-through on hover (webm + mp4 + poster), like the other animated heroes.',
+    ],
+  },
+  {
     version: '3.23.0',
     date: 'June 2026',
     title: 'The Page Mixer + the Apex flagship (engine v0.33.0)',

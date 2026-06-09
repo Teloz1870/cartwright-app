@@ -44,6 +44,8 @@ export const DESIGN_PROMPTS: Record<string, string> = {
     "Build me a Cartwright webshop design like 'hoptify': a clean, familiar big-box-webshop look — but with a fresh signature green and a wink. Friendly, conversion-first, broadly familiar. English copy.",
   apex:
     "Build me a Cartwright flagship super-pro webshop design 'apex': a single palette-adaptive homepage (cw-* atoms + applyPaletteAsTheme, default luxe violet) that composes everything — a 3D Live-Canvas aurora hero, a rotatable 3D product showroom with a spec rail, value props, a build-your-own configurator with a live preview + live price (:has(:checked), no JS), the real featured-product grid, a scroll-cinema story (animation-timeline: view()), and a closing CTA. Every section AND every Pro element re-skins to the brand palette. Webshop mode, premium, mixable. English copy.",
+  fable:
+    "Build me a Cartwright website-mode flagship design 'fable': a palette-adaptive ivory story page (cw-* atoms + applyPaletteAsTheme, default morpho violet-blue) — an instanced 3D Live-Canvas butterfly flock (procedural wings, flap/glide, pointer scatter, a reading-clearing around the headline) behind a Fraunces serif display hero, a scroll-cinema metamorphosis timeline (animation-timeline: view(), caterpillar → chrysalis → imago), a stat band, a safeguards story, pricing and a CTA — every section and the flock re-skinning to the brand palette. Website mode, premium. English copy.",
   aerospace:
     "Build me a Cartwright design pack 'aerospace': a cinematic aerospace / mission-control website — near-black space canvas, one ice-blue accent, a dry technical voice. A pure-CSS starfield hero, condensed uppercase headlines, monospace telemetry chips, a vehicle/systems 'fleet' grid, and a countdown mission-sequence timeline. Locked dark theme, no 3D. English copy.",
   halo:
@@ -90,6 +92,7 @@ export const PROMPT_LIBRARY: LibraryPrompt[] = [
     prompt:
       "Give my Cartwright homepage a premium 3D hero: render <DesignHero className=\"absolute inset-0 -z-10\" intensity={0.7} /> behind the hero content, with a CSS gradient fallback behind it, and keep prefers-reduced-motion working. Colours come from the brand palette automatically.",
   },
+  { title: "Butterfly metamorphosis story page", category: "3D hero", prompt: DESIGN_PROMPTS.fable, designSlug: "fable" },
   {
     title: "Custom bespoke shader hero",
     category: "3D hero",

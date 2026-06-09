@@ -87,4 +87,12 @@ export const LOOKS: LookEntry[] = [
     designSlug: 'jungle',
     voiceSlug: 'cafe',
   },
+  {
+    slug: 'metamorphosis',
+    name: 'Metamorphosis',
+    description:
+      'The full launch composition — the FABLE skin with its own launch-announcement voice. Butterflies in your brand colours.',
+    designSlug: 'fable',
+    voiceSlug: 'fable',
+  },
 ];
