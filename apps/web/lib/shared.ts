@@ -16,7 +16,11 @@ export const social = {
   github: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   discord: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   npm: 'https://www.npmjs.com/package/create-cartwright',
+  x: 'https://x.com/CartwrightApp',
 };
+
+/** X / Twitter handle — used for `twitter.site` / `twitter.creator` metadata. */
+export const xHandle = '@CartwrightApp';
 
 export const isGithubPublic =
   process.env.NEXT_PUBLIC_GITHUB_PUBLIC === 'true';

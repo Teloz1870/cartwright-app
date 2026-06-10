@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { xHandle } from './shared';
 
 /** The relative /og card URL for a title+description (resolved against metadataBase). */
 export function ogImageUrl(title: string, description: string): string {
@@ -29,8 +30,11 @@ export function pageOg(
       description,
       images: [{ url, width: 1200, height: 630, alt: title }],
     },
+    // Page-level `twitter` replaces the root layout's block wholesale in
+    // Next's metadata merge — so the site handle must be repeated here.
     twitter: {
       card: 'summary_large_image',
+      site: xHandle,
       title,
       description,
       images: [url],
