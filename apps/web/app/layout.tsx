@@ -3,6 +3,7 @@ import './global.css';
 import { Geist, Geist_Mono } from 'next/font/google';
 import SearchDialog from '@/components/search';
 import JsonLd from '@/components/JsonLd';
+import { xHandle } from '@/lib/shared';
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -34,6 +35,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: xHandle,
+    creator: xHandle,
     title: 'cartwright — the AI-first webshop template you actually own',
     description:
       'A production-shaped Next.js commerce template with an AI-native admin, MCP server, and Stripe checkout.',
@@ -53,6 +56,7 @@ const organizationJsonLd = {
   sameAs: [
     'https://github.com/Teloz1870/cartwright-template',
     'https://www.npmjs.com/package/create-cartwright',
+    'https://x.com/CartwrightApp',
   ],
 };
 

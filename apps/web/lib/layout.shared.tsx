@@ -17,6 +17,7 @@ import {
   History,
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
+import { XLogo } from '@/components/x-logo';
 import { appName, gitConfig, isGithubPublic, social } from './shared';
 
 export function baseOptions(): BaseLayoutProps {
@@ -65,6 +66,15 @@ export function baseOptions(): BaseLayoutProps {
         text: 'Get started',
         url: '/docs/getting-started/quick-start',
         secondary: true,
+      },
+      // Official X profile — icon button in the secondary strip, next to GitHub.
+      {
+        type: 'icon',
+        label: 'X / Twitter',
+        icon: <XLogo className="size-4" />,
+        text: 'X / Twitter',
+        url: social.x,
+        external: true,
       },
     ],
     githubUrl: isGithubPublic ? social.github : undefined,

@@ -1,9 +1,13 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Wordmark } from '@/components/wordmark';
+import { XLogo } from '@/components/x-logo';
 import { ButtonLink } from '@/components/ui/button';
 import { contactEmail, isGithubPublic, social } from '@/lib/shared';
 
-const docsCols = [
+type FooterLink = { label: string; href: string; icon?: ReactNode };
+
+const docsCols: { heading: string; links: FooterLink[] }[] = [
   {
     heading: 'Explore',
     links: [
@@ -40,6 +44,11 @@ const docsCols = [
     links: [
       { label: 'Discord', href: social.discord },
       { label: 'GitHub', href: social.github },
+      {
+        label: 'X / Twitter',
+        href: social.x,
+        icon: <XLogo className="size-3.5" />,
+      },
       { label: 'npm', href: social.npm },
       { label: 'Contact', href: '/contact' },
       { label: 'Security', href: '/security' },
@@ -123,7 +132,14 @@ export function SiteFooter() {
                     href={l.href}
                     className="text-cw-stone-700 dark:text-cw-stone-300 hover:text-cw-terracotta transition-colors"
                   >
-                    {l.label}
+                    {l.icon ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        {l.icon}
+                        {l.label}
+                      </span>
+                    ) : (
+                      l.label
+                    )}
                   </Link>
                 </li>
               ))}
