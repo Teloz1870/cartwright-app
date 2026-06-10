@@ -1,6 +1,6 @@
 {
-  "$schema": "cartwright-marketplace-manifest-v2",
-  "version": "0.33.0",
+  "$schema": "cartwright-marketplace-manifest-v3",
+  "version": "0.34.0",
   "designs": [
     {
       "slug": "aurora-site",
@@ -896,63 +896,631 @@
       "name": "Canopy",
       "description": "The friendly flagship: jungle's organic, atom-composed layout wearing a kindergarten's warm green Voice.",
       "designSlug": "jungle",
-      "voiceSlug": "kindergarten"
+      "voiceSlug": "kindergarten",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Canopy",
+        "description": "The friendly flagship: jungle's organic, atom-composed layout wearing a kindergarten's warm green Voice.",
+        "skin": "jungle",
+        "palette": {
+          "accent": "#16a34a",
+          "accentDeep": "#15803d",
+          "cream": "#f6fef0",
+          "sand": "#dcfce7",
+          "ink": "#13251a",
+          "muted": "#6f8e7c"
+        },
+        "voice": {
+          "identity": {
+            "tone": "warm",
+            "audience": "consumer",
+            "formality": "casual",
+            "vibe": "playful, safe, nurturing"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Now enrolling",
+            "home.hero.headline": "A warm place to play, learn, and grow",
+            "home.hero.tagline": "A safe, joyful day for every child — caring teachers, plenty of outdoor play, and parents always in the loop.",
+            "home.hero.cta": "Book a visit",
+            "home.valueProps.title": "Why families choose us",
+            "home.valueProps.description": "Small groups, big hearts, and a day built around play, nature, and curiosity.",
+            "home.features.title": "A day full of wonder",
+            "home.features.description": "From morning circle to muddy puddles — every day is planned to help little ones thrive.",
+            "home.ctaFooter.title": "Come say hello",
+            "home.ctaFooter.description": "Book a visit and see the smiles for yourself — we'd love to meet your family.",
+            "home.ctaFooter.cta": "Book a visit",
+            "home.valueProps.items": "[{\"title\":\"Caring teachers\",\"body\":\"Every child is known by name — warm, patient, and always present.\"},{\"title\":\"Learning through play\",\"body\":\"Outdoor time, art, music, and plenty of room for curiosity.\"},{\"title\":\"Always in the loop\",\"body\":\"Daily photos and notes so you never miss a moment of their day.\"}]",
+            "home.features.items": "[{\"title\":\"A gentle daily rhythm\",\"body\":\"Circle time, free play, outdoor time, rest, and snacks.\"},{\"title\":\"Room to explore\",\"body\":\"Art, music, water play, and a garden to get muddy in.\"},{\"title\":\"Grown-ups who care\",\"body\":\"A high staff ratio so every child gets real attention.\"}]"
+          }
+        },
+        "scene": "waves"
+      }
     },
     {
       "slug": "slow-mornings",
       "name": "Slow Mornings",
       "description": "Aurora's airy website, re-toned cozy and artisanal for a neighbourhood café.",
       "designSlug": "aurora-site",
-      "voiceSlug": "cafe"
+      "voiceSlug": "cafe",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Slow Mornings",
+        "description": "Aurora's airy website, re-toned cozy and artisanal for a neighbourhood café.",
+        "skin": "aurora-site",
+        "palette": {
+          "accent": "#c2410c",
+          "accentDeep": "#7c2d12",
+          "cream": "#fdf6ee",
+          "sand": "#ece0d0",
+          "ink": "#2a1c14",
+          "muted": "#8a7561"
+        },
+        "voice": {
+          "identity": {
+            "tone": "warm",
+            "audience": "consumer",
+            "formality": "casual",
+            "vibe": "cozy, slow, artisanal"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Freshly roasted",
+            "home.hero.headline": "Your neighbourhood for slow mornings",
+            "home.hero.tagline": "Single-origin coffee, warm pastries, and a corner that feels like home — pull up a chair and stay a while.",
+            "home.hero.cta": "See the menu",
+            "home.valueProps.title": "Made with care",
+            "home.valueProps.description": "Beans roasted in small batches, milk from local farms, and baristas who know your order.",
+            "home.features.title": "On the menu",
+            "home.features.description": "Espresso, filter, and seasonal specials — plus cakes baked fresh in our own kitchen every morning.",
+            "home.ctaFooter.title": "Come for a cup",
+            "home.ctaFooter.description": "Find us on the corner, or order ahead and skip the queue — your table is waiting.",
+            "home.ctaFooter.cta": "Find us",
+            "home.valueProps.items": "[{\"title\":\"Small-batch roasts\",\"body\":\"Beans roasted weekly so every cup tastes bright and fresh.\"},{\"title\":\"Baked in-house\",\"body\":\"Cakes and pastries from our own kitchen every morning.\"},{\"title\":\"Your local corner\",\"body\":\"Comfy chairs, free wifi, and baristas who remember your order.\"}]",
+            "home.features.items": "[{\"title\":\"Coffee, done right\",\"body\":\"Espresso, filter, and seasonal specials all day.\"},{\"title\":\"Fresh from the oven\",\"body\":\"Cakes, pastries, and brunch made in-house.\"},{\"title\":\"A place to linger\",\"body\":\"Plenty of seats, plugs, and good light.\"}]"
+          }
+        },
+        "scene": "aurora"
+      }
     },
     {
       "slug": "the-workshop",
       "name": "The Workshop",
       "description": "Studio's warm-tech confidence, dressed as an honest building trade you'd trust with your home.",
       "designSlug": "studio",
-      "voiceSlug": "carpenter"
+      "voiceSlug": "carpenter",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "The Workshop",
+        "description": "Studio's warm-tech confidence, dressed as an honest building trade you'd trust with your home.",
+        "skin": "studio",
+        "palette": {
+          "accent": "#b45309",
+          "accentDeep": "#78350f",
+          "cream": "#fdf6ec",
+          "sand": "#efe1cf",
+          "ink": "#241810",
+          "muted": "#8a6f57"
+        },
+        "voice": {
+          "identity": {
+            "tone": "professional",
+            "audience": "consumer",
+            "formality": "balanced",
+            "vibe": "solid, honest, handcrafted"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Local & trusted",
+            "home.hero.headline": "Craftsmanship you can stand on",
+            "home.hero.tagline": "From kitchens to decks, we build it solid, on time, and on budget — work that lasts for decades, not seasons.",
+            "home.hero.cta": "Get a quote",
+            "home.valueProps.title": "Built to last",
+            "home.valueProps.description": "Honest pricing, clean sites, and joinery we're proud to put our name on.",
+            "home.features.title": "What we build",
+            "home.features.description": "Kitchens, extensions, decks, and bespoke fit-outs — fully finished and properly guaranteed.",
+            "home.ctaFooter.title": "Let's build it",
+            "home.ctaFooter.description": "Tell us about your project and we'll send a clear, no-surprises quote within days.",
+            "home.ctaFooter.cta": "Get a quote",
+            "home.valueProps.items": "[{\"title\":\"Honest quotes\",\"body\":\"Clear pricing up front — no surprises when the invoice arrives.\"},{\"title\":\"Clean, safe sites\",\"body\":\"We respect your home and tidy up at the end of every day.\"},{\"title\":\"Guaranteed work\",\"body\":\"Built properly and backed by a written guarantee.\"}]",
+            "home.features.items": "[{\"title\":\"Kitchens & joinery\",\"body\":\"Bespoke kitchens, wardrobes, and built-in storage.\"},{\"title\":\"Extensions & decks\",\"body\":\"From garden decks to full single-storey extensions.\"},{\"title\":\"Repairs & fit-outs\",\"body\":\"Doors, floors, and skirting — finished properly.\"}]"
+          }
+        },
+        "scene": "wireframe"
+      }
     },
     {
       "slug": "quiet-luxe",
       "name": "Quiet Luxe",
       "description": "Calm, polished Aurora for a salon or spa — relaxed luxury that makes booking feel like a treat.",
       "designSlug": "aurora-site",
-      "voiceSlug": "salon"
+      "voiceSlug": "salon",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Quiet Luxe",
+        "description": "Calm, polished Aurora for a salon or spa — relaxed luxury that makes booking feel like a treat.",
+        "skin": "aurora-site",
+        "palette": {
+          "accent": "#c9a36a",
+          "accentDeep": "#9a7b46",
+          "cream": "#faf7f2",
+          "sand": "#ece5db",
+          "ink": "#1b1a1c",
+          "muted": "#8a8079"
+        },
+        "voice": {
+          "identity": {
+            "tone": "luxurious",
+            "audience": "consumer",
+            "formality": "balanced",
+            "vibe": "calm, polished, indulgent"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "By appointment",
+            "home.hero.headline": "Look good, feel even better",
+            "home.hero.tagline": "Expert cuts, colour, and care in a calm, unhurried space — leave looking and feeling like the best version of you.",
+            "home.hero.cta": "Book now",
+            "home.valueProps.title": "Your time, your style",
+            "home.valueProps.description": "Senior stylists, premium products, and a relaxed chair that's all yours.",
+            "home.features.title": "Our services",
+            "home.features.description": "Cut, colour, balayage, and treatments — tailored to you in a single, unhurried visit.",
+            "home.ctaFooter.title": "Treat yourself",
+            "home.ctaFooter.description": "Book your chair online in seconds and let us take care of the rest.",
+            "home.ctaFooter.cta": "Book now",
+            "home.valueProps.items": "[{\"title\":\"Senior stylists\",\"body\":\"Experienced hands who listen carefully before they cut.\"},{\"title\":\"Premium products\",\"body\":\"Salon-grade care that's kind to your hair and your skin.\"},{\"title\":\"Unhurried time\",\"body\":\"Your chair is yours — no rushing, just results you'll love.\"}]",
+            "home.features.items": "[{\"title\":\"Cut & style\",\"body\":\"Precision cuts and blow-dries for every hair type.\"},{\"title\":\"Colour & balayage\",\"body\":\"Rich colour, soft balayage, and gloss treatments.\"},{\"title\":\"Care & treatments\",\"body\":\"Deep-conditioning and scalp treatments to finish.\"}]"
+          }
+        },
+        "scene": "orb"
+      }
     },
     {
       "slug": "the-roastery",
       "name": "The Roastery",
       "description": "A café that sells its beans: Aurora's clean storefront in a warm, freshly-roasted Voice.",
       "designSlug": "aurora-shop",
-      "voiceSlug": "cafe"
+      "voiceSlug": "cafe",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "The Roastery",
+        "description": "A café that sells its beans: Aurora's clean storefront in a warm, freshly-roasted Voice.",
+        "skin": "aurora-shop",
+        "palette": {
+          "accent": "#c2410c",
+          "accentDeep": "#7c2d12",
+          "cream": "#fdf6ee",
+          "sand": "#ece0d0",
+          "ink": "#2a1c14",
+          "muted": "#8a7561"
+        },
+        "voice": {
+          "identity": {
+            "tone": "warm",
+            "audience": "consumer",
+            "formality": "casual",
+            "vibe": "cozy, slow, artisanal"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Freshly roasted",
+            "home.hero.headline": "Your neighbourhood for slow mornings",
+            "home.hero.tagline": "Single-origin coffee, warm pastries, and a corner that feels like home — pull up a chair and stay a while.",
+            "home.hero.cta": "See the menu",
+            "home.valueProps.title": "Made with care",
+            "home.valueProps.description": "Beans roasted in small batches, milk from local farms, and baristas who know your order.",
+            "home.features.title": "On the menu",
+            "home.features.description": "Espresso, filter, and seasonal specials — plus cakes baked fresh in our own kitchen every morning.",
+            "home.ctaFooter.title": "Come for a cup",
+            "home.ctaFooter.description": "Find us on the corner, or order ahead and skip the queue — your table is waiting.",
+            "home.ctaFooter.cta": "Find us",
+            "home.valueProps.items": "[{\"title\":\"Small-batch roasts\",\"body\":\"Beans roasted weekly so every cup tastes bright and fresh.\"},{\"title\":\"Baked in-house\",\"body\":\"Cakes and pastries from our own kitchen every morning.\"},{\"title\":\"Your local corner\",\"body\":\"Comfy chairs, free wifi, and baristas who remember your order.\"}]",
+            "home.features.items": "[{\"title\":\"Coffee, done right\",\"body\":\"Espresso, filter, and seasonal specials all day.\"},{\"title\":\"Fresh from the oven\",\"body\":\"Cakes, pastries, and brunch made in-house.\"},{\"title\":\"A place to linger\",\"body\":\"Plenty of seats, plugs, and good light.\"}]"
+          }
+        },
+        "scene": "aurora"
+      }
     },
     {
       "slug": "atelier",
       "name": "Atelier",
       "description": "The flagship super-pro storefront (Apex) carrying a champagne-gold spa Voice — a complete luxe shop.",
       "designSlug": "apex",
-      "voiceSlug": "salon"
+      "voiceSlug": "salon",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Atelier",
+        "description": "The flagship super-pro storefront (Apex) carrying a champagne-gold spa Voice — a complete luxe shop.",
+        "skin": "apex",
+        "palette": {
+          "accent": "#c9a36a",
+          "accentDeep": "#9a7b46",
+          "cream": "#faf7f2",
+          "sand": "#ece5db",
+          "ink": "#1b1a1c",
+          "muted": "#8a8079"
+        },
+        "voice": {
+          "identity": {
+            "tone": "luxurious",
+            "audience": "consumer",
+            "formality": "balanced",
+            "vibe": "calm, polished, indulgent"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "By appointment",
+            "home.hero.headline": "Look good, feel even better",
+            "home.hero.tagline": "Expert cuts, colour, and care in a calm, unhurried space — leave looking and feeling like the best version of you.",
+            "home.hero.cta": "Book now",
+            "home.valueProps.title": "Your time, your style",
+            "home.valueProps.description": "Senior stylists, premium products, and a relaxed chair that's all yours.",
+            "home.features.title": "Our services",
+            "home.features.description": "Cut, colour, balayage, and treatments — tailored to you in a single, unhurried visit.",
+            "home.ctaFooter.title": "Treat yourself",
+            "home.ctaFooter.description": "Book your chair online in seconds and let us take care of the rest.",
+            "home.ctaFooter.cta": "Book now",
+            "home.valueProps.items": "[{\"title\":\"Senior stylists\",\"body\":\"Experienced hands who listen carefully before they cut.\"},{\"title\":\"Premium products\",\"body\":\"Salon-grade care that's kind to your hair and your skin.\"},{\"title\":\"Unhurried time\",\"body\":\"Your chair is yours — no rushing, just results you'll love.\"}]",
+            "home.features.items": "[{\"title\":\"Cut & style\",\"body\":\"Precision cuts and blow-dries for every hair type.\"},{\"title\":\"Colour & balayage\",\"body\":\"Rich colour, soft balayage, and gloss treatments.\"},{\"title\":\"Care & treatments\",\"body\":\"Deep-conditioning and scalp treatments to finish.\"}]"
+          }
+        },
+        "scene": "orb"
+      }
     },
     {
       "slug": "trusted-local",
       "name": "Trusted Local",
       "description": "The same carpenter Voice on a different Skin — Aurora instead of Studio. One Voice, two looks.",
       "designSlug": "aurora-site",
-      "voiceSlug": "carpenter"
+      "voiceSlug": "carpenter",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Trusted Local",
+        "description": "The same carpenter Voice on a different Skin — Aurora instead of Studio. One Voice, two looks.",
+        "skin": "aurora-site",
+        "palette": {
+          "accent": "#b45309",
+          "accentDeep": "#78350f",
+          "cream": "#fdf6ec",
+          "sand": "#efe1cf",
+          "ink": "#241810",
+          "muted": "#8a6f57"
+        },
+        "voice": {
+          "identity": {
+            "tone": "professional",
+            "audience": "consumer",
+            "formality": "balanced",
+            "vibe": "solid, honest, handcrafted"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Local & trusted",
+            "home.hero.headline": "Craftsmanship you can stand on",
+            "home.hero.tagline": "From kitchens to decks, we build it solid, on time, and on budget — work that lasts for decades, not seasons.",
+            "home.hero.cta": "Get a quote",
+            "home.valueProps.title": "Built to last",
+            "home.valueProps.description": "Honest pricing, clean sites, and joinery we're proud to put our name on.",
+            "home.features.title": "What we build",
+            "home.features.description": "Kitchens, extensions, decks, and bespoke fit-outs — fully finished and properly guaranteed.",
+            "home.ctaFooter.title": "Let's build it",
+            "home.ctaFooter.description": "Tell us about your project and we'll send a clear, no-surprises quote within days.",
+            "home.ctaFooter.cta": "Get a quote",
+            "home.valueProps.items": "[{\"title\":\"Honest quotes\",\"body\":\"Clear pricing up front — no surprises when the invoice arrives.\"},{\"title\":\"Clean, safe sites\",\"body\":\"We respect your home and tidy up at the end of every day.\"},{\"title\":\"Guaranteed work\",\"body\":\"Built properly and backed by a written guarantee.\"}]",
+            "home.features.items": "[{\"title\":\"Kitchens & joinery\",\"body\":\"Bespoke kitchens, wardrobes, and built-in storage.\"},{\"title\":\"Extensions & decks\",\"body\":\"From garden decks to full single-storey extensions.\"},{\"title\":\"Repairs & fit-outs\",\"body\":\"Doors, floors, and skirting — finished properly.\"}]"
+          }
+        },
+        "scene": "wireframe"
+      }
     },
     {
       "slug": "garden-cafe",
       "name": "Garden Café",
       "description": "Jungle's playful structure carrying the café Voice's warm palette — the same Skin as Canopy, a different Voice.",
       "designSlug": "jungle",
-      "voiceSlug": "cafe"
+      "voiceSlug": "cafe",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Garden Café",
+        "description": "Jungle's playful structure carrying the café Voice's warm palette — the same Skin as Canopy, a different Voice.",
+        "skin": "jungle",
+        "palette": {
+          "accent": "#c2410c",
+          "accentDeep": "#7c2d12",
+          "cream": "#fdf6ee",
+          "sand": "#ece0d0",
+          "ink": "#2a1c14",
+          "muted": "#8a7561"
+        },
+        "voice": {
+          "identity": {
+            "tone": "warm",
+            "audience": "consumer",
+            "formality": "casual",
+            "vibe": "cozy, slow, artisanal"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Freshly roasted",
+            "home.hero.headline": "Your neighbourhood for slow mornings",
+            "home.hero.tagline": "Single-origin coffee, warm pastries, and a corner that feels like home — pull up a chair and stay a while.",
+            "home.hero.cta": "See the menu",
+            "home.valueProps.title": "Made with care",
+            "home.valueProps.description": "Beans roasted in small batches, milk from local farms, and baristas who know your order.",
+            "home.features.title": "On the menu",
+            "home.features.description": "Espresso, filter, and seasonal specials — plus cakes baked fresh in our own kitchen every morning.",
+            "home.ctaFooter.title": "Come for a cup",
+            "home.ctaFooter.description": "Find us on the corner, or order ahead and skip the queue — your table is waiting.",
+            "home.ctaFooter.cta": "Find us",
+            "home.valueProps.items": "[{\"title\":\"Small-batch roasts\",\"body\":\"Beans roasted weekly so every cup tastes bright and fresh.\"},{\"title\":\"Baked in-house\",\"body\":\"Cakes and pastries from our own kitchen every morning.\"},{\"title\":\"Your local corner\",\"body\":\"Comfy chairs, free wifi, and baristas who remember your order.\"}]",
+            "home.features.items": "[{\"title\":\"Coffee, done right\",\"body\":\"Espresso, filter, and seasonal specials all day.\"},{\"title\":\"Fresh from the oven\",\"body\":\"Cakes, pastries, and brunch made in-house.\"},{\"title\":\"A place to linger\",\"body\":\"Plenty of seats, plugs, and good light.\"}]"
+          }
+        },
+        "scene": "aurora"
+      }
     },
     {
       "slug": "metamorphosis",
       "name": "Metamorphosis",
       "description": "The full launch composition — the FABLE skin with its own launch-announcement voice. Butterflies in your brand colours.",
       "designSlug": "fable",
-      "voiceSlug": "fable"
+      "voiceSlug": "fable",
+      "composition": {
+        "schema": "cartwright-composition-v1",
+        "name": "Metamorphosis",
+        "description": "The full launch composition — the FABLE skin with its own launch-announcement voice. Butterflies in your brand colours.",
+        "skin": "fable",
+        "palette": {
+          "accent": "#4e4af2",
+          "accentDeep": "#2f2bb8",
+          "cream": "#faf7f0",
+          "sand": "#f0ebdf",
+          "ink": "#23201c",
+          "muted": "#7d776c"
+        },
+        "voice": {
+          "identity": {
+            "tone": "technical",
+            "audience": "general",
+            "formality": "balanced",
+            "vibe": "metamorphic, luminous, precise"
+          },
+          "genomeOverrides": {
+            "home.hero.eyebrow": "Introducing",
+            "home.hero.headline": "Meet Fable 5",
+            "home.hero.tagline": "Anthropic's most capable generally available model — a Mythos-class model made safe for general use, and state-of-the-art on nearly all tested AI benchmarks.",
+            "home.hero.cta": "Read the story",
+            "home.valueProps.title": "What Fable 5 brings",
+            "home.valueProps.description": "Capability, safety, and availability — the three facts of the launch, stated plainly.",
+            "home.features.title": "Three stages of becoming",
+            "home.features.description": "The scroll story in miniature: from the wild Mythos form, through the chrysalis of safeguards, to the model that takes wing.",
+            "home.ctaFooter.title": "Emerge with Fable 5",
+            "home.ctaFooter.description": "Launched June 9, 2026. Included on Pro, Max, Team, and Enterprise plans through June 22.",
+            "home.ctaFooter.cta": "Try Fable 5",
+            "home.valueProps.items": "[{\"title\":\"Capability, compounded\",\"body\":\"State-of-the-art on nearly all tested benchmarks — at Stripe it compressed months of engineering into days, and its novel protein-design hypotheses were preferred about 80% over prior models.\"},{\"title\":\"Safe by construction\",\"body\":\"Queries on cybersecurity, biology and chemistry, or distillation fall back to Claude Opus 4.8 — triggered in under 5% of sessions. 1,000+ hours of external red-teaming found no universal jailbreaks.\"},{\"title\":\"Available today\",\"body\":\"$10 per million input tokens, $50 per million output tokens. Included on Pro, Max, Team, and Enterprise plans through June 22.\"}]",
+            "home.features.items": "[{\"title\":\"Mythos, the wild form\",\"body\":\"The same underlying model with safeguards lifted in some areas — restricted to cyberdefenders and infrastructure partners via Project Glasswing, and selected biology researchers.\"},{\"title\":\"The chrysalis\",\"body\":\"A Mythos-class model made safe for general use: sensitive queries hand off to Claude Opus 4.8, and over a thousand hours of red-teaming found no universal jailbreaks.\"},{\"title\":\"Fable takes wing\",\"body\":\"Exceptional at software engineering, knowledge work, and vision — rebuilding web apps from screenshots and holding focus across millions of tokens with persistent memory.\"}]"
+          }
+        },
+        "scene": "butterflies"
+      }
+    }
+  ],
+  "chrome": [
+    {
+      "key": "studio-header",
+      "kind": "header",
+      "label": "Studio header",
+      "designSlug": "studio",
+      "mixable": true
+    },
+    {
+      "key": "studio-footer",
+      "kind": "footer",
+      "label": "Studio footer",
+      "designSlug": "studio",
+      "mixable": true
+    },
+    {
+      "key": "apex-header",
+      "kind": "header",
+      "label": "Apex header",
+      "designSlug": "apex",
+      "mixable": true
+    },
+    {
+      "key": "apex-footer",
+      "kind": "footer",
+      "label": "Apex footer",
+      "designSlug": "apex",
+      "mixable": true
+    },
+    {
+      "key": "jungle-header",
+      "kind": "header",
+      "label": "Jungle header",
+      "designSlug": "jungle",
+      "mixable": true
+    },
+    {
+      "key": "jungle-footer",
+      "kind": "footer",
+      "label": "Jungle footer",
+      "designSlug": "jungle",
+      "mixable": true
+    },
+    {
+      "key": "fable-header",
+      "kind": "header",
+      "label": "Fable header",
+      "designSlug": "fable",
+      "mixable": true
+    },
+    {
+      "key": "fable-footer",
+      "kind": "footer",
+      "label": "Fable footer",
+      "designSlug": "fable",
+      "mixable": true
+    },
+    {
+      "key": "stillwater-header",
+      "kind": "header",
+      "label": "Stillwater header",
+      "designSlug": "stillwater",
+      "mixable": true
+    },
+    {
+      "key": "stillwater-footer",
+      "kind": "footer",
+      "label": "Stillwater footer",
+      "designSlug": "stillwater",
+      "mixable": true
+    },
+    {
+      "key": "halo-header",
+      "kind": "header",
+      "label": "Halo header",
+      "designSlug": "halo",
+      "mixable": false
+    },
+    {
+      "key": "halo-footer",
+      "kind": "footer",
+      "label": "Halo footer",
+      "designSlug": "halo",
+      "mixable": false
+    },
+    {
+      "key": "flux-header",
+      "kind": "header",
+      "label": "Flux header",
+      "designSlug": "flux",
+      "mixable": false
+    },
+    {
+      "key": "flux-footer",
+      "kind": "footer",
+      "label": "Flux footer",
+      "designSlug": "flux",
+      "mixable": false
+    },
+    {
+      "key": "drive-header",
+      "kind": "header",
+      "label": "Drive header",
+      "designSlug": "drive",
+      "mixable": false
+    },
+    {
+      "key": "drive-footer",
+      "kind": "footer",
+      "label": "Drive footer",
+      "designSlug": "drive",
+      "mixable": false
+    },
+    {
+      "key": "aerospace-header",
+      "kind": "header",
+      "label": "Aerospace header",
+      "designSlug": "aerospace",
+      "mixable": false
+    },
+    {
+      "key": "aerospace-footer",
+      "kind": "footer",
+      "label": "Aerospace footer",
+      "designSlug": "aerospace",
+      "mixable": false
+    },
+    {
+      "key": "engineered-header",
+      "kind": "header",
+      "label": "Engineered header",
+      "designSlug": "engineered",
+      "mixable": false
+    },
+    {
+      "key": "engineered-footer",
+      "kind": "footer",
+      "label": "Engineered footer",
+      "designSlug": "engineered",
+      "mixable": false
+    },
+    {
+      "key": "nocturne-header",
+      "kind": "header",
+      "label": "Nocturne header",
+      "designSlug": "nocturne",
+      "mixable": false
+    },
+    {
+      "key": "nocturne-footer",
+      "kind": "footer",
+      "label": "Nocturne footer",
+      "designSlug": "nocturne",
+      "mixable": false
+    },
+    {
+      "key": "meridian-header",
+      "kind": "header",
+      "label": "Meridian header",
+      "designSlug": "meridian",
+      "mixable": false
+    },
+    {
+      "key": "meridian-footer",
+      "kind": "footer",
+      "label": "Meridian footer",
+      "designSlug": "meridian",
+      "mixable": false
+    },
+    {
+      "key": "editorial-ink-header",
+      "kind": "header",
+      "label": "Editorial Ink header",
+      "designSlug": "editorial-ink",
+      "mixable": false
+    },
+    {
+      "key": "editorial-ink-footer",
+      "kind": "footer",
+      "label": "Editorial Ink footer",
+      "designSlug": "editorial-ink",
+      "mixable": false
+    },
+    {
+      "key": "brutalist-header",
+      "kind": "header",
+      "label": "Brutalist header",
+      "designSlug": "brutalist",
+      "mixable": false
+    },
+    {
+      "key": "brutalist-footer",
+      "kind": "footer",
+      "label": "Brutalist footer",
+      "designSlug": "brutalist",
+      "mixable": false
+    },
+    {
+      "key": "minimal-header",
+      "kind": "header",
+      "label": "Minimal header (mark + 3 links + CTA)",
+      "designSlug": null,
+      "mixable": true
+    },
+    {
+      "key": "centered-header",
+      "kind": "header",
+      "label": "Centered header (name above, centered nav)",
+      "designSlug": null,
+      "mixable": true
+    },
+    {
+      "key": "mega-footer",
+      "kind": "footer",
+      "label": "Mega footer (4-column grid + newsletter)",
+      "designSlug": null,
+      "mixable": true
+    },
+    {
+      "key": "slim-footer",
+      "kind": "footer",
+      "label": "Slim footer (one line)",
+      "designSlug": null,
+      "mixable": true
     }
   ]
 }

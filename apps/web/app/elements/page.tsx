@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { SiteFooter } from '@/components/landing/cta-footer';
 import { Section, SectionHeader } from '@/components/landing/section';
@@ -74,6 +75,23 @@ export default function ElementsPage() {
             ← Back to the marketplace
           </ButtonLink>
         </div>
+
+        {/* Cross-link: the chrome registry is the other half of the parts story. */}
+        <Link
+          href="/chrome"
+          className="group mt-10 flex flex-col gap-2 rounded-2xl border border-cw-stone-200 bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-cw-terracotta/50 hover:shadow-lg dark:border-cw-stone-700 dark:bg-cw-stone-900 sm:max-w-xl"
+        >
+          <Badge tone="terracotta" className="w-fit">
+            New · Chrome
+          </Badge>
+          <span className="text-lg font-semibold text-cw-stone-900 group-hover:text-cw-terracotta dark:text-cw-stone-50">
+            Headers &amp; footers are parts too →
+          </span>
+          <span className="text-sm leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
+            Browse every selectable header and footer in the engine&rsquo;s chrome registry —
+            signature design chrome plus neutral parts you can mix onto any design.
+          </span>
+        </Link>
       </Section>
 
       <SiteFooter />
