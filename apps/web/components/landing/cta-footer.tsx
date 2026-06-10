@@ -14,6 +14,7 @@ const docsCols: { heading: string; links: FooterLink[] }[] = [
       { label: 'Designs', href: '/designs' },
       { label: 'Voices', href: '/verticals' },
       { label: 'Looks', href: '/looks' },
+      { label: 'Mixer', href: '/mixer' },
       { label: 'Parts', href: '/parts' },
       { label: '3D scenes', href: '/scenes' },
       { label: 'Elements', href: '/elements' },

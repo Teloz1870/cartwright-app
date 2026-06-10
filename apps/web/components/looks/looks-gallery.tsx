@@ -82,12 +82,20 @@ function LookCard({
           </Link>
         </div>
 
-        <Link
-          href={`/designs/${design.slug}`}
-          className="mt-1 text-sm font-medium text-cw-terracotta hover:underline"
-        >
-          View the design →
-        </Link>
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+          <Link
+            href={`/designs/${design.slug}`}
+            className="text-sm font-medium text-cw-terracotta hover:underline"
+          >
+            View the design →
+          </Link>
+          <Link
+            href={`/mixer?skin=${design.slug}&voice=${voice.slug}`}
+            className="text-sm font-medium text-cw-terracotta hover:underline"
+          >
+            Open in the Mixer →
+          </Link>
+        </div>
       </div>
     </div>
   );

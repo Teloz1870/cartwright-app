@@ -110,6 +110,17 @@ export type LookEntry = {
   voiceSlug: string;
 };
 
+/**
+ * A design entry including the manifest-only fields the public Mixer needs:
+ * the design's signature SVG motif (if any) and whether it ships its own
+ * header/footer chrome instead of adopting the engine default.
+ */
+export type MixerDesignEntry = DesignEntry & {
+  /** References an SvgItem.slug, or null when the design has no motif. */
+  motifSlug: string | null;
+  hasOwnChrome: boolean;
+};
+
 /* ------------------------------------------------------------------ */
 /* Manifest shape (engine marketplace-manifest v2)                     */
 /* ------------------------------------------------------------------ */
@@ -273,6 +284,15 @@ function loadManifest(): MarketplaceManifest {
     }
   }
 
+  // Referential integrity: every design motif points at a real SVG item
+  // (the Mixer renders the motif via the svgItems markup lookup).
+  const svgItemSlugs = new Set(m.svgItems.map((i) => i.slug));
+  for (const design of m.designs) {
+    if (design.motifSlug && !svgItemSlugs.has(design.motifSlug)) {
+      fail(`design "${design.slug}" references unknown svg item "${design.motifSlug}"`);
+    }
+  }
+
   // Scene overrides may not drift from the engine registry.
   const sceneSlugs = new Set(m.scenes.map((s) => s.slug));
   for (const slug of Object.keys(SCENE_OVERRIDES)) {
@@ -299,6 +319,20 @@ const DERIVED_DESIGNS: DesignEntry[] = manifest.designs.map(
     premium,
     threeD,
     palette,
+  }),
+);
+
+const DERIVED_MIXER_DESIGNS: MixerDesignEntry[] = manifest.designs.map(
+  ({ slug, name, description, mode, premium, threeD, palette, motifSlug, hasOwnChrome }) => ({
+    slug,
+    name,
+    description,
+    mode,
+    premium,
+    threeD,
+    palette,
+    motifSlug,
+    hasOwnChrome,
   }),
 );
 
@@ -336,6 +370,11 @@ export const MANIFEST_VERSION: string = manifest.version;
 
 export function getDesigns(): DesignEntry[] {
   return DERIVED_DESIGNS;
+}
+
+/** Designs incl. motifSlug + hasOwnChrome — what the /mixer studio consumes. */
+export function getMixerDesigns(): MixerDesignEntry[] {
+  return DERIVED_MIXER_DESIGNS;
 }
 
 export function getVoices(): VoiceEntry[] {
