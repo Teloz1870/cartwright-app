@@ -56,6 +56,8 @@ export const DESIGN_PROMPTS: Record<string, string> = {
     "Build me a Cartwright design pack 'drive': a full-bleed automotive / silent-luxury website — a vertical stack of full-viewport panels, each a beautiful atmospheric CSS backdrop with a centered top headline and bottom-anchored pill CTAs. Ultra-minimal, almost no body copy. Locked theme, no 3D. English copy.",
   jungle:
     "Build me a Cartwright website design 'jungle': friendly and organic, atom-composed and palette-adaptive, trimmed to the human sections (hero, value-props, features, CTA). A lush green palette + the palette-reactive 'waves' Live-Canvas scene make it read like a canopy. Warm and approachable — for kindergartens, cafés, wellness and consumer brands. English copy.",
+  stillwater:
+    "Build me a Cartwright calm-enterprise website design 'stillwater': a palette-adaptive ivory story page (cw-* atoms + applyPaletteAsTheme, default deep lake teal) — generative layered SVG mountain ridgelines with atmospheric perspective across four times of day (dawn/day/dusk/night), the palette-reactive waves 3D scene as calm water in the hero, a huge Fraunces serif headline, oversized metrics, four full-bleed feature panels walking through the day, a night panel with twinkling stars and a mono incident timeline, testimonials and a CTA — with its own ridgeline-mark header and footer. Website mode, premium. English copy.",
 };
 
 export type PromptCategory =
