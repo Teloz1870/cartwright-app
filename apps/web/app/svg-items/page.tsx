@@ -6,7 +6,7 @@ import { Section, SectionHeader } from '@/components/landing/section';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { baseOptions } from '@/lib/layout.shared';
-import { SVG_ITEMS } from '@/components/svg-items';
+import { getSvgItems } from '@/lib/marketplace';
 import { SvgItemsGallery } from '@/components/svg-items-gallery';
 
 export const metadata: Metadata = {
@@ -51,7 +51,7 @@ export default function SvgItemsPage() {
 
       <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
         <SectionHeader
-          eyebrow={`${SVG_ITEMS.length} items`}
+          eyebrow={`${getSvgItems().length} items`}
           title="Rendered live, in this palette"
           description="Each item installs as a single self-contained file via the shadcn registry every Cartwright shop ships. Swap the item name in the command below — e.g. svg-orbit-mark, svg-wave-divider, svg-moth-illustration."
         />
