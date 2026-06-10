@@ -321,6 +321,22 @@ export const DESIGNS: DesignEntry[] = [
     "threeD": true
   },
   {
+    "slug": "fable",
+    "name": "Fable (flagship · metamorphosis)",
+    "description": "The website-mode flagship — an airy ivory story page where an instanced flock of 3D butterflies flutters behind a serif display hero, a scroll-cinema metamorphosis timeline (caterpillar → chrysalis → imago), a stat band, a safeguards story and a CTA. Palette-adaptive: the whole flock and every section re-tone to your brand.",
+    "mode": "website",
+    "premium": true,
+    "palette": {
+      "accent": "#4e4af2",
+      "accentDeep": "#2f2bb8",
+      "cream": "#faf7f0",
+      "sand": "#f0ebdf",
+      "ink": "#23201c",
+      "muted": "#7d776c"
+    },
+    "threeD": true
+  },
+  {
     "slug": "aerospace",
     "name": "Aerospace (cinematic deep-tech)",
     "description": "Premium cinematic aerospace / mission-control website skin — near-black space canvas, one ice-blue accent, a dry technical voice. CSS starfield hero, condensed uppercase headlines, mono telemetry chips, a vehicle/systems fleet grid, a countdown mission-sequence timeline. Locked dark theme, no 3D.",

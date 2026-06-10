@@ -15,6 +15,14 @@ export type SceneEntry = {
 
 export const SCENES: SceneEntry[] = [
   {
+    slug: "butterflies",
+    label: "Butterflies",
+    description:
+      "An instanced flock of palette-tinted butterflies — procedural wings, flap-and-glide flight, scattering from the pointer. The FABLE flagship hero.",
+    vibe: "organic · metamorphosis",
+    isNew: true,
+  },
+  {
     slug: "aurora",
     label: "Aurora",
     description:

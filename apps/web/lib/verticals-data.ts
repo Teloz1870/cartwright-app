@@ -127,4 +127,27 @@ export const VOICES: VoiceEntry[] = [
     sampleEyebrow: 'By appointment',
     sampleHeadline: 'Look good, feel even better',
   },
+  {
+    slug: 'fable',
+    name: 'Fable (model launch)',
+    description:
+      'The Fable 5 launch story as a voice — metamorphic, luminous, precise.',
+    keywords: ['ai', 'launch', 'model', 'metamorphosis', 'butterfly', 'announcement'],
+    tone: 'technical',
+    audience: 'general',
+    formality: 'balanced',
+    vibe: 'metamorphic, luminous, precise',
+    suggestedDesign: 'fable',
+    scene: 'butterflies',
+    palette: {
+      accent: '#4e4af2',
+      accentDeep: '#2f2bb8',
+      cream: '#faf7f0',
+      sand: '#f0ebdf',
+      ink: '#23201c',
+      muted: '#7d776c',
+    },
+    sampleEyebrow: 'Introducing',
+    sampleHeadline: 'Meet Fable 5',
+  },
 ];
