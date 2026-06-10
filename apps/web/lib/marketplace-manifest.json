@@ -72,7 +72,7 @@
         "muted": "#737373"
       },
       "motifSlug": "bloom-illustration",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "corporate-baseline",
@@ -252,7 +252,7 @@
         "muted": "#737d86"
       },
       "motifSlug": "lattice-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "editorial-ink",
@@ -270,7 +270,7 @@
         "muted": "#6b6356"
       },
       "motifSlug": "prism-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "brutalist",
@@ -288,7 +288,7 @@
         "muted": "#5a5a52"
       },
       "motifSlug": "sunburst-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "nocturne",
@@ -306,7 +306,7 @@
         "muted": "#9a8aa0"
       },
       "motifSlug": "constellation-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "meridian",
@@ -324,7 +324,7 @@
         "muted": "#5b6577"
       },
       "motifSlug": "comet-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "jungle",
@@ -342,7 +342,7 @@
         "muted": "#6f8e7c"
       },
       "motifSlug": "vine-divider",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "aerospace",
@@ -432,7 +432,7 @@
         "muted": "#6e6680"
       },
       "motifSlug": "orbit-mark",
-      "hasOwnChrome": false
+      "hasOwnChrome": true
     },
     {
       "slug": "fable",
