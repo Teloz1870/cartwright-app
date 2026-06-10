@@ -12,6 +12,8 @@ const docsCols = [
       { label: 'Looks', href: '/looks' },
       { label: 'Parts', href: '/parts' },
       { label: '3D scenes', href: '/scenes' },
+      { label: 'Elements', href: '/elements' },
+      { label: 'SVG items', href: '/svg-items' },
       { label: 'Pro', href: '/pro' },
     ],
   },
