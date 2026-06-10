@@ -13,6 +13,7 @@ export const DESIGNS_WITH_VIDEO = new Set<string>([
   'fable',
   'apex',
   'jungle',
+  'stillwater',
 ]);
 
 export function hasVideo(slug: string): boolean {
