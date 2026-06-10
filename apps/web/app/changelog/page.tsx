@@ -1,7 +1,7 @@
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
-import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package, Pencil } from 'lucide-react';
+import { Sparkles, Terminal, Globe, Code2, ShieldCheck, Mic, Palette, Package, Pencil, Layers } from 'lucide-react';
 import { getEngineVersion } from '@/lib/engine';
 import { pageOg } from '@/lib/og';
 
@@ -15,6 +15,22 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.25.0',
+    date: 'June 2026',
+    title: 'The metamorphosis release (engine v0.34.0)',
+    description:
+      'The release where the design catalogue becomes a unified design language: two flagship designs shipped in one day, a library of installable SVG ornaments, and a signature motif giving every premium pack its own recognizable chrome. The public Mixer lets anyone compose a Skin × Voice live, and a new manifest + capture infrastructure means every gallery derives from one source — so growing the catalogue is now ~free.',
+    icon: <Layers className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Stillwater — a calm-enterprise flagship design with generative SVG landscapes rendered in four times of day, palette-adaptive end to end.',
+      '21 SVG items — premium, palette-adaptive ornament components (9 of them CSS-animated), installable via the registry.',
+      'Signature-motif chrome — all 14 premium packs now carry their own recognizable motif through header, footer and section chrome.',
+      'The public Mixer at /mixer — compose any Skin × Voice pairing and preview it live in the real storefront layout.',
+      'marketplace-manifest v2 — scenes, svg-items, elements, looks and motifs in one manifest; every gallery derives from this single source.',
+      'pnpm capture:gallery — an automated preview-capture pipeline, plus registryStats install metrics for the component registry.',
+    ],
+  },
   {
     version: '3.24.0',
     date: 'June 2026',
