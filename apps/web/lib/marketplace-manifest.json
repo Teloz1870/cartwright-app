@@ -1,6 +1,6 @@
 {
   "$schema": "cartwright-marketplace-manifest-v3",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "designs": [
     {
       "slug": "aurora-site",
@@ -1521,6 +1521,38 @@
       "label": "Slim footer (one line)",
       "designSlug": null,
       "mixable": true
+    }
+  ],
+  "plugins": [
+    {
+      "slug": "phone-widget",
+      "name": "Phone widget",
+      "description": "Phone.inc click-to-call widget in the storefront corner, plus an admin telephony dashboard (call history + AI answering machine).",
+      "flag": "phoneWidget"
+    },
+    {
+      "slug": "wishlist",
+      "name": "Wishlist",
+      "description": "Logged-in wishlist: a heart button on product cards and the product page, a 'My wishlist' account page, and the toggle/list API behind it.",
+      "flag": "wishlist"
+    },
+    {
+      "slug": "blog",
+      "name": "Blog",
+      "description": "A complete blog: /blog index + posts with BlogPosting JSON-LD, RSS feed, and an admin editor with drafts, tags, cover images and SEO fields.",
+      "flag": "blog"
+    },
+    {
+      "slug": "reviews",
+      "name": "Product reviews",
+      "description": "Verified-purchase product reviews: PDP review list + form, AggregateRating JSON-LD, post-purchase email prompts (cron), and an admin moderation queue.",
+      "flag": "reviews"
+    },
+    {
+      "slug": "three-scenes",
+      "name": "Live Canvas (3D)",
+      "description": "AI-configurable three.js hero scenes (aurora, waves, orb, butterflies and more): palette-driven WebGL2 backdrops for any design pack, with an admin scene picker and a full-bleed scene-preview route.",
+      "flag": "threeD"
     }
   ]
 }
