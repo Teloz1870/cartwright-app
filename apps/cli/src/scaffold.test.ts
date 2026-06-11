@@ -6,6 +6,10 @@ import {
   titleCase,
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
+  patchBrandConfigForEnglishFirst,
+  patchBrandConfigForFirstRunWelcome,
+  patchWebsiteCopyForScaffold,
+  patchSeedSetupComplete,
   patchFooterContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
@@ -118,6 +122,185 @@ describe("patchFooterContent", () => {
     expect(out).toContain("Ejet og drevet af");
     expect(out).toContain("Mit Hegn");
     expect(out).toContain("https://example.com");
+  });
+});
+
+// ── First-impression patches (English-first + first-run welcome) ───────────
+// Fixtures mirror the exact field shapes in the v0.35.1 template's
+// brand.config.ts / prisma/seed.ts (verified against cartwright-private).
+
+const I18N_FRAGMENT = [
+  `  locales: ["da", "en"] as const,`,
+  `  defaultLocale: "da",`,
+  `  tagline: "AI & Modern Commerce Agency",`,
+  `  footer: {`,
+  `    tagline:`,
+  `      "Bygget med Cartwright Engine — en AI-drevet platform til moderne e-commerce og SaaS.",`,
+  `    disclaimer: "Teloz ApS · CVR: Indsæt CVR · Alle rettigheder forbeholdes.",`,
+  `    copyrightYear: 2026,`,
+  `  },`,
+].join("\n");
+
+describe("patchBrandConfigForEnglishFirst", () => {
+  it("flips locales to en-only, defaultLocale to en, footer copy to English", () => {
+    const { src, warnings } = patchBrandConfigForEnglishFirst(I18N_FRAGMENT, "Mit Hegn");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`locales: ["en"] as const,`);
+    expect(src).toContain(`defaultLocale: "en",`);
+    expect(src).toContain("Built with the Cartwright Engine");
+    expect(src).not.toContain("Bygget med Cartwright Engine");
+    expect(src).toContain(`disclaimer: "Mit Hegn · All rights reserved.",`);
+    expect(src).not.toContain("Alle rettigheder forbeholdes");
+    // brand.tagline (root) untouched — only footer.tagline is targeted
+    expect(src).toContain(`tagline: "AI & Modern Commerce Agency",`);
+    expect(src).toContain("copyrightYear: 2026");
+  });
+
+  it("a store name containing $ is inserted literally (no regex-pattern mishap)", () => {
+    const { src } = patchBrandConfigForEnglishFirst(I18N_FRAGMENT, "Bob$ Burgers");
+    expect(src).toContain(`disclaimer: "Bob$ Burgers · All rights reserved.",`);
+  });
+
+  it("warns (per anchor) without crashing on drifted template text", () => {
+    const drifted = `  someOtherField: true,\n  defaultLanguage: "da",\n`;
+    const { src, warnings } = patchBrandConfigForEnglishFirst(drifted, "Shop");
+    expect(src).toBe(drifted); // untouched
+    expect(warnings).toHaveLength(4); // locales, defaultLocale, tagline, disclaimer
+    for (const w of warnings) expect(w).toContain("skipped");
+  });
+});
+
+const WEBSITE_COPY_FRAGMENT = [
+  `  website: {`,
+  `    eyebrow: "v0.6 launch" as string,`,
+  `    headline: "Ship software that ships itself" as string,`,
+  `    headlineAccent: "" as string,`,
+  `    tagline:`,
+  `      "A studio template built on Cartwright — the AI-first commerce + site engine." as string,`,
+  `    valuePropsTitle: "Three promises. No asterisks." as string,`,
+  `    valueProps: [`,
+  `      { title: "Yours, forever", body: "Not a SaaS. Not a fork." },`,
+  `    ],`,
+  `  },`,
+].join("\n");
+
+describe("patchWebsiteCopyForScaffold", () => {
+  it("clears the stale eyebrow and welcomes the customer's store by name", () => {
+    const { src, warnings } = patchWebsiteCopyForScaffold(WEBSITE_COPY_FRAGMENT, "Nord Kaffe");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`eyebrow: "" as string,`);
+    expect(src).toContain(`headline: "Welcome to Nord Kaffe" as string,`);
+    expect(src).toContain(`"A fast, AI-ready site — make it say anything you want." as string,`);
+    expect(src).not.toContain("Ship software that ships itself");
+    expect(src).not.toContain("A studio template built on Cartwright");
+  });
+
+  it("does NOT touch valueProps/features/steps arrays", () => {
+    const { src } = patchWebsiteCopyForScaffold(WEBSITE_COPY_FRAGMENT, "Nord Kaffe");
+    expect(src).toContain(`valuePropsTitle: "Three promises. No asterisks." as string,`);
+    expect(src).toContain(`{ title: "Yours, forever", body: "Not a SaaS. Not a fork." },`);
+  });
+
+  it("warns (per anchor) without crashing when the copy already changed", () => {
+    const drifted = `  website: {\n    eyebrow: "" as string,\n    headline: "My own headline" as string,\n  },\n`;
+    const { src, warnings } = patchWebsiteCopyForScaffold(drifted, "Shop");
+    expect(src).toBe(drifted);
+    expect(warnings).toHaveLength(3); // eyebrow, headline, tagline
+    for (const w of warnings) expect(w).toContain("skipped");
+  });
+});
+
+describe("patchSeedSetupComplete", () => {
+  it("flips setupComplete: true → false (arms wizard + welcome canvas)", () => {
+    const seed = [
+      `    create: {`,
+      `      id: 1,`,
+      `      storeName: brand.storeName,`,
+      `      // Solbrillen.dk har data fra før wizard-gate — markér setupComplete=true`,
+      `      setupComplete: true,`,
+      `    },`,
+    ].join("\n");
+    const { src, warnings } = patchSeedSetupComplete(seed);
+    expect(warnings).toEqual([]);
+    expect(src).toContain("setupComplete: false,");
+    expect(src).not.toContain("setupComplete: true,");
+    // surrounding seed code untouched
+    expect(src).toContain("storeName: brand.storeName,");
+  });
+
+  it("is anchored — does not touch other *Complete fields or strings", () => {
+    const seed = `      onboardingComplete: true,\n      setupComplete: true,\n`;
+    const { src } = patchSeedSetupComplete(seed);
+    expect(src).toContain("onboardingComplete: true,");
+    expect(src).toContain("setupComplete: false,");
+  });
+
+  it("warns without crashing when the seed no longer sets setupComplete: true", () => {
+    const drifted = `      setupComplete: false,\n`;
+    const { src, warnings } = patchSeedSetupComplete(drifted);
+    expect(src).toBe(drifted);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("skipped");
+  });
+});
+
+describe("patchBrandConfigForFirstRunWelcome", () => {
+  it("flips firstRunWelcome: false → true on templates that ship the flag", () => {
+    const input = `    welcomeGuide: true,\n    firstRunWelcome: false,\n    blog: false,\n`;
+    const { src, warnings } = patchBrandConfigForFirstRunWelcome(input);
+    expect(warnings).toEqual([]);
+    expect(src).toContain("firstRunWelcome: true,");
+    // neighbours untouched
+    expect(src).toContain("welcomeGuide: true,");
+    expect(src).toContain("blog: false,");
+  });
+
+  it("is idempotent when the flag is already true", () => {
+    const input = `    firstRunWelcome: true,\n`;
+    const { src, warnings } = patchBrandConfigForFirstRunWelcome(input);
+    expect(src).toBe(input);
+    expect(warnings).toEqual([]);
+  });
+
+  it("CROSS-PR COMPAT: warns + skips when the flag does not exist (template ≤ v0.35.1)", () => {
+    const v0351 = `    welcomeGuide: true,\n    blog: false,\n`;
+    const { src, warnings } = patchBrandConfigForFirstRunWelcome(v0351);
+    expect(src).toBe(v0351); // byte-identical — never invents the key
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("firstRunWelcome flag not found");
+  });
+});
+
+// ── Footer ↔ brand-config interaction across template generations ──────────
+// The engine "first impression" PR moves the footer owner line into config
+// fields (brand.legalName + brand.footer.ownerUrl) rendered via i18n. Both
+// generations must come out de-Telozified, fail-soft both ways.
+describe("footer owner line — current vs future template", () => {
+  it("FUTURE template: config fields are de-Telozified by patchBrandConfigContent", () => {
+    const futureConfig = [
+      `  contact: {`,
+      `    legalName: "Teloz ApS" as string,`,
+      `  },`,
+      `  footer: {`,
+      `    ownerUrl: "https://teloz.net",`,
+      `    copyrightYear: 2026,`,
+      `  },`,
+    ].join("\n");
+    const out = patchBrandConfigContent(futureConfig, "mit-hegn");
+    expect(out).toContain(`legalName: "Mit Hegn" as string,`);
+    expect(out).toContain(`ownerUrl: "https://example.com",`);
+    expect(out).not.toContain("Teloz");
+  });
+
+  it("FUTURE template: patchFooterContent silently no-ops on a config-driven Footer.tsx", () => {
+    const futureFooter = [
+      `<p>`,
+      `  {t("ownedBy")}{" "}`,
+      `  <a href={brand.footer.ownerUrl}>{brand.legalName}</a>`,
+      `</p>`,
+    ].join("\n");
+    // no crash, no change — the brand-config patch owns the identity now
+    expect(patchFooterContent(futureFooter, "Mit Hegn")).toBe(futureFooter);
   });
 });
 
