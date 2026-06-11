@@ -1,5 +1,16 @@
 # create-cartwright
 
+## 2.2.0
+
+### Minor Changes
+
+- 39a39e6: `--profile light|full` — Cartwright Light is now the DEFAULT scaffold profile. One engine, two scaffold profiles: `light` (default) scaffolds a website-mode site with the curated design set (aurora-site, fable, stillwater, halo, jungle, meridian, brutalist, apex + the structural aurora-shop/studio) and prunes the FULL-ONLY modules (A2A/agent-marketplace, UCP identity-linking, WebMCP, hoptify, and 16 non-curated design packs — re-installable via `cartwright design install <slug>`). `--profile full` keeps everything and is byte-identical to the pre-profile scaffold; `--template agent-marketplace` requires it. Also adds `--help`. A real site — design, database, backend — live in minutes.
+
+### Patch Changes
+
+- 6f5ba35: DX-trim for the light profile: light scaffolds now prune three proven-orphan dependencies from package.json before install — `@ai-sdk/openai` (the engine only ever imports `@ai-sdk/openai-compatible`), `fast-check` (sole consumer is the pruned `tests/unit/negotiation` property test), and `ts-node` (everything runs via `tsx`; prisma.config.ts documents this explicitly). The committed `pnpm-lock.yaml` is surgically kept in sync (root-importer entries removed) so the first `pnpm install` still skips the resolution step and keeps every remaining version pinned exactly as tested — verified e2e (install → db:setup → build → 1016 scaffold tests → /da 200). −18 packages / ~17 MB in node_modules; `--profile full` remains byte-identical to before.
+- d3ebec5: Bump default template ref to v0.35.0 (was v0.34.0).
+
 ## 2.1.3
 
 ### Patch Changes
