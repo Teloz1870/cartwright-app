@@ -1,6 +1,8 @@
 # create-cartwright
 
-CLI scaffolder for AI-first webshops powered by [Cartwright](https://cartwright.app).
+**A real site — design, database, backend — live in minutes.**
+
+CLI scaffolder for AI-first sites and webshops powered by [Cartwright](https://cartwright.app).
 
 ## Quick start
 
@@ -18,11 +20,34 @@ Or with all defaults (no prompts):
 npx create-cartwright@latest my-shop --yes --db=turso --ai
 ```
 
+## Profiles
+
+One engine, two scaffold profiles — never a separate light codebase.
+
+| Profile | What you get |
+|---|---|
+| `light` (**default**) | The lean "real site in minutes" kit: website-mode default, a curated design set (`aurora-site`, `fable`, `stillwater`, `halo`, `jungle`, `meridian`, `brutalist`, `apex` + the structural `aurora-shop`/`studio`), full mode-gated webshop, builder/mixer, genome, MCP/JSON-LD discovery, admin, database. Heavy full-only modules are pruned from the scaffold: A2A/agent-marketplace, UCP identity-linking, WebMCP, hoptify, and the 16 non-curated design packs. |
+| `full` | Everything the engine ships — identical to the pre-profile scaffold. Required for `--template agent-marketplace`. |
+
+```bash
+npx create-cartwright@latest my-site                  # light (default)
+npx create-cartwright@latest my-shop --profile full   # everything
+```
+
+Pruned designs can be added back to a light project at any time:
+
+```bash
+npx cartwright design install <slug>
+```
+
 ## Flags
 
 | Flag | Default | What it does |
 |---|---|---|
 | `--yes`, `-y` | false | Skip prompts, use defaults |
+| `--profile=<light\|full>` | `light` | Scaffold profile (see above) |
+| `--template=<slug>` | `website-corporate` (light) / `generic` (full) | Mode + seed-data preset |
+| `--help`, `-h` | — | Print usage |
 | `--db=<turso\|postgres\|sqlite>` | (prompt) | Database choice — drives next-steps guidance |
 | `--ai` / `--no-ai` | (prompt) | Enable / disable the AI commerce features hint |
 | `--ref=<stable\|next\|tag\|branch>` | `stable` | Template channel (see below) |
