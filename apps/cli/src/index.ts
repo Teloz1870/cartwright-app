@@ -108,6 +108,7 @@ import {
   patchBrandConfigForEnglishFirst,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
+  patchLogoForScaffold,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
   patchFooterGithubUrlGate,
@@ -248,13 +249,17 @@ function applyFirstImpressionPatches(targetDir: string, storeName: string): stri
       const english = patchBrandConfigForEnglishFirst(src, storeName);
       const copy = patchWebsiteCopyForScaffold(english.src, storeName);
       const github = patchBrandConfigGithubUrl(copy.src);
-      const flag = patchBrandConfigForFirstRunWelcome(github.src);
+      // A customer scaffold must never ship the Teloz logo mark — swap in the
+      // Cartwright wheel placeholder (owner mandate, 2026-06-11).
+      const logo = patchLogoForScaffold(github.src);
+      const flag = patchBrandConfigForFirstRunWelcome(logo.src);
       return {
         src: flag.src,
         warnings: [
           ...english.warnings,
           ...copy.warnings,
           ...github.warnings,
+          ...logo.warnings,
           ...flag.warnings,
         ],
       };

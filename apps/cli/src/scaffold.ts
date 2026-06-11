@@ -757,3 +757,43 @@ export function databaseNote(db: Database): string {
       ].join("\n");
   }
 }
+
+/**
+ * Swap the engine's Teloz layers logo mark for the Cartwright wheel mark
+ * (Cartwright = wagon builder — a stroke-drawn cartwheel: rim + hub + spokes).
+ * The engine's brand.config keeps the Teloz mark (engine config = Teloz's live
+ * identity); a customer scaffold must never ship another company's logo. The
+ * wheel is a deliberate Cartwright-branded placeholder until the customer sets
+ * their own mark (logo contract: outline paths, themeable stroke).
+ *
+ * Fail-soft: anchored on the exact Teloz markPaths string + the exact favicon
+ * colors; drift → warning, never clobber a customer-customized mark.
+ */
+export function patchLogoForScaffold(original: string): PatchResult {
+  const warnings: string[] = [];
+  let src = original;
+
+  const telozMark = `"M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"`;
+  const wheelMark = [
+    `"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"`,
+    `      "M12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"`,
+    `      "M12 3v7.5M12 13.5V21M3 12h7.5M13.5 12H21"`,
+  ].join(",\n");
+  if (src.includes(telozMark)) {
+    src = src.replace(telozMark, wheelMark);
+  } else {
+    warnings.push(
+      "logo markPaths anchor not found — skipped (template logo drifted; verify the scaffold does not ship the Teloz mark).",
+    );
+  }
+
+  const faviconBg = /faviconBg:\s*"#1e3f5a"/;
+  const faviconFg = /faviconFg:\s*"#f4efe6"/;
+  if (faviconBg.test(src) && faviconFg.test(src)) {
+    src = src.replace(faviconBg, `faviconBg: "#18181b"`).replace(faviconFg, `faviconFg: "#fafafa"`);
+  } else {
+    warnings.push("favicon color anchors not found — skipped (kept template favicon colors).");
+  }
+
+  return { src, warnings };
+}

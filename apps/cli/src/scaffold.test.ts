@@ -23,6 +23,7 @@ import {
   isTemplateSlug,
   TEMPLATE_SLUGS,
   TEMPLATE_DEFAULTS,
+  patchLogoForScaffold,
 } from "./scaffold";
 
 describe("patchEnvLocal", () => {
@@ -632,5 +633,39 @@ describe("migratePrismaConfig", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("patchLogoForScaffold", () => {
+  const template = `  logo: {
+    markViewBox: "0 0 24 24",
+    markPaths: [
+      "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+    ],
+    faviconBg: "#1e3f5a",
+    faviconFg: "#f4efe6",
+  },`;
+
+  it("swaps the Teloz layers mark for the Cartwright wheel + neutral favicon", () => {
+    const { src, warnings } = patchLogoForScaffold(template);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("M12 2L2 7l10 5");
+    expect(src).toContain("M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z");
+    expect(src).toContain("M12 10.5a1.5 1.5 0 1 0 0 3");
+    expect(src).toContain('faviconBg: "#18181b"');
+    expect(src).toContain('faviconFg: "#fafafa"');
+  });
+
+  it("warns without clobbering when the mark has drifted (customer customized)", () => {
+    const customized = template.replace("M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5", "M1 1h22v22H1z");
+    const { src, warnings } = patchLogoForScaffold(customized);
+    expect(src).toContain("M1 1h22v22H1z");
+    expect(warnings.some((w) => w.includes("logo markPaths anchor not found"))).toBe(true);
+  });
+
+  it("warns on favicon drift independently", () => {
+    const drifted = template.replace("#1e3f5a", "#ff0000");
+    const { warnings } = patchLogoForScaffold(drifted);
+    expect(warnings.some((w) => w.includes("favicon color anchors"))).toBe(true);
   });
 });
