@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.3.2
+
+### Patch Changes
+
+- af223e9: Vertical-neutral hero/lifestyle image defaults on scaffolds — the engine's clothing-store hero photo read as a leftover from someone else's shop on fresh webshop scaffolds. Anchored + fail-soft like the rest of the first-impression overlay.
+
 ## 2.3.1
 
 ### Patch Changes
