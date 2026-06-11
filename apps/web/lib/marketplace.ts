@@ -1,9 +1,10 @@
 // Single source of truth for every gallery on this site.
 //
-// All catalogue data (designs, voices, scenes, SVG items, elements, looks)
-// derives from the Cartwright engine's `marketplace-manifest.json` (v2),
-// vendored at lib/marketplace-manifest.json. Refresh it with
-// `pnpm sync:manifest` (fetches the manifest from the public template mirror).
+// All catalogue data (designs, voices, scenes, SVG items, elements, looks,
+// chrome parts) derives from the Cartwright engine's
+// `marketplace-manifest.json` (v3), vendored at lib/marketplace-manifest.json.
+// Refresh it with `pnpm sync:manifest` (fetches the manifest from the public
+// template mirror).
 //
 // The old hand-maintained data files (designs-data.ts, verticals-data.ts,
 // scenes-data.ts, elements-data.ts, looks-data.ts) are now thin re-exports
@@ -98,6 +99,31 @@ export type ElementEntry = {
   previewVideo?: string;
 };
 
+/**
+ * A downloadable/uploadable composition artifact — the engine's
+ * `cartwright-composition-v1` (lib/compositions/spec.ts in the engine).
+ * Every field maps onto governed runtime data (designSlug / themeJson /
+ * genomeJson / chromeJson / threeDConfigJson), never code.
+ */
+export type CompositionRecipe = {
+  schema: 'cartwright-composition-v1';
+  name: string;
+  description?: string;
+  /** The Skin — a design slug. */
+  skin: string;
+  /** Brand palette → themeJson (omitted = keep / design default). */
+  palette?: Palette;
+  /** The Voice — identity anchors + pre-written genome copy. */
+  voice?: {
+    identity?: { tone?: string; audience?: string; formality?: string; vibe?: string };
+    genomeOverrides?: Record<string, string>;
+  };
+  /** Selected chrome parts (chrome-registry keys). */
+  chrome?: { headerKey?: string; footerKey?: string };
+  /** Live Canvas 3D scene id. */
+  scene?: string;
+};
+
 export type LookEntry = {
   slug: string;
   /** Evocative name for the combo. */
@@ -108,6 +134,31 @@ export type LookEntry = {
   designSlug: string;
   /** References a VoiceEntry.slug (the Voice). */
   voiceSlug: string;
+  /**
+   * The full composition artifact behind the Look (manifest v3) — what
+   * "Download this look" / the Mixer's composition download serves.
+   */
+  composition?: CompositionRecipe;
+};
+
+export type ChromeKind = 'header' | 'footer';
+
+/**
+ * One entry from the engine's chrome registry (manifest v3 `chrome[]`):
+ * a selectable header or footer part.
+ *
+ * - `designSlug` names the design that ships the chrome, or `null` for the
+ *   neutral engine parts (minimal-header, centered-header, mega-footer,
+ *   slim-footer).
+ * - `mixable: true` means the part can be selected on ANY design; `false`
+ *   means it is locked to its own design (only selectable there).
+ */
+export type ChromeEntry = {
+  key: string;
+  kind: ChromeKind;
+  label: string;
+  designSlug: string | null;
+  mixable: boolean;
 };
 
 /**
@@ -122,10 +173,10 @@ export type MixerDesignEntry = DesignEntry & {
 };
 
 /* ------------------------------------------------------------------ */
-/* Manifest shape (engine marketplace-manifest v2)                     */
+/* Manifest shape (engine marketplace-manifest v3)                     */
 /* ------------------------------------------------------------------ */
 
-const EXPECTED_SCHEMA = 'cartwright-marketplace-manifest-v2';
+const EXPECTED_SCHEMA = 'cartwright-marketplace-manifest-v3';
 
 type ManifestDesign = DesignEntry & {
   motifSlug: string | null;
@@ -143,6 +194,7 @@ type MarketplaceManifest = {
   svgItems: SvgItem[];
   elements: ElementEntry[];
   looks: LookEntry[];
+  chrome: ChromeEntry[];
 };
 
 /* ------------------------------------------------------------------ */
@@ -259,13 +311,22 @@ function loadManifest(): MarketplaceManifest {
     fail(`$schema is ${JSON.stringify(m.$schema)}, expected "${EXPECTED_SCHEMA}"`);
   }
 
-  for (const key of ['designs', 'voices', 'scenes', 'svgItems', 'elements', 'looks'] as const) {
+  for (const key of [
+    'designs',
+    'voices',
+    'scenes',
+    'svgItems',
+    'elements',
+    'looks',
+    'chrome',
+  ] as const) {
     if (!Array.isArray(m[key]) || m[key].length === 0) {
       fail(`"${key}" is missing or empty`);
     }
   }
 
-  // Referential integrity: every Look points at a real design + voice.
+  // Referential integrity: every Look points at a real design + voice, and a
+  // Look's composition (when present) is a v1 recipe whose skin matches.
   const designSlugs = new Set(m.designs.map((d) => d.slug));
   const voiceSlugs = new Set(m.voices.map((v) => v.slug));
   for (const look of m.looks) {
@@ -274,6 +335,40 @@ function loadManifest(): MarketplaceManifest {
     }
     if (!voiceSlugs.has(look.voiceSlug)) {
       fail(`look "${look.slug}" references unknown voice "${look.voiceSlug}"`);
+    }
+    if (look.composition) {
+      if (look.composition.schema !== 'cartwright-composition-v1') {
+        fail(
+          `look "${look.slug}" composition has schema ${JSON.stringify(look.composition.schema)}, expected "cartwright-composition-v1"`,
+        );
+      }
+      if (look.composition.skin !== look.designSlug) {
+        fail(
+          `look "${look.slug}" composition skin "${look.composition.skin}" does not match its designSlug "${look.designSlug}"`,
+        );
+      }
+    }
+  }
+
+  // Chrome entries: valid kind, unique keys, and a real design when locked
+  // (designSlug null = neutral engine part, always mixable).
+  const chromeKeys = new Set<string>();
+  for (const entry of m.chrome) {
+    if (!entry.key || (entry.kind !== 'header' && entry.kind !== 'footer')) {
+      fail(`chrome entry ${JSON.stringify(entry.key)} has invalid kind ${JSON.stringify(entry.kind)}`);
+    }
+    if (chromeKeys.has(entry.key)) {
+      fail(`duplicate chrome key "${entry.key}"`);
+    }
+    chromeKeys.add(entry.key);
+    if (typeof entry.mixable !== 'boolean') {
+      fail(`chrome entry "${entry.key}" has non-boolean "mixable"`);
+    }
+    if (entry.designSlug !== null && !designSlugs.has(entry.designSlug)) {
+      fail(`chrome entry "${entry.key}" references unknown design "${entry.designSlug}"`);
+    }
+    if (entry.designSlug === null && !entry.mixable) {
+      fail(`neutral chrome entry "${entry.key}" must be mixable`);
     }
   }
 
@@ -361,6 +456,8 @@ const DERIVED_ELEMENTS: ElementEntry[] = manifest.elements.map((e) => ({ ...e })
 
 const DERIVED_LOOKS: LookEntry[] = manifest.looks.map((l) => ({ ...l }));
 
+const DERIVED_CHROME: ChromeEntry[] = manifest.chrome.map((c) => ({ ...c }));
+
 /* ------------------------------------------------------------------ */
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
@@ -395,4 +492,12 @@ export function getElements(): ElementEntry[] {
 
 export function getLooks(): LookEntry[] {
   return DERIVED_LOOKS;
+}
+
+/**
+ * The engine's chrome registry (manifest v3): every selectable header/footer
+ * part — what /chrome and the Mixer's Header/Footer pickers consume.
+ */
+export function getChrome(): ChromeEntry[] {
+  return DERIVED_CHROME;
 }

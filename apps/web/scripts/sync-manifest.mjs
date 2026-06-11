@@ -17,7 +17,7 @@ import path from 'node:path';
 
 const MANIFEST_URL =
   'https://raw.githubusercontent.com/Teloz1870/cartwright-template/main/marketplace-manifest.json';
-const EXPECTED_SCHEMA = 'cartwright-marketplace-manifest-v2';
+const EXPECTED_SCHEMA = 'cartwright-marketplace-manifest-v3';
 
 const dest = path.join(
   path.dirname(fileURLToPath(import.meta.url)),

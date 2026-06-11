@@ -6,19 +6,20 @@ import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { baseOptions } from '@/lib/layout.shared';
 import { pageOg } from '@/lib/og';
-import { getMixerDesigns, getSvgItems, getVoices } from '@/lib/marketplace';
+import { getChrome, getLooks, getMixerDesigns, getSvgItems, getVoices } from '@/lib/marketplace';
 import { MixerStudio } from '@/components/mixer/mixer-studio';
 
 // TODO(mixer-live-preview): the Mixer currently composes a STATIC mock from
-// the vendored marketplace manifest (Voice copy + Skin palette + motif). The
-// planned upgrade is a live engine preview: an iframe against a public
-// mixer-preview deployment of the engine (the gated /<locale>/mixer-preview
-// route the admin Page Mixer already uses). Standing that deploy up is a
-// future owner decision — see components/mixer/mixer-studio.tsx.
+// the vendored marketplace manifest (Voice copy + Skin palette + motif +
+// chrome strips). The planned upgrade is a live engine preview: an iframe
+// against a public mixer-preview deployment of the engine (the gated
+// /<locale>/mixer-preview route — incl. &header=&footer= — the admin Page
+// Mixer already uses). Standing that deploy up is a future owner decision —
+// see components/mixer/mixer-studio.tsx.
 
-const TITLE = 'Mixer — compose a Skin × Voice';
+const TITLE = 'Mixer — compose a Skin × Voice × Chrome';
 const DESCRIPTION =
-  'The Cartwright Mixer: pick any design Skin, pair it with a vertical Voice, and preview the composition live — then take the recipe home as a CLI command or a one-line agent prompt.';
+  'The Cartwright Mixer: pick any design Skin, pair it with a vertical Voice, frame it with any header & footer — then download the whole thing as a portable composition file, or take the recipe home as a CLI command or a one-line agent prompt.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -30,6 +31,8 @@ export const metadata: Metadata = {
 export default function MixerPage() {
   const designs = getMixerDesigns();
   const voices = getVoices();
+  const chrome = getChrome();
+  const looks = getLooks();
 
   // Only ship the motif markups the designs actually reference (a ~10-item
   // subset of the svgItems library), keyed for the client studio.
@@ -49,8 +52,8 @@ export default function MixerPage() {
           Mixer · Skin × Voice
         </Badge>
         <SectionHeader
-          title="Mix any Skin with any Voice"
-          description={`Cartwright keeps content and design orthogonal: a Skin (design pack) owns the layout, a vertical Voice owns the copy, palette, and 3D scene. The Mixer is the studio where the galleries meet — compose any of the ${designs.length} Skins with any of the ${voices.length} Voices and watch the hero re-tone in front of you.`}
+          title="Mix any Skin with any Voice — and any Chrome"
+          description={`Cartwright keeps content and design orthogonal: a Skin (design pack) owns the layout, a vertical Voice owns the copy, palette, and 3D scene — and the chrome (header + footer) is a swappable part too. Compose any of the ${designs.length} Skins with any of the ${voices.length} Voices, frame it with any of the ${chrome.length} chrome parts, and download the whole composition as one portable file.`}
         />
         <div className="mt-8 flex flex-wrap gap-3">
           <ButtonLink href="/designs" variant="secondary">
@@ -59,6 +62,9 @@ export default function MixerPage() {
           <ButtonLink href="/verticals" variant="outline">
             Browse voices
           </ButtonLink>
+          <ButtonLink href="/chrome" variant="outline">
+            Browse chrome
+          </ButtonLink>
           <ButtonLink href="/looks" variant="outline">
             Curated Looks
           </ButtonLink>
@@ -66,7 +72,7 @@ export default function MixerPage() {
       </Section>
 
       <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
-        <MixerStudio designs={designs} voices={voices} motifs={motifs} />
+        <MixerStudio designs={designs} voices={voices} chrome={chrome} looks={looks} motifs={motifs} />
       </Section>
 
       <Section>
