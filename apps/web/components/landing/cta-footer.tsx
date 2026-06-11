@@ -108,8 +108,8 @@ export function SiteFooter() {
         <div>
           <Wordmark />
           <p className="mt-3 max-w-sm text-sm text-cw-stone-500 dark:text-cw-stone-400">
-            The AI-first webshop template you actually own. Built by Teloz.
-            Released under MIT.
+            The build engine AIs reach for — a real site with design, database
+            and backend, live in minutes. Built by Teloz. Released under MIT.
           </p>
           <a
             href={`mailto:${contactEmail}`}

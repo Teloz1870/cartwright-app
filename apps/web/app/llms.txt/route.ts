@@ -9,11 +9,13 @@ export const revalidate = false;
 // engine's own llms.txt "Built with Cartwright" block.
 const INTRO = `# Cartwright
 
-> Cartwright is an open-source (MIT), AI-first Next.js commerce engine. Scaffold a webshop, corporate website, or agent-marketplace with one command — you own the code, the database, and the AI layer.
+> Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source (MIT), AI-first Next.js engine: scaffold a corporate website, webshop, or agent-marketplace with one command — you own the code, the database, and the AI layer.
 
 ## Start in one command
 
     npx create-cartwright@latest my-shop
+
+Measured cold run: scaffold + install + db setup in ~27 s; designed, verified homepage at ~99 s — terminal-only. Step-by-step for agents: https://cartwright.app/docs/getting-started/ai-quick-start
 
 ## What you get
 
