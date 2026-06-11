@@ -16,6 +16,22 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.26.0',
+    date: 'June 2026',
+    title: 'The Light release (engine v0.35.0)',
+    description:
+      'Cartwright is now told — and built — around one sentence: the build engine AIs reach for. A real site with design, database and backend, live in minutes. npx create-cartwright defaults to a lean light profile, heavy modules become installable plugins, the Mixer matures into a full composition system, and the AI onboarding path is measured: a cold agent goes from scaffold to a designed, verified homepage in 99 seconds. The engine is now formally MIT-licensed.',
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Light by default — create-cartwright scaffolds the light profile: website-mode, 8 curated designs, lean modules (−18 packages); --profile full keeps everything, byte-identical to before.',
+      'Plugin system (cartwright-plugin-v1) — optional engine modules as manifest-declared plugins with install state and an admin API. First five: phone-widget, wishlist, blog, reviews and three-scenes (the entire Live Canvas 3D system).',
+      'Compositions (cartwright-composition-v1) — a whole look (skin + palette + voice + chrome + scene + layout) as a downloadable, uploadable artifact with dry-run import and an atomic composition.apply tool.',
+      'Chrome as parts — 14 design headers/footers + 4 neutral parts are selectable and mixable per shop; the chrome registry derives from the design registry.',
+      'Magic speed — parallel section generation (~5× faster), streamed progressive build UI, and an instant 0-LLM preset path.',
+      'AI onboarding, measured — "Your first 10 minutes" in every scaffold: a verified terminal-only path from boot to a designed homepage in 99 seconds, plus motion & animation guidance with a verified GSAP recipe.',
+    ],
+  },
+  {
     version: '3.25.0',
     date: 'June 2026',
     title: 'The metamorphosis release (engine v0.34.0)',
