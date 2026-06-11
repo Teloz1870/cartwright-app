@@ -299,6 +299,44 @@ export function prunePackageJsonForLight(
 }
 
 /**
+ * Remove the pruned deps' root-importer entries from pnpm-lock.yaml source so
+ * the lockfile matches the pruned package.json. Without this, the first
+ * `pnpm install` detects the mismatch and re-runs the resolution step
+ * (measured ~+7 s warm, more on real networks); with it, pnpm reports
+ * "Lockfile is up to date, resolution step is skipped" and never downloads
+ * the pruned packages — verified e2e, pnpm does not rewrite the result.
+ *
+ * Scope: ONLY the `importers` section (everything before the top-level
+ * `packages:`/`snapshots:` key). The now-unreachable entries left in
+ * `packages:`/`snapshots:` are tolerated by pnpm (extra entries are ignored;
+ * missing ones are not) and get pruned on its next natural lockfile write.
+ * Each importer block is `      <name>:` (6-space key, alone on its line —
+ * snapshot dep lines put the version on the same line, so they can't match)
+ * followed by 8-space `specifier`/`version` lines. Fail-soft: a non-matching
+ * name is reported in `missing`; a failed prune just means pnpm falls back to
+ * the (slower) reconcile install, which the e2e proved keeps all pins.
+ */
+export function pruneLockfileForLight(
+  src: string,
+  names: readonly string[] = [...LIGHT_PRUNED_DEPENDENCIES, ...LIGHT_PRUNED_DEV_DEPENDENCIES],
+): PruneResult {
+  const boundary = src.search(/^(?:packages|snapshots):/m);
+  let head = boundary === -1 ? src : src.slice(0, boundary);
+  const tail = boundary === -1 ? "" : src.slice(boundary);
+  const missing: string[] = [];
+  for (const name of names) {
+    const esc = escapeRe(name);
+    const blockRe = new RegExp(
+      `^      (?:'${esc}'|"${esc}"|${esc}):[ \\t]*\\r?\\n(?: {8}.*\\r?\\n)+`,
+      "m",
+    );
+    if (blockRe.test(head)) head = head.replace(blockRe, "");
+    else missing.push(name);
+  }
+  return { src: head + tail, missing };
+}
+
+/**
  * Light brand.config defaults on top of the website-corporate template patch:
  * the only plugin-tier flag the template ships default-ON is `newsletter` —
  * flip it off (the module stays; light is default-quiet). Everything else the
@@ -386,6 +424,20 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
     }
     return r.src;
   }, warnings);
+
+  // Keep pnpm-lock.yaml in sync with the pruned package.json so the first
+  // install skips the resolution step. Only relevant for pnpm users (other
+  // package managers get no lockfile from tryInstall anyway); if the template
+  // ever stops shipping a pnpm lockfile this is a skipped no-op.
+  if (existsSync(join(targetDir, "pnpm-lock.yaml"))) {
+    applyCodemod(targetDir, "pnpm-lock.yaml", (src) => {
+      const r = pruneLockfileForLight(src);
+      for (const name of r.missing) {
+        warnings.push(`pnpm-lock.yaml — no importer entry for "${name}".`);
+      }
+      return r.src;
+    }, warnings);
+  }
 
   // Profile marker for future `cartwright add` tooling.
   try {

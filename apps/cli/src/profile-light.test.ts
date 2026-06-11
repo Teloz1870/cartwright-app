@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
   isProfile,
+  pruneLockfileForLight,
   LIGHT_KEPT_DESIGNS,
   LIGHT_PRUNED_DESIGNS,
   LIGHT_EXCLUDED_PATHS,
@@ -306,6 +307,73 @@ describe("prunePackageJsonForLight", () => {
     const { src, missing } = prunePackageJsonForLight(broken);
     expect(src).toBe(broken);
     expect(missing.length).toBeGreaterThan(0);
+  });
+});
+
+describe("pruneLockfileForLight", () => {
+  // Mirrors the real pnpm-lock.yaml v9 shapes: quoted scoped key in the root
+  // importer, bare keys, a packages section, and a snapshots section whose
+  // 6-space dep lines carry the version on the SAME line (must not match).
+  const LOCK_SRC = `lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    dependencies:
+      '@ai-sdk/openai':
+        specifier: ^3.0.65
+        version: 3.0.65(zod@4.4.3)
+      next:
+        specifier: 16.2.6
+        version: 16.2.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    devDependencies:
+      fast-check:
+        specifier: ^4.8.0
+        version: 4.8.0
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.15.40)(@types/node@20.19.41)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+packages:
+
+  '@ai-sdk/openai@3.0.65':
+    resolution: {integrity: sha512-x}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ts-node@10.9.2:
+    resolution: {integrity: sha512-y}
+
+snapshots:
+
+  effect@3.20.0:
+    dependencies:
+      fast-check: 3.23.2
+`;
+
+  it("removes only the root-importer entries, never packages/snapshots", () => {
+    const { src, missing } = pruneLockfileForLight(LOCK_SRC);
+    expect(missing).toEqual([]);
+    // importer entries gone
+    expect(src).not.toContain("specifier: ^3.0.65");
+    expect(src).not.toContain("specifier: ^4.8.0");
+    expect(src).not.toContain("specifier: ^10.9.2");
+    // neighbours intact
+    expect(src).toContain("specifier: 16.2.6");
+    expect(src).toContain("specifier: ^5.7.0");
+    // packages + snapshots sections untouched (pnpm tolerates extras)
+    expect(src).toContain("'@ai-sdk/openai@3.0.65':");
+    expect(src).toContain("ts-node@10.9.2:");
+    expect(src).toContain("fast-check: 3.23.2");
+  });
+
+  it("reports names missing from the importer section without failing", () => {
+    const { src, missing } = pruneLockfileForLight(LOCK_SRC, ["not-a-dep"]);
+    expect(missing).toEqual(["not-a-dep"]);
+    expect(src).toBe(LOCK_SRC);
   });
 });
 
