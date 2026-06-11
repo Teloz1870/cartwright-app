@@ -797,3 +797,42 @@ export function patchLogoForScaffold(original: string): PatchResult {
 
   return { src, warnings };
 }
+
+/**
+ * Swap the template's hero/lifestyle image defaults for vertical-neutral ones.
+ * The engine default hero is a clothing-store photo (Unsplash 1441986300917)
+ * — on a fresh webshop scaffold ("Your shop starts here") it reads as a
+ * leftover from someone else's store (owner finding, Gemini benchmark
+ * 2026-06-11). Neutral, product-agnostic photography suits ANY vertical until
+ * the customer sets their own media. Anchored + fail-soft: a customized image
+ * is never clobbered.
+ */
+export function patchHeroImagesForScaffold(original: string): PatchResult {
+  const warnings: string[] = [];
+  let src = original;
+
+  const swaps: Array<[string, string, string]> = [
+    [
+      "hero",
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600",
+      // Soft, abstract architectural light — works for any shop type.
+      "https://images.unsplash.com/photo-1487700160041-babef9c3cb55?w=1600",
+    ],
+    [
+      "lifestyle",
+      "https://images.unsplash.com/photo-1481437156560-3205f6a55735?w=1200",
+      // Neutral workspace still-life.
+      "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=1200",
+    ],
+  ];
+
+  for (const [label, telozDefault, neutral] of swaps) {
+    if (src.includes(telozDefault)) {
+      src = src.replace(telozDefault, neutral);
+    } else {
+      warnings.push(`images.${label} anchor not found — skipped (image already customized or template drifted).`);
+    }
+  }
+
+  return { src, warnings };
+}
