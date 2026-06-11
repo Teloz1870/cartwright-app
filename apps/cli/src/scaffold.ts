@@ -416,6 +416,153 @@ export function patchBrandConfigForFirstRunWelcome(original: string): PatchResul
 }
 
 /**
+ * Neutralize the Teloz agency pitch in footer.githubUrl (brand.config.ts).
+ *
+ * v0.36.0 (engine PR #222) moved the footer's GitHub link from hardcoded JSX
+ * into `footer.githubUrl`, defaulting to Teloz's personal GitHub profile —
+ * correct for the engine repo (which IS the Teloz site), an identity leak on
+ * every customer scaffold. Patch it to "" (the customer sets their own later);
+ * patchFooterGithubUrlGate hides the footer block while it's empty.
+ *
+ * Fail-soft across template generations: a pre-v0.36.0 template has no
+ * `githubUrl` field at all (its hardcoded link is stripped by
+ * patchFooterContent) — warn + skip. A field that already holds a non-Teloz
+ * value (customer/upstream changed it) is a silent no-op.
+ */
+export function patchBrandConfigGithubUrl(original: string): PatchResult {
+  const telozAnchor = /(githubUrl:\s*)"https:\/\/github\.com\/Teloz1870"/;
+  if (telozAnchor.test(original)) {
+    return { src: original.replace(telozAnchor, `$1""`), warnings: [] };
+  }
+  if (/\bgithubUrl:/.test(original)) {
+    // Field exists but no longer points at Teloz — already neutral, no-op.
+    return { src: original, warnings: [] };
+  }
+  return {
+    src: original,
+    warnings: [
+      "footer.githubUrl not found — skipped (template predates the v0.36.0 githubUrl field; the hardcoded footer link is handled separately).",
+    ],
+  };
+}
+
+/**
+ * Gate the footer's "GitHub Profile" block on `brand.footer.githubUrl` being
+ * non-empty. The v0.36.0 template renders the <a> unconditionally, so after
+ * patchBrandConfigGithubUrl sets the URL to "" the footer would otherwise show
+ * a dead "GitHub Profile" link with an empty href. Wrapping (not deleting)
+ * keeps the block working the moment the customer fills in their own URL —
+ * config-true, same philosophy as patchCatalogFiltersContent's length guards.
+ *
+ * Fail-soft: pre-v0.36.0 templates hardcode the href (no
+ * `{brand.footer.githubUrl}` anchor) — their link is already stripped by
+ * patchFooterContent, so warn + skip is correct there too.
+ */
+export function patchFooterGithubUrlGate(original: string): PatchResult {
+  const re =
+    /\n(\s*)(<p>\s*<a href=\{brand\.footer\.githubUrl\}[\s\S]*?<\/a>\s*<\/p>)/;
+  if (!re.test(original)) {
+    return {
+      src: original,
+      warnings: [
+        "footer GitHub block (href={brand.footer.githubUrl}) — anchor not found, skipped (pre-v0.36.0 template or drift).",
+      ],
+    };
+  }
+  return {
+    src: original.replace(
+      re,
+      "\n$1{brand.footer.githubUrl && (\n$1$2\n$1)}",
+    ),
+    warnings: [],
+  };
+}
+
+/** The exact Teloz agency paragraph shipped in messages/<locale>.json
+ * (SaaSHome.cartwrightDesc2) — the last sentence pitches Teloz's consulting
+ * model by name, and next-intl serializes the whole namespace into the
+ * customer's rendered homepage payload. Anchored per locale on the EXACT
+ * template strings; the replacement keeps the product-true ownership message
+ * and drops the agency pitch. */
+const CARTWRIGHT_DESC2_REPLACEMENTS: ReadonlyArray<{ from: string; to: string }> = [
+  {
+    from:
+      "Just like in the crypto world, where you have full control of your wallet without a middleman, Cartwright gives you true ownership of your site. We don't believe you should pay monthly licenses for a basic system. At Teloz, you only pay for our time to set up, design and tailor the platform.",
+    to:
+      "Just like in the crypto world, where you have full control of your wallet without a middleman, Cartwright gives you true ownership of your site — you own the code and pay no platform license for the basic system.",
+  },
+  {
+    from:
+      "Ligesom i krypto-verdenen, hvor du har fuld kontrol over din wallet uden en tredjemand, giver Cartwright dig ægte ejerskab over dit site. Vi mener ikke, du skal betale månedlige licenser for et basis-system. Hos Teloz betaler du udelukkende for vores tid til at opsætte, designe og skræddersy platformen.",
+    to:
+      "Ligesom i krypto-verdenen, hvor du har fuld kontrol over din wallet uden en tredjemand, giver Cartwright dig ægte ejerskab over dit site — du ejer koden og betaler ingen platformslicens for basis-systemet.",
+  },
+];
+
+/**
+ * De-Teloz the SaaSHome marketing copy in a messages/<locale>.json source.
+ * Called once per locale file; a file is OK as long as ONE locale anchor
+ * matches (en.json never contains the Danish string and vice versa). Only
+ * when no anchor matches at all does it warn — that means the template's
+ * copy drifted (or the namespace was removed upstream, in which case there
+ * is nothing left to leak).
+ */
+export function patchMessagesCartwrightCopy(original: string): PatchResult {
+  let out = original;
+  let matched = false;
+  for (const { from, to } of CARTWRIGHT_DESC2_REPLACEMENTS) {
+    if (out.includes(from)) {
+      out = out.replace(from, to);
+      matched = true;
+    }
+  }
+  if (!matched) {
+    return {
+      src: original,
+      warnings: [
+        "SaaSHome.cartwrightDesc2 Teloz paragraph — anchor not found, skipped (copy changed or removed upstream).",
+      ],
+    };
+  }
+  return { src: out, warnings: [] };
+}
+
+/**
+ * De-Danish the AI assistant floating button. In website mode
+ * (ecommerceEnabled=false) the template ignores the English brand.ai.* labels
+ * and hardcodes Danish fallbacks — so an en-only scaffold renders
+ * "SPØRG AI KONSULENTEN" (uppercased by CSS) on every page. Route both texts
+ * through brand.ai.* instead: config-true (the customer edits one field, both
+ * modes follow) and English out of the box on v0.36.0 templates.
+ * `ecommerceEnabled` stays used (className + panel prop), so the build is safe.
+ */
+export function patchAIStylistButtonContent(original: string): PatchResult {
+  const warnings: string[] = [];
+  let out = original;
+
+  const apply = (label: string, from: string, to: string): void => {
+    if (!out.includes(from)) {
+      warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      return;
+    }
+    out = out.replace(from, to);
+  };
+
+  apply(
+    "AI button label fallback",
+    `ecommerceEnabled ? brand.ai.assistantLabel : "AI Konsulent"`,
+    "brand.ai.assistantLabel",
+  );
+  apply(
+    "AI button openText fallback",
+    `ecommerceEnabled ? brand.ai.assistantOpenText : "Spørg AI Konsulenten"`,
+    "brand.ai.assistantOpenText",
+  );
+
+  return { src: out, warnings };
+}
+
+/**
  * The template's HeroVideo hardcodes <source> tags for /hero/hero-v4.webm+mp4,
  * which are demo-specific assets NOT shipped in the base template — so a fresh
  * scaffold 404s on both. Removing the <source> tags leaves a poster-only <video>

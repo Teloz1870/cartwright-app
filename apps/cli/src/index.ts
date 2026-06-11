@@ -107,8 +107,12 @@ import {
   patchBrandConfigForTemplate,
   patchBrandConfigForEnglishFirst,
   patchBrandConfigForFirstRunWelcome,
+  patchBrandConfigGithubUrl,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
+  patchFooterGithubUrlGate,
+  patchMessagesCartwrightCopy,
+  patchAIStylistButtonContent,
   type PatchResult,
   patchFooterContent,
   patchHeroVideoContent,
@@ -243,10 +247,16 @@ function applyFirstImpressionPatches(targetDir: string, storeName: string): stri
     (src) => {
       const english = patchBrandConfigForEnglishFirst(src, storeName);
       const copy = patchWebsiteCopyForScaffold(english.src, storeName);
-      const flag = patchBrandConfigForFirstRunWelcome(copy.src);
+      const github = patchBrandConfigGithubUrl(copy.src);
+      const flag = patchBrandConfigForFirstRunWelcome(github.src);
       return {
         src: flag.src,
-        warnings: [...english.warnings, ...copy.warnings, ...flag.warnings],
+        warnings: [
+          ...english.warnings,
+          ...copy.warnings,
+          ...github.warnings,
+          ...flag.warnings,
+        ],
       };
     },
     warnings,
@@ -255,6 +265,19 @@ function applyFirstImpressionPatches(targetDir: string, storeName: string): stri
   // legacy), which kills both the documented /admin/setup wizard and the
   // Welcome Canvas predicate on fresh scaffolds.
   patchFileFailSoft(targetDir, join("prisma", "seed.ts"), patchSeedSetupComplete, warnings);
+  // De-Teloz the rest of the first render (cold-scaffold audit, 2026-06-11):
+  // footer "GitHub Profile" block gated on the (now-empty) githubUrl, the
+  // SaaSHome Teloz agency paragraph in the next-intl payload, and the Danish
+  // website-mode fallbacks on the AI assistant button.
+  patchFileFailSoft(targetDir, join("components", "Footer.tsx"), patchFooterGithubUrlGate, warnings);
+  patchFileFailSoft(targetDir, join("messages", "en.json"), patchMessagesCartwrightCopy, warnings);
+  patchFileFailSoft(targetDir, join("messages", "da.json"), patchMessagesCartwrightCopy, warnings);
+  patchFileFailSoft(
+    targetDir,
+    join("components", "AIStylistButton.tsx"),
+    patchAIStylistButtonContent,
+    warnings,
+  );
   return warnings;
 }
 

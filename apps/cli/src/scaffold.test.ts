@@ -8,9 +8,13 @@ import {
   patchBrandConfigForTemplate,
   patchBrandConfigForEnglishFirst,
   patchBrandConfigForFirstRunWelcome,
+  patchBrandConfigGithubUrl,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
   patchFooterContent,
+  patchFooterGithubUrlGate,
+  patchMessagesCartwrightCopy,
+  patchAIStylistButtonContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
   patchProxyContent,
@@ -268,6 +272,130 @@ describe("patchBrandConfigForFirstRunWelcome", () => {
     expect(src).toBe(v0351); // byte-identical — never invents the key
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("firstRunWelcome flag not found");
+  });
+});
+
+describe("patchBrandConfigGithubUrl", () => {
+  it("neutralizes the Teloz default URL to \"\" (keeps the cast + neighbours)", () => {
+    const input = [
+      `    ownerUrl: "https://example.com" as string,`,
+      `    /** GitHub-profil-link i footerens bottom-row. */`,
+      `    githubUrl: "https://github.com/Teloz1870" as string,`,
+    ].join("\n");
+    const { src, warnings } = patchBrandConfigGithubUrl(input);
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`githubUrl: "" as string,`);
+    expect(src).not.toContain("github.com/Teloz1870");
+    expect(src).toContain(`ownerUrl: "https://example.com" as string,`);
+  });
+
+  it("is a silent no-op when the field already holds a non-Teloz value", () => {
+    const input = `    githubUrl: "https://github.com/my-shop" as string,\n`;
+    const { src, warnings } = patchBrandConfigGithubUrl(input);
+    expect(src).toBe(input);
+    expect(warnings).toEqual([]);
+  });
+
+  it("CROSS-TEMPLATE COMPAT: warns + skips when the field does not exist (pre-v0.36.0)", () => {
+    const v0350 = `    ownerUrl: "https://example.com" as string,\n`;
+    const { src, warnings } = patchBrandConfigGithubUrl(v0350);
+    expect(src).toBe(v0350); // byte-identical — never invents the key
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("githubUrl not found");
+  });
+});
+
+const FOOTER_GITHUB_FRAGMENT = [
+  `            <p>`,
+  `              <a href={brand.footer.githubUrl} target="_blank" rel="noopener noreferrer" className="font-bold">`,
+  `                <svg className="h-4 w-4" aria-hidden="true">`,
+  `                  <path d="M12 2C6.477 2" />`,
+  `                </svg>`,
+  `                GitHub Profile`,
+  `              </a>`,
+  `            </p>`,
+].join("\n");
+
+describe("patchFooterGithubUrlGate", () => {
+  it("wraps the GitHub block in a {brand.footer.githubUrl && (…)} gate", () => {
+    const { src, warnings } = patchFooterGithubUrlGate(`\n${FOOTER_GITHUB_FRAGMENT}\n`);
+    expect(warnings).toEqual([]);
+    expect(src).toContain("{brand.footer.githubUrl && (");
+    // The whole original block survives inside the gate, closed after </p>
+    expect(src).toMatch(/\{brand\.footer\.githubUrl && \(\s*\n\s*<p>[\s\S]*GitHub Profile[\s\S]*<\/p>\s*\n\s*\)\}/);
+  });
+
+  it("produces balanced JSX (one opening gate, one closing)", () => {
+    const { src } = patchFooterGithubUrlGate(`\n${FOOTER_GITHUB_FRAGMENT}\n`);
+    expect(src.split("{brand.footer.githubUrl && (")).toHaveLength(2);
+    expect(src.split(")}")).toHaveLength(2);
+  });
+
+  it("warns + skips on pre-v0.36.0 templates (hardcoded href, no config anchor)", () => {
+    const legacy = `<p>\n  <a href="https://github.com/Teloz1870">GitHub</a>\n</p>\n`;
+    const { src, warnings } = patchFooterGithubUrlGate(legacy);
+    expect(src).toBe(legacy);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("anchor not found");
+  });
+});
+
+describe("patchMessagesCartwrightCopy", () => {
+  const EN_TELOZ =
+    "Just like in the crypto world, where you have full control of your wallet without a middleman, Cartwright gives you true ownership of your site. We don't believe you should pay monthly licenses for a basic system. At Teloz, you only pay for our time to set up, design and tailor the platform.";
+  const DA_TELOZ =
+    "Ligesom i krypto-verdenen, hvor du har fuld kontrol over din wallet uden en tredjemand, giver Cartwright dig ægte ejerskab over dit site. Vi mener ikke, du skal betale månedlige licenser for et basis-system. Hos Teloz betaler du udelukkende for vores tid til at opsætte, designe og skræddersy platformen.";
+
+  it("replaces the English Teloz agency paragraph with a neutral product-true one", () => {
+    const input = `{\n  "SaaSHome": {\n    "cartwrightDesc2": ${JSON.stringify(EN_TELOZ)}\n  }\n}\n`;
+    const { src, warnings } = patchMessagesCartwrightCopy(input);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("Teloz");
+    expect(src).toContain("you own the code and pay no platform license");
+    expect(() => JSON.parse(src)).not.toThrow(); // still valid JSON
+  });
+
+  it("replaces the Danish twin in da.json", () => {
+    const input = `{\n  "SaaSHome": {\n    "cartwrightDesc2": ${JSON.stringify(DA_TELOZ)}\n  }\n}\n`;
+    const { src, warnings } = patchMessagesCartwrightCopy(input);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("Teloz");
+    expect(src).toContain("du ejer koden og betaler ingen platformslicens");
+    expect(() => JSON.parse(src)).not.toThrow();
+  });
+
+  it("warns + skips when the paragraph drifted or was removed upstream", () => {
+    const drifted = `{\n  "SaaSHome": {\n    "cartwrightDesc2": "Own your stack."\n  }\n}\n`;
+    const { src, warnings } = patchMessagesCartwrightCopy(drifted);
+    expect(src).toBe(drifted);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("skipped");
+  });
+});
+
+describe("patchAIStylistButtonContent", () => {
+  const BUTTON_FRAGMENT = [
+    `  const label = ecommerceEnabled ? brand.ai.assistantLabel : "AI Konsulent";`,
+    `  const openText = ecommerceEnabled ? brand.ai.assistantOpenText : "Spørg AI Konsulenten";`,
+    `  const cls = ecommerceEnabled ? "bg-sol-accent" : "bg-[#1E1B4B]";`,
+  ].join("\n");
+
+  it("routes both texts through brand.ai.* (no Danish website-mode fallback)", () => {
+    const { src, warnings } = patchAIStylistButtonContent(BUTTON_FRAGMENT);
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`const label = brand.ai.assistantLabel;`);
+    expect(src).toContain(`const openText = brand.ai.assistantOpenText;`);
+    expect(src).not.toContain("Konsulent");
+    // ecommerceEnabled stays in use elsewhere (className ternary) — build-safe
+    expect(src).toContain(`const cls = ecommerceEnabled ? "bg-sol-accent" : "bg-[#1E1B4B]";`);
+  });
+
+  it("warns (per anchor) without crashing on drifted template text", () => {
+    const drifted = `  const label = brand.ai.assistantLabel;\n`;
+    const { src, warnings } = patchAIStylistButtonContent(drifted);
+    expect(src).toBe(drifted);
+    expect(warnings).toHaveLength(2); // label, openText
+    for (const w of warnings) expect(w).toContain("skipped");
   });
 });
 
