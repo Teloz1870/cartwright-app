@@ -145,10 +145,10 @@ describe("light design curation invariants", () => {
     }
   });
 
-  it("kept and pruned sets are disjoint and total (26 packs at v0.34.0)", () => {
+  it("kept and pruned sets are disjoint and total (27 packs at v0.36.0 — blank added)", () => {
     const pruned = LIGHT_PRUNED_DESIGNS.map((d) => d.slug);
     for (const slug of pruned) expect(LIGHT_KEPT_DESIGNS).not.toContain(slug);
-    expect(LIGHT_KEPT_DESIGNS.length + pruned.length).toBe(26);
+    expect(LIGHT_KEPT_DESIGNS.length + pruned.length).toBe(27);
   });
 
   it("every pruned design dir is in the excluded-path list", () => {
