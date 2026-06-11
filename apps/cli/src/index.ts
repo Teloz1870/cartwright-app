@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /**
- * create-cartwright — scaffolder for AI-first webshops.
+ * create-cartwright — a real site (design, database, backend) live in minutes.
  *
  * Usage:
  *   npx create-cartwright@latest [name] [--yes]
+ *                                [--profile=light|full]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
  *                                [--pm=pnpm|npm|yarn|bun]
  *                                [--no-install] [--no-git] [--no-github] [--skip-skills]
+ *
+ * Profiles (one engine, two scaffold profiles — see ./profile-light.ts):
+ *   --profile light (default) → website-mode default, curated design set,
+ *                               FULL-ONLY modules (A2A, UCP, WebMCP, hoptify) pruned
+ *   --profile full            → everything — identical to the pre-profile scaffold
  *
  * Subcommands:
  *   npx create-cartwright design install <slug> [--ref <tag>] [--force]
@@ -23,8 +29,9 @@
  *   --ref next             → bleeding-edge main branch from cartwright-private
  *   --ref vX.Y.Z           → pin to a specific historical tag
  *
- * Templates (sets brand.mode + brand.features defaults in brand.config.ts):
- *   --template generic (default)        → webshop mode, no A2A
+ * Templates (sets brand.mode + brand.features defaults in brand.config.ts).
+ * Default: website-corporate under --profile light, generic under --profile full:
+ *   --template generic                  → webshop mode, no A2A
  *   --template website-corporate        → website mode (no shop catalogue)
  *   --template coffee                   → webshop mode, coffee seed data
  *   --template sunglasses               → webshop mode, legacy eyewear fields
@@ -116,6 +123,42 @@ import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
 import { installModernWebGuidance } from "./skills.js";
 import { runDesignInstall } from "./design-install.js";
 import { runVerticalInstall } from "./vertical-install.js";
+import {
+  type Profile,
+  PROFILES,
+  isProfile,
+  applyLightProfile,
+  lightProfileNote,
+} from "./profile-light.js";
+
+const HELP_TEXT = `create-cartwright — a real site (design, database, backend) live in minutes.
+
+Usage:
+  npx create-cartwright@latest [name] [options]
+
+Options:
+  --profile <light|full>   Scaffold profile (default: light).
+                           light = website-mode default, curated design set,
+                                   heavy full-only modules (A2A agent-marketplace,
+                                   UCP identity-linking, WebMCP, hoptify) pruned.
+                                   Add designs back: cartwright design install <slug>
+                           full  = everything the engine ships — use this for
+                                   agent-marketplace mode or to keep all 26 designs.
+  --template <slug>        generic | website-corporate | coffee | sunglasses |
+                           agent-marketplace (requires --profile full).
+                           Default: website-corporate (light) / generic (full).
+  --db <turso|postgres|sqlite>   Database (default: turso).
+  --ai / --no-ai           Include AI commerce features hint.
+  --ref <stable|next|tag>  Template channel (default: stable).
+  --pm <pnpm|npm|yarn|bun> Package manager (default: auto-detect).
+  --yes, -y                Skip prompts, use defaults.
+  --no-install / --no-git / --no-github / --skip-skills
+  --help, -h               Show this help.
+
+Subcommands:
+  cartwright design install <slug>     Install a marketplace design pack.
+  cartwright vertical install <slug>   Install a marketplace Voice.
+`;
 
 function exitOnCancel<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -199,6 +242,8 @@ async function run(): Promise<void> {
       ref: { type: "string" },
       pm: { type: "string" },
       template: { type: "string" },
+      profile: { type: "string" },
+      help: { type: "boolean", short: "h" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
       "no-github": { type: "boolean" },
@@ -206,9 +251,29 @@ async function run(): Promise<void> {
     },
   });
 
-  // Validate --template if provided. Default is "generic" (full webshop
-  // scaffold matching pre-Phase-2 behaviour).
-  let templateSlug: TemplateSlug = "generic";
+  if (values.help) {
+    console.log(HELP_TEXT);
+    return;
+  }
+
+  // Validate --profile. LIGHT is the default: the lean "real site in minutes"
+  // scaffold. `--profile full` keeps everything (pre-profile behaviour).
+  let profile: Profile = "light";
+  if (values.profile !== undefined) {
+    if (!isProfile(values.profile)) {
+      console.error(
+        pc.red(`Invalid --profile "${values.profile}". Choose one of: ${PROFILES.join(", ")}`),
+      );
+      process.exit(1);
+    }
+    profile = values.profile;
+  }
+
+  // Validate --template if provided. The default tracks the profile:
+  // website-corporate under light (Cartwright Light is website-mode by
+  // default), generic (full webshop) under full — matching pre-profile
+  // behaviour exactly when --profile full is passed.
+  let templateSlug: TemplateSlug = profile === "light" ? "website-corporate" : "generic";
   if (values.template !== undefined) {
     if (!isTemplateSlug(values.template)) {
       console.error(
@@ -219,6 +284,18 @@ async function run(): Promise<void> {
       process.exit(1);
     }
     templateSlug = values.template;
+  }
+
+  // The light profile prunes the A2A/agent-marketplace modules, so that
+  // template needs the full scaffold.
+  if (profile === "light" && templateSlug === "agent-marketplace") {
+    console.error(
+      pc.red(
+        `--template agent-marketplace needs the full engine (A2A modules are pruned in light).\n` +
+          `Re-run with: --profile full --template agent-marketplace`,
+      ),
+    );
+    process.exit(1);
   }
 
   intro(
@@ -395,6 +472,21 @@ async function run(): Promise<void> {
   // patches are no-ops on a generic-defaulted brand.config.
   applyTemplateDefaults(targetDir, templateSlug);
 
+  // LIGHT profile (default): prune the FULL-ONLY modules + non-curated design
+  // packs and flip the light brand.config defaults. Fail-soft: warnings are
+  // shown but never abort the scaffold. `--profile full` skips this entirely,
+  // leaving the scaffold byte-identical to pre-profile behaviour.
+  if (profile === "light") {
+    const report = applyLightProfile(targetDir);
+    note(lightProfileNote(), "Cartwright Light");
+    if (report.warnings.length > 0) {
+      note(
+        report.warnings.map((w) => `• ${w}`).join("\n"),
+        pc.yellow("light-profile warnings (non-fatal)"),
+      );
+    }
+  }
+
   // Phase D4 — write a customer-facing MODERN_WEB.md inventory listing every
   // modern web platform feature Cartwright wires up out of the box. Doubles
   // as marketing copy for the customer to lift into their own product page.
@@ -470,6 +562,18 @@ async function run(): Promise<void> {
       // migration history with a clean from-empty baseline so `migrate deploy`
       // works on a fresh DB (best-effort; `db push` works regardless).
       regenerateMigrationBaseline(targetDir, database);
+      // LIGHT: the committed marketplace-manifest.json still lists the pruned
+      // designs. Regenerate it from the (now-trimmed) registries so the
+      // manifest — and its drift-guard test — match the scaffold. Best-effort:
+      // `pnpm build` also runs gen:manifest, so a failure here self-heals.
+      if (profile === "light") {
+        try {
+          const pmRunManifest = packageManager === "npm" ? "npm run" : packageManager;
+          execSync(`${pmRunManifest} gen:manifest`, { cwd: targetDir, stdio: "ignore" });
+        } catch {
+          /* first `pnpm build` regenerates it */
+        }
+      }
       // Create the schema + seed the admin/demo data. The seed prints the admin
       // login banner and writes .admin-credentials. Non-fatal: on any failure we
       // fall back to listing the manual commands in "Next steps".
@@ -561,6 +665,9 @@ async function run(): Promise<void> {
       ` Created ${pc.bold(finalProjectName)} at ${pc.dim(targetDir)}`,
     pc.green("✓") + ` AUTH_SECRET generated and written to .env.local`,
     pc.green("✓") + ` brand.config.ts patched (name, branding, SEO, emails)`,
+    profile === "light"
+      ? pc.green("✓") + ` Light profile (default) — lean engine; \`--profile full\` keeps everything`
+      : "",
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
       ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
