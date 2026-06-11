@@ -24,6 +24,7 @@ import {
   TEMPLATE_SLUGS,
   TEMPLATE_DEFAULTS,
   patchLogoForScaffold,
+  patchHeroImagesForScaffold,
 } from "./scaffold";
 
 describe("patchEnvLocal", () => {
@@ -667,5 +668,30 @@ describe("patchLogoForScaffold", () => {
     const drifted = template.replace("#1e3f5a", "#ff0000");
     const { warnings } = patchLogoForScaffold(drifted);
     expect(warnings.some((w) => w.includes("favicon color anchors"))).toBe(true);
+  });
+});
+
+describe("patchHeroImagesForScaffold", () => {
+  const template = `  images: {
+    hero: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600",
+    lifestyle:
+      "https://images.unsplash.com/photo-1481437156560-3205f6a55735?w=1200",
+  },`;
+
+  it("swaps the clothing-store hero + lifestyle defaults for neutral images", () => {
+    const { src, warnings } = patchHeroImagesForScaffold(template);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("1441986300917");
+    expect(src).not.toContain("1481437156560");
+    expect(src).toContain("photo-1487700160041-babef9c3cb55");
+    expect(src).toContain("photo-1497032628192-86f99bcd76bc");
+  });
+
+  it("warns per image without clobbering customized values", () => {
+    const customized = template.replace("photo-1441986300917-64674bd600d8?w=1600", "https://cdn.example.com/my-hero.jpg");
+    const { src, warnings } = patchHeroImagesForScaffold(customized);
+    expect(src).toContain("my-hero.jpg");
+    expect(warnings.some((w) => w.includes("images.hero"))).toBe(true);
+    expect(warnings.some((w) => w.includes("images.lifestyle"))).toBe(false);
   });
 });
