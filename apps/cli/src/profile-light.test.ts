@@ -4,13 +4,17 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
   isProfile,
+  pruneLockfileForLight,
   LIGHT_KEPT_DESIGNS,
   LIGHT_PRUNED_DESIGNS,
   LIGHT_EXCLUDED_PATHS,
+  LIGHT_PRUNED_DEPENDENCIES,
+  LIGHT_PRUNED_DEV_DEPENDENCIES,
   pruneDesignIndexSource,
   pruneDesignOptionsSource,
   pruneDesignMotifsSource,
   pruneWebMcpFromLayoutSource,
+  prunePackageJsonForLight,
   patchBrandConfigForLightContent,
   applyLightProfile,
   lightProfileNote,
@@ -252,6 +256,127 @@ describe("pruneWebMcpFromLayoutSource", () => {
   });
 });
 
+describe("prunePackageJsonForLight", () => {
+  const PKG_SRC = JSON.stringify(
+    {
+      name: "cartwright",
+      scripts: { dev: "next dev", "db:setup": "tsx scripts/db-setup.ts" },
+      dependencies: {
+        "@ai-sdk/openai": "^3.0.65",
+        "@ai-sdk/openai-compatible": "^2.0.48",
+        next: "16.2.6",
+      },
+      devDependencies: {
+        "fast-check": "^4.8.0",
+        "ts-node": "^10.9.2",
+        typescript: "^5.7.0",
+      },
+    },
+    null,
+    2,
+  ) + "\n";
+
+  it("removes exactly the proven-orphan deps, keeps everything else", () => {
+    const { src, missing } = prunePackageJsonForLight(PKG_SRC);
+    expect(missing).toEqual([]);
+    const pkg = JSON.parse(src);
+    expect(pkg.dependencies["@ai-sdk/openai"]).toBeUndefined();
+    expect(pkg.devDependencies["fast-check"]).toBeUndefined();
+    expect(pkg.devDependencies["ts-node"]).toBeUndefined();
+    // near-miss names + the rest of the tree are untouched
+    expect(pkg.dependencies["@ai-sdk/openai-compatible"]).toBe("^2.0.48");
+    expect(pkg.dependencies.next).toBe("16.2.6");
+    expect(pkg.devDependencies.typescript).toBe("^5.7.0");
+    expect(pkg.scripts["db:setup"]).toBe("tsx scripts/db-setup.ts");
+    // keeps the repo's package.json formatting convention
+    expect(src.endsWith("\n")).toBe(true);
+  });
+
+  it("reports deps the template no longer has without failing", () => {
+    const slim = JSON.stringify({ dependencies: { next: "16.2.6" } });
+    const { src, missing } = prunePackageJsonForLight(slim);
+    expect(missing).toEqual([
+      ...LIGHT_PRUNED_DEPENDENCIES,
+      ...LIGHT_PRUNED_DEV_DEPENDENCIES,
+    ]);
+    expect(JSON.parse(src).dependencies.next).toBe("16.2.6");
+  });
+
+  it("leaves invalid JSON untouched (fail-soft)", () => {
+    const broken = "{ not json";
+    const { src, missing } = prunePackageJsonForLight(broken);
+    expect(src).toBe(broken);
+    expect(missing.length).toBeGreaterThan(0);
+  });
+});
+
+describe("pruneLockfileForLight", () => {
+  // Mirrors the real pnpm-lock.yaml v9 shapes: quoted scoped key in the root
+  // importer, bare keys, a packages section, and a snapshots section whose
+  // 6-space dep lines carry the version on the SAME line (must not match).
+  const LOCK_SRC = `lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    dependencies:
+      '@ai-sdk/openai':
+        specifier: ^3.0.65
+        version: 3.0.65(zod@4.4.3)
+      next:
+        specifier: 16.2.6
+        version: 16.2.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    devDependencies:
+      fast-check:
+        specifier: ^4.8.0
+        version: 4.8.0
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.15.40)(@types/node@20.19.41)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+packages:
+
+  '@ai-sdk/openai@3.0.65':
+    resolution: {integrity: sha512-x}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ts-node@10.9.2:
+    resolution: {integrity: sha512-y}
+
+snapshots:
+
+  effect@3.20.0:
+    dependencies:
+      fast-check: 3.23.2
+`;
+
+  it("removes only the root-importer entries, never packages/snapshots", () => {
+    const { src, missing } = pruneLockfileForLight(LOCK_SRC);
+    expect(missing).toEqual([]);
+    // importer entries gone
+    expect(src).not.toContain("specifier: ^3.0.65");
+    expect(src).not.toContain("specifier: ^4.8.0");
+    expect(src).not.toContain("specifier: ^10.9.2");
+    // neighbours intact
+    expect(src).toContain("specifier: 16.2.6");
+    expect(src).toContain("specifier: ^5.7.0");
+    // packages + snapshots sections untouched (pnpm tolerates extras)
+    expect(src).toContain("'@ai-sdk/openai@3.0.65':");
+    expect(src).toContain("ts-node@10.9.2:");
+    expect(src).toContain("fast-check: 3.23.2");
+  });
+
+  it("reports names missing from the importer section without failing", () => {
+    const { src, missing } = pruneLockfileForLight(LOCK_SRC, ["not-a-dep"]);
+    expect(missing).toEqual(["not-a-dep"]);
+    expect(src).toBe(LOCK_SRC);
+  });
+});
+
 describe("patchBrandConfigForLightContent", () => {
   it("flips only the newsletter flag", () => {
     const out = patchBrandConfigForLightContent(BRAND_SRC);
@@ -279,6 +404,10 @@ describe("applyLightProfile (filesystem)", () => {
         "app/[locale]/layout.tsx": LAYOUT_SRC,
         "brand.config.ts": BRAND_SRC,
         "tests/unit/ucp-oauth.test.ts": "// pruned",
+        "package.json": JSON.stringify({
+          dependencies: { "@ai-sdk/openai": "^3.0.65", next: "16.2.6" },
+          devDependencies: { "fast-check": "^4.8.0", "ts-node": "^10.9.2" },
+        }),
       };
       for (const [rel, content] of Object.entries(files)) {
         mkdirSync(join(dir, dirname(rel)), { recursive: true });
@@ -305,11 +434,17 @@ describe("applyLightProfile (filesystem)", () => {
       expect(layout).not.toContain("WebMcpRegistrar");
       const brand = readFileSync(join(dir, "brand.config.ts"), "utf8");
       expect(brand).toContain("newsletter: false");
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      expect(pkg.dependencies["@ai-sdk/openai"]).toBeUndefined();
+      expect(pkg.devDependencies["fast-check"]).toBeUndefined();
+      expect(pkg.devDependencies["ts-node"]).toBeUndefined();
+      expect(pkg.dependencies.next).toBe("16.2.6");
 
       // marker
       const marker = JSON.parse(readFileSync(join(dir, ".cartwright/profile.json"), "utf8"));
       expect(marker.profile).toBe("light");
       expect(marker.removedPaths ?? marker.excludedPaths).toContain("lib/a2a");
+      expect(marker.prunedDependencies).toContain("@ai-sdk/openai");
       expect(report.removedPaths).toContain("lib/a2a");
     } finally {
       rmSync(dir, { recursive: true, force: true });

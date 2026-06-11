@@ -27,8 +27,15 @@
  *     build-resolved `await import("@/lib/search/…")` calls.
  *   - prisma/schema.prisma: untouched — unused models are harmless; schema
  *     pruning is the audit's explicit "risky" line.
- *   - package.json dependencies: untouched so the committed lockfile keeps
- *     pinning tested versions.
+ *   - package.json dependencies: only PROVEN ORPHANS are removed (see
+ *     LIGHT_PRUNED_DEPENDENCIES / LIGHT_PRUNED_DEV_DEPENDENCIES — each entry
+ *     carries its grep evidence). Every dep still imported by kept code stays,
+ *     even flag-off ones (three, framer-motion, @sentry/nextjs, @google/genai,
+ *     v0-sdk, jsdom, dompurify, botid …) — extracting those is the plugin
+ *     program, not a scaffold trim. The committed pnpm-lock.yaml is kept:
+ *     pnpm reconciles the removed entries on install while preserving the
+ *     pinned resolutions of everything that remains (verified e2e — the
+ *     installed next/stripe/prisma versions match an untrimmed scaffold).
  */
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -126,6 +133,37 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "tests/unit/design-mixable.test.ts",
 ];
 
+/**
+ * package.json `dependencies` that are PROVEN ORPHANS in a light scaffold —
+ * zero `import`/`require`/string references anywhere outside package.json
+ * (grep over the full v0.34.0 light scaffold, both quote styles, including
+ * subpath imports and config files).
+ *
+ *   - "@ai-sdk/openai": the engine only ever imports
+ *     "@ai-sdk/openai-compatible" (lib/ai/client.ts, lib/ai/embeddings.ts) —
+ *     the plain provider package is referenced nowhere, in light OR full.
+ *     ~3.6 MB in node_modules.
+ *
+ * NOT pruned despite zero direct imports: `pg` (runtime peer of
+ * "@prisma/adapter-pg", which lib/db.ts dynamic-imports for the Postgres DB
+ * option — DB flexibility is core) and every `@types/*` package (ambient
+ * types for tsc, never imported by name).
+ */
+export const LIGHT_PRUNED_DEPENDENCIES: readonly string[] = ["@ai-sdk/openai"];
+
+/**
+ * package.json `devDependencies` that are orphaned in a light scaffold:
+ *
+ *   - "fast-check": its sole consumer is
+ *     tests/unit/negotiation/monotonicity.property.test.ts — a pruned path
+ *     (negotiation is FULL-ONLY). The fast-check@3 that prisma pulls in
+ *     transitively is unaffected. ~1.4 MB.
+ *   - "ts-node": referenced nowhere — the seed/scripts all run via tsx, and
+ *     prisma.config.ts explicitly documents "tsx, NOT ts-node". Orphaned in
+ *     full too (engine-level cleanup candidate). ~1.1 MB + transitive deps.
+ */
+export const LIGHT_PRUNED_DEV_DEPENDENCIES: readonly string[] = ["fast-check", "ts-node"];
+
 // ── Pure codemods (unit-tested) ─────────────────────────────────────────────
 
 function escapeRe(s: string): string {
@@ -222,6 +260,83 @@ export function pruneWebMcpFromLayoutSource(src: string): string {
 }
 
 /**
+ * Remove the proven-orphan deps (see LIGHT_PRUNED_DEPENDENCIES /
+ * LIGHT_PRUNED_DEV_DEPENDENCIES) from a package.json source string. Runs
+ * BEFORE install, so the scaffold never downloads them. Deps not present
+ * (template drift) are reported in `missing` — never fatal. Formatting
+ * follows the existing package.json convention (2-space JSON + newline,
+ * same as migratePrismaConfig).
+ */
+export function prunePackageJsonForLight(
+  src: string,
+  deps: readonly string[] = LIGHT_PRUNED_DEPENDENCIES,
+  devDeps: readonly string[] = LIGHT_PRUNED_DEV_DEPENDENCIES,
+): PruneResult {
+  const missing: string[] = [];
+  let pkg: Record<string, unknown>;
+  try {
+    pkg = JSON.parse(src) as Record<string, unknown>;
+  } catch {
+    return { src, missing: [...deps, ...devDeps] };
+  }
+  const sections: ReadonlyArray<[string, readonly string[]]> = [
+    ["dependencies", deps],
+    ["devDependencies", devDeps],
+  ];
+  let changed = false;
+  for (const [section, names] of sections) {
+    const table = pkg[section] as Record<string, string> | undefined;
+    for (const name of names) {
+      if (table && name in table) {
+        delete table[name];
+        changed = true;
+      } else {
+        missing.push(name);
+      }
+    }
+  }
+  return { src: changed ? JSON.stringify(pkg, null, 2) + "\n" : src, missing };
+}
+
+/**
+ * Remove the pruned deps' root-importer entries from pnpm-lock.yaml source so
+ * the lockfile matches the pruned package.json. Without this, the first
+ * `pnpm install` detects the mismatch and re-runs the resolution step
+ * (measured ~+7 s warm, more on real networks); with it, pnpm reports
+ * "Lockfile is up to date, resolution step is skipped" and never downloads
+ * the pruned packages — verified e2e, pnpm does not rewrite the result.
+ *
+ * Scope: ONLY the `importers` section (everything before the top-level
+ * `packages:`/`snapshots:` key). The now-unreachable entries left in
+ * `packages:`/`snapshots:` are tolerated by pnpm (extra entries are ignored;
+ * missing ones are not) and get pruned on its next natural lockfile write.
+ * Each importer block is `      <name>:` (6-space key, alone on its line —
+ * snapshot dep lines put the version on the same line, so they can't match)
+ * followed by 8-space `specifier`/`version` lines. Fail-soft: a non-matching
+ * name is reported in `missing`; a failed prune just means pnpm falls back to
+ * the (slower) reconcile install, which the e2e proved keeps all pins.
+ */
+export function pruneLockfileForLight(
+  src: string,
+  names: readonly string[] = [...LIGHT_PRUNED_DEPENDENCIES, ...LIGHT_PRUNED_DEV_DEPENDENCIES],
+): PruneResult {
+  const boundary = src.search(/^(?:packages|snapshots):/m);
+  let head = boundary === -1 ? src : src.slice(0, boundary);
+  const tail = boundary === -1 ? "" : src.slice(boundary);
+  const missing: string[] = [];
+  for (const name of names) {
+    const esc = escapeRe(name);
+    const blockRe = new RegExp(
+      `^      (?:'${esc}'|"${esc}"|${esc}):[ \\t]*\\r?\\n(?: {8}.*\\r?\\n)+`,
+      "m",
+    );
+    if (blockRe.test(head)) head = head.replace(blockRe, "");
+    else missing.push(name);
+  }
+  return { src: head + tail, missing };
+}
+
+/**
  * Light brand.config defaults on top of the website-corporate template patch:
  * the only plugin-tier flag the template ships default-ON is `newsletter` —
  * flip it off (the module stays; light is default-quiet). Everything else the
@@ -302,6 +417,28 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
 
   applyCodemod(targetDir, "brand.config.ts", patchBrandConfigForLightContent, warnings);
 
+  applyCodemod(targetDir, "package.json", (src) => {
+    const r = prunePackageJsonForLight(src);
+    for (const name of r.missing) {
+      warnings.push(`package.json — no dependency entry for "${name}".`);
+    }
+    return r.src;
+  }, warnings);
+
+  // Keep pnpm-lock.yaml in sync with the pruned package.json so the first
+  // install skips the resolution step. Only relevant for pnpm users (other
+  // package managers get no lockfile from tryInstall anyway); if the template
+  // ever stops shipping a pnpm lockfile this is a skipped no-op.
+  if (existsSync(join(targetDir, "pnpm-lock.yaml"))) {
+    applyCodemod(targetDir, "pnpm-lock.yaml", (src) => {
+      const r = pruneLockfileForLight(src);
+      for (const name of r.missing) {
+        warnings.push(`pnpm-lock.yaml — no importer entry for "${name}".`);
+      }
+      return r.src;
+    }, warnings);
+  }
+
   // Profile marker for future `cartwright add` tooling.
   try {
     const markerDir = join(targetDir, ".cartwright");
@@ -314,6 +451,10 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
           generatedBy: "create-cartwright",
           keptDesigns: LIGHT_KEPT_DESIGNS,
           excludedPaths: removedPaths,
+          prunedDependencies: [
+            ...LIGHT_PRUNED_DEPENDENCIES,
+            ...LIGHT_PRUNED_DEV_DEPENDENCIES,
+          ],
         },
         null,
         2,
