@@ -69,6 +69,9 @@ export const LIGHT_KEPT_DESIGNS: readonly string[] = [
   // structural keeps
   "aurora-shop",
   "studio",
+  // the Blank Canvas pack (template v0.36.0+) — the build-from-scratch path;
+  // not in LIGHT_PRUNED_DESIGNS so it survives either way, listed for the contract.
+  "blank",
 ];
 
 /** slug → exported DesignPack const in designs/<slug>/index.ts (template v0.34.0). */
