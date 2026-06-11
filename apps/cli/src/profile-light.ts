@@ -422,9 +422,10 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
 
   applyCodemod(targetDir, "package.json", (src) => {
     const r = prunePackageJsonForLight(src);
-    for (const name of r.missing) {
-      warnings.push(`package.json — no dependency entry for "${name}".`);
-    }
+    // Already-absent deps are the EXPECTED state once the engine removes them
+    // at the source (e.g. @ai-sdk/openai + ts-node, engine PR #212) — staying
+    // silent keeps the scaffold output clean for AIs that treat warnings as
+    // findings. The prune itself remains fail-soft either way.
     return r.src;
   }, warnings);
 

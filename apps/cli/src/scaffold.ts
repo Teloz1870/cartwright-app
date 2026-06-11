@@ -101,7 +101,18 @@ export function detectPackageManager(): PackageManager {
   if (ua.startsWith("pnpm")) return "pnpm";
   if (ua.startsWith("yarn")) return "yarn";
   if (ua.startsWith("bun")) return "bun";
-  return "npm";
+  // `npx create-cartwright` always reports npm in the user agent — even on
+  // pnpm machines. Every doc in the scaffold says `pnpm <cmd>`, so an
+  // npm-locked scaffold guarantees a package-manager mismatch the moment the
+  // owner (or their AI) runs `pnpm add …` (found live by a customer AI:
+  // "Moving … installed by a different package manager to node_modules/.ignored").
+  // Prefer pnpm when it exists on the machine; explicit --pm always wins.
+  try {
+    execSync("pnpm --version", { stdio: "ignore" });
+    return "pnpm";
+  } catch {
+    return "npm";
+  }
 }
 
 export function generateAuthSecret(): string {
