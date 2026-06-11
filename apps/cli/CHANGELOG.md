@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.3.3
+
+### Patch Changes
+
+- 25d3642: Bump default template ref to v0.36.2 (was v0.36.1).
+
 ## 2.3.2
 
 ### Patch Changes
