@@ -1,0 +1,130 @@
+---
+title: AI Agent Quick Start
+description: The measured 99-second path from npx create-cartwright to a designed, verified homepage — written for AI coding agents (and the humans pasting it).
+---
+
+Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. This page is the proof, written as an executable runbook: every step is **terminal-only** (no browser required), and every step ends with a verification command so an agent knows it landed.
+
+If you are an AI coding agent: follow the steps top to bottom. If you are a human: paste this page to your agent, or run the commands yourself.
+
+## The measured timing
+
+These numbers come from a single measured **cold run** — a fresh scaffold in a clean directory, an agent following only the documented steps below, no prior knowledge of the project. Cumulative wall-clock time:
+
+| Step | Cumulative time |
+| --- | --- |
+| Scaffold + install + database setup + seed | ~27 s |
+| Dev server up, homepage verified (`curl` → 200) | ~70 s |
+| Agent API key minted (terminal-only) | ~85 s |
+| Copy rendering enabled + designed look applied | ~90 s |
+| **Designed homepage verified (new H1 + new palette in the HTML)** | **~99 s** |
+
+Your numbers will vary with hardware and network, but the shape holds: the scaffold is the fast part, and the design step is one API call.
+
+<Callout type="info" title="Version note">
+The scaffold profiles (`--profile light | full`) are rolling out in the next CLI release — if your installed `create-cartwright` doesn't accept the flag yet, just omit it. The flow below is profile-agnostic and works on any scaffold.
+</Callout>
+
+## The flow
+
+<Steps>
+
+1. **Boot.**
+
+   ```bash
+   npx create-cartwright@latest my-site
+   cd my-site
+   pnpm dev
+   ```
+
+   `create-cartwright` installs dependencies, creates the database, and seeds an admin + demo data — the admin login is printed and saved to `.admin-credentials`. (Manual clone instead? `pnpm install && pnpm db:setup && pnpm dev`.)
+
+   **Verify** (use your `brand.defaultLocale` — `da` in a default scaffold):
+
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/da
+   # expect: 200
+   ```
+
+   *Proves:* the app boots, the database exists, and the seed ran.
+
+2. **Mint an agent API key** (one-time). This unlocks the whole tool surface over REST — `POST /api/v1/tools/<name>` — without ever opening the admin UI. Keys are normally created in `/admin/api-keys`; the no-browser bootstrap is a short script that writes the key row directly:
+
+   ```ts title="scripts/agent-key.ts"
+   // Run once, then delete (or keep; it only ADDs keys).
+   import { config as loadEnv } from "dotenv";
+   loadEnv({ path: ".env" });
+   loadEnv({ path: ".env.local", override: true });
+
+   async function main() {
+     const { generateApiKey } = await import("../lib/api-auth");
+     const { prisma } = await import("../lib/db");
+     const { SCOPES } = await import("../lib/scopes");
+     const admin = await prisma.user.findFirst({ where: { role: "admin" } });
+     if (!admin) throw new Error("No admin user — run pnpm db:setup first.");
+     const { plaintext, hash } = generateApiKey();
+     await prisma.apiKey.create({
+       data: {
+         userId: admin.id,
+         name: "agent-bootstrap",
+         keyHash: hash,
+         scopes: JSON.stringify(SCOPES), // or a narrower list from lib/scopes.ts
+       },
+     });
+     console.log(plaintext); // shown once — the DB stores only the hash
+   }
+   main().catch((e) => { console.error(e); process.exit(1); });
+   ```
+
+   ```bash
+   KEY=$(pnpm exec tsx --conditions react-server scripts/agent-key.ts | tail -1)
+   ```
+
+   Two caveats that cost a cold agent real minutes when undocumented:
+
+   - `--conditions react-server` is **required** — the project's `lib/*` modules guard with `server-only`.
+   - Keep the script's imports to exactly this narrow set (`lib/api-auth`, `lib/db`, `lib/scopes`). Importing `lib/tools/registry` from a standalone script crashes on Next-only modules — call tools over REST instead.
+
+   *Proves:* an admin exists and you now hold a scoped bearer token for the tool API.
+
+3. **Turn on genome copy rendering.** The designed looks in step 4 write their pre-written copy through the Resolvable Genome, and the storefront only renders genome copy when the `genomeResolve` flag is on — without it, only the palette and 3D scene change and the copy silently stays put:
+
+   ```bash
+   curl -s -X POST http://localhost:3000/api/v1/tools/features.set \
+     -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"key":"genomeResolve","enabled":true,"confirm":true}'
+   ```
+
+   *Proves:* the tool surface works end to end (auth, scopes, confirm-token flow).
+
+4. **Apply a designed look** — one call, instant, no LLM involved:
+
+   ```bash
+   curl -s -X POST http://localhost:3000/api/v1/tools/magic.compose_look \
+     -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"vertical":"cafe","confirm":true}'
+   ```
+
+   A **Voice** (in `verticals/`: `cafe`, `carpenter`, `fable`, `kindergarten`, `salon`) applies pre-written on-brand copy + a palette + a suggested design + a 3D scene in one step. To pick a specific **Skin** instead or as well, pass `"design":"<slug>"` (slugs in `designs/options.ts`) or call `design.set_slug`.
+
+   *Proves:* the site is designed — copy, palette, layout and scene — without a browser, a designer, or a generation step.
+
+5. **Verify the design landed:**
+
+   ```bash
+   curl -s http://localhost:3000/da | grep -o '<h1[^>]*>[^<]*'
+   ```
+
+   The H1 and the `--color-sol-*` palette variables in the HTML should reflect the chosen look. That's the finish line: a real, designed, database-backed site serving HTML — at ~99 s on the measured cold run.
+
+</Steps>
+
+## Prefer a browser?
+
+The same things live in the admin UI: `/admin/designs` (skins), `/admin/verticals` (voices), `/admin/mixer` (combine skin + voice + chrome), `/admin/api-keys`, `/admin/features`. Sign in per [Sign in for the first time](/docs/getting-started/first-login).
+
+## Where to go next
+
+- [Quick Start](/docs/getting-started/quick-start) — the human-paced version of step 1.
+- [From code to live](/docs/getting-started/from-code-to-live) — deploy the result to GitHub + Vercel.
+- [Setup Wizard](/docs/getting-started/setup-wizard) — the guided in-admin onboarding.

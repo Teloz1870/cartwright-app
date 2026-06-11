@@ -25,7 +25,7 @@ function buildJsonLd(engineVersion: string) {
         url: 'https://cartwright.app',
         name: 'cartwright',
         description:
-          'The AI-first webshop template you actually own. A Next.js commerce stack with an AI-native admin, MCP server, and Stripe checkout.',
+          'The build engine AIs reach for — a real site with design, database and backend, live in minutes. An open-source Next.js engine with an AI-native admin, MCP server, and Stripe checkout.',
       },
       {
         '@type': 'SoftwareApplication',
@@ -34,7 +34,7 @@ function buildJsonLd(engineVersion: string) {
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Node.js 22+',
         description:
-          'An open-source AI-first webshop template. Scaffold a production-shaped Next.js commerce app with one command.',
+          'The build engine AIs reach for: an open-source, AI-first Next.js engine. Scaffold a real site — design, database and backend — with one command.',
         offers: {
           '@type': 'Offer',
           price: '0',

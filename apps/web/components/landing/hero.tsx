@@ -14,9 +14,9 @@ export function Hero() {
             v0.1 beta
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
-            The first webshop your customers can{' '}
+            The build engine AIs{' '}
             <span className="relative inline-block">
-              <span className="relative z-10">talk to.</span>
+              <span className="relative z-10">reach for.</span>
               <span
                 aria-hidden
                 className="absolute inset-x-0 -bottom-1 h-3 bg-cw-terracotta/20 dark:bg-cw-terracotta/30 -z-0"
@@ -24,9 +24,10 @@ export function Hero() {
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
-            Cartwright is the AI-first Next.js 16 commerce template with voice +
-            vision shopping built in. Click the mic below and try it live — same
-            engine your customers will use on day one.
+            A real site with design, database and backend — live in minutes.
+            Cartwright is an open-source Next.js 16 engine: one command
+            scaffolds a corporate site, a webshop, or an agent storefront, and
+            you own the code.
           </p>
           <p className="mt-3 text-xs sm:text-sm text-cw-terracotta font-mono">
             ↓ click the mic to try voice shopping
@@ -42,6 +43,16 @@ export function Hero() {
           <div className="mt-10 w-full max-w-2xl">
             <CopyCommand command="npx create-cartwright@latest my-shop" />
           </div>
+
+          <p className="mt-3 text-xs sm:text-sm text-cw-stone-500 dark:text-cw-stone-400 font-mono">
+            Measured cold run: designed, verified homepage in 99 s →{' '}
+            <a
+              href="/docs/getting-started/ai-quick-start"
+              className="text-cw-terracotta hover:underline"
+            >
+              AI agent quick start
+            </a>
+          </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink href="/docs/getting-started/quick-start" size="lg">

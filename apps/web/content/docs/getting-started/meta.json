@@ -2,6 +2,7 @@
   "title": "Getting started",
   "pages": [
     "quick-start",
+    "ai-quick-start",
     "first-login",
     "from-code-to-live",
     "cli-options",

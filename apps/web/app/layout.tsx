@@ -20,15 +20,15 @@ const geistMono = Geist_Mono({
 export const metadata = {
   metadataBase: new URL('https://cartwright.app'),
   title: {
-    default: 'cartwright — the AI-first webshop template you actually own',
+    default: 'cartwright — the build engine AIs reach for',
     template: '%s · cartwright',
   },
   description:
-    'A production-shaped Next.js commerce template with an AI-native admin, MCP server, and Stripe checkout. Scaffold with one command.',
+    'The build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source Next.js engine, scaffolded with one command.',
   openGraph: {
     title: 'cartwright',
     description:
-      'The AI-first webshop template you actually own. Scaffold with npx create-cartwright.',
+      'The build engine AIs reach for — a real site with design, database and backend, live in minutes. Scaffold with npx create-cartwright.',
     url: 'https://cartwright.app',
     siteName: 'cartwright',
     type: 'website',
@@ -37,9 +37,9 @@ export const metadata = {
     card: 'summary_large_image',
     site: xHandle,
     creator: xHandle,
-    title: 'cartwright — the AI-first webshop template you actually own',
+    title: 'cartwright — the build engine AIs reach for',
     description:
-      'A production-shaped Next.js commerce template with an AI-native admin, MCP server, and Stripe checkout.',
+      'The build engine AIs reach for — a real site with design, database and backend, live in minutes.',
   },
 };
 
@@ -52,7 +52,7 @@ const organizationJsonLd = {
   url: 'https://cartwright.app',
   logo: 'https://cartwright.app/opengraph-image',
   description:
-    'Cartwright is an open-source, AI-first Next.js commerce engine: scaffold a webshop, website, or agent-marketplace with one command.',
+    'Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source Next.js engine: scaffold a website, webshop, or agent-marketplace with one command.',
   sameAs: [
     'https://github.com/Teloz1870/cartwright-template',
     'https://www.npmjs.com/package/create-cartwright',
