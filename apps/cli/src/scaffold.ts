@@ -174,6 +174,15 @@ export function patchBrandConfigContent(original: string, projectName: string): 
  * for the engine repo (which IS the Teloz site) but wrong on every customer's
  * footer. These are pure-text replacements, so they never introduce unused
  * variables or break the customer's build.
+ *
+ * FORWARD-COMPAT (engine "first impression" PR): the engine is moving the
+ * footer owner line into brand-config fields (`brand.legalName` +
+ * `brand.footer.ownerUrl`) and rendering them via i18n. On such templates
+ * Footer.tsx no longer hardcodes any Teloz text, so every replacement below
+ * silently no-ops — which is correct, because the config fields are already
+ * de-Telozified by patchBrandConfigContent (its global "Teloz ApS"→storeName
+ * and teloz.net→example.com replacements cover legalName + ownerUrl). Both
+ * template generations are therefore handled fail-soft with no extra code.
  */
 export function patchFooterContent(original: string, storeName: string): string {
   return original
@@ -245,6 +254,165 @@ export function patchBrandConfigForTemplate(
   );
 
   return out;
+}
+
+/**
+ * Result of a fail-soft "first impression" codemod: the (possibly) patched
+ * source plus human-readable warnings for every anchor that didn't match
+ * (template drift). Warnings are shown in a non-fatal note — the scaffold
+ * must always complete (same philosophy as profile-light's PruneResult).
+ */
+export type PatchResult = { src: string; warnings: string[] };
+
+/**
+ * English-first scaffolds (owner decision 2026-06-11: scaffolds are born
+ * en-only; the engine repo keeps da-first because it IS the live Teloz site).
+ * Patches brand.config.ts:
+ *   - locales: ["da", "en"] as const  → ["en"] as const
+ *   - defaultLocale: "da"             → "en"
+ *   - footer.tagline (Danish "Bygget med Cartwright Engine …") → English
+ *   - footer.disclaimer               → "<storeName> · All rights reserved."
+ *
+ * i18n/routing.ts reads locales + defaultLocale straight from brand config,
+ * so nothing else needs to move. Every replacement is anchored to the shape
+ * the v0.35.x template ships; a non-matching anchor warns and skips (never
+ * crashes), so the CLI keeps working against future templates that already
+ * changed these fields.
+ */
+export function patchBrandConfigForEnglishFirst(
+  original: string,
+  storeName: string,
+): PatchResult {
+  const warnings: string[] = [];
+  let out = original;
+
+  const apply = (label: string, re: RegExp, replacement: () => string): void => {
+    if (!re.test(out)) {
+      warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      return;
+    }
+    // Replacement via callback so storeName containing "$" can never be
+    // misread as a regex replacement pattern.
+    out = out.replace(re, replacement);
+  };
+
+  apply(
+    "locales",
+    /locales:\s*\[[^\]]*\]\s*as\s*const/,
+    () => `locales: ["en"] as const`,
+  );
+  apply("defaultLocale", /defaultLocale:\s*"[^"]*"/, () => `defaultLocale: "en"`);
+  // footer.tagline — anchored on the Danish copy itself ("tagline:" alone is
+  // ambiguous: brand.tagline, website.tagline and heroSubtagline also exist).
+  apply(
+    "footer.tagline",
+    /"Bygget med Cartwright Engine[^"]*"/,
+    () =>
+      `"Built with the Cartwright Engine — an AI-powered platform for modern sites and commerce."`,
+  );
+  // footer.disclaimer — the `disclaimer:` key is unique in brand.config.ts.
+  // patchBrandConfigContent has usually already swapped "Teloz ApS" for the
+  // store name here; this replaces the whole Danish CVR boilerplate.
+  apply(
+    "footer.disclaimer",
+    /disclaimer:\s*"[^"]*"/,
+    () => `disclaimer: "${storeName} · All rights reserved."`,
+  );
+
+  return { src: out, warnings };
+}
+
+/**
+ * De-Teloz the website-mode hero copy (brand.config.ts `website` object) so a
+ * fresh scaffold's first H1 isn't Teloz's studio pitch:
+ *   - eyebrow "v0.6 launch"                     → "" (stale launch badge)
+ *   - headline "Ship software that ships itself" → "Welcome to <storeName>"
+ *   - tagline "A studio template built on …"     → neutral one-liner
+ *
+ * Deliberately anchored on the EXACT Teloz strings (not the keys) so a
+ * template whose copy already changed warns + skips instead of clobbering.
+ * valueProps/features/steps arrays are NOT touched — multi-line regex over
+ * those is fragile, and the engine's first-run Welcome Canvas owns the first
+ * render anyway (setup/AI rewrites the rest).
+ */
+export function patchWebsiteCopyForScaffold(
+  original: string,
+  storeName: string,
+): PatchResult {
+  const warnings: string[] = [];
+  let out = original;
+
+  const apply = (label: string, re: RegExp, replacement: () => string): void => {
+    if (!re.test(out)) {
+      warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      return;
+    }
+    out = out.replace(re, replacement);
+  };
+
+  apply("website.eyebrow", /"v0\.6 launch"/, () => `""`);
+  apply(
+    "website.headline",
+    /"Ship software that ships itself"/,
+    () => `"Welcome to ${storeName}"`,
+  );
+  apply(
+    "website.tagline",
+    /"A studio template built on Cartwright[^"]*"/,
+    () => `"A fast, AI-ready site — make it say anything you want."`,
+  );
+
+  return { src: out, warnings };
+}
+
+/**
+ * Arm the first-run experience in the scaffolded prisma/seed.ts:
+ * `setupComplete: true` → `setupComplete: false`.
+ *
+ * The template's seed marks setupComplete=true (Solbrillen-legacy: an
+ * existing shop must not re-trigger the wizard), which on a FRESH scaffold
+ * means the documented "first login → /admin/setup wizard" never fires AND
+ * the engine's first-run Welcome Canvas predicate can never arm. Flipping it
+ * repairs both. Safe on re-seed: the upsert's `update: {}` never un-completes
+ * a shop that finished setup. Fail-soft: warns on drift, never crashes.
+ */
+export function patchSeedSetupComplete(original: string): PatchResult {
+  const re = /(\bsetupComplete:\s*)true\b/;
+  if (!re.test(original)) {
+    return {
+      src: original,
+      warnings: [
+        "setupComplete: true — anchor not found, skipped (seed already fixed upstream, or template drift).",
+      ],
+    };
+  }
+  return { src: original.replace(re, "$1false"), warnings: [] };
+}
+
+/**
+ * Flip `firstRunWelcome: false` → `true` in the scaffolded brand.config.ts so
+ * the engine's first-run Welcome Canvas shows on the customer's first visit.
+ *
+ * CROSS-PR COMPATIBILITY: the flag ships with the engine's Welcome Canvas PR
+ * (default false → canaries immune). Templates at or below v0.35.1 don't have
+ * the key at all — in that case this warns + skips so the CLI works against
+ * both current and future templates (the established drift philosophy).
+ * Already-true is a silent no-op (idempotent).
+ */
+export function patchBrandConfigForFirstRunWelcome(original: string): PatchResult {
+  if (/\bfirstRunWelcome:\s*true\b/.test(original)) {
+    return { src: original, warnings: [] };
+  }
+  const re = /(\bfirstRunWelcome:\s*)false\b/;
+  if (!re.test(original)) {
+    return {
+      src: original,
+      warnings: [
+        "firstRunWelcome flag not found — skipped (template predates the first-run Welcome Canvas; the flag ships with a newer engine release).",
+      ],
+    };
+  }
+  return { src: original.replace(re, "$1true"), warnings: [] };
 }
 
 /**

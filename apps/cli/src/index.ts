@@ -105,6 +105,11 @@ import {
   titleCase,
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
+  patchBrandConfigForEnglishFirst,
+  patchBrandConfigForFirstRunWelcome,
+  patchWebsiteCopyForScaffold,
+  patchSeedSetupComplete,
+  type PatchResult,
   patchFooterContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
@@ -200,6 +205,57 @@ function patchComponentFile(
   const original = readFileSync(path, "utf8");
   const patched = transform(original);
   if (patched !== original) writeFileSync(path, patched);
+}
+
+/**
+ * Apply a fail-soft "first impression" codemod to a scaffold file, collecting
+ * warnings instead of throwing. A missing file or non-matching anchor warns;
+ * the scaffold always completes (mirrors profile-light's applyCodemod).
+ */
+function patchFileFailSoft(
+  targetDir: string,
+  relPath: string,
+  transform: (src: string) => PatchResult,
+  warnings: string[],
+): void {
+  const path = join(targetDir, relPath);
+  if (!existsSync(path)) {
+    warnings.push(`${relPath} not found — patch skipped.`);
+    return;
+  }
+  const original = readFileSync(path, "utf8");
+  const { src, warnings: patchWarnings } = transform(original);
+  warnings.push(...patchWarnings.map((w) => `${relPath}: ${w}`));
+  if (src !== original) writeFileSync(path, src);
+}
+
+/**
+ * English-first + first-run welcome patches (owner decision 2026-06-11:
+ * scaffolds are born en-only with the Welcome Canvas armed). All fail-soft —
+ * works against both the current template (v0.35.1, no firstRunWelcome flag)
+ * and future templates that ship the engine's Welcome Canvas.
+ */
+function applyFirstImpressionPatches(targetDir: string, storeName: string): string[] {
+  const warnings: string[] = [];
+  patchFileFailSoft(
+    targetDir,
+    "brand.config.ts",
+    (src) => {
+      const english = patchBrandConfigForEnglishFirst(src, storeName);
+      const copy = patchWebsiteCopyForScaffold(english.src, storeName);
+      const flag = patchBrandConfigForFirstRunWelcome(copy.src);
+      return {
+        src: flag.src,
+        warnings: [...english.warnings, ...copy.warnings, ...flag.warnings],
+      };
+    },
+    warnings,
+  );
+  // Arm first-run: the template's seed marks setupComplete=true (Solbrillen
+  // legacy), which kills both the documented /admin/setup wizard and the
+  // Welcome Canvas predicate on fresh scaffolds.
+  patchFileFailSoft(targetDir, join("prisma", "seed.ts"), patchSeedSetupComplete, warnings);
+  return warnings;
 }
 
 /**
@@ -458,6 +514,21 @@ async function run(): Promise<void> {
     patchFooter(targetDir, finalProjectName);
   }
 
+  // English-first scaffolds + first-run welcome activation. Runs BEFORE the
+  // install/db step so the patched seed (setupComplete: false) is what gets
+  // seeded. Fail-soft: drift produces a note, never a crash — e.g. templates
+  // ≤ v0.35.1 don't have the firstRunWelcome flag yet (warn + skip).
+  const firstImpressionWarnings = applyFirstImpressionPatches(
+    targetDir,
+    titleCase(generatedBrief ? finalSlug : finalProjectName),
+  );
+  if (firstImpressionWarnings.length > 0) {
+    note(
+      firstImpressionWarnings.map((w) => `• ${w}`).join("\n"),
+      pc.yellow("first-impression patches — skipped anchors (non-fatal)"),
+    );
+  }
+
   // Storefront cleanup (template copies → customer copies; no canary impact)
   patchComponentFile(targetDir, "components/HeroVideo.tsx", patchHeroVideoContent);
   patchComponentFile(targetDir, "components/CatalogFilters.tsx", patchCatalogFiltersContent);
@@ -651,13 +722,15 @@ async function run(): Promise<void> {
     ? [
         pc.bold("Next steps:"),
         `  cd ${finalSlug}`,
-        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
+        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
+        pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
       ]
     : [
         pc.bold("Next steps (required):"),
         `  cd ${finalSlug}`,
         `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
-        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000")}`,
+        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
+        pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
       ];
 
   const lines = [
