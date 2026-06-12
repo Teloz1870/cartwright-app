@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
 import { XLogo } from '@/components/x-logo';
+import { DESIGNS } from './designs-data';
 import { appName, gitConfig, social } from './shared';
 
 export function baseOptions(): BaseLayoutProps {
@@ -34,7 +35,9 @@ export function baseOptions(): BaseLayoutProps {
         type: 'menu',
         text: 'Explore',
         items: [
-          { icon: <Palette className="size-4" />, text: 'Designs', url: '/designs', description: '24 whole-page design packs' },
+          // Count derived from the vendored marketplace manifest (same source
+          // as the /designs gallery) so the nav stays honest as packs ship.
+          { icon: <Palette className="size-4" />, text: 'Designs', url: '/designs', description: `${DESIGNS.length} whole-page design packs` },
           { icon: <Mic className="size-4" />, text: 'Voices', url: '/verticals', description: 'Re-tone any design for your industry' },
           { icon: <Wand2 className="size-4" />, text: 'Looks', url: '/looks', description: 'Curated Skin × Voice combinations' },
           { icon: <SlidersHorizontal className="size-4" />, text: 'Mixer', url: '/mixer', description: 'Compose a Skin × Voice live' },
