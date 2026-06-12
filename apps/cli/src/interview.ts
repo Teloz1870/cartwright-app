@@ -62,18 +62,18 @@ const interviewSchema = {
 
 export async function runInterview(deps: InterviewDeps): Promise<ShopBrief> {
   const history: string[] = [];
-  history.push(`Brugerens indledende forespørgsel: ${deps.initialPrompt}`);
+  history.push(`The user's initial request: ${deps.initialPrompt}`);
 
   const systemInstructions = `
-Du er en e-commerce ekspert. Din opgave er at indsamle nok information til at bygge et 'ShopBrief'.
-Stil ét spørgsmål ad gangen for at udfylde de manglende felter.
-Når du har nok info til at gætte resten kompetent (eller brugeren beder dig om at udfylde resten selv), så sæt isComplete = true og udfyld brief-objektet komplet.
+You are an e-commerce expert. Your job is to gather enough information to build a 'ShopBrief'.
+Ask ONE question at a time to fill the missing fields — always in the same language the user writes in.
+Once you have enough to fill in the rest competently (or the user asks you to fill in the rest yourself), set isComplete = true and complete the brief object fully.
 `;
 
   while (true) {
-    const prompt = `${systemInstructions}\n\nSamtalehistorik:\n${history.join("\n")}`;
-    
-    deps.logMsg("Tænker...");
+    const prompt = `${systemInstructions}\n\nConversation history:\n${history.join("\n")}`;
+
+    deps.logMsg("Thinking...");
     const res = await generateJson(deps.apiKey, prompt, interviewSchema) as any;
 
     if (res.isComplete && res.brief) {
@@ -82,6 +82,6 @@ Når du har nok info til at gætte resten kompetent (eller brugeren beder dig om
 
     const answer = await deps.askUser(res.nextQuestion);
     history.push(`AI: ${res.nextQuestion}`);
-    history.push(`Bruger: ${answer}`);
+    history.push(`User: ${answer}`);
   }
 }

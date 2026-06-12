@@ -3,7 +3,7 @@ import { summarizeBuild } from "./approve";
 import { type ShopBrief } from "./brief";
 
 describe("summarizeBuild", () => {
-  it("formaterer brief pænt til clack note", () => {
+  it("formats the brief for the clack note (English labels)", () => {
     const brief: ShopBrief = {
       storeName: "Test Shop",
       slug: "test-shop",
@@ -20,6 +20,6 @@ describe("summarizeBuild", () => {
 
     const lines = summarizeBuild(brief);
     expect(lines).toContain("Test Shop (test-shop)");
-    expect(lines).toContain("1 kategorier, 1 produkter");
+    expect(lines).toContain("1 categories, 1 products");
   });
 });

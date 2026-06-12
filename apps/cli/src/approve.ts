@@ -6,12 +6,12 @@ export function summarizeBuild(brief: ShopBrief): string {
     pc.bold(`${brief.storeName} (${brief.slug})`),
     pc.dim(brief.tagline),
     "",
-    `${pc.bold("Sælger:")} ${brief.sells}`,
-    `${pc.bold("Målgruppe:")} ${brief.audience}`,
+    `${pc.bold("Sells:")} ${brief.sells}`,
+    `${pc.bold("Audience:")} ${brief.audience}`,
     `${pc.bold("Tone:")} ${brief.tone}`,
     "",
-    `${pc.bold("Katalog:")} ${brief.categories.length} kategorier, ${brief.products.length} produkter`,
-    `${pc.bold("Palette:")} ${brief.palette.primary} (Primær) / ${brief.palette.background} (Baggrund)`,
+    `${pc.bold("Catalog:")} ${brief.categories.length} categories, ${brief.products.length} products`,
+    `${pc.bold("Palette:")} ${brief.palette.primary} (primary) / ${brief.palette.background} (background)`,
   ];
   return lines.join("\n");
 }
