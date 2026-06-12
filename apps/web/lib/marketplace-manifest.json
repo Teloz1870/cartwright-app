@@ -220,8 +220,8 @@
     },
     {
       "slug": "hoptify",
-      "name": "Hoptify (Shopify-pendant, parodi)",
-      "description": "Et velkendt, rent webshop-look à la de store — men på Cartwright-motoren, med en frisk Hoptify-grøn og et glimt i øjet (“Hop off Shopify”). Inkl. parodi-import-onboarding i /admin/hoptify.",
+      "name": "Hoptify (Shopify pendant, parody)",
+      "description": "A familiar, clean webshop look à la the big platforms — but on the Cartwright engine, with a fresh Hoptify green and a twinkle in the eye (“Hop off Shopify”). Includes the parody import onboarding at /admin/hoptify.",
       "mode": "webshop",
       "premium": false,
       "threeD": false,
@@ -474,11 +474,10 @@
   "voices": [
     {
       "slug": "kindergarten",
-      "name": "Kindergarten / Børnehave",
+      "name": "Kindergarten",
       "description": "Warm, playful, reassuring voice for a kindergarten or daycare — built to make parents feel their child will be safe, happy, and growing.",
       "keywords": [
         "kindergarten",
-        "børnehave",
         "daycare",
         "childcare",
         "preschool",
@@ -505,11 +504,10 @@
     },
     {
       "slug": "carpenter",
-      "name": "Carpenter / Tømrer",
+      "name": "Carpenter",
       "description": "Solid, honest, no-nonsense voice for a carpenter or building trade — built to earn a homeowner's trust and win the quote.",
       "keywords": [
         "carpenter",
-        "tømrer",
         "builder",
         "joinery",
         "trades",
@@ -629,23 +627,23 @@
   "scenes": [
     {
       "slug": "floating-geometry",
-      "label": "Flydende geometri",
-      "description": "Glasede, langsomt roterende former. Elegant, brand-neutral."
+      "label": "Floating geometry",
+      "description": "Glassy, slowly rotating shapes. Elegant and brand-neutral."
     },
     {
       "slug": "particles",
-      "label": "Partikel-felt",
-      "description": "Flydende prikker der reagerer på mus. Teknisk AI/data-vibe."
+      "label": "Particle field",
+      "description": "Floating dots that react to the mouse. Technical AI/data vibe."
     },
     {
       "slug": "blob",
       "label": "Morphing blob",
-      "description": "Organisk gradient-form der bølger. Trendy moderne SaaS-look."
+      "description": "An organic gradient shape in gentle, wave-like motion. Trendy modern SaaS look."
     },
     {
       "slug": "wireframe",
       "label": "Low-poly / wireframe",
-      "description": "Geometrisk grid i perspektiv. Struktureret engine/tech-udtryk."
+      "description": "A geometric grid in perspective. Structured engine/tech expression."
     },
     {
       "slug": "aurora",
@@ -654,7 +652,7 @@
     },
     {
       "slug": "waves",
-      "label": "Bølger / Waves",
+      "label": "Waves",
       "description": "Full-bleed plane of flowing noise dunes, palette-graded trough→crest with a fresnel sheen. Premium organic hero."
     },
     {
@@ -669,7 +667,7 @@
     },
     {
       "slug": "butterflies",
-      "label": "Butterflies / Sommerfugle",
+      "label": "Butterflies",
       "description": "An instanced flock of palette-tinted butterflies — flapping, gliding, scattering from the pointer. Organic metamorphosis hero."
     }
   ],
