@@ -1,9 +1,14 @@
 import { ButtonLink } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CopyCommand } from '@/components/landing/copy-command';
-import { isGithubPublic, social, contactEmail } from '@/lib/shared';
+import { social } from '@/lib/shared';
+import { getEngineVersion } from '@/lib/engine';
 
-export function Hero() {
+export async function Hero() {
+  // Live engine version from the engine CHANGELOG (ISR-cached, fail-soft) —
+  // the same maintained source the /changelog header uses. Never hardcode a
+  // version here; it drifts the moment a release ships.
+  const engineVersion = await getEngineVersion();
   return (
     <section className="relative overflow-hidden border-b border-cw-stone-200 dark:border-cw-stone-800">
       <div aria-hidden className="absolute inset-0 cw-grid-bg" />
@@ -11,7 +16,7 @@ export function Hero() {
         <div className="flex flex-col items-center text-center">
           <Badge tone="terracotta" className="mb-6">
             <span className="size-1.5 rounded-full bg-cw-terracotta" />
-            v0.1 beta
+            Open source · engine v{engineVersion}
           </Badge>
           <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
             The build engine AIs{' '}
@@ -58,19 +63,9 @@ export function Hero() {
             <ButtonLink href="/docs/getting-started/quick-start" size="lg">
               Read the docs
             </ButtonLink>
-            {isGithubPublic ? (
-              <ButtonLink
-                href={social.github}
-                variant="outline"
-                size="lg"
-              >
-                View on GitHub
-              </ButtonLink>
-            ) : (
-              <ButtonLink href="/pricing" variant="outline" size="lg">
-                Need setup help?
-              </ButtonLink>
-            )}
+            <ButtonLink href={social.templateRepo} variant="outline" size="lg">
+              View on GitHub
+            </ButtonLink>
           </div>
 
           <p className="mt-6 text-xs text-cw-stone-500 dark:text-cw-stone-400 font-mono">

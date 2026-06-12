@@ -13,7 +13,7 @@ const OG = 'https://cartwright.app/designs/engineered.jpg';
 export const metadata: Metadata = {
   title: 'Design marketplace',
   description:
-    'A slaraffenland of premium Cartwright designs — whole-page, code-owned, three.js-ready. Search, preview, copy the prompt that built it, or have an AI agent build your own. Free + Pro.',
+    'A cornucopia of premium Cartwright designs — whole-page, code-owned, three.js-ready. Search, preview, copy the prompt that built it, or have an AI agent build your own. Free + Pro.',
   alternates: { canonical: '/designs' },
   openGraph: {
     title: 'Cartwright design marketplace',
@@ -38,7 +38,7 @@ export default function DesignsPage() {
           Design marketplace
         </Badge>
         <SectionHeader
-          title="A slaraffenland of designs"
+          title="A cornucopia of designs"
           description="Whole-page, code-owned, three.js-ready designs for your Cartwright store. Pick one for premium-from-day-one, or copy the prompt and have an AI agent build a bespoke one in minutes. Every design is real code you own — switch any time in /admin/designs or in brand.config.ts."
         />
         <div className="mt-8 flex flex-wrap gap-3">

@@ -1,14 +1,14 @@
 ---
 title: Contributing
-description: How to contribute to cartwright today and what will change when the template flips to public.
+description: How to contribute to the cartwright docs site, the CLI, and the engine template.
 ---
 
 Cartwright is split across two repositories. Understanding which one you are contributing to is the first step.
 
-- **`Teloz1870/cartwright-app`** (public, this site) — the docs site and the `create-cartwright` CLI. Open for PRs from anyone today.
-- **`Teloz1870/cartwright`** (private, the template) — the actual Next.js + Prisma + Stripe + MCP commerce template. Currently invite-only access. Will flip to public when the milestones below are met.
+- **`Teloz1870/cartwright-app`** (this site) — the docs site and the `create-cartwright` CLI. Open for PRs from anyone.
+- **[`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template)** (the engine template) — the actual Next.js + Prisma + Stripe + MCP engine template, public and MIT-licensed. It is published as sanitized snapshots from the development engine on every release tag, so engine changes are best proposed as issues (or PRs the maintainers pull upstream).
 
-Most contributions land in `cartwright-app`. Once the template flips, the same workflow applies to both.
+Most contributions land in `cartwright-app`.
 
 ## Quick start
 
@@ -54,29 +54,14 @@ cd apps/cli && pnpm build
 
 ## Releases (Changesets)
 
-`cartwright-app` has `@changesets/cli` installed for the eventual `create-cartwright` npm publishing flow. Until the CLI hits its first beta release, changeset files are optional; afterwards, CLI-affecting PRs need a `.changeset/<random>.md` describing the change.
-
-<Callout type="info">
-Until `create-cartwright` is published to npm, the `.changeset/` directory may not exist at the root. The release workflow will create it on first use. This is a deferred-until-needed setup.
-</Callout>
+`cartwright-app` publishes `create-cartwright` to npm via `@changesets/cli`. CLI-affecting PRs need a `.changeset/<random>.md` describing the change — run `pnpm changeset` at the repo root and commit the generated file.
 
 ## Reporting issues
 
+- **Bugs in the engine template** (a scaffolded shop) → GitHub Issues on [`cartwright-template`](https://github.com/Teloz1870/cartwright-template).
 - **Bugs in the docs site** → GitHub Issues on `cartwright-app`.
 - **Bugs in `create-cartwright` CLI** → GitHub Issues on `cartwright-app` (same repo).
 - **Security issues** → Do not open a public issue. Email security@cartwright.app per [SECURITY.md](https://github.com/Teloz1870/cartwright-app/blob/main/SECURITY.md).
-
-## When the template repo flips to public
-
-The `Teloz1870/cartwright` private template will become public after these milestones:
-
-1. Solbrillen.dk live in production for at least 30 days with paying customers.
-2. Eyewear-specific schema (frame/lens color fields) isolated behind an adapter pattern.
-3. All user-facing strings migrated to `messages/en.json` + `messages/da.json` (next-intl).
-4. The storefront-Stripe architecture gap closed or explicitly documented with a workaround.
-5. At least one user other than the original maintainer has completed `create-cartwright` end-to-end without support.
-
-Expect 4-8 weeks after Solbrillen launch. Until then, the public mirror at `Teloz1870/cartwright-template` is what the CLI fetches from — sanitized snapshots published on each release tag.
 
 ## Code of conduct
 

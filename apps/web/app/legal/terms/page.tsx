@@ -45,15 +45,14 @@ export default function TermsPage() {
           >
             MIT License
           </a>
-          . The Cartwright template repository is currently private; sanitised
-          public snapshots are published at{' '}
+          . The Cartwright engine template is published at{' '}
           <a
             href="https://github.com/Teloz1870/cartwright-template"
             className="text-cw-terracotta hover:underline"
           >
             cartwright-template
           </a>
-          {' '}under the same MIT license.
+          {' '}— public, under the same MIT license.
         </p>
 
         <h2 className="mt-8 text-2xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">

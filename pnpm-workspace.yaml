@@ -22,3 +22,9 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# Embed README.md content into the published manifest (the registry "readme"
+# field npmjs.com renders). pnpm defaults this OFF — npm always embeds it —
+# which is why every create-cartwright version shipped with an empty readme
+# on npmjs.com despite README.md being inside the tarball.
+embedReadme: true

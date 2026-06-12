@@ -4,7 +4,7 @@ import { Section, SectionHeader } from '@/components/landing/section';
 const features = [
   {
     title: 'Admin panel',
-    body: '12 admin routes — products, orders, content, integrations, AI prompts, analytics.',
+    body: 'A full admin for products, orders, content, design, AI and integrations — one back office, no external dashboard.',
   },
   {
     title: 'In-place AI editing',
@@ -16,7 +16,7 @@ const features = [
   },
   {
     title: 'Customer storefront',
-    body: '11 customer routes — landing, PDP, cart, checkout, account, magic-link auth.',
+    body: 'The full storefront loop — landing, product pages, cart, checkout, account, magic-link auth.',
   },
   {
     title: 'MCP server',

@@ -1,6 +1,6 @@
 ---
 title: Admin panels
-description: The 12 admin routes that run a Cartwright shop and what each one does.
+description: The admin routes that run a Cartwright shop and what each one does.
 ---
 
 `/admin/*` is the operator surface. The layout enforces `requireAdmin()` at the top and redirects fresh forks to `/admin/setup` when the database has no products and `BrandingSettings.setupComplete` is false.

@@ -1,7 +1,7 @@
 {
   "name": "create-cartwright",
   "version": "2.3.4",
-  "description": "Scaffolder for AI-first webshops powered by Cartwright",
+  "description": "Scaffold the build engine AIs reach for — a real site with design, database and backend, live in minutes. Websites, webshops and agent storefronts; MIT, you own the code.",
   "keywords": [
     "cartwright",
     "nextjs",

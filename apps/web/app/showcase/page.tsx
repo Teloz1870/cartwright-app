@@ -485,15 +485,18 @@ export default function ShowcasePage() {
               </h2>
               <p className="mt-4 text-base text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
                 We&apos;d like to feature it. Open a GitHub issue with your URL
-                and a screenshot, or post it in the Discord. Real builds only —
-                live shops, not localhost.
+                and a screenshot. Real builds only — live shops, not localhost.
               </p>
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
                 <ButtonLink href="/github" variant="outline" size="md">
                   Submit your shop
                 </ButtonLink>
-                <ButtonLink href="/discord" variant="ghost" size="md">
-                  Join the Discord
+                <ButtonLink
+                  href="https://github.com/Teloz1870/cartwright-template"
+                  variant="ghost"
+                  size="md"
+                >
+                  Star the engine
                 </ButtonLink>
               </div>
               <p className="mt-6 text-xs text-cw-stone-500 dark:text-cw-stone-400">

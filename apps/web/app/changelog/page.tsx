@@ -16,6 +16,22 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.27.0',
+    date: 'June 2026',
+    title: 'First impressions + AI-agent hardening (engine v0.35.1–v0.36.3)',
+    description:
+      'A fresh scaffold\'s very first render is now a designed moment instead of leftover template copy — and the scaffold itself got harder and friendlier for the AIs building on it: three external AIs (Claude, Codex, Gemini) each built a site on the engine, surfaced real gaps, and every one was fixed at the source.',
+    icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'First-run Welcome Canvas (v0.36.0, flag firstRunWelcome — scaffolds enable it) — an untouched site greets you with "Your site was just born." over a palette-adaptive aurora and three paths: a copy-paste AI quick-start prompt, the guided /admin/setup wizard, and a gallery of the design catalogue. It vanishes permanently the moment the site becomes yours.',
+      'English-first scaffolds (v0.36.0–v0.36.2) — create-cartwright now scaffolds English-only (/en) sites with welcome copy instead of leftover studio hero copy, seeds setupComplete: false so the first admin login opens the setup wizard, and en-only scaffolds pass tsc out of the box (the locale cast now derives from routing.locales).',
+      'Blank Canvas + the mockup-first flow (v0.36.1) — designs/blank/ is a registered, deliberately bare design made to be rewritten: ask your AI for a completely new design — header, footer, every page — while cart, checkout, admin and the AI tools keep working underneath. New mockup.set / mockup.clear tools publish a disposable HTML homepage takeover for instant approval before the real implementation; sanitized, confirm-gated and audited.',
+      'Self-prompting design guidance (v0.36.3) — DESIGN.md, the design playbook every agent rules file points to: the three build paths, the built-ins inventory (ThreeHero + 9 scenes, svg-items, the verified GSAP recipe), taste rules and a screenshot self-verification rule. Plus Blank Canvas motion examples and stable data-cw-* hooks on every floating engine overlay.',
+      'Security hardening (v0.36.3) — three admin AI endpoints that were internet-reachable without a session check are now auth-gated behind a shared requireAdminApi(), with a regression test that walks every admin API route (25 covered) so the class can\'t recur. Security headers land in next.config.ts (nosniff, X-Frame-Options, Referrer-Policy, HSTS, Permissions-Policy; CSP report-only), plus a timing-safe per-IP + per-email login brute-force throttle.',
+      'Dark mode, unified (v0.35.1) — Tailwind dark: utilities and the theme-token overrides now follow one switch, so a fresh scaffold no longer half-flips when the visitor\'s OS is dark. The admin is decoupled and always the light Polaris skin; storefront dark returns later as a per-design opt-in.',
+    ],
+  },
+  {
     version: '3.26.0',
     date: 'June 2026',
     title: 'The Light release (engine v0.35.0)',

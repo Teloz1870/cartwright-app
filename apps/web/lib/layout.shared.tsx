@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
 import { XLogo } from '@/components/x-logo';
-import { appName, gitConfig, isGithubPublic, social } from './shared';
+import { appName, gitConfig, social } from './shared';
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -81,7 +81,8 @@ export function baseOptions(): BaseLayoutProps {
         external: true,
       },
     ],
-    githubUrl: isGithubPublic ? social.github : undefined,
+    // The open-source engine template — public + MIT since v0.35.0.
+    githubUrl: social.templateRepo,
   };
 }
 
