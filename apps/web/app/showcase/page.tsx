@@ -246,7 +246,7 @@ export default function ShowcasePage() {
               <div className="mt-6 border-t border-cw-stone-200 dark:border-cw-stone-800" />
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <ButtonLink
-                  href="https://solbrillen.dk"
+                  href="https://solbrillen-dk-teloz1.vercel.app/da"
                   size="lg"
                   target="_blank"
                   rel="noopener noreferrer"
