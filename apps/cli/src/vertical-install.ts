@@ -27,7 +27,7 @@ const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 // Keep DEFAULT_REF in sync with src/index.ts + design-install.ts — the
 // bump-template-ref workflow seds all three on each template release. Verticals
 // first shipped in v0.33.0 (the registry exists from that tag onward).
-const DEFAULT_REF = "v0.36.2";
+const DEFAULT_REF = "v0.36.3";
 const REF_ALIASES: Record<string, string> = { stable: DEFAULT_REF, next: "next" };
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
