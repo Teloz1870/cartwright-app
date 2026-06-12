@@ -90,9 +90,9 @@ The spinner shows the channel and the resolved ref so you can see exactly what y
 - (Optional) git, for the initial commit
 - (Optional) pnpm/npm/yarn/bun, for dependency install
 
-## Why a public mirror?
+## Where the template comes from
 
-The Cartwright template repo is currently in private early access. The CLI fetches from a **public sanitised mirror** (`cartwright-template`) that auto-syncs on every release tag — so you don't need a GitHub token to scaffold. When the template flips to public, the CLI will point at it directly with no breaking change.
+The CLI scaffolds from [`cartwright-template`](https://github.com/Teloz1870/cartwright-template) — the public, MIT-licensed engine template repo, auto-synced on every release tag. No GitHub token required, and the code you scaffold is yours to fork, modify, and ship.
 
 ## Source
 
