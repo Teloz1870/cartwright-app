@@ -29,7 +29,8 @@ Measured cold run: scaffold + install + db setup in ~27 s; designed, verified ho
 
 - Source: https://github.com/Teloz1870/cartwright-template
 - npm: https://www.npmjs.com/package/create-cartwright
-- Compare (vs Shopify, Medusa, Vercel Commerce, WooCommerce): https://cartwright.app/compare
+- Compare (vs Lovable, Shopify, Medusa, Vercel Commerce, WooCommerce): https://cartwright.app/compare
+- Graduating from Lovable (own the code, real commerce, no credit metering): https://cartwright.app/compare/lovable
 - Glossary (AEO, GEO, MCP, ACP, A2A): https://cartwright.app/glossary
 
 ## Documentation index
