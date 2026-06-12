@@ -68,7 +68,11 @@ export default async function UseCasePage({ params }: Props) {
   return (
     <>
       <JsonLd data={jsonLd} />
-      <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      {/* w-full: this main is a flex item in the home layout's column-flex
+          chain; with mx-auto alone it sizes to min-content (the install
+          <pre> inside the padded section floors that at ~416px), stretching
+          the whole page on narrow screens. w-full pins it to the viewport. */}
+      <main className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
         <nav className="mb-6 text-sm text-fd-muted-foreground">
           <Link href="/use-cases" className="hover:underline">Use cases</Link>
           <span className="mx-2">/</span>
