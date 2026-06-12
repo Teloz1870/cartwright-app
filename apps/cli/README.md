@@ -47,6 +47,7 @@ npx cartwright design install <slug>
 | `--yes`, `-y` | false | Skip prompts, use defaults |
 | `--profile=<light\|full>` | `light` | Scaffold profile (see above) |
 | `--template=<slug>` | `website-corporate` (light) / `generic` (full) | Mode + seed-data preset |
+| `--look=<url>` | — | Scaffold wearing a shared look (see below) |
 | `--help`, `-h` | — | Print usage |
 | `--db=<turso\|postgres\|sqlite>` | (prompt) | Database choice — drives next-steps guidance |
 | `--ai` / `--no-ai` | (prompt) | Enable / disable the AI commerce features hint |
@@ -54,6 +55,36 @@ npx cartwright design install <slug>
 | `--pm=<pnpm\|npm\|yarn\|bun>` | auto-detect | Package manager for install |
 | `--no-install` | false | Skip dependency install |
 | `--no-git` | false | Skip `git init` + initial commit |
+
+## Looks (`--look <url>`)
+
+Every Cartwright shop can share its **look** — skin (design), palette, 3D scene and chrome —
+as a `cartwright-composition-v1` JSON file via its public `GET /api/look` endpoint (the
+shop owner enables the `lookSharing` flag). Scaffold a new project wearing that look:
+
+```bash
+npx create-cartwright@latest my-shop --yes --look https://that-shop.example/api/look
+```
+
+After the project is created and the database is seeded, the CLI applies the look:
+
+- **skin** → `designSlug: "<skin>"` in `brand.config.ts` (part of the initial commit),
+- **palette / scene / chrome** → the seeded database's branding settings — the same
+  fields the engine's `composition.apply` tool writes.
+
+The look **never carries copy**: voice/genome text and homepage layouts are not part of
+the public sharing boundary, and the CLI ignores them if present.
+
+Interaction with `--profile`: the light profile (default) ships a curated design set, so
+if the look's skin isn't included, the CLI keeps the default design and tells you how to
+get it — `npx cartwright design install <slug>` afterwards, or re-scaffold with
+`--profile full`. The palette/scene/chrome still apply either way (every design is
+palette-adaptive). Since the palette/scene/chrome live in the database, they're skipped
+under `--no-install` (no seeded DB yet).
+
+**Fail-soft by design:** an unreachable URL, invalid JSON, wrong schema, unknown design
+or database hiccup prints one warning and the scaffold completes unchanged — a broken
+look never breaks a scaffold.
 
 ## Template channels
 

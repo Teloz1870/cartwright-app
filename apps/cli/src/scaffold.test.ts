@@ -9,6 +9,7 @@ import {
   patchBrandConfigForEnglishFirst,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
+  patchBrandConfigDesignSlug,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
   patchFooterContent,
@@ -304,6 +305,43 @@ describe("patchBrandConfigGithubUrl", () => {
     expect(src).toBe(v0350); // byte-identical — never invents the key
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("githubUrl not found");
+  });
+});
+
+describe("patchBrandConfigDesignSlug (--look)", () => {
+  it("sets the look's skin on the template's undefined designSlug (keeps the cast + neighbours)", () => {
+    const input = [
+      `  industryTemplate: "saas",`,
+      `  designSlug: undefined as string | undefined,`,
+      `  mode: "website" as "website" | "webshop" | "agent-marketplace",`,
+    ].join("\n");
+    const { src, warnings } = patchBrandConfigDesignSlug(input, "fable");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`designSlug: "fable" as string | undefined,`);
+    // neighbours untouched
+    expect(src).toContain(`industryTemplate: "saas",`);
+    expect(src).toContain(`mode: "website" as "website" | "webshop" | "agent-marketplace",`);
+  });
+
+  it("overwrites a previously-set quoted slug (idempotent re-apply)", () => {
+    const input = `  designSlug: "engineered" as string | undefined,\n`;
+    const { src, warnings } = patchBrandConfigDesignSlug(input, "fable");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`designSlug: "fable" as string | undefined,`);
+    expect(src).not.toContain("engineered");
+
+    // Re-applying the same skin is a no-op.
+    const again = patchBrandConfigDesignSlug(src, "fable");
+    expect(again.src).toBe(src);
+    expect(again.warnings).toEqual([]);
+  });
+
+  it("warns + skips on template drift (no designSlug anchor)", () => {
+    const drifted = `  industryTemplate: "saas",\n  mode: "website",\n`;
+    const { src, warnings } = patchBrandConfigDesignSlug(drifted, "fable");
+    expect(src).toBe(drifted); // byte-identical — never invents the key
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("designSlug anchor not found");
   });
 });
 
