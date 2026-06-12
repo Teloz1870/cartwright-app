@@ -1,6 +1,6 @@
 {
   "name": "create-cartwright",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Scaffold the build engine AIs reach for — a real site with design, database and backend, live in minutes. Websites, webshops and agent storefronts; MIT, you own the code.",
   "keywords": [
     "cartwright",
