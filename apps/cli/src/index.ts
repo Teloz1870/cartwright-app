@@ -57,7 +57,7 @@ import { downloadTemplate } from "giget";
 import pc from "picocolors";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
@@ -163,6 +163,8 @@ Options:
   --ref <stable|next|tag>  Template channel (default: stable).
   --pm <pnpm|npm|yarn|bun> Package manager (default: auto-detect).
   --yes, -y                Skip prompts, use defaults.
+  --start / --no-start     Start the dev server when the scaffold is ready
+                           (interactive runs ask; --yes/non-TTY never auto-start).
   --no-install / --no-git / --no-github / --skip-skills
   --help, -h               Show this help.
 
@@ -335,6 +337,8 @@ async function run(): Promise<void> {
       "no-git": { type: "boolean" },
       "no-github": { type: "boolean" },
       "skip-skills": { type: "boolean" },
+      start: { type: "boolean" },
+      "no-start": { type: "boolean" },
     },
   });
 
@@ -454,7 +458,7 @@ async function run(): Promise<void> {
 
   const useAiGen = values["ai-gen"] ?? (values.yes ? false : exitOnCancel(
     await confirm({
-      message: "Vil du prøve den nye AI-scaffolder (v2)? (Kræver Gemini API Key)",
+      message: "Try the AI scaffolder (v2)? (requires a Gemini API key)",
       initialValue: true,
     })
   ));
@@ -462,12 +466,12 @@ async function run(): Promise<void> {
   if (useAiGen) {
     const keyMode = await resolveKeyMode({
       getEnvKey: () => process.env.GEMINI_API_KEY,
-      promptKey: async () => exitOnCancel(await password({ message: "Indtast Gemini API Key:" })),
-      confirmManual: async () => exitOnCancel(await confirm({ message: "Key fejlede. Fortsæt med manuel scaffold (v1)?", initialValue: true }))
+      promptKey: async () => exitOnCancel(await password({ message: "Enter your Gemini API key:" })),
+      confirmManual: async () => exitOnCancel(await confirm({ message: "The key failed. Continue with the manual scaffold (v1)?", initialValue: true }))
     });
 
     if (keyMode.type === "key") {
-      const initialPrompt = exitOnCancel(await text({ message: "Hvad slags butik vil du bygge?" }));
+      const initialPrompt = exitOnCancel(await text({ message: "What kind of site or shop do you want to build?" }));
       
       generatedBrief = await runInterview({
         apiKey: keyMode.key,
@@ -477,10 +481,10 @@ async function run(): Promise<void> {
       });
 
       console.log("\n" + summarizeBuild(generatedBrief) + "\n");
-      const ok = exitOnCancel(await confirm({ message: "Ser dette rigtigt ud? (Klar til at bygge)", initialValue: true }));
-      
+      const ok = exitOnCancel(await confirm({ message: "Does this look right? (ready to build)", initialValue: true }));
+
       if (!ok) {
-        cancel("Afbrudt af bruger.");
+        cancel("Cancelled.");
         process.exit(0);
       }
       
@@ -755,6 +759,11 @@ async function run(): Promise<void> {
         `  cd ${finalSlug}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
+        "",
+        pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
+        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+        pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
+        pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
       ]
     : [
         pc.bold("Next steps (required):"),
@@ -762,6 +771,11 @@ async function run(): Promise<void> {
         `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
+        "",
+        pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
+        pc.dim(`  Run \`${runCmd} db:setup\` and then \`${runCmd} dev\` in the background NOW,`),
+        pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
+        pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
       ];
 
   const lines = [
@@ -810,6 +824,42 @@ async function run(): Promise<void> {
     .join("\n");
 
   outro(lines);
+
+  // ── Optional dev-server start ─────────────────────────────────────────────
+  // "The link should work from the start": interactive humans get a Y/n offer
+  // (default yes) and the server runs in THIS terminal until Ctrl+C — the
+  // project is already saved, so stopping it loses nothing. Non-TTY runs
+  // (AI agents, CI pipes) and --yes NEVER auto-start: a foreground server
+  // would hang them — agents own their process model and are instructed in
+  // the summary above to background `dev` themselves. `--start` forces it,
+  // `--no-start` suppresses the question.
+  const interactive =
+    process.stdout.isTTY === true && process.stdin.isTTY === true;
+  const startNow =
+    values["no-start"] === true
+      ? false
+      : values.start === true
+        ? true
+        : dbReady && interactive && values.yes !== true
+          ? exitOnCancel(
+              await confirm({
+                message:
+                  "Start the dev server now? (Ctrl+C stops it — your project stays saved)",
+                initialValue: true,
+              }),
+            )
+          : false;
+
+  if (startNow) {
+    console.log(
+      pc.dim(
+        `\nStarting ${runCmd} dev in ${finalSlug}/ — open http://localhost:3000/en\n`,
+      ),
+    );
+    const [cmd, ...args] =
+      packageManager === "npm" ? ["npm", "run", "dev"] : [packageManager, "dev"];
+    spawnSync(cmd, args, { cwd: targetDir, stdio: "inherit" });
+  }
 }
 
 run().catch((err) => {
