@@ -3,6 +3,11 @@ title: Designs — overview
 description: How design and industry work as two orthogonal axes in Cartwright. Pick any design with any industry, mix in a Voice, and import or install new designs from the marketplace, Gemini Stitch, Claude Design, or v0.
 ---
 
+{/* Pack count derived from the vendored marketplace manifest (same source as
+    the /designs gallery) so this page stays honest as packs ship. */}
+
+import { DESIGNS } from '@/lib/designs-data';
+
 Cartwright separates **what you sell** (industry) from **how it looks** (design). They are orthogonal axes — any industry-template combines with any design — and both can be swapped without code-deploy.
 
 This is new in **v0.7.0**. Before that, the homepage component was hardcoded from the industry slug (`saas` → SaaSHomeClient, `studio` → StudioHomeClient, everything else → a single fallback). v0.7.0 introduces a first-class `designs/` registry, a portable `design.md` format, and adapters for the three biggest AI design tools.
@@ -24,7 +29,7 @@ The two axes are selected in the same admin step — see [Picking a design](/doc
 
 ## The catalogue
 
-Cartwright ships **24 whole-page design packs** out of the box — from the palette-adaptive **Aurora** defaults to recognizable premium skins (`aerospace`, `halo`, `flux`, `drive`) and the flagship super-pro **`apex`**. The picker is mode-filtered, so you only see the website or webshop designs relevant to your shop. Browse the full, always-current catalogue — with palettes, previews, and the prompt that builds each one — at **[/designs](/designs)**.
+Cartwright ships **{DESIGNS.length} whole-page design packs** out of the box — from the palette-adaptive **Aurora** defaults to recognizable premium skins (`aerospace`, `halo`, `flux`, `drive`) and the flagship super-pro **`apex`**. The picker is mode-filtered, so you only see the website or webshop designs relevant to your shop. Browse the full, always-current catalogue — with palettes, previews, and the prompt that builds each one — at **[/designs](/designs)**.
 
 Premium packs are part of the planned **Cartwright Plus** tier (honor-system today; real Stripe-validation lands in a future release) and stay technically selectable regardless of the flag.
 
