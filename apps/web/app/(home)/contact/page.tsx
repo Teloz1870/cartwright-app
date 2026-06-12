@@ -3,7 +3,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { ContactForm } from '@/components/landing/contact-form';
 import { contactEmail, social } from '@/lib/shared';
-import { Mail, Code2, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Mail, Code2, Star, ShieldCheck } from 'lucide-react';
 
 export const metadata = {
   title: 'Contact',
@@ -27,10 +27,10 @@ const altContacts = [
     external: true,
   },
   {
-    icon: MessageCircle,
-    label: 'Discord',
-    detail: 'Community questions (going live soon)',
-    href: social.discord,
+    icon: Star,
+    label: 'Engine on GitHub',
+    detail: 'cartwright-template — public + MIT',
+    href: social.templateRepo,
     external: true,
   },
   {

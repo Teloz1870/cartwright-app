@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Wordmark } from '@/components/wordmark';
 import { XLogo } from '@/components/x-logo';
 import { ButtonLink } from '@/components/ui/button';
-import { contactEmail, isGithubPublic, social } from '@/lib/shared';
+import { contactEmail, social } from '@/lib/shared';
 
 type FooterLink = { label: string; href: string; icon?: ReactNode };
 
@@ -44,8 +44,7 @@ const docsCols: { heading: string; links: FooterLink[] }[] = [
   {
     heading: 'Community',
     links: [
-      { label: 'Discord', href: social.discord },
-      { label: 'GitHub', href: social.github },
+      { label: 'GitHub', href: social.templateRepo },
       {
         label: 'X / Twitter',
         href: social.x,
@@ -78,12 +77,8 @@ export function CtaFooter() {
             >
               Get started
             </ButtonLink>
-            <ButtonLink
-              href={isGithubPublic ? social.github : social.discord}
-              variant="outline"
-              size="lg"
-            >
-              {isGithubPublic ? 'Star on GitHub' : 'Join the Discord'}
+            <ButtonLink href={social.templateRepo} variant="outline" size="lg">
+              Star on GitHub
             </ButtonLink>
             <ButtonLink
               href="/pricing"
@@ -125,10 +120,8 @@ export function SiteFooter() {
             </p>
             <ul className="mt-4 space-y-2.5 text-sm">
               {col.links.map((l) => (
-                // Key by label, not href: `social.discord` is a placeholder that
-                // equals `social.github`, so the Community column has two links
-                // with the same href — href keys would collide. Labels are unique
-                // within each column.
+                // Key by label — labels are unique within each column, hrefs
+                // are not guaranteed to be.
                 <li key={l.label}>
                   <Link
                     href={l.href}

@@ -67,7 +67,7 @@ const tiers: Tier[] = [
       'Hoptify "import from Shopify" + design import (Firecrawl)',
       'Resolvable Genome + indexing controls',
       'Bring your own Vercel, DB, Stripe, AI key',
-      'Community Discord + GitHub Issues',
+      'Community support via GitHub Issues',
     ],
     cta: {
       kind: 'link',

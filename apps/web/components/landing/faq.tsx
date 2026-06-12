@@ -11,15 +11,21 @@ const items = [
     q: 'Is cartwright open source?',
     a: (
       <>
-        The CLI (<code>create-cartwright</code>) and this site are MIT and public
-        from day one. The template repo is currently in private early access — it
-        flips to public after Solbrillen.dk’s production milestones are met. The
-        CLI fetches from a public sanitised mirror in the meantime, so no token
-        is required to use it.
+        Yes — all of it. The engine template repo,{' '}
+        <a
+          href="https://github.com/Teloz1870/cartwright-template"
+          className="text-cw-terracotta"
+        >
+          cartwright-template
+        </a>
+        , is public and MIT-licensed, and so are the CLI (
+        <code>create-cartwright</code>) and this site. The CLI scaffolds from
+        the public template repo, so no token is required — and the code it
+        gives you is yours to fork, modify, and ship.
       </>
     ),
     plain:
-      'The CLI (create-cartwright) and this site are MIT and public from day one. The template repo is currently in private early access and flips to public after Solbrillen.dk’s production milestones are met. The CLI fetches from a public sanitised mirror in the meantime, so no token is required to use it.',
+      'Yes — all of it. The engine template repo (github.com/Teloz1870/cartwright-template) is public and MIT-licensed, and so are the CLI (create-cartwright) and this site. The CLI scaffolds from the public template repo, so no token is required — and the code it gives you is yours to fork, modify, and ship.',
   },
   {
     q: 'Will it cost me anything to run?',
@@ -81,8 +87,8 @@ const items = [
     q: 'Where do I get support?',
     a: (
       <>
-        Discord for community support. GitHub Issues on cartwright-app for
-        docs/CLI bugs. Paid setup help is available — email{' '}
+        GitHub Issues — on cartwright-template for the engine, on cartwright-app
+        for docs/CLI bugs. Paid setup help is available — email{' '}
         <a href={`mailto:${contactEmail}`} className="text-cw-terracotta">
           {contactEmail}
         </a>
@@ -90,7 +96,7 @@ const items = [
       </>
     ),
     plain:
-      'Discord for community support, GitHub Issues on cartwright-app for docs/CLI bugs, and paid setup help by email.',
+      'GitHub Issues — on cartwright-template for the engine, on cartwright-app for docs/CLI bugs — and paid setup help by email.',
   },
   {
     q: 'When is 1.0?',
@@ -117,7 +123,7 @@ export function Faq() {
       <SectionHeader
         eyebrow="FAQ"
         title="Honest answers, no marketing-speak."
-        description="If your question is not here, ask on Discord or open an issue. We will add it."
+        description="If your question is not here, open a GitHub issue. We will add it."
       />
       <div className="mt-10 max-w-3xl">
         <Accordion items={items} />

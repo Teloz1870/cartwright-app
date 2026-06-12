@@ -23,13 +23,6 @@ const config = {
         permanent: false,
       },
       {
-        // No Discord server yet — early-access folks watch the repo.
-        // Swap this destination to the invite URL once the server exists.
-        source: '/discord',
-        destination: 'https://github.com/Teloz1870/cartwright-app',
-        permanent: false,
-      },
-      {
         source: '/services',
         destination: '/pricing',
         permanent: false,
