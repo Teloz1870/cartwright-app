@@ -68,7 +68,11 @@ export default async function ComparePage({ params }: Props) {
   return (
     <>
       <JsonLd data={jsonLd} />
-      <main className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+      {/* w-full: this main is a flex item in the home layout's column-flex
+          chain; with mx-auto alone it sizes to min-content (the install
+          <pre> inside the padded section floors that at ~416px), stretching
+          the whole page on narrow screens. w-full pins it to the viewport. */}
+      <main className="mx-auto w-full max-w-4xl px-4 py-16 sm:px-6">
         <nav className="mb-6 text-sm text-fd-muted-foreground">
           <Link href="/compare" className="hover:underline">Compare</Link>
           <span className="mx-2">/</span>
@@ -80,7 +84,11 @@ export default async function ComparePage({ params }: Props) {
         {/* Answer-first lede — the paragraph AI engines quote. */}
         <p className="mt-6 text-lg leading-relaxed text-fd-muted-foreground">{c.answer}</p>
 
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-fd-border">
+        {/* max-w cap: the home layout's column-flex chain sizes ancestors by
+            min-content, so without a viewport-derived cap the table's
+            min-content width stretches the whole page on narrow screens
+            instead of scrolling inside this wrapper. */}
+        <div className="mt-10 max-w-[calc(100vw-2rem)] overflow-x-auto rounded-2xl border border-fd-border">
           <table className="w-full text-left text-sm">
             <thead className="bg-fd-muted/50">
               <tr>
