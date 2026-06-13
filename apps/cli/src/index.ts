@@ -124,6 +124,7 @@ import {
   regenerateMigrationBaseline,
   isTemplateSlug,
   tryGitInit,
+  tryGitAmendInitialCommit,
   tryInstall,
   databaseNote
 } from "./scaffold.js";
@@ -733,6 +734,15 @@ async function run(): Promise<void> {
         ),
       );
     }
+  }
+
+  // Fold the post-commit regeneration (migration baseline + the light-profile
+  // marketplace-manifest) into the initial commit so the user's very first
+  // `git status` is clean. tryGitInit committed BEFORE deps install + those
+  // regenerations ran, leaving those tracked files uncommitted. No-op when git
+  // wasn't initialized (--no-git or git unavailable).
+  if (gitInitialized) {
+    tryGitAmendInitialCommit(targetDir);
   }
 
   // ── AI-agent skills ─────────────────────────────────────────────────────

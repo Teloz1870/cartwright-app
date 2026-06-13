@@ -157,6 +157,12 @@ describe("light design curation invariants", () => {
     }
   });
 
+  it("prunes the Teloz/saas agency pages (priser/cases/services)", () => {
+    for (const page of ["priser", "cases", "services"]) {
+      expect(LIGHT_EXCLUDED_PATHS).toContain(`app/[locale]/${page}`);
+    }
+  });
+
   it("never excludes a kept design or a core module path", () => {
     for (const rel of LIGHT_EXCLUDED_PATHS) {
       for (const kept of LIGHT_KEPT_DESIGNS) {

@@ -130,6 +130,15 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "app/admin/hoptify",
   "tests/unit/hoptify-design.test.ts",
   "tests/unit/hoptify-migrate.test.ts",
+  // ── Teloz/saas agency pages — pricing, case studies, services. These are the
+  //    holding company's OWN corporate pages: isSaas-gated (industryTemplate
+  //    "saas"), so they 404 on a website-corporate scaffold, and their nav links
+  //    in Header/MobileMenu are {isSaas &&}-gated. A customer website scaffold
+  //    has no use for them, so the light profile drops them (the engine keeps
+  //    them for the Teloz canary). Re-install via `--profile full`.
+  "app/[locale]/priser",
+  "app/[locale]/cases",
+  "app/[locale]/services",
   // ── Non-curated design packs (re-install: `cartwright design install <slug>`)
   ...LIGHT_PRUNED_DESIGNS.map((d) => `designs/${d.slug}`),
   // Pins the FULL design registry (asserts hoptify is mixable) — invalid after the trim.
