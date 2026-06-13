@@ -7,10 +7,12 @@ import {
   pruneLockfileForLight,
   LIGHT_KEPT_DESIGNS,
   LIGHT_PRUNED_DESIGNS,
+  LIGHT_PRUNED_PLUGINS,
   LIGHT_EXCLUDED_PATHS,
   LIGHT_PRUNED_DEPENDENCIES,
   LIGHT_PRUNED_DEV_DEPENDENCIES,
   pruneDesignIndexSource,
+  prunePluginsRegistrySource,
   pruneDesignOptionsSource,
   pruneDesignMotifsSource,
   pruneWebMcpFromLayoutSource,
@@ -207,6 +209,52 @@ describe("pruneDesignIndexSource", () => {
     ]);
     expect(missing).toEqual(["not-a-design"]);
     expect(src).toBe(INDEX_SRC);
+  });
+});
+
+describe("prunePluginsRegistrySource", () => {
+  const REGISTRY_SRC = `import {
+  toCatalogueEntry,
+  type CartwrightPluginManifest,
+} from "@/lib/plugins/spec";
+import { phoneWidgetPlugin } from "./phone-widget/manifest";
+import { hoptifyPlugin } from "./hoptify/manifest";
+import { wishlistPlugin } from "./wishlist/manifest";
+
+export const PLUGINS: readonly CartwrightPluginManifest[] = [
+  phoneWidgetPlugin,
+  hoptifyPlugin,
+  wishlistPlugin,
+];
+`;
+
+  it("removes a pruned plugin's import line + PLUGINS entry, keeps the rest", () => {
+    const { src, missing } = prunePluginsRegistrySource(REGISTRY_SRC, [
+      { slug: "hoptify", exportName: "hoptifyPlugin" },
+    ]);
+    expect(missing).toEqual([]);
+    expect(src).not.toContain("hoptifyPlugin");
+    expect(src).not.toContain(`from "./hoptify/manifest"`);
+    // kept plugins untouched + array still closes cleanly
+    expect(src).toContain(`import { phoneWidgetPlugin } from "./phone-widget/manifest";`);
+    expect(src).toContain("phoneWidgetPlugin,");
+    expect(src).toContain("wishlistPlugin,");
+    expect(src).toContain("];");
+  });
+
+  it("reports unknown slugs without modifying the source", () => {
+    const { src, missing } = prunePluginsRegistrySource(REGISTRY_SRC, [
+      { slug: "not-a-plugin", exportName: "notAPlugin" },
+    ]);
+    expect(missing).toEqual(["not-a-plugin"]);
+    expect(src).toBe(REGISTRY_SRC);
+  });
+
+  it("default LIGHT_PRUNED_PLUGINS de-registers hoptify + excludes its dir", () => {
+    expect(LIGHT_PRUNED_PLUGINS.map((p) => p.slug)).toContain("hoptify");
+    for (const p of LIGHT_PRUNED_PLUGINS) {
+      expect(LIGHT_EXCLUDED_PATHS).toContain(`plugins/${p.slug}`);
+    }
   });
 });
 
