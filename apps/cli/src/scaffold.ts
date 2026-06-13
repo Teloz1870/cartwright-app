@@ -716,6 +716,27 @@ export function tryGitInit(targetDir: string): boolean {
   }
 }
 
+/**
+ * Fold post-commit regenerated artifacts into the initial commit so the user's
+ * very first `git status` is clean. tryGitInit commits BEFORE deps install +
+ * the migration-baseline / marketplace-manifest regeneration runs, so without
+ * this those regenerated tracked files show up as uncommitted right after
+ * scaffolding. `--amend --no-edit` keeps the single "initial commit"; nothing is
+ * pushed during scaffold, so rewriting it is safe. Best-effort: a failure just
+ * leaves the (functional) dirty tree as before.
+ */
+export function tryGitAmendInitialCommit(targetDir: string): boolean {
+  try {
+    execSync("git add -A && git commit -q --amend --no-edit", {
+      cwd: targetDir,
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const LOCKFILE_BY_PM: Record<PackageManager, string> = {
   npm: "package-lock.json",
   pnpm: "pnpm-lock.yaml",
