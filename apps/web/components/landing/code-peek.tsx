@@ -32,16 +32,16 @@ export const brand: BrandConfig = {
     key: 'theme',
     label: 'themes/<slug>.css',
     code: `@theme {
-  --color-brand-50:  #fdf5f1;
-  --color-brand-100: #f9e2d6;
-  --color-brand-200: #f0bda1;
-  --color-brand-300: #e69770;
-  --color-brand-400: #d97757; /* primary */
-  --color-brand-500: #c4623e;
-  --color-brand-600: #a64f30;
-  --color-brand-700: #7d3b25;
-  --color-brand-800: #4e2716;
-  --color-brand-900: #2a140a;
+  --color-brand-50:  #f3f1ff;
+  --color-brand-100: #e7e2ff;
+  --color-brand-200: #cdc1ff;
+  --color-brand-300: #a890ff;
+  --color-brand-400: #7c5cff; /* primary */
+  --color-brand-500: #6b4ce6;
+  --color-brand-600: #5836c4;
+  --color-brand-700: #432a93;
+  --color-brand-800: #2d1c61;
+  --color-brand-900: #1a1038;
 }`,
   },
   {
