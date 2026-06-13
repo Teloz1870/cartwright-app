@@ -95,6 +95,20 @@ export const LIGHT_PRUNED_DESIGNS: ReadonlyArray<{ slug: string; exportName: str
 ];
 
 /**
+ * slug → exported manifest const in plugins/<slug>/manifest.ts. A full-only
+ * plugin is de-registered from plugins/registry.ts (prunePluginsRegistrySource)
+ * AND its dir removed (via LIGHT_EXCLUDED_PATHS below). Without this, the light
+ * profile prunes hoptify's impl (lib/hoptify, app/admin/hoptify) but leaves the
+ * hoptify entry in the registry, so the shipped tests/unit/plugins.test.ts
+ * "every declared file exists" + "route mounts wired" invariants fail on a
+ * fresh light scaffold. hoptify is the only registry plugin whose files the
+ * light profile prunes (a2a/ucp/webmcp are pruned modules, not registry plugins).
+ */
+export const LIGHT_PRUNED_PLUGINS: ReadonlyArray<{ slug: string; exportName: string }> = [
+  { slug: "hoptify", exportName: "hoptifyPlugin" },
+];
+
+/**
  * Paths (relative to the scaffold root) removed by the light profile.
  * Grouped by audit classification. Missing paths are skipped silently so a
  * future template that already dropped (or moved) a module doesn't error.
@@ -125,11 +139,21 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "components/WebMcpCheck.tsx",
   "app/[locale]/webmcp-check",
   "tests/unit/webmcp-paths.test.ts",
-  // ── hoptify (audit §4 owner call; its design pack is pruned anyway) ──────
+  // ── hoptify (audit §4 owner call) — full-only, removed entirely from light:
+  //    design pack via LIGHT_PRUNED_DESIGNS; impl (lib/ + app/admin) + the PLUGIN
+  //    dir below; its plugins/registry.ts entry via LIGHT_PRUNED_PLUGINS (the
+  //    registry codemod, so /api/admin/plugins doesn't list a pruned plugin).
+  //    tests/unit/plugins.test.ts pins the FULL plugin registry — both generic
+  //    invariants ("every declared file exists", "mounts wired") that trip over
+  //    hoptify's pruned files AND hoptify-specific assertions via
+  //    getPluginManifest("hoptify") — so it's pruned, like design-mixable.test.ts
+  //    pins the full design registry.
   "lib/hoptify",
   "app/admin/hoptify",
   "tests/unit/hoptify-design.test.ts",
   "tests/unit/hoptify-migrate.test.ts",
+  "tests/unit/plugins.test.ts",
+  ...LIGHT_PRUNED_PLUGINS.map((p) => `plugins/${p.slug}`),
   // ── Teloz/saas agency pages — pricing, case studies, services. These are the
   //    holding company's OWN corporate pages: isSaas-gated (industryTemplate
   //    "saas"), so they 404 on a website-corporate scaffold, and their nav links
@@ -206,6 +230,35 @@ export function pruneDesignIndexSource(
       `^\\s*(?:"${escapeRe(slug)}"|${escapeRe(slug)}):\\s*${escapeRe(exportName)},[ \\t]*\\r?\\n`,
       "m",
     );
+    const hadImport = importRe.test(out);
+    const hadEntry = entryRe.test(out);
+    out = out.replace(importRe, "").replace(entryRe, "");
+    if (!hadImport && !hadEntry) missing.push(slug);
+  }
+  return { src: out, missing };
+}
+
+/**
+ * Remove pruned plugins' import lines + PLUGINS-array entries from
+ * plugins/registry.ts source. Mirrors pruneDesignIndexSource: a full-only
+ * plugin is de-registered so the shipped plugins.test.ts invariants
+ * ("every declared file exists", "route mounts wired") stay green once its
+ * files are pruned. Slugs whose lines aren't found are reported in `missing`
+ * (template drift) — never fatal.
+ */
+export function prunePluginsRegistrySource(
+  src: string,
+  pruned: ReadonlyArray<{ slug: string; exportName: string }> = LIGHT_PRUNED_PLUGINS,
+): PruneResult {
+  let out = src;
+  const missing: string[] = [];
+  for (const { slug, exportName } of pruned) {
+    const importRe = new RegExp(
+      `^import\\s*\\{\\s*${escapeRe(exportName)}\\s*\\}\\s*from\\s*"\\./${escapeRe(slug)}/manifest";[ \\t]*\\r?\\n`,
+      "m",
+    );
+    // Bare-identifier entry on its own line in the PLUGINS array.
+    const entryRe = new RegExp(`^[ \\t]*${escapeRe(exportName)},[ \\t]*\\r?\\n`, "m");
     const hadImport = importRe.test(out);
     const hadEntry = entryRe.test(out);
     out = out.replace(importRe, "").replace(entryRe, "");
@@ -410,6 +463,12 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
   applyCodemod(targetDir, join("designs", "options.ts"), (src) => {
     const r = pruneDesignOptionsSource(src);
     for (const slug of r.missing) warnings.push(`designs/options.ts — no entry for "${slug}".`);
+    return r.src;
+  }, warnings);
+
+  applyCodemod(targetDir, join("plugins", "registry.ts"), (src) => {
+    const r = prunePluginsRegistrySource(src);
+    for (const slug of r.missing) warnings.push(`plugins/registry.ts — no entry for "${slug}".`);
     return r.src;
   }, warnings);
 
