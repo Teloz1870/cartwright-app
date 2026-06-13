@@ -6,11 +6,15 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
-  /* Cartwright palette — terracotta + oker + warm neutrals */
-  --color-cw-terracotta: #d97757;
-  --color-cw-terracotta-strong: #c4623e;
-  --color-cw-oker: #e8b339;
-  --color-cw-oker-strong: #c8951e;
+  /* Cartwright palette — purple brand (2026 rebrand from terracotta/oker).
+     The token NAMES are kept (cw-terracotta/cw-oker) so the ~237 component
+     references don't all have to change; the VALUES are now the Cartwright
+     brand purple `#7c5cff` (matches the engine's --cw-brand). Primary =
+     terracotta tokens, secondary = oker tokens (a lighter purple). */
+  --color-cw-terracotta: #7c5cff;
+  --color-cw-terracotta-strong: #5b3fd6;
+  --color-cw-oker: #9d7bff;
+  --color-cw-oker-strong: #6b4ce6;
   --color-cw-ink: #0a0a0b;
   --color-cw-paper: #fafaf9;
   --color-cw-stone-50: #fafaf9;

@@ -26,7 +26,7 @@ export default function OgImage() {
               width: '14px',
               height: '14px',
               borderRadius: '9999px',
-              background: '#d97757',
+              background: '#7c5cff',
             }}
           />
           <div
@@ -73,7 +73,7 @@ export default function OgImage() {
             gap: '12px',
             fontSize: '24px',
             fontFamily: 'monospace',
-            color: '#d97757',
+            color: '#7c5cff',
           }}
         >
           <span style={{ color: '#737373' }}>$</span>
