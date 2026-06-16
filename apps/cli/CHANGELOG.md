@@ -1,5 +1,17 @@
 # create-cartwright
 
+## 2.4.0
+
+### Minor Changes
+
+- 497d6db: The scaffold can now end with a RUNNING site: interactive runs offer "Start the dev server now?" (default yes; `--start`/`--no-start` to control, never auto-starts under `--yes` or in non-TTY runs), and the success summary now instructs AI agents (Claude/Gemini/Codex) to background `dev` and hand their user a working link instead of instructions. The v2 AI-interview flow and build summary are now English-first (the interviewer mirrors the user's language).
+
+### Patch Changes
+
+- 7cbede0: Light-profile scaffolds now fully remove the full-only `hoptify` plugin, so `pnpm test` is green on a fresh light scaffold. The light profile already pruned hoptify's impl (`lib/hoptify`, `app/admin/hoptify`), but the plugin stayed registered and the shipped `tests/unit/plugins.test.ts` then failed its "every declared file exists" + "route mounts wired" invariants on the now-missing files. The profile now also de-registers hoptify from `plugins/registry.ts` (a codemod mirroring the design-registry prune, so `/api/admin/plugins` doesn't list a pruned plugin), prunes the `plugins/hoptify/` dir, and prunes `tests/unit/plugins.test.ts` (which pins the full plugin registry — including hoptify-specific assertions — and so can't survive the prune, like `design-mixable.test.ts`).
+- 0fbb8bb: Light-profile scaffolds no longer ship the Teloz holding-company agency pages (`/priser`, `/cases`, `/services`) — they are `isSaas`-gated corporate pages with no use in a customer website scaffold (the engine keeps them for the Teloz canary; `--profile full` still includes them). The initial git commit is now amended after the post-commit migration-baseline + marketplace-manifest regeneration, so a freshly scaffolded project has a **clean `git status`** instead of two already-modified tracked files.
+- 3da88ec: Bump default template ref to v0.37.0 (was v0.36.3).
+
 ## 2.3.5
 
 ### Patch Changes
