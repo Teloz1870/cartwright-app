@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.4.2
+
+### Patch Changes
+
+- fcab1cd: Bump default template ref to v0.38.0 (was v0.37.1).
+
 ## 2.4.1
 
 ### Patch Changes
