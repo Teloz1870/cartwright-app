@@ -8,8 +8,15 @@
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
+ *                                [--look=<url>]
  *                                [--pm=pnpm|npm|yarn|bun]
  *                                [--no-install] [--no-git] [--no-github] [--skip-skills]
+ *
+ * Looks (see ./look.ts):
+ *   --look <url> → scaffold wearing a shared look: fetches a
+ *   cartwright-composition-v1 JSON (e.g. another shop's /api/look) and applies
+ *   its skin (brand.config.ts designSlug) + palette/scene/chrome (seeded DB).
+ *   Fail-soft: a broken look warns and never breaks the scaffold.
  *
  * Profiles (one engine, two scaffold profiles — see ./profile-light.ts):
  *   --profile light (default) → website-mode default, curated design set,
@@ -142,6 +149,13 @@ import {
   applyLightProfile,
   lightProfileNote,
 } from "./profile-light.js";
+import {
+  fetchLook,
+  stageLookSkin,
+  lookHasDbParts,
+  applyLookDbParts,
+  type PublicLook,
+} from "./look.js";
 
 const HELP_TEXT = `create-cartwright — a real site (design, database, backend) live in minutes.
 
@@ -159,6 +173,15 @@ Options:
   --template <slug>        generic | website-corporate | coffee | sunglasses |
                            agent-marketplace (requires --profile full).
                            Default: website-corporate (light) / generic (full).
+  --look <url>             Scaffold wearing a shared look: fetch a
+                           cartwright-composition-v1 JSON (e.g. another shop's
+                           /api/look) and apply its skin + palette/scene/chrome.
+                           Works with both profiles; if the light profile doesn't
+                           include the look's design, the skin is skipped with a
+                           hint (re-install it, or use --profile full). Fail-soft:
+                           a broken look never breaks the scaffold. The
+                           palette/scene/chrome parts need the seeded database,
+                           so they're skipped under --no-install.
   --db <turso|postgres|sqlite>   Database (default: turso).
   --ai / --no-ai           Include AI commerce features hint.
   --ref <stable|next|tag>  Template channel (default: stable).
@@ -333,6 +356,7 @@ async function run(): Promise<void> {
       pm: { type: "string" },
       template: { type: "string" },
       profile: { type: "string" },
+      look: { type: "string" },
       help: { type: "boolean", short: "h" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
@@ -554,10 +578,8 @@ async function run(): Promise<void> {
   // install/db step so the patched seed (setupComplete: false) is what gets
   // seeded. Fail-soft: drift produces a note, never a crash — e.g. templates
   // ≤ v0.35.1 don't have the firstRunWelcome flag yet (warn + skip).
-  const firstImpressionWarnings = applyFirstImpressionPatches(
-    targetDir,
-    titleCase(generatedBrief ? finalSlug : finalProjectName),
-  );
+  const storeDisplayName = titleCase(generatedBrief ? finalSlug : finalProjectName);
+  const firstImpressionWarnings = applyFirstImpressionPatches(targetDir, storeDisplayName);
   if (firstImpressionWarnings.length > 0) {
     note(
       firstImpressionWarnings.map((w) => `• ${w}`).join("\n"),
@@ -591,6 +613,39 @@ async function run(): Promise<void> {
         report.warnings.map((w) => `• ${w}`).join("\n"),
         pc.yellow("light-profile warnings (non-fatal)"),
       );
+    }
+  }
+
+  // ── Shared look (--look <url>) — fetch + skin ───────────────────────────
+  // Runs AFTER the profile/template patches (so designs/ reflects what the
+  // scaffold actually ships) and BEFORE git init (so the skin's designSlug is
+  // part of the initial commit). The DB-backed parts (palette/scene/chrome)
+  // are applied after the database is seeded, further down. Fail-soft
+  // contract: every failure is one clear warning; the scaffold always
+  // continues unchanged.
+  let look: PublicLook | null = null;
+  let lookSkinApplied = false;
+  let lookHadWarnings = false;
+  if (values.look) {
+    const lookSpinner = spinner();
+    lookSpinner.start("Fetching the shared look…");
+    const fetched = await fetchLook(values.look);
+    if (fetched.ok) {
+      look = fetched.look;
+      lookSpinner.stop(pc.green(`Look fetched: ${look.name ?? look.skin}`));
+      const staged = stageLookSkin(targetDir, look);
+      lookSkinApplied = staged.applied;
+      if (staged.warnings.length > 0) {
+        lookHadWarnings = true;
+        note(
+          staged.warnings.map((w) => `• ${w}`).join("\n"),
+          pc.yellow("look warnings (non-fatal)"),
+        );
+      }
+    } else {
+      lookSpinner.stop(pc.yellow("Look not applied (scaffold continues unchanged)."));
+      lookHadWarnings = true;
+      note(`• --look: ${fetched.error}`, pc.yellow("look warnings (non-fatal)"));
     }
   }
 
@@ -745,6 +800,38 @@ async function run(): Promise<void> {
     tryGitAmendInitialCommit(targetDir);
   }
 
+  // ── Shared look — DB-backed parts (palette / scene / chrome) ────────────
+  // The look's palette/scene/chrome live in the seeded database's
+  // BrandingSettings row (themeJson / threeDConfigJson / chromeJson — the
+  // exact fields the engine's composition.apply writes), so this step needs
+  // db:setup to have succeeded. Fail-soft like everything else about --look.
+  let lookDbApplied = false;
+  if (look && lookHasDbParts(look)) {
+    if (dbReady) {
+      const res = applyLookDbParts(targetDir, look, { storeName: storeDisplayName });
+      if (res.ok) {
+        lookDbApplied = true;
+      } else if (res.warning) {
+        lookHadWarnings = true;
+        note(`• --look: ${res.warning}`, pc.yellow("look warnings (non-fatal)"));
+      }
+    } else {
+      lookHadWarnings = true;
+      note(
+        "• --look: the database isn't set up yet, so the look's palette/scene/chrome were not applied.\n" +
+          "  After `db:setup` succeeds, apply the look via the composition.apply tool or /admin/designs.",
+        pc.yellow("look warnings (non-fatal)"),
+      );
+    }
+  }
+  if (look && (lookSkinApplied || lookDbApplied)) {
+    note(
+      pc.green(`Look applied: ${look.name ?? look.skin}`) +
+        (lookHadWarnings ? pc.dim("\n(partially — see the look warnings above)") : ""),
+      "look",
+    );
+  }
+
   // ── AI-agent skills ─────────────────────────────────────────────────────
   // Cartwright's own skill (cartwright-guidance) ships in the template under
   // .claude/skills/. This additional step installs Chrome team's upstream
@@ -799,6 +886,11 @@ async function run(): Promise<void> {
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
       ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
+      : "",
+    look && (lookSkinApplied || lookDbApplied)
+      ? pc.green("✓") +
+        ` Look applied: ${look.name ?? look.skin}` +
+        (lookHadWarnings ? pc.dim(" (with warnings — see above)") : "")
       : "",
     "",
     ...nextSteps,

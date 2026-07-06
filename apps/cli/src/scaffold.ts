@@ -427,6 +427,34 @@ export function patchBrandConfigForFirstRunWelcome(original: string): PatchResul
 }
 
 /**
+ * Set the look's skin as the explicit design pack (`--look <url>`):
+ * `designSlug: undefined as string | undefined` → `designSlug: "<skin>" as …`.
+ *
+ * Config beats DB in the engine's design resolution (lib/theme.ts
+ * getActiveDesign: brand.designSlug ?? row.designSlug ?? inference), so this
+ * is the trusted, committable way to pin the design — exactly what
+ * /admin/designs tells customers to do by hand. Anchored on the template's
+ * exact field shape (incl. a previously-set quoted value, so the patch is
+ * idempotent); drift warns + skips per the established fail-soft contract.
+ * The caller validates `skin` as a kebab-case slug before this runs.
+ */
+export function patchBrandConfigDesignSlug(original: string, skin: string): PatchResult {
+  const re = /designSlug:\s*(?:undefined|"[^"]*")\s*as\s*string\s*\|\s*undefined/;
+  if (!re.test(original)) {
+    return {
+      src: original,
+      warnings: [
+        "designSlug anchor not found — skipped (template drift?). Set designSlug manually in brand.config.ts or via /admin/designs.",
+      ],
+    };
+  }
+  return {
+    src: original.replace(re, `designSlug: "${skin}" as string | undefined`),
+    warnings: [],
+  };
+}
+
+/**
  * Neutralize the Teloz agency pitch in footer.githubUrl (brand.config.ts).
  *
  * v0.36.0 (engine PR #222) moved the footer's GitHub link from hardcoded JSX
