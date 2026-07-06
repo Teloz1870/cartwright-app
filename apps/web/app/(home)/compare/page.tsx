@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import JsonLd from '@/components/JsonLd';
-import { COMPARISONS } from '@/lib/comparisons';
+import { COMPARISONS, LOVABLE } from '@/lib/comparisons';
 import { pageOg } from '@/lib/og';
 
+// Lovable first — it has a dedicated landing page (graduation framing) and is
+// the comparison warm traffic searches for; the rest render via the template.
+const ALL_COMPARISONS = [LOVABLE, ...COMPARISONS];
+
 const COMPARE_DESCRIPTION =
-  'How Cartwright — the open-source, AI-first Next.js commerce engine you own — compares to Shopify, Medusa, Vercel Commerce, and WooCommerce.';
+  'How Cartwright — the open-source, AI-first Next.js commerce engine you own — compares to Lovable, Shopify, Medusa, Vercel Commerce, and WooCommerce.';
 
 export const metadata: Metadata = {
   title: 'Compare Cartwright',
@@ -21,7 +25,7 @@ export default function CompareHubPage() {
     name: 'Compare Cartwright',
     url: 'https://cartwright.app/compare',
     description: metadata.description,
-    hasPart: COMPARISONS.map((c) => ({
+    hasPart: ALL_COMPARISONS.map((c) => ({
       '@type': 'WebPage',
       name: c.title,
       url: `https://cartwright.app/compare/${c.slug}`,
@@ -38,7 +42,7 @@ export default function CompareHubPage() {
           what each one does better.
         </p>
         <ul className="mt-10 space-y-4">
-          {COMPARISONS.map((c) => (
+          {ALL_COMPARISONS.map((c) => (
             <li key={c.slug}>
               <Link
                 href={`/compare/${c.slug}`}

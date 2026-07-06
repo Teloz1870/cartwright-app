@@ -114,6 +114,93 @@ const woocommerce: Comparison = {
   ],
 };
 
+/**
+ * Lovable gets a dedicated landing page (app/(home)/compare/lovable/page.tsx)
+ * with graduation-specific sections — hero, stay-vs-graduate, design-import —
+ * so it lives OUTSIDE the COMPARISONS array (which drives generateStaticParams
+ * for the generic /compare/[competitor] template). The hub and sitemap include
+ * it explicitly. Same honesty doctrine as above: Lovable is genuinely great at
+ * the zero-install prompt-to-app moment; Cartwright is where you go when you
+ * need to own it. Lovable specifics (pricing, features) verified June 2026 —
+ * hedge them, they move fast.
+ */
+export const LOVABLE: Comparison = {
+  slug: 'lovable',
+  competitor: 'Lovable',
+  title: 'Cartwright vs Lovable',
+  description:
+    'Lovable builds you an app on their platform. Cartwright hands your AI agent a real site and shop engine in your own repo — when to stay, when to graduate, and how to bring your design with you.',
+  answer:
+    'Lovable builds you an app on their platform; Cartwright hands your AI agent a real site and shop engine in your own repo. Lovable is the fastest zero-install way to turn an idea into a working app — prompt in the browser, managed backend, polished visual editing. Cartwright is where you go when you need to own it: MIT-licensed source scaffolded into your own repository, any AI agent with your own API key and no credit metering, a full commerce engine, and server-rendered pages that AI search engines can actually read. This is a graduation, not a rivalry — plenty of builders use both.',
+  rows: [
+    {
+      dimension: 'Fastest path to v1',
+      cartwright:
+        'One terminal command (npx create-cartwright) — but it assumes Node and an AI coding agent, i.e. a developer environment.',
+      them:
+        'Unbeatable zero-install start: prompt to working app in the browser, nothing to set up. This is what Lovable is genuinely best at.',
+    },
+    {
+      dimension: 'Where your code lives',
+      cartwright: 'In your own repo from the first commit — the MIT-licensed engine source is the product.',
+      them: 'Built and run on Lovable’s platform; GitHub sync can mirror the code out, but the platform is home.',
+    },
+    {
+      dimension: 'Who runs the AI',
+      cartwright:
+        'Any agent you already use — Claude Code, Cursor, Copilot, Gemini CLI — with your own API key. The engine meters nothing.',
+      them:
+        'Lovable’s built-in agent, metered in credits (Pro from ~$25/mo for ~100 credits as of mid-2026, messages priced by complexity).',
+    },
+    {
+      dimension: 'Backend',
+      cartwright: 'In-repo Prisma schema + SQLite/Turso/Postgres + Stripe — you can read, migrate, and host every line.',
+      them: 'Lovable Cloud: a managed database/auth/storage backend they run for you — zero ops, genuinely convenient.',
+    },
+    {
+      dimension: 'Commerce out of the box',
+      cartwright:
+        'A real engine: products, cart, Stripe checkout, orders, VAT/Stripe Tax, shipping zones, GDPR tooling, multi-currency — flags, not prompts.',
+      them: 'Payments can be added via integrations, but there is no dedicated commerce engine underneath the generated app.',
+    },
+    {
+      dimension: 'SEO & AI visibility',
+      cartwright:
+        'Server-rendered pages with JSON-LD on every citable page, plus llms.txt — readable by Google and AI answer engines.',
+      them:
+        'Generated apps are typically client-rendered React — great for app UIs, largely invisible to crawlers and AI engines that read server HTML.',
+    },
+    {
+      dimension: 'Pricing model',
+      cartwright: 'Free engine (MIT). You pay your own infrastructure and your own AI provider usage, at cost.',
+      them: 'Subscription + credits: each AI message consumes credits priced by complexity. Visual Edits are free.',
+    },
+    {
+      dimension: 'Lock-in & exit',
+      cartwright: 'Nothing to exit — the repo is already yours. Delete nothing, keep everything.',
+      them: 'GitHub sync softens it, but the build workflow and the managed backend live on the platform.',
+    },
+  ],
+  faq: [
+    {
+      q: 'Is Cartwright a Lovable alternative?',
+      a: 'More a graduation than an alternative. Lovable is the fastest way to go from idea to working app in the browser. Cartwright is an MIT-licensed site and shop engine your own AI agent builds on, in your own repo. Many people prototype on Lovable and move to Cartwright when they need to own the code, run real commerce, or stop paying per AI message.',
+    },
+    {
+      q: 'Can I import my Lovable app into Cartwright?',
+      a: 'Not the code — a client-rendered Lovable app and a server-rendered Next.js engine are different architectures. But you can bring the look: paste your app’s URL into Cartwright’s design import and it derives your palette and typography as a live theme. Products come in via CSV import. Plan it as a rebuild on a commerce foundation, not a one-click migration.',
+    },
+    {
+      q: 'Do I need to be a developer to use Cartwright?',
+      a: 'You need a developer environment — Node, a terminal, and an AI coding agent. The agent does the building through plan-first, confirm-gated tools; you direct it. If you never want to see a repo or a terminal, Lovable genuinely remains the better home.',
+    },
+    {
+      q: 'What does Cartwright cost compared to Lovable?',
+      a: 'Cartwright’s engine is free and MIT-licensed; you pay your own infrastructure (free tiers go far at the start) and your own AI provider usage at cost. Lovable Pro starts around $25/month with roughly 100 credits (as of mid-2026), with messages priced by complexity — simple to start, but heavy build weeks consume more credits.',
+    },
+  ],
+};
+
 export const COMPARISONS: Comparison[] = [shopify, medusa, vercelCommerce, woocommerce];
 
 export function getComparison(slug: string): Comparison | undefined {

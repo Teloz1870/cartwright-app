@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
-import { COMPARISONS } from '@/lib/comparisons';
+import { COMPARISONS, LOVABLE } from '@/lib/comparisons';
 import { USE_CASES } from '@/lib/use-cases';
 import { DESIGNS } from '@/lib/designs-data';
 
@@ -25,7 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/legal/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
-  const compareRoutes: MetadataRoute.Sitemap = COMPARISONS.map((c) => ({
+  const compareRoutes: MetadataRoute.Sitemap = [LOVABLE, ...COMPARISONS].map((c) => ({
     url: `${BASE}/compare/${c.slug}`,
     lastModified: now,
     changeFrequency: 'monthly',
