@@ -29,7 +29,7 @@ import pc from "picocolors";
  * Once upstream hits 1.0, switch this to a semver range like "^1.0.0" and
  * retire the bump workflow.
  */
-export const MODERN_WEB_GUIDANCE_VERSION = "0.0.174";
+export const MODERN_WEB_GUIDANCE_VERSION = "0.0.175";
 
 /**
  * Generous upper bound. modern-web-guidance is ~36 MB; on a typical
