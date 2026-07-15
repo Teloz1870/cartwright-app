@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track } from '@vercel/analytics';
 import { cn } from '@/lib/cn';
 
 export function CopyCommand({
@@ -17,6 +18,8 @@ export function CopyCommand({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(command);
+      // The #1 conversion action on the site — the funnel's key event.
+      track('copy_command', { command });
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {

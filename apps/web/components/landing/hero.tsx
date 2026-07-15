@@ -61,7 +61,7 @@ export async function Hero() {
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink href="/docs/getting-started/quick-start" size="lg">
-              Read the docs
+              Get started
             </ButtonLink>
             <ButtonLink href={social.templateRepo} variant="outline" size="lg">
               View on GitHub

@@ -1,4 +1,6 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './global.css';
 import { Geist, Geist_Mono } from 'next/font/google';
 import SearchDialog from '@/components/search';
@@ -70,6 +72,10 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       <body className="flex flex-col min-h-screen font-sans antialiased">
         <JsonLd data={organizationJsonLd} />
         <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
+        {/* Cookie-free aggregate measurement — the privacy page documents
+            exactly these two (Vercel Analytics + Speed Insights). */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
