@@ -109,6 +109,11 @@ jobs:
         run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm build
 
       - name: Boot + HTTP 200 + rendered H1
+        env:
+          # The gate scaffolds --db=sqlite for speed; the engine's production
+          # boot guard (launch-hardening) correctly refuses sqlite without
+          # this documented escape hatch. Harmless for the db-free site leg.
+          ALLOW_SQLITE_IN_PRODUCTION: "1"
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
