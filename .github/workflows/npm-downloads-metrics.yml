@@ -24,9 +24,15 @@ jobs:
           WEEK=$(curl -sf "https://api.npmjs.org/downloads/point/last-week/create-cartwright")
           VERSION=$(curl -sf "https://registry.npmjs.org/create-cartwright/latest" | jq -r .version)
           mkdir -p metrics
-          jq -cn --argjson day "$DAY" --argjson week "$WEEK" --arg version "$VERSION" \
-            '{date: ($day.end // (now | strftime("%Y-%m-%d"))), lastDay: $day.downloads, lastWeek: $week.downloads, latestVersion: $version}' \
-            >> metrics/npm-downloads.jsonl
+          ROW=$(jq -cn --argjson day "$DAY" --argjson week "$WEEK" --arg version "$VERSION" \
+            '{date: ($day.end // (now | strftime("%Y-%m-%d"))), lastDay: $day.downloads, lastWeek: $week.downloads, latestVersion: $version}')
+          DATE=$(printf '%s' "$ROW" | jq -r .date)
+          # Idempotent per date (codex fold-in): a rerun/workflow_dispatch on the
+          # same day REPLACES that date's record instead of duplicating it.
+          touch metrics/npm-downloads.jsonl
+          grep -v "\"date\":\"$DATE\"" metrics/npm-downloads.jsonl > metrics/.tmp.jsonl || true
+          mv metrics/.tmp.jsonl metrics/npm-downloads.jsonl
+          printf '%s\n' "$ROW" >> metrics/npm-downloads.jsonl
       - name: Commit
         run: |
           git config user.name "cartwright-metrics[bot]"
