@@ -10,6 +10,10 @@ name: Release scaffold gate
 #
 # postpublish-smoke = fast structural check after npm publish.
 # release-scaffold-gate = slow functional proof before/around releases.
+#
+# NOTE: the `site` leg needs a template ref that ships scaffold/manifest.json
+# (engine >= the B3 release) — on older refs the CLI exits with a clear error
+# and the leg fails loudly (that is the correct signal, not a flake).
 
 on:
   workflow_dispatch:
@@ -35,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [light, full]
+        profile: [light, full, site]
     name: ${{ matrix.profile }} profile
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -59,11 +63,37 @@ jobs:
           test -d "gate-${{ matrix.profile }}"
 
       - name: Seeded admin credentials exist
+        if: matrix.profile != 'site'
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
           test -s .admin-credentials || { echo "::error::.admin-credentials missing/empty — db:setup/seed failed"; exit 1; }
           echo "✓ admin seeded"
+
+      - name: Site profile is db-free (B3 materializer proof)
+        if: matrix.profile == 'site'
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/gate-site"
+          # No database artifacts may exist in a site materialization.
+          for p in prisma lib/db.ts app/admin app/api/auth .admin-credentials; do
+            [ ! -e "$p" ] || { echo "::error::site profile still ships $p"; exit 1; }
+          done
+          # The resolved module graph is recorded (profile.json v2).
+          grep -q '"schemaVersion": 2' .cartwright/profile.json
+          grep -q '"profile": "site"' .cartwright/profile.json
+          # Pruned heavy deps are really gone from package.json — key-anchored
+          # (substring grep would false-positive on names like @react-three/*).
+          node -e '
+            const pkg = require("./package.json");
+            const gone = ["prisma","@prisma/client","next-auth","stripe","ai","three","@libsql/client"];
+            const tables = [pkg.dependencies ?? {}, pkg.devDependencies ?? {}];
+            const leaked = gone.filter((d) => tables.some((t) => d in t));
+            if (leaked.length) { console.error("site package.json still lists: " + leaked.join(", ")); process.exit(1); }
+            if (pkg.scripts && (pkg.scripts["db:setup"] || pkg.scripts.postinstall)) { console.error("db scripts survived"); process.exit(1); }
+          '
+
+          echo "✓ db-free site materialization"
 
       - name: Typecheck
         run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm typecheck
@@ -72,6 +102,7 @@ jobs:
         run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm test
 
       - name: Migration baseline verify (engine ≥ v0.40)
+        if: matrix.profile != 'site'
         run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm run --if-present db:verify
 
       - name: Production build

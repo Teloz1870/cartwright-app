@@ -141,8 +141,10 @@ import {
   PROFILES,
   isProfile,
   applyLightProfile,
+  patchBrandConfigForLightContent,
   lightProfileNote,
 } from "./profile-light.js";
+import { applyMaterializer, type MaterializerReport } from "./materializer.js";
 import {
   fetchLook,
   stageLookSkin,
@@ -157,13 +159,19 @@ Usage:
   npx create-cartwright@latest [name] [options]
 
 Options:
-  --profile <light|full>   Scaffold profile (default: light).
+  --profile <light|full|site>  Scaffold profile (default: light).
                            light = website-mode default, curated design set,
                                    heavy full-only modules (A2A agent-marketplace,
                                    UCP identity-linking, WebMCP, hoptify) pruned.
                                    Add designs back: cartwright design install <slug>
                            full  = everything the engine ships — use this for
                                    agent-marketplace mode or to keep all 26 designs.
+                           site  = a plain website: NO database/admin/auth/commerce.
+                                   Cut from the engine's module manifest (needs a
+                                   template ref >= the B3 release). Contact form
+                                   (Resend-only) included by default.
+  --with <module>          site profile: optional modules (default: contact-form;
+                           pass --with none for the bare core-only site).
   --template <slug>        generic | website-corporate | coffee | sunglasses |
                            agent-marketplace (requires --profile full).
                            Default: website-corporate (light) / generic (full).
@@ -360,6 +368,7 @@ async function run(): Promise<void> {
       pm: { type: "string" },
       template: { type: "string" },
       profile: { type: "string" },
+      with: { type: "string", multiple: true },
       look: { type: "string" },
       help: { type: "boolean", short: "h" },
       "no-install": { type: "boolean" },
@@ -394,7 +403,7 @@ async function run(): Promise<void> {
   // website-corporate under light (Cartwright Light is website-mode by
   // default), generic (full webshop) under full — matching pre-profile
   // behaviour exactly when --profile full is passed.
-  let templateSlug: TemplateSlug = profile === "light" ? "website-corporate" : "generic";
+  let templateSlug: TemplateSlug = profile === "full" ? "generic" : "website-corporate";
   if (values.template !== undefined) {
     if (!isTemplateSlug(values.template)) {
       console.error(
@@ -409,6 +418,39 @@ async function run(): Promise<void> {
 
   // The light profile prunes the A2A/agent-marketplace modules, so that
   // template needs the full scaffold.
+  // The site profile is website-mode only in v1 — every other template implies
+  // webshop/agentic modules the materializer removes.
+  if (profile === "site" && templateSlug !== "website-corporate") {
+    console.error(
+      pc.red(
+        `--profile site only supports --template website-corporate (got "${templateSlug}").\n` +
+          `For a webshop, use --profile light or full.`,
+      ),
+    );
+    process.exit(1);
+  }
+  if (profile === "site" && values.db !== undefined) {
+    console.log(
+      pc.dim("Note: --profile site has no database — --db is ignored."),
+    );
+  }
+  // Optional modules for the materializer. contact-form is DEFAULT-ON for
+  // site (the default design's /contact CTAs and the footer contact links
+  // must not 404); pass --with none to cut the bare core-only site. On
+  // light/full the flag is meaningless — reject it loudly (parseArgs was
+  // strict about unknown flags before this option existed).
+  if (profile !== "site" && values.with?.length) {
+    console.error(pc.red("--with only applies to --profile site."));
+    process.exit(1);
+  }
+  const withExplicit = Boolean(values.with?.length);
+  const withModules =
+    profile === "site"
+      ? (withExplicit
+          ? (values.with ?? []).filter((w) => w !== "none")
+          : ["contact-form"])
+      : [];
+
   if (profile === "light" && templateSlug === "agent-marketplace") {
     console.error(
       pc.red(
@@ -595,8 +637,12 @@ async function run(): Promise<void> {
   // Storefront cleanup (template copies → customer copies; no canary impact)
   patchComponentFile(targetDir, "components/HeroVideo.tsx", patchHeroVideoContent);
   patchComponentFile(targetDir, "components/CatalogFilters.tsx", patchCatalogFiltersContent);
-  // Stop next-intl from locale-prefixing the /icon metadata route (→ 404)
-  patchComponentFile(targetDir, "proxy.ts", patchProxyContent);
+  // Stop next-intl from locale-prefixing the /icon metadata route (→ 404).
+  // For the site profile this runs AFTER the materializer instead — the
+  // static middleware variant replaces proxy.ts wholesale.
+  if (profile !== "site") {
+    patchComponentFile(targetDir, "proxy.ts", patchProxyContent);
+  }
   // Migrate the deprecated package.json#prisma seed config to prisma.config.ts
   migratePrismaConfig(targetDir);
 
@@ -617,6 +663,61 @@ async function run(): Promise<void> {
       note(
         report.warnings.map((w) => `• ${w}`).join("\n"),
         pc.yellow("light-profile warnings (non-fatal)"),
+      );
+    }
+  }
+
+  // SITE profile: materialize from the engine's module manifest — file
+  // exclusions, seam-static copies, registry codemods, package.json rewrite,
+  // .cartwright/profile.json v2. Fatal only when the template ref predates
+  // the manifest (clear message, no half-scaffold).
+  if (profile === "site") {
+    let report: MaterializerReport;
+    try {
+      report = applyMaterializer(targetDir, "site", { withModules });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // The DEFAULT --with set is a CLI guess ("contact-form") — if this
+      // template names its modules differently, degrade to the bare core
+      // site instead of failing the happy path. An EXPLICIT --with stays
+      // fatal (the user asked for something the template can't provide).
+      if (!withExplicit && /Unknown --with module/.test(msg)) {
+        note(
+          pc.yellow(
+            "This template has no 'contact-form' module — scaffolding the bare site instead.",
+          ),
+          pc.yellow("site-profile warnings (non-fatal)"),
+        );
+        try {
+          report = applyMaterializer(targetDir, "site", { withModules: [] });
+        } catch (err2) {
+          console.error(pc.red(err2 instanceof Error ? err2.message : String(err2)));
+          process.exit(1);
+        }
+      } else {
+        console.error(pc.red(msg));
+        process.exit(1);
+      }
+    }
+    patchComponentFile(targetDir, "proxy.ts", patchProxyContent);
+    // Same content defaults as light (newsletter off — the site profile has
+    // no subscribe endpoint).
+    patchComponentFile(targetDir, "brand.config.ts", patchBrandConfigForLightContent);
+    note(
+      [
+        `A real website — no database, no admin, no commerce. ${report.removedPaths.length} paths pruned.`,
+        `Modules: ${report.modules.join(", ")}`,
+        withModules.includes("contact-form")
+          ? "Contact form: Resend-only (set RESEND_API_KEY + RESEND_FROM; dev mails land in .mail-previews/)."
+          : "No contact-form module (--with none) — remove /contact links from your design.",
+        "Everything is yours to edit — content lives in brand.config.ts.",
+      ].join("\n"),
+      "Cartwright Site",
+    );
+    if (report.warnings.length > 0) {
+      note(
+        report.warnings.map((w) => `• ${w}`).join("\n"),
+        pc.yellow("site-profile warnings (non-fatal)"),
       );
     }
   }
@@ -733,7 +834,9 @@ async function run(): Promise<void> {
       // Now that the local prisma CLI exists, replace the template's drifted
       // migration history with a clean from-empty baseline so `migrate deploy`
       // works on a fresh DB (best-effort; `db push` works regardless).
-      regenerateMigrationBaseline(targetDir, database);
+      if (profile !== "site") {
+        regenerateMigrationBaseline(targetDir, database);
+      }
       // LIGHT: the committed marketplace-manifest.json still lists the pruned
       // designs. Regenerate it from the (now-trimmed) registries so the
       // manifest — and its drift-guard test — match the scaffold. Best-effort:
@@ -751,6 +854,10 @@ async function run(): Promise<void> {
       // fall back to listing the manual commands in "Next steps".
       const pmRun = packageManager === "npm" ? "npm run" : packageManager;
       try {
+        if (profile === "site") {
+          // No database in this profile — nothing to set up.
+          throw Object.assign(new Error("site-profile: no db"), { siteSkip: true });
+        }
         console.log(
           pc.dim("\nSetting up the database (schema + demo data + admin login)…\n"),
         );
@@ -778,7 +885,10 @@ async function run(): Promise<void> {
           execSync("npx prisma db seed", { cwd: targetDir, stdio: "inherit" });
         }
         dbReady = true;
-      } catch {
+      } catch (err) {
+        if ((err as { siteSkip?: boolean })?.siteSkip) {
+          // Expected for --profile site: the scaffold is complete without a db.
+        } else {
         // The real Prisma error was printed above (stdio: inherit). Make the
         // consequence explicit: no admin exists yet, so login can't work until
         // setup succeeds.
@@ -791,6 +901,7 @@ async function run(): Promise<void> {
               "intermittent Prisma 7.8 schema-engine error. If that still fails, try Node 22 LTS (`nvm use 22`).",
           ),
         );
+        }
       }
     } else {
       installSpinner.stop(
@@ -825,6 +936,13 @@ async function run(): Promise<void> {
         lookHadWarnings = true;
         note(`• --look: ${res.warning}`, pc.yellow("look warnings (non-fatal)"));
       }
+    } else if (profile === "site") {
+      lookHadWarnings = true;
+      note(
+        "• --look: this profile has no database — only the look's skin (designSlug) was applied;\n" +
+          "  its palette/scene/chrome parts need a db profile.",
+        pc.yellow("look warnings (non-fatal)"),
+      );
     } else {
       lookHadWarnings = true;
       note(
@@ -856,11 +974,25 @@ async function run(): Promise<void> {
   const runCmd =
     packageManager === "npm" ? "npm run" : packageManager;
 
-  const aiHint = withAi
+  // The site profile has no AI surfaces (and no /admin to configure them in).
+  const aiHint = withAi && profile !== "site"
     ? `\n  ${pc.dim("Add ANTHROPIC_API_KEY (+ optional GEMINI keys) to .env.local before pnpm dev,")}\n  ${pc.dim("or configure them later in /admin/integrations after first sign-in.")}`
     : "";
 
-  const nextSteps = dbReady
+  const siteSteps = [
+    pc.bold("Next steps:"),
+    `  cd ${finalSlug}`,
+    `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
+    pc.dim("  Content lives in brand.config.ts; design via designs/ or /the shipped packs."),
+    "",
+    pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
+    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+    pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
+    pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
+  ];
+  const nextSteps = profile === "site"
+    ? siteSteps
+    : dbReady
     ? [
         pc.bold("Next steps:"),
         `  cd ${finalSlug}`,
@@ -892,7 +1024,9 @@ async function run(): Promise<void> {
     pc.green("✓") + ` brand.config.ts patched (name, branding, SEO, emails)`,
     profile === "light"
       ? pc.green("✓") + ` Light profile (default) — lean engine; \`--profile full\` keeps everything`
-      : "",
+      : profile === "site"
+        ? pc.green("✓") + ` Site profile — a plain website: no database, no admin, no commerce`
+        : "",
     forkCiWritten
       ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml — typecheck/test/build on every push)`
       : "",
@@ -907,19 +1041,23 @@ async function run(): Promise<void> {
       : "",
     "",
     ...nextSteps,
-    "",
-    pc.bold("Sign in (password):"),
-    pc.dim("  Open /account/login → the Password tab."),
-    pc.dim("  Email:    brand.emails.admin (from brand.config.ts)"),
-    pc.dim("  Password: in .admin-credentials at the project root — `cat .admin-credentials`"),
-    pc.dim("  First login asks you to set your own password; then the /admin/setup wizard opens."),
-    pc.dim("  (Magic-link appears once RESEND_API_KEY is set; in dev the link → .mail-previews/.)"),
-    "  " +
-      pc.cyan(
-        "First-login guide: https://cartwright.app/docs/getting-started/first-login",
-      ),
-    "",
-    databaseNote(database),
+    ...(profile === "site"
+      ? []
+      : [
+          "",
+          pc.bold("Sign in (password):"),
+          pc.dim("  Open /account/login → the Password tab."),
+          pc.dim("  Email:    brand.emails.admin (from brand.config.ts)"),
+          pc.dim("  Password: in .admin-credentials at the project root — `cat .admin-credentials`"),
+          pc.dim("  First login asks you to set your own password; then the /admin/setup wizard opens."),
+          pc.dim("  (Magic-link appears once RESEND_API_KEY is set; in dev the link → .mail-previews/.)"),
+          "  " +
+            pc.cyan(
+              "First-login guide: https://cartwright.app/docs/getting-started/first-login",
+            ),
+          "",
+          databaseNote(database),
+        ]),
     aiHint,
     "",
     pc.bold("Put it online (GitHub → Vercel):"),
@@ -999,7 +1137,7 @@ async function run(): Promise<void> {
       ? false
       : values.start === true
         ? true
-        : dbReady && interactive && values.yes !== true
+        : (dbReady || profile === "site") && interactive && values.yes !== true
           ? exitOnCancel(
               await confirm({
                 message:
