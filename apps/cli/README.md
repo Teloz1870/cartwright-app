@@ -79,6 +79,29 @@ Pruned designs can be added back to a light project at any time:
 npx cartwright design install <slug>
 ```
 
+## Health check: `cartwright doctor`
+
+Run a read-only diagnosis from any Cartwright project root:
+
+```bash
+npx cartwright doctor          # human-readable report
+npx cartwright doctor --json   # machine-readable { checks, ok }
+```
+
+Seven checks, no fixes, no mutations, no network:
+
+| Check | What it looks at |
+|---|---|
+| Cartwright project | `brand.config.ts` + `prisma/schema.prisma` + `package.json` exist |
+| Release marker | `.cartwright/release.json` — engine version, channel, release date |
+| Engine up to date | marker version vs the latest template tag **this CLI build** knows (offline compare — an older CLI knows an older latest) |
+| Scaffold profile | `.cartwright/profile.json` — light/full + kept designs (absent = full or pre-profile, fine) |
+| Node version | major ≥ 22 (the engine's `engines` requirement) |
+| Environment | `.env.local` exists; `AUTH_SECRET` set (not a placeholder); `DATABASE_URL` or the `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` pair |
+| Database baseline | runs the project's own `db:verify` gate (exit 2 = migration-baseline drift); skipped on older engines |
+
+Exit code is `1` only when a check **fails** (warnings — e.g. an older engine — exit `0`).
+
 ## Flags
 
 | Flag | Default | What it does |

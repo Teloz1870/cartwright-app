@@ -30,6 +30,9 @@
  *   npx create-cartwright vertical install <slug> [--ref <tag>] [--force]
  *     Install a marketplace Voice (cartwright.app/verticals) into an existing
  *     project: fetches verticals/<slug>/ and registers it. See ./vertical-install.ts.
+ *   npx create-cartwright doctor [--json]
+ *     Read-only health check of an existing project (release marker, profile,
+ *     Node, env, migration baseline). Diagnostic only. See ./doctor.ts.
  *
  * Channels:
  *   --ref stable (default) → latest tagged template release
@@ -86,20 +89,8 @@ function commandExists(cmd: string): boolean {
   }
 }
 
-// Default channel resolves to the latest tag mirrored from cartwright-private.
-// Bump together with a Changeset whenever a new template tag goes out —
-// .github/workflows/bump-template-ref.yml does this automatically by opening
-// a PR when it sees a newer tag on the public mirror.
-const DEFAULT_REF = "v0.39.1";
-
-// Channel aliases the user can pass via --ref.
-//   stable → DEFAULT_REF (latest tag — what default `npx create-cartwright` uses)
-//   next   → bleeding-edge branch on the mirror, updated on every push to
-//            cartwright-private/main. Not recommended for production scaffolds.
-const REF_ALIASES: Record<string, string> = {
-  stable: DEFAULT_REF,
-  next: "next",
-};
+// DEFAULT_REF + REF_ALIASES live in ./refs.ts (imported below) — the single
+// file the bump-template-ref workflow seds on each template release.
 
 import {
   type Database,
@@ -143,6 +134,8 @@ import { writeForkCi } from "./fork-ci.js";
 import { installModernWebGuidance } from "./skills.js";
 import { runDesignInstall } from "./design-install.js";
 import { runVerticalInstall } from "./vertical-install.js";
+import { runDoctor } from "./doctor.js";
+import { REF_ALIASES } from "./refs.js";
 import {
   type Profile,
   PROFILES,
@@ -201,6 +194,7 @@ Options:
 Subcommands:
   cartwright design install <slug>     Install a marketplace design pack.
   cartwright vertical install <slug>   Install a marketplace Voice.
+  cartwright doctor [--json]           Health-check an existing project (read-only).
 `;
 
 function exitOnCancel<T>(value: T | symbol): T {
@@ -347,6 +341,10 @@ async function run(): Promise<void> {
   }
   if (argv[0] === "vertical" && argv[1] === "install") {
     await runVerticalInstall(argv.slice(2));
+    return;
+  }
+  if (argv[0] === "doctor") {
+    await runDoctor(argv.slice(1));
     return;
   }
 
