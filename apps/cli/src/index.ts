@@ -139,6 +139,7 @@ import { resolveKeyMode } from "./key-step.js";
 import { runInterview } from "./interview.js";
 import { summarizeBuild } from "./approve.js";
 import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
+import { writeForkCi } from "./fork-ci.js";
 import { installModernWebGuidance } from "./skills.js";
 import { runDesignInstall } from "./design-install.js";
 import { runVerticalInstall } from "./vertical-install.js";
@@ -666,6 +667,11 @@ async function run(): Promise<void> {
     );
   }
 
+  // ── Fork CI ─────────────────────────────────────────────────────────────
+  // Written BEFORE git init so ci.yml lands in the initial commit. The public
+  // mirror can't carry workflows (PAT scope), so the CLI is the delivery path.
+  const forkCiWritten = writeForkCi(targetDir);
+
   // ── Git init ────────────────────────────────────────────────────────────
   let gitInitialized = false;
   if (initGit) {
@@ -888,6 +894,9 @@ async function run(): Promise<void> {
     pc.green("✓") + ` brand.config.ts patched (name, branding, SEO, emails)`,
     profile === "light"
       ? pc.green("✓") + ` Light profile (default) — lean engine; \`--profile full\` keeps everything`
+      : "",
+    forkCiWritten
+      ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml — typecheck/test/build on every push)`
       : "",
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
