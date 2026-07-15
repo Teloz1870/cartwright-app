@@ -947,7 +947,8 @@ async function run(): Promise<void> {
   const runCmd =
     packageManager === "npm" ? "npm run" : packageManager;
 
-  const aiHint = withAi
+  // The site profile has no AI surfaces (and no /admin to configure them in).
+  const aiHint = withAi && profile !== "site"
     ? `\n  ${pc.dim("Add ANTHROPIC_API_KEY (+ optional GEMINI keys) to .env.local before pnpm dev,")}\n  ${pc.dim("or configure them later in /admin/integrations after first sign-in.")}`
     : "";
 
