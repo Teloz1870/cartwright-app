@@ -67,7 +67,8 @@ export function CtaFooter() {
           </h2>
           <p className="mt-4 max-w-xl mx-auto text-base text-cw-stone-500 dark:text-cw-stone-400">
             Scaffold cartwright, drop in your Stripe keys, and have a checkout
-            flow up before lunch. No platform contract, no per-order fee.
+            flow up before lunch. No platform contract, no per-order fee — and
+            the repo is yours from the first commit.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink

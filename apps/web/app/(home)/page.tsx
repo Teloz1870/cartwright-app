@@ -1,11 +1,12 @@
 import { Hero } from '@/components/landing/hero';
 import { FlagshipSpotlight } from '@/components/landing/flagship-spotlight';
 import { VoiceShopDemo } from '@/components/landing/voice-shop-demo';
-import { ValueProps } from '@/components/landing/value-props';
+import { ThreeDoors } from '@/components/landing/three-doors';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { FeatureGrid } from '@/components/landing/feature-grid';
 import { AgentSurface } from '@/components/landing/agent-surface';
-import { StackGrid } from '@/components/landing/stack-grid';
+import { ShowcaseTeaser } from '@/components/landing/showcase-teaser';
+import { CompareTeaser } from '@/components/landing/compare-teaser';
 import { LivePreview } from '@/components/landing/live-preview';
 import { CodePeek } from '@/components/landing/code-peek';
 import { InstallBand } from '@/components/landing/install-band';
@@ -56,15 +57,20 @@ export default async function HomePage() {
          
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Section order tells one story: the thesis (Hero), the proof it's
+          designed (Flagship), the three doors, what each door feels like
+          (VoiceShop, LivePreview, HowItWorks, AgentSurface), the receipts
+          (Showcase, Compare), then the inventory and the close. */}
       <Hero />
       <FlagshipSpotlight />
+      <ThreeDoors />
       <VoiceShopDemo />
-      <ValueProps />
-      <HowItWorks />
-      <FeatureGrid />
-      <AgentSurface />
-      <StackGrid />
       <LivePreview />
+      <HowItWorks />
+      <AgentSurface />
+      <ShowcaseTeaser />
+      <CompareTeaser />
+      <FeatureGrid />
       <CodePeek />
       <InstallBand />
       <Faq />
