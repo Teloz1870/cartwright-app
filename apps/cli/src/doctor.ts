@@ -70,7 +70,10 @@ export type SpawnRunner = (
   cmd: string,
   args: string[],
   cwd: string,
-) => { status: number | null; error?: boolean };
+) => { status: number | null; error?: boolean; timedOut?: boolean };
+
+/** Hard cap per spawned command — db:verify boots Prisma, so give it room. */
+export const SPAWN_TIMEOUT_MS = 60_000;
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
 
@@ -157,9 +160,16 @@ export function checkReleaseMarker(raw: string | null): {
   };
 }
 
+/** True when a vX.Y.Z tag carries a pre-release/build suffix (-rc.1, +sha…). */
+export function hasPrereleaseSuffix(v: string): boolean {
+  return /^v?\d+\.\d+\.\d+[-+]/.test(v.trim());
+}
+
 /**
- * Compare two vX.Y.Z-ish strings numerically. Returns -1 if a < b, 0 if
- * equal, 1 if a > b, null when either doesn't look like a semver tag.
+ * Compare two vX.Y.Z-ish strings numerically on the X.Y.Z base (pre-release
+ * suffixes are ignored here — checkUpToDate flags them separately). Returns
+ * -1 if a < b, 0 if equal, 1 if a > b, null when either doesn't look like a
+ * semver tag.
  */
 export function compareSemverish(a: string, b: string): -1 | 0 | 1 | null {
   const re = /^v?(\d+)\.(\d+)\.(\d+)/;
@@ -203,6 +213,16 @@ export function checkUpToDate(
     };
   }
   if (cmp === 0) {
+    // Same X.Y.Z base but a pre-release suffix on either side → not actually
+    // on the stable tag. Flag it instead of calling it up to date.
+    if (hasPrereleaseSuffix(markerVersion) || hasPrereleaseSuffix(latestKnown)) {
+      return {
+        id,
+        label,
+        status: "warn",
+        detail: `engine ${markerVersion} is a pre-release of ${latestKnown} — upgrade to the stable tag`,
+      };
+    }
     return {
       id,
       label,
@@ -279,8 +299,11 @@ export function checkNode(nodeVersion: string): CheckResult {
 
 /**
  * Shallow .env parse — enough for a diagnostic, no dotenv dep. Handles
- * `KEY=value`, `export KEY=value`, surrounding single/double quotes, comments
- * and blank lines. Values keep any `=` after the first.
+ * `KEY=value`, `export KEY=value`, surrounding single/double quotes, inline
+ * ` # comments` after the value (a `#` INSIDE quotes is preserved), full-line
+ * comments and blank lines. Unquoted values keep any `=` after the first.
+ * Known limitation: multiline quoted values are NOT supported (each line is
+ * parsed independently) — out of scope for this diagnostic.
  */
 export function parseEnvFile(content: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -290,11 +313,20 @@ export function parseEnvFile(content: string): Record<string, string> {
     const m = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
     if (!m) continue;
     let value = m[2].trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
-      (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
-    ) {
-      value = value.slice(1, -1);
+    const quote = value[0];
+    if (quote === '"' || quote === "'") {
+      const close = value.indexOf(quote, 1);
+      if (close > 0) {
+        // Take the quoted content; anything after the closing quote (e.g. an
+        // inline ` # prod` comment) is ignored. `#` inside quotes survives.
+        value = value.slice(1, close);
+      }
+      // No closing quote on this line → keep raw (multiline values are out
+      // of scope, see the doc comment above).
+    } else {
+      // Unquoted: strip a trailing ` # comment` — only when the `#` follows
+      // whitespace, so bare fragments like `a#b` stay intact.
+      value = value.replace(/\s+#.*$/, "").trim();
     }
     out[m[1]] = value;
   }
@@ -374,6 +406,14 @@ export function checkDbVerify(input: {
     };
   }
   const res = input.run("pnpm", ["run", "--if-present", "db:verify"], input.cwd);
+  if (res.timedOut) {
+    return {
+      id,
+      label,
+      status: "warn",
+      detail: `db:verify timed out after ${SPAWN_TIMEOUT_MS / 1000}s — run \`pnpm db:verify\` manually`,
+    };
+  }
   if (res.error || res.status === null) {
     return { id, label, status: "warn", detail: "could not run db:verify" };
   }
@@ -381,11 +421,14 @@ export function checkDbVerify(input: {
     return { id, label, status: "ok", detail: "migration baseline matches the schema" };
   }
   if (res.status === 2) {
+    // Drift doesn't block boot (dev uses db push / db:setup) — but the
+    // scaffolded ci.yml runs db:verify, so CI WILL go red. Warn, not fail.
     return {
       id,
       label,
       status: "warn",
-      detail: "migration-baseline drift — see prisma/migrations/README.md",
+      detail:
+        "migration-baseline drift — your CI (ci.yml) will fail on db:verify; see prisma/migrations/README.md",
     };
   }
   return {
@@ -403,8 +446,12 @@ const defaultRunner: SpawnRunner = (cmd, args, cwd) => {
     cwd,
     stdio: "ignore",
     shell: process.platform === "win32",
+    // Never hang the doctor on a stuck child (e.g. db:verify waiting on a DB).
+    timeout: SPAWN_TIMEOUT_MS,
   });
-  return { status: res.status, error: Boolean(res.error) };
+  const timedOut =
+    (res.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT";
+  return { status: res.status, error: Boolean(res.error), timedOut };
 };
 
 function readIfExists(path: string): string | null {

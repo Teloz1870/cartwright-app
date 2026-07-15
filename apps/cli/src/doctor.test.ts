@@ -84,7 +84,9 @@ describe("compareSemverish", () => {
     ["v0.40.0", "v0.39.1", 1],
     ["v1.0.0", "v0.99.99", 1],
     ["v0.9.0", "v0.10.0", -1], // numeric, not lexicographic
-    ["v0.39.1-rc.1", "v0.39.1", 0], // prerelease suffix ignored (semver-ish)
+    ["v0.39.1-rc.1", "v0.39.1", 0], // base compare only — checkUpToDate flags the suffix
+    ["v0.40.0-rc.1", "v0.39.1", 1], // suffix doesn't break base ordering
+    ["v0.38.0-beta.2", "v0.39.1", -1],
     ["main", "v0.39.1", null],
     ["v0.39.1", "garbage", null],
   ];
@@ -117,6 +119,19 @@ describe("checkUpToDate", () => {
   });
   it("skips when the version is not a tag", () => {
     expect(checkUpToDate("next", "v0.39.1").status).toBe("skip");
+  });
+  it("warns on a pre-release engine with the same base version", () => {
+    const res = checkUpToDate("v0.39.1-rc.1", "v0.39.1");
+    expect(res.status).toBe("warn");
+    expect(res.detail).toContain("pre-release");
+    expect(res.detail).toContain("stable tag");
+  });
+  it("warns when the latest side carries a suffix and bases are equal", () => {
+    expect(checkUpToDate("v0.39.1", "v0.39.1-rc.1").status).toBe("warn");
+  });
+  it("older pre-release still reports plain 'behind'", () => {
+    expect(checkUpToDate("v0.38.0-beta.2", "v0.39.1").status).toBe("warn");
+    expect(checkUpToDate("v0.38.0-beta.2", "v0.39.1").detail).toContain("behind");
   });
 });
 
@@ -176,6 +191,22 @@ describe("parseEnvFile", () => {
     expect(env.WITH_EQUALS).toBe("a=b=c");
     expect(env.SPACED).toBe("padded");
     expect(Object.keys(env)).toHaveLength(6);
+  });
+  it("strips an inline comment after a quoted value", () => {
+    const env = parseEnvFile('AUTH_SECRET="real-value" # prod secret\n');
+    expect(env.AUTH_SECRET).toBe("real-value");
+  });
+  it("strips an inline comment after an unquoted value", () => {
+    const env = parseEnvFile("DATABASE_URL=file:./prisma/dev.db # local sqlite\n");
+    expect(env.DATABASE_URL).toBe("file:./prisma/dev.db");
+  });
+  it("preserves # inside quotes", () => {
+    const env = parseEnvFile('PASSWORD="p#ss w#rd" # trailing\nOTHER=\'a # b\'\n');
+    expect(env.PASSWORD).toBe("p#ss w#rd");
+    expect(env.OTHER).toBe("a # b");
+  });
+  it("keeps unquoted fragments without whitespace before # intact", () => {
+    expect(parseEnvFile("KEY=a#b\n").KEY).toBe("a#b");
   });
   it("returns {} on empty input", () => {
     expect(parseEnvFile("")).toEqual({});
@@ -266,11 +297,19 @@ describe("checkDbVerify", () => {
       checkDbVerify({ hasScript: true, pnpmOnPath: true, cwd: "/x", run: runner(0) }).status,
     ).toBe("ok");
   });
-  it("warns with the drift message on exit 2", () => {
+  it("warns with the drift message on exit 2 (concrete CI consequence)", () => {
     const res = checkDbVerify({ hasScript: true, pnpmOnPath: true, cwd: "/x", run: runner(2) });
     expect(res.status).toBe("warn");
     expect(res.detail).toContain("drift");
+    expect(res.detail).toContain("ci.yml");
     expect(res.detail).toContain("prisma/migrations/README.md");
+  });
+  it("warns with a manual-run hint when db:verify times out", () => {
+    const timeoutRunner: SpawnRunner = () => ({ status: null, error: true, timedOut: true });
+    const res = checkDbVerify({ hasScript: true, pnpmOnPath: true, cwd: "/x", run: timeoutRunner });
+    expect(res.status).toBe("warn");
+    expect(res.detail).toContain("timed out after 60s");
+    expect(res.detail).toContain("pnpm db:verify");
   });
   it("warns 'could not verify' on other exits", () => {
     const res = checkDbVerify({ hasScript: true, pnpmOnPath: true, cwd: "/x", run: runner(1) });
