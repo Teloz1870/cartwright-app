@@ -436,11 +436,18 @@ async function run(): Promise<void> {
   }
   // Optional modules for the materializer. contact-form is DEFAULT-ON for
   // site (the default design's /contact CTAs and the footer contact links
-  // must not 404); pass --with none to cut the bare core-only site.
+  // must not 404); pass --with none to cut the bare core-only site. On
+  // light/full the flag is meaningless — reject it loudly (parseArgs was
+  // strict about unknown flags before this option existed).
+  if (profile !== "site" && values.with?.length) {
+    console.error(pc.red("--with only applies to --profile site."));
+    process.exit(1);
+  }
+  const withExplicit = Boolean(values.with?.length);
   const withModules =
     profile === "site"
-      ? (values.with?.length
-          ? values.with.filter((w) => w !== "none")
+      ? (withExplicit
+          ? (values.with ?? []).filter((w) => w !== "none")
           : ["contact-form"])
       : [];
 
@@ -669,8 +676,28 @@ async function run(): Promise<void> {
     try {
       report = applyMaterializer(targetDir, "site", { withModules });
     } catch (err) {
-      console.error(pc.red(err instanceof Error ? err.message : String(err)));
-      process.exit(1);
+      const msg = err instanceof Error ? err.message : String(err);
+      // The DEFAULT --with set is a CLI guess ("contact-form") — if this
+      // template names its modules differently, degrade to the bare core
+      // site instead of failing the happy path. An EXPLICIT --with stays
+      // fatal (the user asked for something the template can't provide).
+      if (!withExplicit && /Unknown --with module/.test(msg)) {
+        note(
+          pc.yellow(
+            "This template has no 'contact-form' module — scaffolding the bare site instead.",
+          ),
+          pc.yellow("site-profile warnings (non-fatal)"),
+        );
+        try {
+          report = applyMaterializer(targetDir, "site", { withModules: [] });
+        } catch (err2) {
+          console.error(pc.red(err2 instanceof Error ? err2.message : String(err2)));
+          process.exit(1);
+        }
+      } else {
+        console.error(pc.red(msg));
+        process.exit(1);
+      }
     }
     patchComponentFile(targetDir, "proxy.ts", patchProxyContent);
     // Same content defaults as light (newsletter off — the site profile has

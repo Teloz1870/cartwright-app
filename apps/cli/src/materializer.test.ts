@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
@@ -328,6 +328,48 @@ describe("applyMaterializer (fixture template)", () => {
     expect(marker.modules).toEqual(["contact-form", "core"]);
     expect(report.seamCopies).toBe(2);
     expect(report.pluginsDeregistered).toEqual(["wishlist"]);
+  });
+
+  it("throws FATALLY when a declared seam's static variant is missing (broken template)", () => {
+    const dir = writeFixture();
+    rmSync(join(dir, "app/page.static.tsx"));
+    expect(() => applyMaterializer(dir, "site", { withModules: ["contact-form"] })).toThrow(
+      /missing the seam variant/,
+    );
+  });
+
+  it("prunes the committed lockfile alongside package.json (frozen-lockfile CI safety)", () => {
+    const dir = writeFixture();
+    writeFileSync(
+      join(dir, "pnpm-lock.yaml"),
+      [
+        "importers:",
+        "  .:",
+        "    dependencies:",
+        "      next-auth:",
+        "        specifier: ^5",
+        "        version: 5.0.0",
+        "      next:",
+        "        specifier: ^16",
+        "        version: 16.0.0",
+        "packages:",
+        "  next-auth@5.0.0: {}",
+        "",
+      ].join("\n"),
+    );
+    applyMaterializer(dir, "site", { withModules: ["contact-form"] });
+    const lock = readFileSync(join(dir, "pnpm-lock.yaml"), "utf8");
+    expect(lock).not.toMatch(/^      next-auth:/m);
+    expect(lock).toMatch(/^      next:/m);
+  });
+
+  it("derives design de-registration slugs from per-file claims too", () => {
+    const m = fixtureManifest();
+    const webshop = m.modules.find((x) => x.slug === "webshop")!;
+    webshop.files = ["designs/shop-pack/index.ts", "designs/shop-pack/sections/Hero.tsx", "lib/cart.ts"];
+    const { included } = resolveProfileModules(m, "site");
+    const plan = computeMaterializationPlan(m, included);
+    expect(plan.excludedDesignSlugs).toEqual(["shop-pack"]);
   });
 
   it("throws a clear error when the template has no manifest", () => {

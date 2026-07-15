@@ -33,6 +33,7 @@ import {
   pruneDesignOptionsSource,
   pruneDesignMotifsSource,
   prunePluginsRegistrySource,
+  pruneLockfileForLight,
 } from "./profile-light.js";
 
 // ── Manifest types (cartwright-scaffold-manifest-v1) ─────────────────────────
@@ -173,10 +174,13 @@ export function computeMaterializationPlan(
 
   // Design packs / plugins to de-register (their claims live under designs/<slug>
   // or they are kind:"plugin").
+  // Any claim under designs/<slug> (directory OR per-file) marks the pack
+  // for de-registration — deletion and de-registration must never diverge
+  // (a deleted pack left registered = dangling import = broken scaffold).
   const excludedDesignSlugs = excluded
     .flatMap((m) => m.files)
-    .filter((p) => /^designs\/[a-z0-9-]+$/.test(p))
-    .map((p) => p.split("/")[1]);
+    .map((p) => /^designs\/([a-z0-9-]+)(?:\/|$)/.exec(p)?.[1])
+    .filter((slug): slug is string => Boolean(slug));
   const excludedPluginSlugs = excluded.filter((m) => m.kind === "plugin").map((m) => m.slug);
 
   return {
@@ -242,6 +246,7 @@ export const SITE_PRUNED_DEPENDENCIES: readonly string[] = [
   "@ai-sdk/google",
   "@ai-sdk/openai",
   "@ai-sdk/react",
+  "@ai-sdk/openai-compatible",
   "@google/genai",
   "resend",
   "@vercel/blob",
@@ -392,8 +397,15 @@ export function applyMaterializer(
   for (const { from, to } of plan.seamCopies) {
     const fromAbs = join(targetDir, from);
     if (!existsSync(fromAbs)) {
-      warnings.push(`seam variant missing: ${from}`);
-      continue;
+      // FATAL: without the static content the target either keeps the
+      // excluded provider's implementation or disappears entirely — a
+      // silently broken scaffold. The engine's scaffold-manifest drift test
+      // guarantees every declared seam has its variant, so this only fires
+      // on a genuinely broken template ref.
+      throw new Error(
+        `Template is missing the seam variant ${from} (needed to materialize ${to}). ` +
+          "This template ref looks broken — try a newer --ref.",
+      );
     }
     seamContents.push({ to, content: readFileSync(fromAbs) as Buffer });
   }
@@ -489,9 +501,27 @@ export function applyMaterializer(
   if (profileName === "site") {
     const pkgPath = join(targetDir, "package.json");
     if (existsSync(pkgPath)) {
+      // Absent deps are the expected steady state (same deliberate silence
+      // as prunePackageJsonForLight — agents read warnings as findings);
+      // only an unparsable package.json is worth surfacing.
       const r = rewritePackageJsonForSite(readFileSync(pkgPath, "utf8"));
-      for (const m of r.missing) warnings.push(`package.json: ${m} not present`);
+      if (r.missing.includes("<unparsable package.json>")) {
+        warnings.push("package.json could not be parsed — dep prune skipped");
+      }
       writeFileSync(pkgPath, r.src);
+    }
+    // Keep the committed lockfile consistent with the pruned package.json —
+    // without this, `--no-install` scaffolds commit a stale full-dep lockfile
+    // and the customer's first fork-CI run (`pnpm install --frozen-lockfile`)
+    // fails. Same mechanism light uses (pruneLockfileForLight); absent
+    // entries are the expected steady state (silent).
+    const lockPath = join(targetDir, "pnpm-lock.yaml");
+    if (existsSync(lockPath)) {
+      const pruned = pruneLockfileForLight(readFileSync(lockPath, "utf8"), [
+        ...SITE_PRUNED_DEPENDENCIES,
+        ...SITE_PRUNED_DEV_DEPENDENCIES,
+      ]);
+      writeFileSync(lockPath, pruned.src);
     }
     for (const zone of [...SITE_PRUNED_ZONES, ...SITE_PRUNED_SCRIPTS]) {
       const abs = join(targetDir, zone);
@@ -501,7 +531,7 @@ export function applyMaterializer(
       }
     }
     // No database → no Prisma config or migrations tooling.
-    for (const p of ["prisma.config.ts", ".admin-credentials"]) {
+    for (const p of ["prisma.config.ts", ".admin-credentials", "marketplace-manifest.json"]) {
       const abs = join(targetDir, p);
       if (existsSync(abs)) {
         rmSync(abs, { force: true });

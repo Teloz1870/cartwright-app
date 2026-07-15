@@ -290,13 +290,19 @@ export function checkProfile(raw: string | null): CheckResult {
     };
   }
   const kept = Array.isArray(marker.keptDesigns) ? marker.keptDesigns.length : null;
+  // v2 markers (the B3 materializer) record the resolved module graph
+  // instead of a kept-designs list.
+  const modules = Array.isArray((marker as { modules?: unknown }).modules)
+    ? ((marker as { modules: unknown[] }).modules.length)
+    : null;
   return {
     id,
     label,
     status: "ok",
     detail:
       `profile "${marker.profile ?? "unknown"}"` +
-      (kept !== null ? ` · ${kept} designs kept` : ""),
+      (kept !== null ? ` · ${kept} designs kept` : "") +
+      (modules !== null ? ` · ${modules} modules` : ""),
   };
 }
 

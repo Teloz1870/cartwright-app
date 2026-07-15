@@ -82,10 +82,17 @@ jobs:
           # The resolved module graph is recorded (profile.json v2).
           grep -q '"schemaVersion": 2' .cartwright/profile.json
           grep -q '"profile": "site"' .cartwright/profile.json
-          # Pruned heavy deps are really gone from package.json.
-          for d in prisma next-auth stripe '"ai"' three; do
-            ! grep -q "$d" package.json || { echo "::error::site package.json still lists $d"; exit 1; }
-          done
+          # Pruned heavy deps are really gone from package.json — key-anchored
+          # (substring grep would false-positive on names like @react-three/*).
+          node -e '
+            const pkg = require("./package.json");
+            const gone = ["prisma","@prisma/client","next-auth","stripe","ai","three","@libsql/client"];
+            const tables = [pkg.dependencies ?? {}, pkg.devDependencies ?? {}];
+            const leaked = gone.filter((d) => tables.some((t) => d in t));
+            if (leaked.length) { console.error("site package.json still lists: " + leaked.join(", ")); process.exit(1); }
+            if (pkg.scripts && (pkg.scripts["db:setup"] || pkg.scripts.postinstall)) { console.error("db scripts survived"); process.exit(1); }
+          '
+
           echo "✓ db-free site materialization"
 
       - name: Typecheck
