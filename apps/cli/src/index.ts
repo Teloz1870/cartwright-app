@@ -190,6 +190,11 @@ Options:
   --start / --no-start     Start the dev server when the scaffold is ready
                            (interactive runs ask; --yes/non-TTY never auto-start).
   --no-install / --no-git / --no-github / --skip-skills
+  --no-telemetry           Skip the anonymous scaffold ping (also honored:
+                           CARTWRIGHT_TELEMETRY=0 or DO_NOT_TRACK=1). The ping
+                           carries only coarse install facts — cli version,
+                           channel, profile, template, node major, OS, db —
+                           never a name, path or identifier.
   --help, -h               Show this help.
 
 Subcommands:
@@ -364,6 +369,7 @@ async function run(): Promise<void> {
       "skip-skills": { type: "boolean" },
       start: { type: "boolean" },
       "no-start": { type: "boolean" },
+      "no-telemetry": { type: "boolean" },
     },
   });
 
@@ -926,6 +932,44 @@ async function run(): Promise<void> {
     .join("\n");
 
   outro(lines);
+
+  // ── Anonymous scaffold ping (opt-out) ─────────────────────────────────────
+  // One PII-free POST so adoption is measurable (npm downloads are mostly
+  // CI/bot noise). Coarse facts only — no project name, no path, no user id.
+  // Opt-out: --no-telemetry, CARTWRIGHT_TELEMETRY=0, or DO_NOT_TRACK=1.
+  // Fail-soft + hard 1.5 s cap: the ping may never slow or break a scaffold.
+  const telemetryEnabled =
+    values["no-telemetry"] !== true &&
+    process.env.CARTWRIGHT_TELEMETRY !== "0" &&
+    process.env.DO_NOT_TRACK !== "1";
+  if (telemetryEnabled) {
+    console.log(
+      pc.dim(
+        "Anonymous usage ping (cli version/profile/template/os only) — disable with --no-telemetry",
+      ),
+    );
+    try {
+      await Promise.race([
+        fetch("https://cartwright.app/api/telemetry/scaffold", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            cliVersion: CLI_VERSION,
+            ref: templateRef,
+            profile,
+            template: templateSlug,
+            node: `v${process.versions.node.split(".")[0]}`,
+            platform: process.platform,
+            db: database,
+          }),
+          signal: AbortSignal.timeout(1500),
+        }).catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    } catch {
+      // never let telemetry affect the scaffold
+    }
+  }
 
   // ── Optional dev-server start ─────────────────────────────────────────────
   // "The link should work from the start": interactive humans get a Y/n offer

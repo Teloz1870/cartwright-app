@@ -88,6 +88,7 @@ npx cartwright design install <slug>
 | `--pm=<pnpm\|npm\|yarn\|bun>` | auto-detect | Package manager for install |
 | `--no-install` | false | Skip dependency install |
 | `--no-git` | false | Skip `git init` + initial commit |
+| `--no-telemetry` | false | Skip the anonymous scaffold ping (see [Telemetry](#telemetry)) |
 
 ## Looks (`--look <url>`)
 
@@ -118,6 +119,19 @@ under `--no-install` (no seeded DB yet).
 **Fail-soft by design:** an unreachable URL, invalid JSON, wrong schema, unknown design
 or database hiccup prints one warning and the scaffold completes unchanged — a broken
 look never breaks a scaffold.
+
+## Telemetry
+
+At the end of a successful scaffold the CLI sends **one anonymous, PII-free ping** so we can
+tell real adoption apart from CI/bot noise in npm's download numbers. It contains only coarse
+install facts: CLI version, template channel, profile, template slug, Node major version, OS
+platform and database choice — **never** a project name, path, email or any identifier.
+
+Opt out any of three ways: `--no-telemetry`, `CARTWRIGHT_TELEMETRY=0`, or the standard
+`DO_NOT_TRACK=1`. The ping is fail-soft with a hard 1.5 s cap — it can never slow down or
+break a scaffold. Receiver + storage: an aggregate-only Vercel Analytics event
+([source](https://github.com/Teloz1870/cartwright-app/blob/main/apps/web/app/api/telemetry/scaffold/route.ts)) —
+nothing is written to a database.
 
 ## Template channels
 
