@@ -133,6 +133,7 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "app/.well-known/oauth-protected-resource",
   "app/.well-known/ucp",
   "tests/unit/ucp-oauth.test.ts",
+  "tests/unit/ucp-capability-profile.test.ts",
   // ── FULL-ONLY: WebMCP (audit §3; layout mount removed via codemod) ───────
   "lib/webmcp",
   "components/WebMcpRegistrar.tsx",
@@ -153,6 +154,14 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "tests/unit/hoptify-design.test.ts",
   "tests/unit/hoptify-migrate.test.ts",
   "tests/unit/plugins.test.ts",
+  // ── B3 module-manifest tests (engine #385) pin the FULL module graph: the
+  //    scaffold-manifest drift test asserts every claimed file exists on disk
+  //    (light prunes design packs), and the site-profile import-closure test
+  //    walks the complete tree. Both belong to the manifest-driven `site`
+  //    path — the prune-list light profile is not a materialization, so the
+  //    graph invariants do not hold there by design.
+  "tests/unit/scaffold-manifest.test.ts",
+  "tests/unit/site-profile-imports.test.ts",
   ...LIGHT_PRUNED_PLUGINS.map((p) => `plugins/${p.slug}`),
   // ── Teloz/saas agency pages — pricing, case studies, services. These are the
   //    holding company's OWN corporate pages: isSaas-gated (industryTemplate
