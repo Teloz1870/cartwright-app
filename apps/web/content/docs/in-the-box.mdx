@@ -91,9 +91,9 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 `blog` mounts `/blog` + an RSS feed + `BlogPosting` JSON-LD + sitemap entries, edited from `/admin/blog`. Separately, the **Resolvable Genome** (`genomeResolve`) makes copy fields render `override ?? resolved-cache ?? brand anchor`, harmonised against your identity anchors — render never calls an LLM; resolution is triggered in `/admin/genome`. Respawn a shop's whole voice from a sentence.
 
-## Growth → SEO/GEO Autopilot (Pro)
+## Growth → SEO/GEO Lab (beta, Pro)
 
-`seoAutopilot` (needs `cartwrightPlus`) measures search performance (GSC) and AI-citation share, then runs self-improving genome experiments — apply → measure → keep or revert. `/admin/seo-performance`. Per-shop `seoIndexing` (public/noindex) + `aiCrawlers` (allow/block) wire into robots.txt + meta robots.
+`seoAutopilot` (needs `cartwrightPlus`) is the SEO/GEO Lab, currently in beta: AI-citation share-of-voice (GEO) measurement runs today at `/admin/seo-performance`. Google Search Console measurement and automated genome experiments (apply → measure → keep or revert) are scaffolded but still in development. Per-shop `seoIndexing` (public/noindex) + `aiCrawlers` (allow/block) wire into robots.txt + meta robots.
 
 ## Compliance & ops → GDPR/DSAR, backup
 
@@ -113,7 +113,7 @@ That's an afternoon of work for a developer who's seen this stack once before. A
 
 Honest about what's **not** in the box: your product catalogue, your brand assets (logo, photography, copy), your team's hiring pipeline, your tax-jurisdiction-specific accounting. Cartwright ships the rails; the train is yours.
 
-Want the integration story visually? [`/integrations`](/integrations) shows every brand with logos and live links. For Plus-tier MCP integrations (Klaviyo, HubSpot, Slack, Zapier, and six others), see [`/pricing`](/pricing).
+Want the integration story visually? [`/integrations`](/integrations) shows every brand with logos and live links. Premium MCP integrations (Klaviyo, HubSpot, Slack, Zapier, and six others) are planned for the Plus tier — see [`/pricing`](/pricing).
 
 <Cards>
   <Card title="Setup wizard" href="/docs/features/setup-wizard" />

@@ -139,8 +139,8 @@ const features = [
     body: 'Copy fields resolve from override ?? cache ?? brand anchor, harmonised to your identity. Respawn a shop’s whole voice from a sentence. /admin/genome.',
   },
   {
-    title: 'SEO/GEO Autopilot',
-    body: 'Measures search (GSC) + AI-citation share, then runs self-improving experiments — apply, measure, keep or revert. Pro feature.',
+    title: 'SEO/GEO Lab (beta)',
+    body: 'Measures AI-citation share-of-voice (GEO) today; GSC measurement and automated genome experiments are in development. Pro feature.',
   },
   {
     title: 'Hoptify',

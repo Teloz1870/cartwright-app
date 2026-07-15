@@ -497,7 +497,7 @@ export default function IntegrationsPage() {
               Premium MCP integrations.
             </h2>
             <p className="mt-4 text-base sm:text-lg leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
-              Tool-callable from the storefront AI and the admin. Plus tier ships these as MCP integrations so an agent can act on them without a single line of glue code.
+              Planned for the Plus tier: these ship as MCP integrations — tool-callable from the storefront AI and the admin, so an agent can act on them without a single line of glue code. None of them are live yet.
             </p>
           </div>
 
@@ -523,7 +523,7 @@ export default function IntegrationsPage() {
 
           <div className="mt-6 rounded-2xl border border-cw-terracotta/30 bg-cw-terracotta/5 dark:bg-cw-terracotta/10 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-sm text-cw-stone-600 dark:text-cw-stone-300">
-              These ship with the Plus tier — launching Q3 2026.
+              These are planned for the Plus tier — join the waitlist to hear when they land.
             </p>
             <a
               href="/pricing"

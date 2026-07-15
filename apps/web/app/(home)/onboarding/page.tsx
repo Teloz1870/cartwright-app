@@ -131,14 +131,14 @@ export default function AgenticOnboarding() {
                 <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400">
                   Paste your current Shopify or WooCommerce URL. A five-agent
                   AI workforce extracts your brand, products, and content — then
-                  deploys a Cartwright shop on Vercel. Launching Q3 2026 with{" "}
+                  deploys a Cartwright shop on Vercel. In development for{" "}
                   <Link
                     href="/pricing"
                     className="font-medium text-cw-terracotta hover:underline"
                   >
                     Plus
                   </Link>
-                  .
+                  ; this page is an interactive preview.
                 </p>
               </div>
 
@@ -181,7 +181,9 @@ export default function AgenticOnboarding() {
                 </button>
               </form>
               <p className="mt-4 text-center text-xs text-cw-stone-500 dark:text-cw-stone-400">
-                Demo only — the migration agent ships with Plus in Q3 2026.
+                Demo only — the migration agent is in development for the Plus
+                tier. Available today, self-hosted: the Hoptify import
+                (palette + products via Firecrawl) and product CSV import.
               </p>
             </motion.div>
           )}
@@ -361,8 +363,8 @@ export default function AgenticOnboarding() {
             Start self-hosted. Layer on Plus when it lands.
           </h2>
           <p className="mt-4 max-w-xl text-base text-cw-stone-500 dark:text-cw-stone-400">
-            The CLI scaffolds a free MIT shop today. Agentic onboarding ships
-            with the Plus tier in Q3 2026.
+            The CLI scaffolds a free MIT shop today. Agentic onboarding is in
+            development for the Plus tier.
           </p>
           <div className="mt-8 w-full max-w-xl">
             <CopyCommand command="npx create-cartwright@latest my-shop" />
