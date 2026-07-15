@@ -33,6 +33,12 @@ Scaffolded with `--no-install`? Then run the steps yourself:
 `pnpm install && pnpm db:setup && pnpm dev` (never `prisma migrate deploy` —
 `db:setup` is the robust path and prints the admin login).
 
+## See it in 26 seconds
+
+![npx create-cartwright: one command to a running site — scaffold, seeded database, admin login, HTTP 200 and a rendered H1](https://cartwright.app/readme/cast-scaffold.gif)
+
+*Real terminal recording, wait time cut: one command scaffolds, installs and seeds; `pnpm dev`; the homepage answers 200 with a designed H1.*
+
 ## See it live
 
 Three production sites run on the exact engine you scaffold:
