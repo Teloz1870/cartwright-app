@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ButtonLink } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CopyCommand } from '@/components/landing/copy-command';
@@ -29,20 +30,19 @@ export async function Hero() {
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
-            A real site with design, database and backend — live in minutes.
-            Cartwright is an open-source Next.js 16 engine: one command
-            scaffolds a corporate site, a webshop, or an agent storefront, and
-            you own the code.
+            Generating a site is becoming free — owning and{' '}
+            <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">operating</span>{' '}
+            a real business is the hard part. Cartwright is an open-source
+            Next.js 16 engine scaffolded into a repo you own: design, database,
+            checkout, and an admin your AI can operate. One{' '}
+            <span className="font-mono text-xs text-cw-terracotta">brand.mode</span>{' '}
+            flag ships it as a corporate site, a webshop, or an agent
+            storefront — selling to people on their phones and to buyer agents
+            reading your{' '}
+            <span className="font-mono text-xs">/llms.txt</span>.
           </p>
           <p className="mt-3 text-xs sm:text-sm text-cw-terracotta font-mono">
             ↓ click the mic to try voice shopping
-          </p>
-          <p className="mt-4 max-w-2xl text-sm sm:text-base text-cw-stone-600 dark:text-cw-stone-300 leading-relaxed">
-            Built for human shoppers <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">and</span> AI buyer agents.{' '}
-            <span className="font-mono text-xs text-cw-terracotta">brand.mode</span>{' '}
-            picks which surface(s) you ship — the same engine sells to a person
-            browsing on their phone and to a buyer agent that just read your{' '}
-            <span className="font-mono text-xs">/llms.txt</span>.
           </p>
 
           <div className="mt-10 w-full max-w-2xl">
@@ -51,12 +51,12 @@ export async function Hero() {
 
           <p className="mt-3 text-xs sm:text-sm text-cw-stone-500 dark:text-cw-stone-400 font-mono">
             Measured cold run: designed, verified homepage in 99 s →{' '}
-            <a
+            <Link
               href="/docs/getting-started/ai-quick-start"
               className="text-cw-terracotta hover:underline"
             >
               AI agent quick start
-            </a>
+            </Link>
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

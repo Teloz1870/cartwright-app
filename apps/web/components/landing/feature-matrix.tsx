@@ -76,7 +76,7 @@ function renderCell(value: Cell, accent: boolean) {
 
 export function FeatureMatrix() {
   return (
-    <div className="w-full mt-24">
+    <div id="feature-matrix" className="w-full mt-24 scroll-mt-24">
       <div className="max-w-2xl mb-12">
         <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
           Tier by tier
