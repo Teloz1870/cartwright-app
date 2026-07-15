@@ -16,13 +16,11 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { intro, outro, cancel, spinner, note } from "@clack/prompts";
 import pc from "picocolors";
+// DEFAULT_REF + REF_ALIASES live in ./refs.ts — the single file the
+// bump-template-ref workflow seds on each template release.
+import { REF_ALIASES } from "./refs.js";
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
-
-// Keep DEFAULT_REF in sync with src/index.ts — the bump-template-ref workflow
-// seds BOTH files on each template release.
-const DEFAULT_REF = "v0.39.1";
-const REF_ALIASES: Record<string, string> = { stable: DEFAULT_REF, next: "next" };
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
 

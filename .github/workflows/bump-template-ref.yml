@@ -1,8 +1,8 @@
 name: Bump template ref
 
 # Watches Teloz1870/cartwright-template for new tagged releases and opens a PR
-# bumping DEFAULT_REF in apps/cli/src/index.ts so the next CLI publish picks
-# them up. Three triggers:
+# bumping DEFAULT_REF in apps/cli/src/refs.ts (the single shared channel-
+# constants module) so the next CLI publish picks them up. Three triggers:
 #
 #   • repository_dispatch (type: template-released) — fired by
 #     cartwright-private/.github/workflows/sync-to-mirror.yml when a tag is
@@ -14,8 +14,8 @@ name: Bump template ref
 # When triggered, the workflow:
 #   1. Resolves the latest tag on cartwright-template via `gh release view`.
 #      Falls back to scanning git tags if no GitHub Release exists.
-#   2. Compares to the DEFAULT_REF currently in apps/cli/src/index.ts.
-#   3. If different: sed the new value into index.ts, add a Changeset, and
+#   2. Compares to the DEFAULT_REF currently in apps/cli/src/refs.ts.
+#   3. If different: sed the new value into refs.ts, add a Changeset, and
 #      open a PR via peter-evans/create-pull-request. Merging that PR triggers
 #      the existing Release workflow which publishes a new patch to npm.
 #   4. If equal: log "no bump needed" and exit cleanly.
@@ -56,9 +56,9 @@ jobs:
             echo "::error::Could not resolve any tag on cartwright-template"
             exit 1
           fi
-          CURRENT=$(grep -E '^const DEFAULT_REF =' apps/cli/src/index.ts | sed -E 's/.*"([^"]+)".*/\1/')
+          CURRENT=$(grep -E '^export const DEFAULT_REF =' apps/cli/src/refs.ts | sed -E 's/.*"([^"]+)".*/\1/')
           if [ -z "$CURRENT" ]; then
-            echo "::error::Could not find DEFAULT_REF in apps/cli/src/index.ts"
+            echo "::error::Could not find DEFAULT_REF in apps/cli/src/refs.ts"
             exit 1
           fi
           echo "latest=$LATEST"   >> "$GITHUB_OUTPUT"
@@ -80,15 +80,13 @@ jobs:
           # Escape regex specials in tag (semver dots etc.) — sed treats . as literal in the
           # replacement string, so only the search pattern needs care. The search is anchored
           # so we're not at risk of matching anything else.
-          # DEFAULT_REF lives in three files (index.ts = scaffolder, design-install.ts
-          # = `cartwright design install`, vertical-install.ts = `cartwright vertical
-          # install`). Bump all three so they never drift.
-          sed -i -E 's|^const DEFAULT_REF = "[^"]+";|const DEFAULT_REF = "'"$LATEST"'";|' \
-            apps/cli/src/index.ts apps/cli/src/design-install.ts apps/cli/src/vertical-install.ts
-          # Sanity check the substitution actually happened in all three:
-          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/index.ts
-          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/design-install.ts
-          grep -q "const DEFAULT_REF = \"$LATEST\";" apps/cli/src/vertical-install.ts
+          # DEFAULT_REF lives in ONE file: apps/cli/src/refs.ts — the shared
+          # channel-constants module imported by index.ts, design-install.ts,
+          # vertical-install.ts and doctor.ts. One sed target, no drift.
+          sed -i -E 's|^export const DEFAULT_REF = "[^"]+";|export const DEFAULT_REF = "'"$LATEST"'";|' \
+            apps/cli/src/refs.ts
+          # Sanity check the substitution actually happened:
+          grep -q "export const DEFAULT_REF = \"$LATEST\";" apps/cli/src/refs.ts
 
       - name: Add changeset
         if: steps.resolve.outputs.skip != 'true'
@@ -125,9 +123,7 @@ jobs:
             _Generated automatically by `.github/workflows/bump-template-ref.yml`._
           delete-branch: true
           add-paths: |
-            apps/cli/src/index.ts
-            apps/cli/src/design-install.ts
-            apps/cli/src/vertical-install.ts
+            apps/cli/src/refs.ts
             .changeset/template-bump-*.md
 
       - name: Summary
