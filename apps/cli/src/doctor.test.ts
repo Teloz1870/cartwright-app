@@ -11,6 +11,7 @@ import {
   checkNode,
   parseEnvFile,
   isPlaceholderSecret,
+  mergeEnvSources,
   checkEnv,
   hasDbVerifyScript,
   checkDbVerify,
@@ -66,6 +67,19 @@ describe("checkReleaseMarker", () => {
   it("warns on non-object JSON", () => {
     expect(checkReleaseMarker('"just a string"').result.status).toBe("warn");
     expect(checkReleaseMarker("[1,2]").result.status).toBe("warn");
+  });
+  it("warns (never crashes) on non-string field types — version as number", () => {
+    const { result, marker } = checkReleaseMarker('{"version": 39, "channel": "stable"}');
+    expect(result.status).toBe("warn");
+    expect(result.detail).toContain("malformed release marker");
+    expect(result.detail).toContain("version");
+    expect(marker).toBeNull();
+  });
+  it("warns (never crashes) on non-string field types — ref as null", () => {
+    const { result, marker } = checkReleaseMarker('{"ref": null, "version": "v0.39.1"}');
+    expect(result.status).toBe("warn");
+    expect(result.detail).toContain("ref");
+    expect(marker).toBeNull();
   });
   it("notes the source channel", () => {
     const raw = JSON.stringify({ version: "v0.36.0", channel: "source" });
@@ -225,11 +239,61 @@ describe("isPlaceholderSecret", () => {
   });
 });
 
+describe("mergeEnvSources", () => {
+  it("applies runtime precedence: process.env > .env.local > .env", () => {
+    const merged = mergeEnvSources({
+      dotEnv: { AUTH_SECRET: "from-dot-env", DATABASE_URL: "from-dot-env" },
+      dotEnvLocal: { AUTH_SECRET: "from-local" },
+      processEnv: { AUTH_SECRET: "from-process" },
+    });
+    expect(merged.AUTH_SECRET).toBe("from-process"); // process wins over both
+    expect(merged.DATABASE_URL).toBe("from-dot-env"); // untouched fallthrough
+  });
+  it("only overlays the doctor's keys from process.env", () => {
+    const merged = mergeEnvSources({
+      dotEnv: {},
+      dotEnvLocal: {},
+      processEnv: { AUTH_SECRET: "x", PATH: "/usr/bin", HOME: "/home/u" },
+    });
+    expect(merged).toEqual({ AUTH_SECRET: "x" });
+  });
+  it("files win when process.env has nothing", () => {
+    const merged = mergeEnvSources({
+      dotEnv: { DATABASE_URL: "file:./a.db" },
+      dotEnvLocal: { DATABASE_URL: "file:./b.db" },
+      processEnv: {},
+    });
+    expect(merged.DATABASE_URL).toBe("file:./b.db"); // .env.local > .env
+  });
+});
+
 describe("checkEnv", () => {
-  it("warns when .env.local is missing", () => {
+  it("warns when .env.local is missing and nothing is inherited", () => {
     const res = checkEnv({ envLocalExists: false, env: {} });
     expect(res.status).toBe("warn");
     expect(res.detail).toContain(".env.local not found");
+  });
+  it("ok with no .env.local when everything is inherited from the process env", () => {
+    const env = mergeEnvSources({
+      dotEnv: {},
+      dotEnvLocal: {},
+      processEnv: {
+        AUTH_SECRET: "real-inherited-secret-0123",
+        DATABASE_URL: "libsql://ci.turso.io",
+      },
+    });
+    const res = checkEnv({ envLocalExists: false, env });
+    expect(res.status).toBe("ok");
+    expect(res.detail).toContain("inherited");
+  });
+  it("ok when a real inherited AUTH_SECRET overrides a placeholder in the file", () => {
+    const env = mergeEnvSources({
+      dotEnv: {},
+      dotEnvLocal: { AUTH_SECRET: "changeme", DATABASE_URL: "file:./prisma/dev.db" },
+      processEnv: { AUTH_SECRET: "real-inherited-secret-0123" },
+    });
+    const res = checkEnv({ envLocalExists: true, env });
+    expect(res.status).toBe("ok");
   });
   it("ok with AUTH_SECRET + DATABASE_URL", () => {
     const res = checkEnv({
@@ -364,6 +428,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(0),
         nodeVersion: "v22.11.0",
+        processEnv: {}, // pin: host shell vars must not leak into the test
       });
       const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
       expect(byId.project.status).toBe("ok");
@@ -392,6 +457,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(2),
         nodeVersion: "v22.11.0",
+        processEnv: {},
       });
       const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
       expect(byId.env.status).toBe("fail");
@@ -406,7 +472,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
   it("short-circuits to a single fail outside a Cartwright project", () => {
     const dir = mkdtempSync(join(tmpdir(), "cw-doctor3-"));
     try {
-      const { checks, ok } = collectChecks(dir, { run: stubRunner(0) });
+      const { checks, ok } = collectChecks(dir, { run: stubRunner(0), processEnv: {} });
       expect(checks).toHaveLength(1);
       expect(checks[0].id).toBe("project");
       expect(checks[0].status).toBe("fail");
@@ -423,9 +489,54 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       // DB url only in .env; .env.local overrides a placeholder from .env.
       writeFileSync(join(dir, ".env"), "DATABASE_URL=file:./prisma/dev.db\nAUTH_SECRET=changeme\n");
       writeFileSync(join(dir, ".env.local"), "AUTH_SECRET=real-secret-0123456789\n");
-      const { checks } = collectChecks(dir, { run: stubRunner(0), nodeVersion: "v22.0.0" });
+      const { checks } = collectChecks(dir, {
+        run: stubRunner(0),
+        nodeVersion: "v22.0.0",
+        processEnv: {},
+      });
       const env = checks.find((c) => c.id === "env");
       expect(env?.status).toBe("ok");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("counts inherited process env — placeholder in file, real value inherited", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-doctor5-"));
+    try {
+      makeScaffold(dir);
+      writeFileSync(join(dir, ".env.local"), "AUTH_SECRET=changeme\n");
+      const { checks, ok } = collectChecks(dir, {
+        run: stubRunner(0),
+        nodeVersion: "v22.11.0",
+        processEnv: {
+          AUTH_SECRET: "real-inherited-secret-0123",
+          DATABASE_URL: "libsql://ci.turso.io",
+        },
+      });
+      const env = checks.find((c) => c.id === "env");
+      expect(env?.status).toBe("ok"); // no false FAIL when the runtime env is fine
+      expect(ok).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("survives a malformed release marker end-to-end (no crash)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-doctor6-"));
+    try {
+      makeScaffold(dir);
+      writeFileSync(join(dir, ".cartwright", "release.json"), '{"version": 39}');
+      const { checks, ok } = collectChecks(dir, {
+        run: stubRunner(0),
+        nodeVersion: "v22.11.0",
+        processEnv: {},
+      });
+      const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
+      expect(byId.release.status).toBe("warn");
+      expect(byId.release.detail).toContain("malformed");
+      expect(byId["up-to-date"].status).toBe("skip"); // nothing to compare, no crash
+      expect(ok).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

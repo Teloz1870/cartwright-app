@@ -145,6 +145,23 @@ export function checkReleaseMarker(raw: string | null): {
       marker: null,
     };
   }
+  // Field-type validation: valid JSON with non-string fields (e.g.
+  // {"version": 39} or {"ref": null}) must degrade to a warn — never reach
+  // compareSemverish (which would crash calling .trim() on a number).
+  const badFields = (["version", "ref", "channel", "releasedAt"] as const).filter(
+    (key) => marker[key] !== undefined && typeof marker[key] !== "string",
+  );
+  if (badFields.length > 0) {
+    return {
+      result: {
+        id,
+        label,
+        status: "warn",
+        detail: `malformed release marker — non-string field(s): ${badFields.join(", ")}`,
+      },
+      marker: null,
+    };
+  }
   const bits = [
     `engine ${marker.version ?? marker.ref ?? "unknown"}`,
     ...(marker.channel ? [`channel ${marker.channel}`] : []),
@@ -333,6 +350,34 @@ export function parseEnvFile(content: string): Record<string, string> {
   return out;
 }
 
+/** The env keys the doctor cares about (boot requirements). */
+export const ENV_KEYS = [
+  "AUTH_SECRET",
+  "DATABASE_URL",
+  "TURSO_DATABASE_URL",
+  "TURSO_AUTH_TOKEN",
+] as const;
+
+/**
+ * Merge the env sources with the app's ACTUAL runtime precedence (Next.js
+ * load order): process.env > .env.local > .env. Settings inherited from the
+ * shell/CI/container must count — otherwise a perfectly bootable project
+ * would report a false FAIL. Only the keys the doctor checks are overlaid
+ * from process.env (it carries hundreds of unrelated vars).
+ */
+export function mergeEnvSources(input: {
+  dotEnv: Record<string, string>;
+  dotEnvLocal: Record<string, string>;
+  processEnv: Record<string, string | undefined>;
+}): Record<string, string> {
+  const merged: Record<string, string> = { ...input.dotEnv, ...input.dotEnvLocal };
+  for (const key of ENV_KEYS) {
+    const v = input.processEnv[key];
+    if (v !== undefined) merged[key] = v;
+  }
+  return merged;
+}
+
 /** True when an AUTH_SECRET value is empty or an obvious placeholder. */
 export function isPlaceholderSecret(value: string | undefined): boolean {
   if (value === undefined) return true;
@@ -351,15 +396,6 @@ export function checkEnv(input: {
 }): CheckResult {
   const id = "env";
   const label = "Environment";
-  if (!input.envLocalExists) {
-    return {
-      id,
-      label,
-      status: "warn",
-      detail:
-        ".env.local not found — copy .env.example and set AUTH_SECRET + a database URL",
-    };
-  }
   const issues: string[] = [];
   if (isPlaceholderSecret(input.env.AUTH_SECRET)) {
     issues.push("AUTH_SECRET is missing or a placeholder — the app won't boot without it");
@@ -373,9 +409,26 @@ export function checkEnv(input: {
       "no database URL — set DATABASE_URL, or both TURSO_DATABASE_URL + TURSO_AUTH_TOKEN",
     );
   }
-  return issues.length === 0
-    ? { id, label, status: "ok", detail: "AUTH_SECRET set · database URL present" }
-    : { id, label, status: "fail", detail: issues.join("; ") };
+  if (issues.length === 0) {
+    return {
+      id,
+      label,
+      status: "ok",
+      detail: input.envLocalExists
+        ? "AUTH_SECRET set · database URL present"
+        : "AUTH_SECRET + database URL present (inherited process env — no .env.local)",
+    };
+  }
+  if (!input.envLocalExists) {
+    return {
+      id,
+      label,
+      status: "warn",
+      detail:
+        ".env.local not found — copy .env.example and set AUTH_SECRET + a database URL",
+    };
+  }
+  return { id, label, status: "fail", detail: issues.join("; ") };
 }
 
 /** True when package.json declares a db:verify script. */
@@ -466,10 +519,15 @@ function readIfExists(path: string): string | null {
  */
 export function collectChecks(
   cwd: string,
-  deps: { run?: SpawnRunner; nodeVersion?: string } = {},
+  deps: {
+    run?: SpawnRunner;
+    nodeVersion?: string;
+    processEnv?: Record<string, string | undefined>;
+  } = {},
 ): { checks: CheckResult[]; ok: boolean } {
   const run = deps.run ?? defaultRunner;
   const nodeVersion = deps.nodeVersion ?? process.version;
+  const processEnv = deps.processEnv ?? process.env;
 
   const sentinel = checkSentinels({
     brandConfig: existsSync(join(cwd, "brand.config.ts")),
@@ -495,11 +553,13 @@ export function collectChecks(
     checkNode(nodeVersion),
     checkEnv({
       envLocalExists: existsSync(join(cwd, ".env.local")),
-      env: {
-        // .env first, .env.local overrides — same precedence the engine uses.
-        ...parseEnvFile(readIfExists(join(cwd, ".env")) ?? ""),
-        ...parseEnvFile(readIfExists(join(cwd, ".env.local")) ?? ""),
-      },
+      // Runtime precedence, exactly as the app receives env:
+      // process.env > .env.local > .env (Next.js load order).
+      env: mergeEnvSources({
+        dotEnv: parseEnvFile(readIfExists(join(cwd, ".env")) ?? ""),
+        dotEnvLocal: parseEnvFile(readIfExists(join(cwd, ".env.local")) ?? ""),
+        processEnv,
+      }),
     }),
     checkDbVerify({
       hasScript: hasDbVerifyScript(readIfExists(join(cwd, "package.json"))),
