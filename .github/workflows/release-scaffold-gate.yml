@@ -1,0 +1,101 @@
+name: Release scaffold gate
+
+# Launch-audit blocker #3 (codex blueprint, 2026-07-15): the deep pre-release
+# proof postpublish-smoke deliberately isn't. For BOTH profiles this scaffolds
+# the CURRENT stable ref exactly like a customer, with full install (which
+# runs db:setup + seed), then typecheck → unit tests → production build →
+# boots the dev server and asserts HTTP 200 + a rendered H1 + seeded admin
+# credentials. Run it BEFORE tagging an engine release (workflow_dispatch
+# with ref=next tests the bleeding edge pre-tag) and weekly as a canary.
+#
+# postpublish-smoke = fast structural check after npm publish.
+# release-scaffold-gate = slow functional proof before/around releases.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Template channel/ref to test (stable | next | vX.Y.Z)"
+        default: "stable"
+      cli:
+        description: "create-cartwright version to scaffold with"
+        default: "latest"
+  schedule:
+    - cron: "40 4 * * 1" # Mondays 04:40 UTC — weekly drift canary
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-scaffold-gate
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [light, full]
+    name: ${{ matrix.profile }} profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Scaffold (full install + db:setup + seed)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          npx --yes "create-cartwright@${{ inputs.cli || 'latest' }}" gate-${{ matrix.profile }} \
+            --yes --db=sqlite --no-ai --no-git --no-start \
+            --profile=${{ matrix.profile }} \
+            --ref=${{ inputs.ref || 'stable' }} \
+            --pm=pnpm
+          test -d "gate-${{ matrix.profile }}"
+
+      - name: Seeded admin credentials exist
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          test -s .admin-credentials || { echo "::error::.admin-credentials missing/empty — db:setup/seed failed"; exit 1; }
+          echo "✓ admin seeded"
+
+      - name: Typecheck
+        run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm typecheck
+
+      - name: Unit tests
+        run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm test
+
+      - name: Migration baseline verify (engine ≥ v0.40)
+        run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm run --if-present db:verify
+
+      - name: Production build
+        run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm build
+
+      - name: Boot + HTTP 200 + rendered H1
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          (pnpm start > server.log 2>&1 &)
+          for i in $(seq 1 60); do
+            CODE=$(curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/ || true)
+            [ "$CODE" = "200" ] && break
+            sleep 2
+          done
+          [ "$CODE" = "200" ] || { echo "::error::Homepage never returned 200 (last: $CODE)"; tail -50 server.log; exit 1; }
+          H1=$(curl -sL http://localhost:3000/ | grep -o '<h1[^>]*>[^<]*' | head -1)
+          [ -n "$H1" ] || { echo "::error::No H1 rendered"; exit 1; }
+          echo "✓ 200 + H1: $H1"
+
+      - name: Identity patched (no template identity leakage)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          grep -q 'storeSlug: "gate-${{ matrix.profile }}"' brand.config.ts \
+            || { echo "::error::storeSlug not patched"; exit 1; }
+          echo "✓ identity patched"
