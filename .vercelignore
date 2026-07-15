@@ -1,0 +1,6 @@
+node_modules
+.turbo
+apps/web/.next
+apps/cli/node_modules
+apps/cli/dist
+test-template

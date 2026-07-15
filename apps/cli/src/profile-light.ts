@@ -40,8 +40,8 @@
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-export type Profile = "light" | "full";
-export const PROFILES: ReadonlyArray<Profile> = ["light", "full"];
+export type Profile = "light" | "full" | "site";
+export const PROFILES: ReadonlyArray<Profile> = ["light", "full", "site"];
 
 export function isProfile(value: unknown): value is Profile {
   return typeof value === "string" && PROFILES.includes(value as Profile);
@@ -420,7 +420,7 @@ export type LightProfileReport = {
   warnings: string[];
 };
 
-function applyCodemod(
+export function applyCodemod(
   targetDir: string,
   relPath: string,
   transform: (src: string) => string,
