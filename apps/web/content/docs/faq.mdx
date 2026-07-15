@@ -23,7 +23,7 @@ Owning the code also means owning maintenance time.
 
 Two paths, depending on how much you want to automate.
 
-**Today (self-hosted):** scaffold Cartwright, then use the **Hoptify** import at `/admin/hoptify` — with a Firecrawl key it genuinely brings your brand palette (via design-import) and products across; without one it falls back to a demo run. Product CSV import/export covers catalog exports from Shopify, WooCommerce, Magento, and Squarespace. Verify checkout, then move DNS. Stripe customer IDs are the useful link key when preserving customer/payment relationships.
+**Today (self-hosted):** scaffold with `npx create-cartwright --profile full` (the Hoptify import module is pruned from the default light profile), then use the **Hoptify** import at `/admin/hoptify` — with a Firecrawl key it genuinely brings your brand palette (via design-import) and products across; without one it falls back to a demo run. Product CSV import/export covers catalog exports from Shopify, WooCommerce, Magento, and Squarespace. Verify checkout, then move DNS. Stripe customer IDs are the useful link key when preserving customer/payment relationships.
 
 **Planned (with Plus):** the [agentic onboarding flow](/onboarding) takes a source URL, runs a five-agent migration (DOM analyzer, brand extractor, product mapper, SEO generator, ACP deployer), and produces a deployed Cartwright shop. The page is an interactive demo today; the agent itself is still in development — [join the waitlist](/pricing) to be first.
 
