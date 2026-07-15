@@ -1,5 +1,27 @@
 # create-cartwright
 
+## 2.6.0
+
+### Minor Changes
+
+- 12e6438: New `--profile site`: a plain website with NO database, admin, auth or commerce — cut from the engine's `scaffold/manifest.json` module graph by the new profile materializer (seam-static copies, manifest-driven file exclusion, registry codemods, package.json rewrite, `.cartwright/profile.json` v2). Optional modules via `--with` (contact-form included by default, Resend-only). Requires a template ref that ships the manifest (engine ≥ the B3 release); `light`/`full` are unchanged. The release scaffold-gate gains a third `site` leg proving the materialization db-free end-to-end.
+- f0d290f: New subcommand: `cartwright doctor` — a read-only health check for existing projects.
+  Seven checks (project sentinels, `.cartwright/release.json` marker, engine-vs-CLI version
+  compare (offline), scaffold profile, Node ≥ 22, env preflight for `AUTH_SECRET` + database
+  URL, and the project's own `db:verify` migration-baseline gate), with `--json` output for
+  machines. Diagnostic only: no fixes, no mutations, no network. Also consolidates the
+  triplicated `DEFAULT_REF`/`REF_ALIASES` constants into a single shared `src/refs.ts`
+  module (the bump-template-ref workflow now seds one file).
+- 669144b: Every scaffold now ships a CI safety net: the CLI writes `.github/workflows/ci.yml`
+  (typecheck · unit tests · migration verify · production build, with dummy env vars) into the
+  project before the initial commit. The public template mirror cannot carry workflow files
+  (token scope), so the CLI is the delivery path — your repo, your CI.
+
+### Patch Changes
+
+- 323d5ab: npm README: embed the 26-second terminal recording of the real scaffold flow (one command →
+  seeded database → dev server → HTTP 200 + rendered H1).
+
 ## 2.5.3
 
 ### Patch Changes
