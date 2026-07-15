@@ -1,0 +1,80 @@
+---
+title: Cartwright Plus — buying and activating
+description: How the Plus purchase works end-to-end — checkout, your access key, activation in your shop, billing portal, and key reissue via support.
+---
+
+Cartwright Plus is a **membership, not a license**. The engine is MIT and
+stays MIT — Plus adds priority support, upgrade guidance, the Pro agent
+playbooks, and SEO/GEO Lab beta access on top. This page walks through the
+whole loop: buy → key → activate → manage billing → reissue.
+
+## 1. Buy
+
+The [pricing page](/pricing) checks out through a Stripe Payment Link
+($49/mo, cancel anytime). There is no Cartwright account system: Stripe is
+the system of record, and billing self-service happens through Stripe's
+customer portal (email + one-time code login).
+
+## 2. Your Plus access key
+
+Right after checkout you land on `/plus/success`, which shows your **Plus
+access key** — a string that looks like this:
+
+```text
+cw_plus_v1.eyJ2IjoxLCJwbGFuIjoicGx1cyIs...  (one long line)
+```
+
+The same key arrives by email. Treat it like a password: it is your proof of
+membership. Technically it is an Ed25519-signed statement of your
+subscription — your self-hosted shop can check its authenticity fully
+offline, and cartwright.app can additionally confirm the live subscription
+status. It contains no name, no email, no payment data.
+
+## 3. Activate
+
+Two ways, either works:
+
+- **Admin UI** — open `/admin/plus` in your shop's admin and paste the key.
+  (This page arrives with engine v0.40; until then use the env var below.)
+- **Environment variable** — set `CARTWRIGHT_PLUS_KEY=<your key>` on your
+  deployment (Vercel project settings, Docker env, `.env.local`) and
+  redeploy.
+
+## 4. Billing and cancellation
+
+Invoices, card changes, and cancellation all live in the Stripe customer
+portal — the link is on your success page and in your activation email.
+Cancel anytime, effective at the end of the billing period.
+
+## 5. Lost your key?
+
+Email [support](mailto:hello@cartwright.app) from the address you purchased with and
+we reissue it — manually, usually same day. There is deliberately no
+automated recovery form yet; at current volume a human is faster and safer.
+
+## What happens if verification fails?
+
+Honest answer: very little, by design. Cartwright's enforcement is
+trust-based — the key gates support, private artifacts, and future Plus
+updates, and it **never shuts down your site**. Concretely:
+
+- If cartwright.app is unreachable, your shop honors a previously verified
+  key for seven days and shows "offline grace".
+- If the subscription is canceled, you lose access to support, private
+  downloads, and future Plus updates — nothing already in your repository is
+  touched.
+- Your storefront, checkout, and every line of MIT code you already have
+  keep running, always. Cancellation never disables an existing site.
+
+We would rather you stay for the support than because of a kill switch.
+
+## Key rotation (operator note)
+
+Access keys carry a key id (`kid`) naming the keypair that signed them, and
+verification selects the matching public key by that `kid`. When
+cartwright.app rotates its signing keypair, the retired public key stays in
+the verifier's keyring (`CARTWRIGHT_PLUS_PUBLIC_KEYS`, a JSON map of
+`kid → public key`), so **keys issued before a rotation keep working** — you
+never need to re-activate after a rotation on our side. Only if a key is
+actually compromised would its `kid` be dropped, and affected members get a
+fresh key by email.

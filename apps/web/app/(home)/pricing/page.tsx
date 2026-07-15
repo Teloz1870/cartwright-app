@@ -229,6 +229,24 @@ const PAYMENT_LINKS: Record<Addon['key'], string | undefined> = {
   aiCredits: process.env.STRIPE_LINK_AI_CREDITS,
 };
 
+/**
+ * Stripe Payment Link URLs per subscription tier — same pattern as the
+ * add-on PAYMENT_LINKS above. Set STRIPE_LINK_PLUS (a recurring $49 Payment
+ * Link whose success redirect points at
+ * https://cartwright.app/plus/success?session_id={CHECKOUT_SESSION_ID})
+ * and the Plus card's CTA flips from the waitlist form to a real
+ * "Get Plus" button. Leave unset → the waitlist fallback stays untouched.
+ */
+const TIER_PAYMENT_LINKS: Record<'plus' | 'cloud', string | undefined> = {
+  plus: process.env.STRIPE_LINK_PLUS,
+  cloud: undefined, // Cloud stays waitlist-only for now.
+};
+
+const TIER_BUY_LABELS: Record<'plus' | 'cloud', string> = {
+  plus: 'Get Plus',
+  cloud: 'Get Cloud',
+};
+
 // SoftwareApplication + tiered Offers, derived from the `tiers` data above so
 // the structured-data prices never drift from the visible pricing table.
 const pricingJsonLd = {
@@ -408,6 +426,15 @@ export default function ServicesPage() {
                   className="w-full justify-center"
                 >
                   {tier.cta.label}
+                </ButtonLink>
+              ) : TIER_PAYMENT_LINKS[tier.cta.tier] ? (
+                <ButtonLink
+                  href={TIER_PAYMENT_LINKS[tier.cta.tier]!}
+                  variant="primary"
+                  size="lg"
+                  className="w-full justify-center"
+                >
+                  {TIER_BUY_LABELS[tier.cta.tier]}
                 </ButtonLink>
               ) : (
                 <WaitlistForm tier={tier.cta.tier} ctaLabel={tier.cta.label} />
