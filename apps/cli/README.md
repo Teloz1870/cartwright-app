@@ -1,24 +1,45 @@
 # create-cartwright
 
+[![npm version](https://img.shields.io/npm/v/create-cartwright)](https://www.npmjs.com/package/create-cartwright)
+[![npm downloads](https://img.shields.io/npm/dw/create-cartwright)](https://www.npmjs.com/package/create-cartwright)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Teloz1870/cartwright-template/blob/main/LICENSE)
+[![node >= 22](https://img.shields.io/badge/node-%E2%89%A5%2022-brightgreen)](https://nodejs.org)
+
 **A real site — design, database, backend — live in minutes.**
 
-CLI scaffolder for AI-first sites and webshops powered by [Cartwright](https://cartwright.app).
+CLI scaffolder for AI-first sites and webshops powered by [Cartwright](https://cartwright.app) —
+the open-source Next.js 16 + React 19 + Prisma + Stripe engine with a built-in MCP server,
+JSON-LD everywhere, and an admin your AI agent can drive.
 
 ## Quick start
 
 ```bash
-npx create-cartwright@latest my-shop
-cd my-shop
-npx prisma migrate deploy
-npx prisma db seed
+npx create-cartwright@latest my-site
+cd my-site
 pnpm dev
 ```
 
-Or with all defaults (no prompts):
+That's it. The CLI installs dependencies, creates the database schema and seeds it —
+the **admin login** is printed at the end of scaffolding and saved to `.admin-credentials`
+(gitignored). Open `http://localhost:3000`, sign in at `/account/login`.
+
+No prompts at all:
 
 ```bash
 npx create-cartwright@latest my-shop --yes --db=turso --ai
 ```
+
+Scaffolded with `--no-install`? Then run the steps yourself:
+`pnpm install && pnpm db:setup && pnpm dev` (never `prisma migrate deploy` —
+`db:setup` is the robust path and prints the admin login).
+
+## See it live
+
+Three production sites run on the exact engine you scaffold:
+
+- 🕶️ [solbrillen.dk](https://solbrillen-dk-teloz1.vercel.app/da) — eyewear webshop, every feature flag on
+- ☕ [demo.cartwright.app](https://demo.cartwright.app) — modern coffee-shop demo (View Transitions, 3D hero)
+- 🏢 [cartwright.app](https://cartwright.app) — docs, design gallery, comparisons
 
 ## Profiles
 

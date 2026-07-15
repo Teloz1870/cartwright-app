@@ -11,7 +11,13 @@
     "ecommerce",
     "ai",
     "mcp",
-    "stripe"
+    "mcp-server",
+    "stripe",
+    "shopify-alternative",
+    "agentic-commerce",
+    "create-next-app",
+    "storefront",
+    "webshop"
   ],
   "type": "module",
   "bin": {
