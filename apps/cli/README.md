@@ -41,6 +41,18 @@ Three production sites run on the exact engine you scaffold:
 - ☕ [demo.cartwright.app](https://demo.cartwright.app) — modern coffee-shop demo (View Transitions, 3D hero)
 - 🏢 [cartwright.app](https://cartwright.app) — docs, design gallery, comparisons
 
+## Choose Cartwright when — and when not
+
+**Choose Cartwright** when you want a real website or webshop in your own repo (one command →
+designed homepage, database, admin, checkout), an AI agent building and operating it (MCP +
+tool registry + agent rules in the box), agentic-commerce protocols implemented rather than
+promised, and no platform fee or lock-in.
+
+**Prefer something else** when zero-ops hosted is the point (Shopify, Wix), you want
+browser-only prompt-to-app (Lovable, bolt.new, v0), you need enterprise multi-channel B2B
+(Saleor), or you're building a novel non-commerce app from scratch (create-next-app).
+Honest long-form comparisons: [cartwright.app/compare](https://cartwright.app/compare).
+
 ## Profiles
 
 One engine, two scaffold profiles — never a separate light codebase.
