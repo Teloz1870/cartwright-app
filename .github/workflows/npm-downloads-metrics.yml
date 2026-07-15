@@ -1,0 +1,36 @@
+name: npm-downloads-metrics
+
+# Daily snapshot of create-cartwright's npm download counts so organic
+# adoption can be told apart from release-day CI spikes. Appends one JSON
+# line per day to metrics/npm-downloads.jsonl (committed — the file IS the
+# time series; no external metrics store needed).
+on:
+  schedule:
+    - cron: "20 5 * * *" # daily 05:20 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Append today's counts
+        run: |
+          set -euo pipefail
+          DAY=$(curl -sf "https://api.npmjs.org/downloads/point/last-day/create-cartwright")
+          WEEK=$(curl -sf "https://api.npmjs.org/downloads/point/last-week/create-cartwright")
+          VERSION=$(curl -sf "https://registry.npmjs.org/create-cartwright/latest" | jq -r .version)
+          mkdir -p metrics
+          jq -cn --argjson day "$DAY" --argjson week "$WEEK" --arg version "$VERSION" \
+            '{date: ($day.end // (now | strftime("%Y-%m-%d"))), lastDay: $day.downloads, lastWeek: $week.downloads, latestVersion: $version}' \
+            >> metrics/npm-downloads.jsonl
+      - name: Commit
+        run: |
+          git config user.name "cartwright-metrics[bot]"
+          git config user.email "285280158+Teloz1870@users.noreply.github.com"
+          git add metrics/npm-downloads.jsonl
+          git diff --cached --quiet || git commit -m "chore(metrics): daily npm downloads snapshot [skip ci]"
+          git push
