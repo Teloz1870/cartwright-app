@@ -24,7 +24,7 @@ const sites = [
   },
   {
     name: 'Teloz',
-    domain: 'teloz-showcase.vercel.app',
+    domain: 'teloz.net',
     blurb:
       'The company site behind Cartwright — the same engine in website mode: no cart, just pages, run from the same admin.',
     image: null,

@@ -23,7 +23,7 @@ const doors = [
   {
     door: 'Door two',
     title: 'Your AI coding agent, in a terminal',
-    body: 'Agent rules files ship in the repo, and 86 REST tools across 35 domains let an agent design, stock, translate, and reconfigure the shop — every write confirm-gated and logged to the audit trail.',
+    body: 'Agent rules files ship in the repo, and 86 REST tools across 35 domains let an agent design, stock, translate, and reconfigure the shop — destructive operations require explicit confirmation, and every write lands in the audit trail.',
     foot: 'POST /api/v1/tools',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
