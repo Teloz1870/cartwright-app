@@ -1,5 +1,17 @@
 # create-cartwright
 
+## 2.5.3
+
+### Patch Changes
+
+- 32b283f: npm README: add the "Choose Cartwright when — and when not" decision matrix with honest
+  exclusions and a link to the long-form comparison pages.
+- b419e7d: Anonymous, opt-out scaffold telemetry: one PII-free ping at the end of a successful
+  scaffold (cli version, channel, profile, template, node major, OS, db choice — never a
+  name, path or identifier). Opt out with `--no-telemetry`, `CARTWRIGHT_TELEMETRY=0` or
+  `DO_NOT_TRACK=1`. Fail-soft with a hard 1.5 s cap; documented in the README's Telemetry
+  section.
+
 ## 2.5.2
 
 ### Patch Changes
