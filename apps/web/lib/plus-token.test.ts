@@ -12,11 +12,13 @@ import {
   PLUS_TOKEN_PREFIX,
   buildPlusTokenPayload,
   getPlusPublicKey,
+  getPlusPublicKeyring,
   getPlusSigningPrivateKey,
   isPlusSigningConfigured,
   issuePlusKey,
   signPlusToken,
   verifyPlusToken,
+  verifyPlusTokenWithKeyring,
 } from './plus-token';
 import {
   mapSubscriptionStatus,
@@ -187,6 +189,125 @@ describe('env-backed key parsing (throwaway keys only)', () => {
     expect(() => getPlusSigningPrivateKey()).toThrow(
       /CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY/,
     );
+  });
+});
+
+describe('keyring verification + rotation (throwaway keys only)', () => {
+  const ENV_VARS = [
+    'CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY',
+    'CARTWRIGHT_PLUS_SIGNING_KEY_ID',
+    'CARTWRIGHT_PLUS_PUBLIC_KEYS',
+  ] as const;
+  const saved: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const name of ENV_VARS) {
+      saved[name] = process.env[name];
+      delete process.env[name];
+    }
+  });
+  afterEach(() => {
+    for (const name of ENV_VARS) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
+  });
+
+  // A second throwaway pair, playing the RETIRED key in rotation scenarios.
+  const { privateKey: oldPrivateKey, publicKey: oldPublicKey } =
+    generateKeyPairSync('ed25519');
+  const oldPayload = buildPlusTokenPayload({
+    customer: 'cus_early',
+    subscription: 'sub_early',
+    issuedAt: 1700000000,
+    kid: '2025-07',
+  });
+
+  it('verifies via the keyring, selecting the key by the token kid', () => {
+    const token = signPlusToken(basePayload, privateKey);
+    const result = verifyPlusTokenWithKeyring(token, {
+      '2026-01': publicKey,
+      '2025-07': oldPublicKey,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.payload).toEqual(basePayload);
+  });
+
+  it('rejects an unknown kid (never tries other keys)', () => {
+    const token = signPlusToken(basePayload, privateKey); // kid 2026-01
+    expect(
+      verifyPlusTokenWithKeyring(token, { '2025-07': oldPublicKey }),
+    ).toEqual({ ok: false, reason: 'unknown_kid' });
+  });
+
+  it("rejects a signature that fails against its own kid's key", () => {
+    // Signed with the OLD private key but claiming the CURRENT kid.
+    const forged = signPlusToken(basePayload, oldPrivateKey);
+    expect(
+      verifyPlusTokenWithKeyring(forged, {
+        '2026-01': publicKey,
+        '2025-07': oldPublicKey,
+      }),
+    ).toEqual({ ok: false, reason: 'signature' });
+  });
+
+  it('ROTATION: keys issued under a retired kid keep verifying via CARTWRIGHT_PLUS_PUBLIC_KEYS', () => {
+    // Deployment state AFTER rotation: new private key signs, old public
+    // key parked in the env map.
+    process.env.CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY = privateKey
+      .export({ type: 'pkcs8', format: 'der' })
+      .toString('base64');
+    process.env.CARTWRIGHT_PLUS_SIGNING_KEY_ID = '2026-01';
+    process.env.CARTWRIGHT_PLUS_PUBLIC_KEYS = JSON.stringify({
+      '2025-07': oldPublicKey
+        .export({ type: 'spki', format: 'der' })
+        .toString('base64'),
+    });
+
+    const ring = getPlusPublicKeyring();
+    expect(Object.keys(ring).sort()).toEqual(['2025-07', '2026-01']);
+
+    // A key issued BEFORE the rotation still verifies...
+    const oldToken = signPlusToken(oldPayload, oldPrivateKey);
+    const oldResult = verifyPlusTokenWithKeyring(oldToken, ring);
+    expect(oldResult.ok).toBe(true);
+
+    // ...and so does a freshly issued one.
+    const newToken = issuePlusKey({
+      customer: 'cus_new',
+      subscription: 'sub_new',
+    });
+    expect(newToken).toBeTruthy();
+    expect(verifyPlusTokenWithKeyring(newToken!, ring).ok).toBe(true);
+  });
+
+  it('accepts PEM public keys in the map and works without a private key', () => {
+    process.env.CARTWRIGHT_PLUS_PUBLIC_KEYS = JSON.stringify({
+      '2025-07': oldPublicKey.export({ type: 'spki', format: 'pem' }),
+    });
+    const ring = getPlusPublicKeyring();
+    expect(Object.keys(ring)).toEqual(['2025-07']);
+    const token = signPlusToken(oldPayload, oldPrivateKey);
+    expect(verifyPlusTokenWithKeyring(token, ring).ok).toBe(true);
+  });
+
+  it('returns an empty ring when nothing is configured', () => {
+    expect(getPlusPublicKeyring()).toEqual({});
+  });
+
+  it('throws clear errors on malformed CARTWRIGHT_PLUS_PUBLIC_KEYS', () => {
+    process.env.CARTWRIGHT_PLUS_PUBLIC_KEYS = 'not json';
+    expect(() => getPlusPublicKeyring()).toThrow(
+      /CARTWRIGHT_PLUS_PUBLIC_KEYS/,
+    );
+
+    process.env.CARTWRIGHT_PLUS_PUBLIC_KEYS = '["array"]';
+    expect(() => getPlusPublicKeyring()).toThrow(/JSON object/);
+
+    process.env.CARTWRIGHT_PLUS_PUBLIC_KEYS = JSON.stringify({
+      '2025-07': 'garbage-not-a-key',
+    });
+    expect(() => getPlusPublicKeyring()).toThrow(/could not be parsed/);
   });
 });
 

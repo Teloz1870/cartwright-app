@@ -59,7 +59,14 @@ export type FulfillmentResult =
         | 'wrong_mode'
         | 'wrong_price'
         | 'no_subscription'
-        | 'subscription_not_active';
+        | 'subscription_not_active'
+        /**
+         * TRANSIENT: Stripe/network error while retrieving the session.
+         * Unlike every other reason (permanent facts about the session),
+         * this one means "try again" — the webhook returns 5xx on it so
+         * Stripe retries, and the success page suggests a refresh.
+         */
+        | 'retrieval_error';
     };
 
 /**
@@ -110,9 +117,23 @@ export function validateSessionForPlus(
 }
 
 /**
+ * True when a Stripe retrieval error means "this id does not exist"
+ * (permanent) rather than a transient network/API problem.
+ */
+function isResourceMissing(err: unknown): boolean {
+  const e = err as { code?: string; statusCode?: number } | null;
+  return e?.code === 'resource_missing' || e?.statusCode === 404;
+}
+
+/**
  * Retrieve a Checkout Session server-side and validate it as a Plus
  * purchase. Never throws for "expected" failures — returns a typed reason so
  * the success page and webhook can render/log a friendly outcome.
+ *
+ * Only a genuine Stripe `resource_missing`/404 maps to `session_not_found`;
+ * any other retrieval failure (network blip, 5xx from Stripe, rate limit) is
+ * the TRANSIENT `retrieval_error`, so callers can retry instead of
+ * mistaking an outage for a bad session id.
  */
 export async function fulfillCheckoutSession(
   sessionId: string,
@@ -124,8 +145,15 @@ export async function fulfillCheckoutSession(
     session = await getStripe().checkout.sessions.retrieve(sessionId, {
       expand: ['line_items', 'subscription'],
     });
-  } catch {
-    return { ok: false, reason: 'session_not_found' };
+  } catch (err) {
+    if (isResourceMissing(err)) {
+      return { ok: false, reason: 'session_not_found' };
+    }
+    console.warn(
+      `[plus-entitlement] Transient error retrieving session ${sessionId}:`,
+      err instanceof Error ? err.message : String(err),
+    );
+    return { ok: false, reason: 'retrieval_error' };
   }
 
   return validateSessionForPlus(
@@ -149,8 +177,7 @@ export async function getSubscriptionPlusStatus(
     return mapSubscriptionStatus(sub.status);
   } catch (err) {
     // resource_missing → the id was never a real subscription: inactive.
-    const code = (err as { code?: string } | null)?.code;
-    if (code === 'resource_missing') return 'inactive';
+    if (isResourceMissing(err)) return 'inactive';
     return null;
   }
 }

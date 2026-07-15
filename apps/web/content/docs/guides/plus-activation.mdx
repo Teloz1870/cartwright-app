@@ -67,3 +67,14 @@ updates, and it **never shuts down your site**. Concretely:
   keep running, always. Cancellation never disables an existing site.
 
 We would rather you stay for the support than because of a kill switch.
+
+## Key rotation (operator note)
+
+Access keys carry a key id (`kid`) naming the keypair that signed them, and
+verification selects the matching public key by that `kid`. When
+cartwright.app rotates its signing keypair, the retired public key stays in
+the verifier's keyring (`CARTWRIGHT_PLUS_PUBLIC_KEYS`, a JSON map of
+`kid → public key`), so **keys issued before a rotation keep working** — you
+never need to re-activate after a rotation on our side. Only if a key is
+actually compromised would its `kid` be dropped, and affected members get a
+fresh key by email.

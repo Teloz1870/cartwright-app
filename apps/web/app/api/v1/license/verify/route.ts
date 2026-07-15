@@ -21,7 +21,10 @@
  * offline-first so garbage keys never reach Stripe) + one Stripe read.
  */
 
-import { getPlusPublicKey, verifyPlusToken } from '@/lib/plus-token';
+import {
+  getPlusPublicKeyring,
+  verifyPlusTokenWithKeyring,
+} from '@/lib/plus-token';
 import { getSubscriptionPlusStatus } from '@/lib/plus-entitlement';
 
 export const runtime = 'nodejs';
@@ -40,11 +43,29 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Offline check first — signature math is far cheaper than a Stripe call.
-  const publicKey = getPlusPublicKey();
-  if (!publicKey) {
+  // The keyring maps kid → public key (current signing key + any retired
+  // keys from CARTWRIGHT_PLUS_PUBLIC_KEYS), so key rotation never 401s
+  // previously issued access keys.
+  let keyring: ReturnType<typeof getPlusPublicKeyring>;
+  try {
+    keyring = getPlusPublicKeyring();
+  } catch (err) {
+    // Misconfigured CARTWRIGHT_PLUS_PUBLIC_KEYS must not 401 paying members
+    // — surface as unavailable so callers apply their offline grace.
+    console.error(
+      '[license-verify] Keyring configuration error:',
+      err instanceof Error ? err.message : String(err),
+    );
+    return Response.json(
+      { error: 'verification_unavailable' },
+      { status: 503 },
+    );
+  }
+  if (Object.keys(keyring).length === 0) {
     console.warn(
-      '[license-verify] CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY not configured — ' +
-        'cannot verify keys on this deployment.',
+      '[license-verify] No verification keys configured (neither ' +
+        'CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY nor CARTWRIGHT_PLUS_PUBLIC_KEYS) ' +
+        '— cannot verify keys on this deployment.',
     );
     return Response.json(
       { error: 'verification_unavailable' },
@@ -52,8 +73,11 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const verified = verifyPlusToken(key, publicKey);
+  const verified = verifyPlusTokenWithKeyring(key, keyring);
   if (!verified.ok) {
+    // 'unknown_kid' lands here too: a kid outside the ring is unauthorized
+    // (and if it was a legitimate retired kid, the fix is adding its public
+    // key to CARTWRIGHT_PLUS_PUBLIC_KEYS — see lib/plus-token.ts).
     return Response.json({ error: 'invalid_key' }, { status: 401 });
   }
 

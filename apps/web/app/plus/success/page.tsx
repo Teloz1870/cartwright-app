@@ -64,6 +64,20 @@ export default async function PlusSuccessPage({
 
   const result = await fulfillCheckoutSession(sessionId);
 
+  if (!result.ok && result.reason === 'retrieval_error') {
+    // Transient Stripe/network problem — not a verdict on the purchase.
+    return (
+      <Shell title="One moment — we could not reach Stripe">
+        <p>
+          A temporary problem stopped us from looking up your checkout
+          session. Your payment is not affected. Refresh this page in a few
+          seconds — and either way, your access key also arrives by email.
+          Still stuck? Write <SupportLink /> and we will send it manually.
+        </p>
+      </Shell>
+    );
+  }
+
   if (!result.ok) {
     return (
       <Shell title="We could not verify this checkout">

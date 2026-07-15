@@ -10,9 +10,18 @@
  * - 501 when the webhook is not configured (missing STRIPE_WEBHOOK_SECRET /
  *   STRIPE_SECRET_KEY) — clear log, nothing else.
  * - 400 on a bad/missing signature (raw-body verification).
- * - 2xx on every handled event, even when a side-effect (email) fails —
- *   Stripe retries non-2xx, and a retry storm cannot fix a missing Resend
- *   key. Failures are logged loudly for manual reissue by support.
+ * - For fulfillment events, PERMANENT outcomes ack with 2xx (a retry cannot
+ *   change the facts of the session: wrong price, wrong mode, no email on
+ *   the session) while TRANSIENT/FIXABLE failures return 5xx so Stripe
+ *   retries with backoff for up to ~3 days: Stripe/network retrieval errors,
+ *   Resend send failures (thrown OR resolved-with-{error}), and missing
+ *   signing/Resend/price config — the retry window is exactly the window in
+ *   which an operator can fix config without a paying member losing their
+ *   activation email. The Resend idempotency key makes all retries safe.
+ * - Delayed payment methods: `checkout.session.completed` may arrive with
+ *   the subscription still `incomplete` (acked — not a failure); the later
+ *   `checkout.session.async_payment_succeeded` runs the SAME fulfillment
+ *   path and sends the key. `async_payment_failed` is logged and acked.
  *
  * Email idempotency: Resend is called with idempotency key
  * `plus-activation/<session-id>`, so Stripe's at-least-once delivery cannot
@@ -77,11 +86,23 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   switch (event.type) {
-    case 'checkout.session.completed': {
+    // Both events run the same validated fulfillment: `completed` covers
+    // instant payment methods; `async_payment_succeeded` covers delayed
+    // methods (bank debits etc.) whose `completed` event arrived while the
+    // subscription was still `incomplete`.
+    case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded': {
       const session = event.data.object;
-      await handleCheckoutCompleted(session);
-      break;
+      return handleCheckoutFulfillment(session, event.type);
     }
+
+    case 'checkout.session.async_payment_failed':
+      console.info(
+        `[stripe-webhook] checkout.session.async_payment_failed for session ` +
+          `${event.data.object.id} — delayed payment did not clear; no key ` +
+          `issued (event ${event.id}).`,
+      );
+      break;
 
     // No store to update — Stripe is the entitlement store, and the verify
     // endpoint asks Stripe live. Log so the operator sees lifecycle changes.
@@ -110,18 +131,52 @@ export async function POST(request: Request): Promise<Response> {
   return Response.json({ ok: true, received: true });
 }
 
-async function handleCheckoutCompleted(
+/** 2xx ack — Stripe stops retrying. For outcomes a retry cannot change. */
+function ack(note: string): Response {
+  return Response.json({ ok: true, received: true, note });
+}
+
+/** 5xx — Stripe retries with backoff. For transient/fixable failures. */
+function retryLater(error: string): Response {
+  return Response.json({ ok: false, error }, { status: 500 });
+}
+
+async function handleCheckoutFulfillment(
   session: Stripe.Checkout.Session,
-): Promise<void> {
+  eventType: string,
+): Promise<Response> {
   // Re-retrieve + validate (mode, price, subscription status) — never trust
   // the event payload alone for fulfillment.
   const result = await fulfillCheckoutSession(session.id);
   if (!result.ok) {
+    // Transient Stripe/network error → 5xx so Stripe redelivers. Permanent
+    // facts about the session (wrong price/mode, not active) → ack.
+    if (result.reason === 'retrieval_error') {
+      console.warn(
+        `[stripe-webhook] Transient error retrieving session ${session.id} ` +
+          `for ${eventType} — returning 500 so Stripe retries.`,
+      );
+      return retryLater('session_retrieval_failed');
+    }
+    if (result.reason === 'not_configured') {
+      // STRIPE_PLUS_PRICE_ID missing on the money path — fixable config.
+      // Retrying gives the operator Stripe's ~3-day window to set it.
+      console.error(
+        `[stripe-webhook] STRIPE_PLUS_PRICE_ID missing — cannot validate ` +
+          `session ${session.id} as a Plus purchase. Returning 500 so Stripe ` +
+          'retries once configuration is fixed.',
+      );
+      return retryLater('price_id_not_configured');
+    }
     console.warn(
-      `[stripe-webhook] checkout.session.completed for ${session.id} did not ` +
-        `validate as a Plus purchase (reason: ${result.reason}) — no key issued.`,
+      `[stripe-webhook] ${eventType} for ${session.id} did not validate as a ` +
+        `Plus purchase (reason: ${result.reason}) — no key issued.` +
+        (result.reason === 'subscription_not_active'
+          ? ' If this is a delayed payment method, ' +
+            'checkout.session.async_payment_succeeded will fulfill later.'
+          : ''),
     );
-    return;
+    return ack(`not_fulfilled:${result.reason}`);
   }
 
   const key = issuePlusKey({
@@ -129,31 +184,35 @@ async function handleCheckoutCompleted(
     subscription: result.subscription,
   });
   if (!key) {
+    // Fixable config on the money path — retry window, not silent loss.
     console.error(
       `[stripe-webhook] CARTWRIGHT_PLUS_SIGNING_PRIVATE_KEY missing — cannot ` +
-        `issue access key for session ${session.id}. Purchase is safe in ` +
-        'Stripe; reissue manually once the signing key is configured.',
+        `issue access key for session ${session.id}. Returning 500 so Stripe ` +
+        'retries once the signing key is configured.',
     );
-    return;
+    return retryLater('signing_key_not_configured');
   }
 
   const email = session.customer_details?.email ?? session.customer_email;
   if (!email) {
+    // Permanent: the session itself has no email; retrying redelivers the
+    // same session. The success page shows the key; support can reissue.
     console.error(
       `[stripe-webhook] No customer email on session ${session.id} — cannot ` +
         'send activation email. Key can be reissued from the success page.',
     );
-    return;
+    return ack('no_customer_email');
   }
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    // Fixable config on the money path — same retry-window reasoning.
     console.error(
       `[stripe-webhook] RESEND_API_KEY missing — activation email for ` +
-        `session ${session.id} NOT sent. The success page still shows the key; ` +
-        'support can reissue.',
+        `session ${session.id} NOT sent. Returning 500 so Stripe retries ` +
+        'once Resend is configured.',
     );
-    return;
+    return retryLater('resend_not_configured');
   }
 
   const from = process.env.PLUS_FROM_EMAIL ?? DEFAULT_FROM;
@@ -161,7 +220,10 @@ async function handleCheckoutCompleted(
   const resend = new Resend(apiKey);
 
   try {
-    await resend.emails.send(
+    // NOTE: the Resend SDK does NOT throw on API errors — it resolves with
+    // { data: null, error }. Both failure shapes must return 5xx, or the
+    // activation email is permanently lost.
+    const { error } = await resend.emails.send(
       {
         from,
         to: email,
@@ -191,14 +253,24 @@ async function handleCheckoutCompleted(
       // Stripe delivers at-least-once; this makes the email exactly-once.
       { idempotencyKey: `plus-activation/${session.id}` },
     );
+    if (error) {
+      console.error(
+        `[stripe-webhook] Resend rejected the activation email for session ` +
+          `${session.id} (${error.name}): ${error.message}. Returning 500 so ` +
+          'Stripe retries (idempotency key prevents duplicates).',
+      );
+      return retryLater('activation_email_failed');
+    }
     console.info(
       `[stripe-webhook] Activation email sent for session ${session.id}.`,
     );
+    return ack('activation_email_sent');
   } catch (err) {
     console.error(
-      `[stripe-webhook] Activation email for session ${session.id} failed ` +
-        '(still returning 2xx; reissue via support):',
+      `[stripe-webhook] Activation email for session ${session.id} threw — ` +
+        'returning 500 so Stripe retries (idempotency key prevents duplicates):',
       err instanceof Error ? err.message : String(err),
     );
+    return retryLater('activation_email_failed');
   }
 }
