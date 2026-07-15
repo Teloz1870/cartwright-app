@@ -160,6 +160,7 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   //    walks the complete tree. Both belong to the manifest-driven `site`
   //    path — the prune-list light profile is not a materialization, so the
   //    graph invariants do not hold there by design.
+  "tests/unit/modules.test.ts",
   "tests/unit/scaffold-manifest.test.ts",
   "tests/unit/site-profile-imports.test.ts",
   ...LIGHT_PRUNED_PLUGINS.map((p) => `plugins/${p.slug}`),
