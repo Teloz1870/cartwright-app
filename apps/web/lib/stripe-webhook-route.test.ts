@@ -78,6 +78,7 @@ function sessionEvent(type: string) {
 function goodRetrievedSession() {
   return {
     mode: 'subscription',
+    created: 1_752_000_000,
     line_items: { data: [{ price: { id: 'price_plus_49' } }] },
     customer: 'cus_ok',
     subscription: { id: 'sub_ok', status: 'active' },
@@ -132,6 +133,27 @@ describe('signature & config gates', () => {
     mockConstructEvent.mockRejectedValue(new Error('bad sig'));
     const res = await post();
     expect(res.status).toBe(400);
+  });
+});
+
+describe('fix 5 — retries produce a byte-identical email payload (stable issuedAt)', () => {
+  it('two deliveries of the same session issue the SAME key (Resend idempotency contract)', async () => {
+    mockConstructEvent.mockResolvedValue(
+      sessionEvent('checkout.session.completed'),
+    );
+    mockRetrieveSession.mockResolvedValue(goodRetrievedSession());
+    mockSendEmail.mockResolvedValue({ data: { id: 'em_1' }, error: null });
+
+    await post();
+    const firstArgs = JSON.stringify(mockSendEmail.mock.calls[0]);
+
+    mockSendEmail.mockClear();
+    // Simulate a Stripe retry seconds later — payload must not drift.
+    await new Promise((r) => setTimeout(r, 5));
+    await post();
+    const secondArgs = JSON.stringify(mockSendEmail.mock.calls[0]);
+
+    expect(secondArgs).toBe(firstArgs);
   });
 });
 

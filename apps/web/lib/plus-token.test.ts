@@ -332,6 +332,7 @@ describe('checkout session validation (mocked sessions, no Stripe SDK)', () => {
 
   const goodSession: SessionForValidation = {
     mode: 'subscription',
+    created: 1_752_000_000,
     line_items: { data: [{ price: { id: PLUS_PRICE } }] },
     customer: 'cus_test123',
     subscription: { id: 'sub_test456', status: 'active' },
@@ -344,6 +345,7 @@ describe('checkout session validation (mocked sessions, no Stripe SDK)', () => {
       customer: 'cus_test123',
       subscription: 'sub_test456',
       subscriptionStatus: 'active',
+      sessionCreated: 1_752_000_000,
     });
   });
 

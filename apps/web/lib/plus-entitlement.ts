@@ -34,6 +34,8 @@ export function mapSubscriptionStatus(status: string): PlusStatus {
 /** The slice of a Checkout Session that fulfillment validation reads. */
 export type SessionForValidation = {
   mode: string | null;
+  /** Unix seconds; Stripe always sets this — the stable issuedAt source. */
+  created: number;
   line_items?: {
     data: Array<{ price?: { id: string } | null } | null>;
   } | null;
@@ -50,6 +52,10 @@ export type FulfillmentResult =
       customer: string;
       subscription: string;
       subscriptionStatus: string;
+      /** Checkout Session creation time (unix seconds) — the STABLE issuedAt
+       *  for the access key, so webhook retries produce a byte-identical
+       *  email payload under the same Resend idempotency key (codex P1). */
+      sessionCreated: number;
     }
   | {
       ok: false;
@@ -113,6 +119,7 @@ export function validateSessionForPlus(
     customer,
     subscription: sub.id,
     subscriptionStatus: sub.status,
+    sessionCreated: session.created,
   };
 }
 

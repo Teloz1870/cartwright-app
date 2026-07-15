@@ -182,6 +182,10 @@ async function handleCheckoutFulfillment(
   const key = issuePlusKey({
     customer: result.customer,
     subscription: result.subscription,
+    // Stable issuedAt (session creation time): Stripe retries must produce
+    // the IDENTICAL key/email payload under the same Resend idempotency key,
+    // or Resend rejects the retry as invalid_idempotent_request (codex P1).
+    issuedAt: result.sessionCreated,
   });
   if (!key) {
     // Fixable config on the money path — retry window, not silent loss.
