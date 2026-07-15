@@ -955,7 +955,13 @@ async function run(): Promise<void> {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             cliVersion: CLI_VERSION,
-            ref: templateRef,
+            // Bucket the channel (codex fold-in): a user-supplied branch name
+            // could identify a person/org, contradicting the PII-free promise.
+            // Only the public channels and version-tag SHAPE pass through.
+            ref:
+              templateRef === "stable" || templateRef === "next" || /^v\d+\.\d+\.\d+/.test(templateRef)
+                ? templateRef
+                : "custom",
             profile,
             template: templateSlug,
             node: `v${process.versions.node.split(".")[0]}`,
