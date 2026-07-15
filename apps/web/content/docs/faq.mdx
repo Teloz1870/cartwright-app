@@ -15,7 +15,7 @@ Cartwright has no platform fee and no per-order tax. The self-hosted template is
 
 Typical infrastructure costs if you self-host: Vercel hosting, Turso or Postgres, Stripe processing, Resend email, Blob storage, and Anthropic or Gemini if you enable AI.
 
-Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise custom) bundle hosted services, premium integrations, AI credits, and support — none of them gate features inside the template itself. See [Pricing](/pricing) for the full breakdown.
+Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise custom) bundle hosted services, support, AI credits, and Pro tooling — with premium integrations on the roadmap. None of them gate features inside the template itself. See [Pricing](/pricing) for the full breakdown.
 
 Owning the code also means owning maintenance time.
 
@@ -23,17 +23,17 @@ Owning the code also means owning maintenance time.
 
 Two paths, depending on how much you want to automate.
 
-**Today:** scaffold Cartwright, run the import scripts to bring products and customers across, verify checkout, then move DNS. Stripe customer IDs are the useful link key when preserving customer/payment relationships. Works with Shopify, WooCommerce, Magento, and Squarespace exports.
+**Today (self-hosted):** scaffold with `npx create-cartwright --profile full` (the Hoptify import module is pruned from the default light profile), then use the **Hoptify** import at `/admin/hoptify` — with a Firecrawl key it genuinely brings your brand palette (via design-import) and products across; without one it falls back to a demo run. Product CSV import/export covers catalog exports from Shopify, WooCommerce, Magento, and Squarespace. Verify checkout, then move DNS. Stripe customer IDs are the useful link key when preserving customer/payment relationships.
 
-**Q3 2026 (with Plus):** the [agentic onboarding flow](/onboarding) takes a source URL, runs a five-agent migration (DOM analyzer, brand extractor, product mapper, SEO generator, ACP deployer), and produces a deployed Cartwright shop. The page is a live preview today; the agent ships with the Plus tier — [join the waitlist](/pricing) to be first.
+**Planned (with Plus):** the [agentic onboarding flow](/onboarding) takes a source URL, runs a five-agent migration (DOM analyzer, brand extractor, product mapper, SEO generator, ACP deployer), and produces a deployed Cartwright shop. The page is an interactive demo today; the agent itself is still in development — [join the waitlist](/pricing) to be first.
 
 ## What's the difference between self-hosted, Plus, and Cloud?
 
-Three tiers that all run the same MIT-licensed template — they differ in what's hosted for you and which premium integrations are wired.
+Three tiers that all run the same MIT-licensed template — they differ in what's hosted for you and how much support you get.
 
 - **Self-hosted ($0).** Full template. You bring your own Vercel, database, Stripe, email, and AI keys. Community support via GitHub Issues. Every feature inside the template is available — nothing is paywalled.
-- **Plus ($49/mo, launching Q3 2026).** Everything in Self-hosted, plus ten premium MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia), Shopify migration toolkit, priority email support (24h SLA), and the `cartwright upgrade` tooling.
-- **Cloud ($199/mo, launching Q4 2026).** Everything in Plus, plus fully managed Vercel + Turso, automated database backups + monitoring, free SSL + custom domain setup, white-glove migration, and a hosted admin at admin.cartwright.app.
+- **Plus ($49/mo, waitlist open).** Everything in Self-hosted, plus priority email support (24h SLA), release + security upgrade guidance for your fork, Pro agent playbooks (4 industry packs), and SEO/GEO Lab (beta) access. On the Plus roadmap (planned, not shipped): ten premium MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia), the agentic Shopify migration, and `cartwright upgrade` tooling.
+- **Cloud ($199/mo, waitlist open).** Everything in Plus, plus fully managed Vercel + Turso, automated database backups + monitoring, free SSL + custom domain setup, white-glove migration, and a hosted admin at admin.cartwright.app.
 - **Enterprise (custom).** Multi-shop / multi-tenant, 4h support SLA, custom MCP tools, dedicated success manager, security review + DPA on request.
 
 The full comparison lives on [Pricing](/pricing); the integration logos and per-tool pitches live on [Integrations](/integrations#plus).
@@ -44,7 +44,7 @@ Two distinct sets.
 
 **Pre-wired in every tier (15 core integrations):** Stripe (payments), Vercel (hosting + Blob storage), Resend (email), Turso (database), Sentry (observability), Upstash (rate limiting), i18nexus (i18n), Anthropic (AI), Google Gemini (image AI), Ollama (local AI alternative), MCP (agent surface), Auth.js (auth), Phone.inc (telephony preview), Luma Dream Machine (video gen), and Unsplash (image search). The full integration story with logos and links: [In the box](/docs/in-the-box) for the developer-tone walkthrough, or [Integrations](/integrations) for the marketing-tone overview.
 
-**Plus-tier only (10 premium MCP integrations):** Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia. These ship as MCP integrations, which means the storefront AI assistant and the admin can act on them directly — no glue code needed. See [Integrations → Coming with Plus](/integrations#plus).
+**Planned for Plus (10 premium MCP integrations — not shipped yet):** Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia. The plan is to ship these as MCP integrations, which means the storefront AI assistant and the admin can act on them directly — no glue code needed. See [Integrations → Coming with Plus](/integrations#plus).
 
 ## How does it compare to Medusa, Saleor, or next-forge?
 

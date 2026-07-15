@@ -78,21 +78,20 @@ const tiers: Tier[] = [
   },
   {
     name: 'Cartwright Plus',
-    description: 'Premium integrations, support, and tooling. You still self-host.',
+    description: 'Priority support, Pro tooling, and early access. You still self-host.',
     price: '$49',
     period: '/mo',
     icon: Sparkles,
     popular: true,
-    comingSoon: 'Launching Q3 2026',
+    comingSoon: 'Waitlist open',
     features: [
       'Everything in Self-hosted, plus:',
-      'SEO/GEO Autopilot — self-improving search + AI-citation experiments',
-      'Premium industry packs (fashion, beauty, electronics, home, food)',
-      'Premium MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion sync)',
-      'Shopify migration toolkit (full agentic five-step migration)',
       'Priority email support (24h SLA)',
-      'Unified analytics dashboard',
-      'Auto-upgrade tooling (`cartwright upgrade`)',
+      'Release + security upgrade guidance for your fork',
+      'Pro agent playbooks — 4 industry packs',
+      'SEO/GEO Lab (beta) — AI-citation share-of-voice measurement',
+      'Roadmap: premium MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion)',
+      'Roadmap: agentic Shopify migration + `cartwright upgrade` tooling',
     ],
     cta: { kind: 'waitlist', tier: 'plus', label: 'Join waitlist' },
   },
@@ -102,7 +101,7 @@ const tiers: Tier[] = [
     price: '$199',
     period: '/mo',
     icon: Cloud,
-    comingSoon: 'Launching Q4 2026',
+    comingSoon: 'Waitlist open',
     features: [
       'Everything in Plus, plus:',
       'Fully managed Vercel + Turso',
@@ -279,7 +278,7 @@ export default function ServicesPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400">
             The Cartwright template is MIT and free, forever. If you want hosted
-            services, premium integrations, or someone running it for you, layer
+            services, priority support, or someone running it for you, layer
             on a paid tier. The template itself is never paywalled.
           </p>
           <Link
@@ -372,7 +371,7 @@ export default function ServicesPage() {
               {tier.popular && (
                 <div className="mb-6 border-t border-cw-stone-200 dark:border-cw-stone-800 pt-5">
                   <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-cw-stone-500 dark:text-cw-stone-400 mb-3">
-                    Premium MCP integrations
+                    On the Plus roadmap
                   </p>
                   <ul className="flex items-center gap-3">
                     {PLUS_PREMIUM_LOGOS.map((slug) => (
@@ -383,13 +382,14 @@ export default function ServicesPage() {
                   </ul>
                   <p className="mt-3 text-xs text-cw-stone-600 dark:text-cw-stone-400">
                     Klaviyo, Mailchimp, QuickBooks, Notion{' '}
-                    <strong className="text-cw-stone-900 dark:text-cw-stone-50">+ 6 more</strong>
+                    <strong className="text-cw-stone-900 dark:text-cw-stone-50">+ 6 more</strong>{' '}
+                    — planned, not shipped yet
                   </p>
                   <Link
                     href="/integrations#plus"
                     className="mt-1 inline-block text-xs font-medium text-cw-terracotta hover:underline"
                   >
-                    See all premium integrations →
+                    See the planned integrations →
                   </Link>
                   <Link
                     href="/onboarding"
@@ -487,7 +487,7 @@ export default function ServicesPage() {
               The template is MIT. Always.
             </h2>
             <p className="mt-3 text-sm text-cw-stone-500 dark:text-cw-stone-400 max-w-xl">
-              Paid tiers add hosted services, premium integrations, and support. They never gate features inside the template itself. Cancel any time and keep running your shop — your code, your database, your customers.
+              Paid tiers add hosted services, support, and Pro tooling — premium integrations join as they land on the roadmap. They never gate features inside the template itself. Cancel any time and keep running your shop — your code, your database, your customers.
             </p>
           </div>
           <ButtonLink href="/docs/roadmap" variant="outline" size="lg">

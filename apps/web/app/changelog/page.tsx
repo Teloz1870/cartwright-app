@@ -356,7 +356,7 @@ const RELEASES = [
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
     features: [
       'Resolvable Genome (genomeResolve) — copy fields render override ?? resolved-cache ?? brand anchor, harmonised against your identity anchors. Render never calls an LLM; resolution is triggered in /admin/genome. Respawn a shop\'s whole voice from a sentence.',
-      'SEO/GEO Autopilot (seoAutopilot, ⭐ Pro) — measures search performance (GSC) + AI-citation share, then runs self-improving genome experiments: apply → measure → keep or revert. /admin/seo-performance.',
+      'SEO/GEO Lab (seoAutopilot, ⭐ Pro, beta) — measures AI-citation share-of-voice (GEO) at /admin/seo-performance. GSC measurement + automated genome experiments (apply → measure → keep or revert) are scaffolded and still in development.',
       'Hoptify (hoptify + logoGenerator) — a tongue-in-cheek Shopify pendant: a familiar storefront design plus a parody "import from Shopify" onboarding that genuinely brings your palette (design-import) and products (Firecrawl scraper) across when a key is set, fail-soft to a demo otherwise. Includes a Gemini raster logo generator.',
       'Firecrawl scraper + Design import (designImport) — scrape product data from a URL, or pull a colour palette from any site into a live theme in ~2 minutes. /admin/design-import.',
       'Blog (blog) — /blog + RSS + BlogPosting JSON-LD + sitemap, edited from /admin/blog. Content marketing without a second CMS.',
@@ -426,7 +426,7 @@ const RELEASES = [
       'Vibe Coding sandbox at /admin/vibe-sandbox — push raw HTML from Cursor or v0 via /api/admin/vibe/push, auto-translate via Gemini.',
       'Phone.inc telephony scaffolded at /admin/telefon — IVR config, voicemail transcription, call routing. Preview while Phone.inc API spec stabilises.',
       'Setup wizard at /admin/setup — DB-first secret storage; no env file editing required.',
-      '/integrations top-nav page launched — 15 core service integrations + 10 Plus-tier MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia) with real brand logos, category eyebrows, and deep-anchor /integrations#plus.',
+      '/integrations top-nav page launched — 15 core service integrations, plus the 10 planned Plus-tier MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion, Airtable, HubSpot, Slack, Zapier, ShipStation, Algolia) with real brand logos, category eyebrows, and deep-anchor /integrations#plus.',
       '/onboarding redesigned as Plus-tier preview — type a URL, watch a five-agent migration demo (DOM analyzer, brand extractor, product mapper, SEO generator, ACP deployer), join the waitlist.',
     ],
   },

@@ -34,27 +34,27 @@ const items = [
         No platform fees. You pay the underlying services you choose — Vercel hosting, Turso or
         Postgres, Stripe’s standard processing, Anthropic/Gemini if you use AI. There is no
         per-order tax going to cartwright. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise)
-        layer on hosted services and premium MCP integrations — see{' '}
+        layer on hosted services, support, and Pro tooling — see{' '}
         <a href="/pricing" className="text-cw-terracotta">pricing</a> for the full breakdown.
       </>
     ),
     plain:
-      'No platform fees. You pay only the underlying services you choose — Vercel hosting, Turso or Postgres, Stripe’s standard processing, and Anthropic/Gemini if you use AI. There is no per-order fee going to cartwright. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise) layer on hosted services and premium MCP integrations.',
+      'No platform fees. You pay only the underlying services you choose — Vercel hosting, Turso or Postgres, Stripe’s standard processing, and Anthropic/Gemini if you use AI. There is no per-order fee going to cartwright. Optional paid tiers (Plus $49/mo, Cloud $199/mo, Enterprise) layer on hosted services, support, and Pro tooling.',
   },
   {
     q: 'Can I migrate from Shopify or WooCommerce?',
     a: (
       <>
-        Two paths. <strong>Today:</strong> scaffold cartwright, run the import scripts for products
-        and customers, and point your DNS over. The Stripe customer ID is the link key.{' '}
-        <strong>Q3 2026 with Plus:</strong> an{' '}
+        Two paths. <strong>Today:</strong> scaffold cartwright, use the Hoptify import (palette +
+        products via Firecrawl) plus product CSV import, and point your DNS over. The Stripe
+        customer ID is the link key. <strong>Planned with Plus:</strong> an{' '}
         <a href="/onboarding" className="text-cw-terracotta">agentic onboarding flow</a> that takes a
-        source URL and runs a five-agent migration to a deployed Cartwright shop. The preview is
-        live today; the agent ships with the Plus tier.
+        source URL and runs a five-agent migration to a deployed Cartwright shop. The interactive
+        preview is live today; the agent itself is still in development.
       </>
     ),
     plain:
-      'Two paths. Today: scaffold Cartwright, run the import scripts for products and customers, and point your DNS over — the Stripe customer ID is the link key. Q3 2026 with Plus: an agentic onboarding flow that takes a source URL and runs a five-agent migration to a deployed Cartwright shop.',
+      'Two paths. Today: scaffold Cartwright, use the Hoptify import (palette + products via Firecrawl) plus product CSV import, and point your DNS over — the Stripe customer ID is the link key. Planned with Plus: an agentic onboarding flow that takes a source URL and runs a five-agent migration to a deployed Cartwright shop; the interactive preview is live today, the agent itself is still in development.',
   },
   {
     q: 'How does this compare to Medusa, Saleor, or next-forge?',
@@ -74,14 +74,14 @@ const items = [
       <>
         The admin ships with agentic helpers — drafting product copy, generating SEO metadata,
         answering customer questions in the storefront chat, and exposing a <code>/api/mcp</code>{' '}
-        endpoint so external agents can act on the shop with tools you define. Plus tier adds MCP
-        integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion, and four others so the
-        agent can act on them directly — see{' '}
+        endpoint so external agents can act on the shop with tools you define. The Plus roadmap
+        adds MCP integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion, and four
+        others so the agent can act on them directly — see{' '}
         <a href="/integrations" className="text-cw-terracotta">integrations</a>.
       </>
     ),
     plain:
-      'The admin ships with agentic helpers — drafting product copy, generating SEO metadata, answering customer questions in the storefront chat, and exposing an /api/mcp endpoint so external agents can act on the shop with tools you define. Plus tier adds MCP integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion and more.',
+      'The admin ships with agentic helpers — drafting product copy, generating SEO metadata, answering customer questions in the storefront chat, and exposing an /api/mcp endpoint so external agents can act on the shop with tools you define. The Plus roadmap adds MCP integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion and more.',
   },
   {
     q: 'Where do I get support?',

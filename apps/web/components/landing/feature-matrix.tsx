@@ -28,12 +28,15 @@ const featureMatrix: Section[] = [
     ],
   },
   {
-    category: 'Premium integrations',
+    category: 'Plus tooling & support',
     features: [
-      { name: 'Industry packs (fashion, beauty, electronics, home, food)', selfHosted: false, plus: true, cloud: true, enterprise: true },
-      { name: 'Klaviyo + Mailchimp + QuickBooks + Notion MCP',             selfHosted: false, plus: true, cloud: true, enterprise: true },
-      { name: 'Shopify migration toolkit',                                  selfHosted: false, plus: true, cloud: true, enterprise: true },
-      { name: 'cartwright upgrade tooling',                                 selfHosted: false, plus: true, cloud: true, enterprise: true },
+      { name: 'Priority email support (24h SLA)',                          selfHosted: false, plus: true, cloud: true, enterprise: true },
+      { name: 'Release + security upgrade guidance',                       selfHosted: false, plus: true, cloud: true, enterprise: true },
+      { name: 'Pro agent playbooks (4 industry packs)',                    selfHosted: false, plus: true, cloud: true, enterprise: true },
+      { name: 'SEO/GEO Lab (beta)',                                        selfHosted: false, plus: true, cloud: true, enterprise: true },
+      { name: 'Premium MCP integrations (Klaviyo, Mailchimp, QuickBooks, Notion + 6 more)', selfHosted: false, plus: 'planned', cloud: 'planned', enterprise: 'planned' },
+      { name: 'Agentic Shopify migration',                                 selfHosted: false, plus: 'planned', cloud: 'planned', enterprise: 'planned' },
+      { name: 'cartwright upgrade tooling',                                selfHosted: false, plus: 'planned', cloud: 'planned', enterprise: 'planned' },
     ],
   },
   {
