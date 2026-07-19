@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.6.3
+
+### Patch Changes
+
+- d312141: Bump pinned `modern-web-guidance` version to 0.0.176 (was 0.0.174).
+- 4a9a036: Bump default template ref to v0.40.0 (was v0.39.1).
+
 ## 2.6.2
 
 ### Patch Changes
