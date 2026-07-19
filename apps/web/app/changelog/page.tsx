@@ -16,6 +16,22 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.28.0',
+    date: 'July 2026',
+    title: 'The site profile + the trust wave (engine v0.37.0–v0.40.0)',
+    description:
+      'Four engine releases in one arc: a whole site becomes a portable artifact, the storefront speaks your language end to end, the agentic surfaces go spec-true and battle-tested, and the engine learns to scaffold a real site with no database at all — while Cartwright Plus activation and a locked-down public tool surface make it ready to run for money.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'The site profile (v0.40.0) — create-cartwright --profile site cuts a static, no-database site from the same engine: a cartwright-module-v1 module/profile registry, per-module file inventories, and an import-closed site file-set proven by graph tests and the release scaffold gate (light + full + site).',
+      'Cartwright Plus activation v1 (v0.40.0) — Ed25519-signed license keys + /admin/plus, env-only and schema-free; the purchase flow sits ready-to-flip.',
+      'Public-surface lockdown (v0.40.0, CW-2026-001) — /api/mcp and /api/v1/tools now honor the mcpPublic flag (404 when off) and API keys actually expire; the first entry in the engine\'s security-advisory index.',
+      'SitePack + content-import + the purple rebrand (v0.37.0) — snapshot a whole site to an integrity-checked .cartpack and restore it on a newer engine; scrape a URL and rebuild it as draft pages; the engine wears its own Cartwright-purple identity without touching customer palettes.',
+      'Agentic discovery, spec-true (v0.38.0) — the ACP product feed pinned to the official OpenAI schema, Google Merchant conversational attributes, and the entire cart + checkout flow routed through next-intl.',
+      'The trust wave (v0.39.0–v0.40.0) — AI-crawler taxonomy with a "block training only" policy, honest 4xx agentic errors, and the moat routes (agent card, MCP discovery, feeds, negotiate, escrow, Guardian, ACP money path, the write tools) pinned by mutation-verified test suites — 2,070 tests green.',
+    ],
+  },
+  {
     version: '3.27.0',
     date: 'June 2026',
     title: 'First impressions + AI-agent hardening (engine v0.35.1–v0.36.3)',
