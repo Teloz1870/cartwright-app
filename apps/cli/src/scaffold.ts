@@ -745,6 +745,27 @@ export function tryGitInit(targetDir: string): boolean {
 }
 
 /**
+ * Does this project have somewhere to push to?
+ *
+ * The scaffold writes `.github/workflows/ci.yml`, but a workflow file only runs
+ * once GitHub has the repository. Without a remote there is no CI, no backup and
+ * no deployment that maps to a commit — so the success banner has to ask reality
+ * rather than assume, or it ends up promising checks that never run.
+ *
+ * Deliberately reads the actual git config instead of tracking whether we *tried*
+ * to publish: if `gh repo create` half-failed, intent and truth disagree, and the
+ * banner must follow truth.
+ */
+export function hasGitRemote(targetDir: string): boolean {
+  try {
+    const out = execSync("git remote", { cwd: targetDir, encoding: "utf8" });
+    return out.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Fold post-commit regenerated artifacts into the initial commit so the user's
  * very first `git status` is clean. tryGitInit commits BEFORE deps install +
  * the migration-baseline / marketplace-manifest regeneration runs, so without
