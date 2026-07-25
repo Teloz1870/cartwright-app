@@ -123,6 +123,7 @@ import {
   isTemplateSlug,
   tryGitInit,
   tryGitAmendInitialCommit,
+  hasGitRemote,
   tryInstall,
   databaseNote
 } from "./scaffold.js";
@@ -191,6 +192,9 @@ Options:
   --yes, -y                Skip prompts, use defaults.
   --start / --no-start     Start the dev server when the scaffold is ready
                            (interactive runs ask; --yes/non-TTY never auto-start).
+  --github                 Create a private GitHub repo + push (needs the gh CLI).
+                           Required for non-interactive runs: --yes suppresses the
+                           prompt and never publishes on its own.
   --no-install / --no-git / --no-github / --skip-skills
   --no-telemetry           Skip the anonymous scaffold ping (also honored:
                            CARTWRIGHT_TELEMETRY=0 or DO_NOT_TRACK=1). The ping
@@ -374,6 +378,7 @@ async function run(): Promise<void> {
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
       "no-github": { type: "boolean" },
+      github: { type: "boolean" },
       "skip-skills": { type: "boolean" },
       start: { type: "boolean" },
       "no-start": { type: "boolean" },
@@ -571,9 +576,19 @@ async function run(): Promise<void> {
     (values.pm as PackageManager | undefined) ?? detected;
   const installDeps = !values["no-install"];
   const initGit = !values["no-git"];
-  // Offer to publish to GitHub interactively (skipped in --yes / --no-git / --no-github).
+  // Publishing to GitHub is an OUTWARD-FACING action — it creates a repository
+  // under the user's account — so it never happens without an explicit signal.
+  // `--yes` means "take the defaults", not "act on my behalf", which is why it
+  // suppresses the prompt rather than answering it. `--github` is that explicit
+  // signal for non-interactive runs (CI, agents), where the prompt cannot be
+  // reached at all. Without either, the scaffold still succeeds — it just says
+  // so, instead of claiming CI it cannot run (see the banner below).
+  const forceGithub = values.github === true && !values["no-git"];
   const offerGithub =
-    !values["no-github"] && !values["no-git"] && values.yes !== true;
+    !values["no-github"] &&
+    !values["no-git"] &&
+    !forceGithub &&
+    values.yes !== true;
   const skipSkills = values["skip-skills"] === true;
   const requestedRef = values.ref ?? "stable";
   const templateRef = REF_ALIASES[requestedRef] ?? requestedRef;
@@ -784,11 +799,13 @@ async function run(): Promise<void> {
   // Beginners' biggest gap is "scaffolded → now what?". Offer the next hop:
   // put the code on GitHub (the home that Vercel deploys from). Fully optional,
   // fail-soft, and only when we actually have a git repo + an interactive run.
-  if (gitInitialized && offerGithub) {
-    const wantsGithub = await confirm({
-      message: "Publish this shop to a private GitHub repo now?",
-      initialValue: false,
-    });
+  if (gitInitialized && (forceGithub || offerGithub)) {
+    const wantsGithub = forceGithub
+      ? true
+      : await confirm({
+          message: "Publish this shop to a private GitHub repo now?",
+          initialValue: false,
+        });
     if (wantsGithub === true) {
       if (commandExists("gh")) {
         const ghSpinner = spinner();
@@ -1017,6 +1034,10 @@ async function run(): Promise<void> {
         pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
       ];
 
+  // Reality, not intent: `gh repo create` can half-fail, and --no-git skips the
+  // repo entirely while still leaving ci.yml on disk.
+  const projectHasRemote = gitInitialized && hasGitRemote(targetDir);
+
   const lines = [
     pc.green("✓") +
       ` Created ${pc.bold(finalProjectName)} at ${pc.dim(targetDir)}`,
@@ -1027,9 +1048,16 @@ async function run(): Promise<void> {
       : profile === "site"
         ? pc.green("✓") + ` Site profile — a plain website: no database, no admin, no commerce`
         : "",
-    forkCiWritten
-      ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml — typecheck/test/build on every push)`
-      : "",
+    // A workflow file only runs once GitHub has the repository. Claiming
+    // "on every push" before a remote exists is the whole failure this line
+    // used to cause: the file LOOKS like coverage, so nobody checks for a green
+    // mark that has never existed. Ask git, then say only what is true.
+    forkCiWritten && projectHasRemote
+      ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml) — runs on every push`
+      : forkCiWritten
+        ? pc.yellow("!") +
+          ` CI workflow written (.github/workflows/ci.yml) — ${pc.bold("inactive")} until this project has a remote`
+        : "",
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
       ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
@@ -1061,7 +1089,11 @@ async function run(): Promise<void> {
     aiHint,
     "",
     pc.bold("Put it online (GitHub → Vercel):"),
-    pc.dim("  1. Push this folder to a GitHub repo (private)"),
+    projectHasRemote
+      ? pc.dim("  1. Your code is already on GitHub ✓")
+      : pc.dim(
+          `  1. Push this folder to a private GitHub repo — this also turns on the CI above:\n     gh repo create ${finalSlug} --private --source=. --remote=origin --push`,
+        ),
     pc.dim("  2. Import the repo at vercel.com → it builds + gives you a live URL"),
     pc.dim("  3. Every push to GitHub then redeploys your shop automatically"),
     "  " +

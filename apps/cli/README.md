@@ -117,6 +117,8 @@ Exit code is `1` only when a check **fails** (warnings — e.g. an older engine 
 | `--pm=<pnpm\|npm\|yarn\|bun>` | auto-detect | Package manager for install |
 | `--no-install` | false | Skip dependency install |
 | `--no-git` | false | Skip `git init` + initial commit |
+| `--github` | false | Create a **private** GitHub repo and push (needs `gh`). Required for non-interactive runs — `--yes` suppresses the prompt and never publishes on its own |
+| `--no-github` | false | Don't offer to publish to GitHub |
 | `--no-telemetry` | false | Skip the anonymous scaffold ping (see [Telemetry](#telemetry)) |
 
 ## Looks (`--look <url>`)
