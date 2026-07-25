@@ -16,6 +16,22 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: '3.29.0',
+    date: 'July 2026',
+    title: 'What a downstream product found (engine v0.41.0–v0.42.0)',
+    description:
+      'A commercial product built on Cartwright deployed to production, and reported back three rounds of findings. Almost none of them were crashes — they were silences: a value that quietly won an argument with your code, a form field that saved and changed nothing, a deploy that reported success while serving nothing. Every one is now either fixed or impossible to reintroduce without a test going red.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Identity ownership is stated, not assumed (v0.42.0) — brand.identitySovereignty: "auto" | "config" | "db" decides whether brand.config.ts or the admin database owns your store name and whether you sell. The default reproduces the old behaviour expression-for-expression, so nothing changes until you opt in; "config" is what a code-configured fork needs, after a fork toggled an unrelated flag and watched its live site rename itself in the header, the footer and llms.txt.',
+      'The admin stops storing values it will never render (v0.42.0) — under "config", the settings form, the setup wizard and the settings.update_branding tool drop the owned fields from the write and say which ones, instead of accepting input, reporting "Settings saved!" and changing nothing. Locked fields show why, and when the stored and effective values differ the form says so.',
+      'pnpm verify:deploy <url> (v0.42.0) — the check a green deploy cannot perform for you. A misconfigured project can serve your public/ folder as a static site: every route 404s, the build log is empty, nothing errors, and the dashboard says Ready. The script asks for three routes the app generates, which can only answer 200 if the framework actually ran.',
+      'The visitor no longer waits on an LLM (v0.42.0) — the contact form saved the lead only after an AI round-trip, so every enquiry paid the latency and, without an API key, logged an error per submission. Triage moved after the write, behind the default-off leadAiTriage flag; the second unauthenticated AI route the same form calls got the per-IP rate limit it was missing.',
+      'Nothing heavy at import time (v0.41.0) — the HTML sanitizer built a jsdom window when its module loaded, and it is reachable from the tool registry barrel, so a page that only wanted a lookup function could die at module load. Now lazy, and an ESLint rule keeps the whole class out.',
+      'Next.js 16.2.11 (v0.41.0, CW-2026-002) — the July security release: 9 CVEs, two of which reach every Cartwright shop because every profile ships Server Actions.',
+    ],
+  },
+  {
     version: '3.28.0',
     date: 'July 2026',
     title: 'The site profile + the trust wave (engine v0.37.0–v0.40.0)',
