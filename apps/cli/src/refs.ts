@@ -13,7 +13,7 @@
 // Bumped together with a Changeset whenever a new template tag goes out —
 // bump-template-ref.yml does this automatically by opening a PR when it sees
 // a newer tag on the public mirror.
-export const DEFAULT_REF = "v0.41.0";
+export const DEFAULT_REF = "v0.42.0";
 
 // Channel aliases the user can pass via --ref.
 //   stable → DEFAULT_REF (latest tag — what default `npx create-cartwright` uses)
