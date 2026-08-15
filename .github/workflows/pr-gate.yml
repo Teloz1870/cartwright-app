@@ -25,10 +25,16 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build FIRST. `LayoutProps`, `PageProps` and `RouteContext` are types
+      # Next generates into `.next/types/` — on a fresh clone they do not exist
+      # yet, so `tsc --noEmit` fails with TS2304 on seven files that are
+      # perfectly correct. It passes locally only because a previous build left
+      # the directory behind, which is exactly the kind of works-on-my-machine
+      # this gate is here to catch. It caught it on its own first run.
+      - run: pnpm --filter web build
       - run: pnpm --filter web exec tsc --noEmit
       - run: pnpm --filter web lint
       - run: pnpm --filter web test
-      - run: pnpm --filter web build
 
   design-system:
     name: design system contract
