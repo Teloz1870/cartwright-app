@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
-export const alt = 'cartwright — the AI-first webshop template you actually own';
+export const alt = 'cartwright — AI runs the shop. You keep the keys.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -15,7 +15,7 @@ export default function OgImage() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          background: '#0a0a0b',
+          background: '#0d100e',
           padding: '72px',
           fontFamily: 'sans-serif',
         }}
@@ -26,14 +26,14 @@ export default function OgImage() {
               width: '14px',
               height: '14px',
               borderRadius: '9999px',
-              background: '#7c5cff',
+              background: '#c33f16',
             }}
           />
           <div
             style={{
               fontSize: '34px',
               fontWeight: 600,
-              color: '#fafaf9',
+              color: '#eceadf',
               letterSpacing: '-0.02em',
             }}
           >
@@ -46,23 +46,23 @@ export default function OgImage() {
             style={{
               fontSize: '68px',
               fontWeight: 600,
-              color: '#fafaf9',
+              color: '#eceadf',
               lineHeight: 1.1,
               letterSpacing: '-0.03em',
               maxWidth: '900px',
             }}
           >
-            The AI-first webshop template you actually own.
+            AI runs the shop. You keep the keys.
           </div>
           <div
             style={{
               fontSize: '28px',
-              color: '#a8a29e',
+              color: '#a5a89d',
               maxWidth: '820px',
             }}
           >
-            Next.js 16 commerce stack with an AI-native admin, MCP server, and
-            Stripe checkout. Scaffold with one command.
+            An AI-native commerce engine built for trusted operation — scoped
+            tools, confirmation-gated writes, and a repo you can leave with.
           </div>
         </div>
 
@@ -73,10 +73,10 @@ export default function OgImage() {
             gap: '12px',
             fontSize: '24px',
             fontFamily: 'monospace',
-            color: '#7c5cff',
+            color: '#ff6a3d',
           }}
         >
-          <span style={{ color: '#737373' }}>$</span>
+          <span style={{ color: '#66685f' }}>$</span>
           npx create-cartwright@latest my-shop
         </div>
       </div>
