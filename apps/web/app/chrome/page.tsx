@@ -53,6 +53,7 @@ export default function ChromePage() {
           Chrome · headers &amp; footers
         </Badge>
         <SectionHeader
+          as="h1"
           title="Mix any chrome"
           description={`The frame around every page is a part too: ${headers} headers and ${footers} footers from the engine's chrome registry. ${mixable} of them are mixable — selectable on ANY design — while the signature premium chrome stays locked to the design it was drawn for. Compose them in the Mixer, set them in /admin/designs, or ship them in a composition file.`}
         />

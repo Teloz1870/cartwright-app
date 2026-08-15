@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLocalFlag } from '@/lib/use-local-flag';
 
 /**
  * Anonymous like button. Self-contained: fetches the live count on mount (so it
@@ -10,16 +11,14 @@ import { useEffect, useState } from 'react';
 export function LikeButton({ slug }: { slug: string }) {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [count, setCount] = useState(0);
-  const [liked, setLiked] = useState(false);
+  // Subscribed rather than read into state inside the effect: that version
+  // rendered unliked first and corrected itself a frame later, which is the
+  // cascading render the hooks rule objects to.
+  const [liked, setLiked] = useLocalFlag(`liked:${slug}`);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    try {
-      setLiked(localStorage.getItem(`liked:${slug}`) === '1');
-    } catch {
-      /* ignore */
-    }
     fetch('/api/designs/likes')
       .then((r) => r.json())
       .then((d: { configured?: boolean; likes?: Record<string, number> }) => {
@@ -41,11 +40,6 @@ export function LikeButton({ slug }: { slug: string }) {
     setLiked(true);
     setCount((c) => c + 1);
     try {
-      localStorage.setItem(`liked:${slug}`, '1');
-    } catch {
-      /* ignore */
-    }
-    try {
       const res = await fetch(`/api/designs/${slug}/like`, { method: 'POST' });
       if (res.ok) {
         const d = (await res.json()) as { count?: number };
@@ -54,11 +48,6 @@ export function LikeButton({ slug }: { slug: string }) {
         // revert on failure
         setLiked(false);
         setCount((c) => Math.max(0, c - 1));
-        try {
-          localStorage.removeItem(`liked:${slug}`);
-        } catch {
-          /* ignore */
-        }
       }
     } catch {
       setLiked(false);

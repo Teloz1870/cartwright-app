@@ -52,6 +52,7 @@ export default function MixerPage() {
           Mixer · Skin × Voice
         </Badge>
         <SectionHeader
+          as="h1"
           title="Mix any Skin with any Voice — and any Chrome"
           description={`Cartwright keeps content and design orthogonal: a Skin (design pack) owns the layout, a vertical Voice owns the copy, palette, and 3D scene — and the chrome (header + footer) is a swappable part too. Compose any of the ${designs.length} Skins with any of the ${voices.length} Voices, frame it with any of the ${chrome.length} chrome parts, and download the whole composition as one portable file.`}
         />

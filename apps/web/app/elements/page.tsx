@@ -40,6 +40,7 @@ export default function ElementsPage() {
           Elements · Pro
         </Badge>
         <SectionHeader
+          as="h1"
           title="Pro 3D & cinematic building blocks"
           description="The premium pieces a Cartwright design is assembled from — palette-reactive 3D heroes, a rotatable product showroom, a CSS-only configurator, scroll-driven storytelling and editorial stat bands. Every element reads your brand's colours at runtime and degrades gracefully (WebGL2 / reduced-motion / saveData-gated)."
         />

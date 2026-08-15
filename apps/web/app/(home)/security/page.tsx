@@ -96,40 +96,6 @@ export default function SecurityPage() {
         </div>
       </section>
 
-      {/* Recorded against a real shop, not a mock: a discount is created in the
-          admin and the operation appears in the audit log a few seconds later,
-          with the actor that caused it and a revert beside it. The rows are
-          genuine — note that some are stamped "AI (API-key)" and others
-          "Admin (web)", which is the actor typing this page claims.
-
-          The admin still wears the retired purple; the engine has not been
-          through the Interlock migration yet. That is why this sits here rather
-          than on the homepage, where it would show a product that looks nothing
-          like the site selling it. */}
-      <section className="border-b border-cw-rule">
-        <div className="mx-auto max-w-7xl px-6 py-16">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
-            The log, in the actual admin
-          </p>
-          <p className="mt-4 max-w-[62ch] text-sm leading-relaxed text-cw-muted">
-            A discount is created, and the operation lands in the audit log with
-            the key that asked for it and a revert control. Nothing here is a
-            mock-up.
-          </p>
-          <video
-            className="mt-8 w-full max-w-4xl border border-cw-rule"
-            poster="/admin/audit-trail.jpg"
-            controls
-            muted
-            playsInline
-            preload="none"
-          >
-            <source src="/admin/audit-trail.webm" type="video/webm" />
-            <source src="/admin/audit-trail.mp4" type="video/mp4" />
-          </video>
-        </div>
-      </section>
-
       <section className="border-b border-cw-rule">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:grid lg:grid-cols-[1fr_1fr] lg:gap-16">
           <div>

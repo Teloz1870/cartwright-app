@@ -38,6 +38,7 @@ export default function ScenesPage() {
           Live Canvas · 3D
         </Badge>
         <SectionHeader
+          as="h1"
           title="Palette-reactive 3D scenes"
           description="A gallery of three.js heroes for building the wildest premium pages — aurora, waves, a glowing orb, a synthwave grid and more. Every scene is PALETTE-REACTIVE: it reads your brand's colours at runtime, so the same scene renders in each shop's own palette. One shared renderer, WebGL2 / reduced-motion / saveData-gated, lazy-loaded — three.js never lands in a first-load bundle."
         />

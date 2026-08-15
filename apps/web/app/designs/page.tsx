@@ -38,6 +38,7 @@ export default function DesignsPage() {
           Design marketplace
         </Badge>
         <SectionHeader
+          as="h1"
           title="A cornucopia of designs"
           description="Whole-page, code-owned, three.js-ready designs for your Cartwright store. Pick one for premium-from-day-one, or copy the prompt and have an AI agent build a bespoke one in minutes. Every design is real code you own — switch any time in /admin/designs or in brand.config.ts."
         />

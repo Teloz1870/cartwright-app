@@ -34,6 +34,7 @@ export default function LooksPage() {
           Looks · Skin × Voice
         </Badge>
         <SectionHeader
+          as="h1"
           title="The same engine, dressed for the job"
           description="A Look is a curated pairing of a design (Skin) and a vertical Voice. Because Cartwright keeps content and design orthogonal — and the Skins here are palette-adaptive — the page simply adopts the Voice's copy, palette, and 3D. So one engine becomes a warm kindergarten, a cozy café, an honest carpenter, or a polished salon, just by changing the Voice. Each card's hero is rendered in that Voice's real palette and copy."
         />

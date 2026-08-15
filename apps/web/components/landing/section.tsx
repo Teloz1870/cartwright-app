@@ -34,11 +34,20 @@ export function SectionHeader({
   title,
   description,
   align = 'left',
+  as: Heading = 'h2',
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   align?: 'left' | 'center';
+  /**
+   * The gallery pages use this component for their page title, and it always
+   * rendered `h2` — so /designs, /scenes, /looks, /mixer, /chrome, /parts,
+   * /elements, /svg-items and /verticals each shipped with no `h1` at all.
+   * Pass `as="h1"` on the first header of a page; leave it alone everywhere
+   * else, since a second `h1` is its own defect.
+   */
+  as?: 'h1' | 'h2';
 }) {
   return (
     <div className={cn('max-w-2xl', align === 'center' && 'mx-auto text-center')}>
@@ -47,9 +56,9 @@ export function SectionHeader({
           {eyebrow}
         </p>
       )}
-      <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+      <Heading className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
         {title}
-      </h2>
+      </Heading>
       {description && (
         <p className="mt-4 text-base sm:text-lg leading-relaxed text-cw-stone-500 dark:text-cw-stone-400">
           {description}

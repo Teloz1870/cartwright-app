@@ -35,14 +35,19 @@ export function CopyCommand({
   return (
     <div
       className={cn(
-        'group relative flex w-full items-center justify-between gap-3 rounded-lg border border-cw-stone-200 dark:border-cw-stone-700 bg-cw-stone-900 dark:bg-cw-code-bg text-cw-stone-100 shadow-sm font-mono',
+        'group relative flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-cw-stone-200 dark:border-cw-stone-700 bg-cw-stone-900 dark:bg-cw-code-bg text-cw-stone-100 shadow-sm font-mono',
         sizes[size],
         className,
       )}
     >
-      <div className="flex items-center gap-3 overflow-hidden">
+      {/* `min-w-0` is doing real work: a flex item will not shrink below its
+          content's min-content width without it, so `truncate` never clipped
+          and the command pushed the whole page 194px wide at 390px instead.
+          Martian Mono is considerably wider than the Geist Mono this replaced,
+          which is what surfaced a latent bug as a visible one. */}
+      <div className="flex min-w-0 items-center gap-3 overflow-hidden">
         <span className="select-none text-cw-terracotta">$</span>
-        <span className="truncate">
+        <span className="min-w-0 truncate">
           <span className="cw-typed-line">{command}</span>
           <span className="cw-caret" aria-hidden>
             &nbsp;
