@@ -1,195 +1,140 @@
-import { WHEEL_PATH } from '@/components/brand/wheel';
-
 /**
- * The Interlock — one instruction becoming trustworthy, as a mechanism.
+ * The Interlock — one instruction, from an agent's request to an audit row.
  *
- * `discount.update` enters from the left, is checked against a scope, and then
- * physically cannot advance: a pawl blocks the ratchet and the scene turns
- * amber. Only after release does the wheel index one tooth, execute, and stamp
- * an audit receipt — after which the wheel disengages and rolls into
- * `your-repo/`. AI supplies the force; policy and a human control transmission;
- * ownership stays portable. That is the whole product argument, and it needs no
- * voiceover.
+ * This replaces an abstract ratchet-and-pawl mechanism that the owner read and
+ * understood nothing from, which was fair: it asked the reader to already know
+ * what a pawl is, and then to infer causation between two things that never
+ * touched. The lesson is worth keeping — a metaphor for the product is harder
+ * to read than the product.
  *
- * Built as CSS scroll-driven animation over an inline SVG, so the signature
- * moment of the site costs zero JavaScript and no hydration. Browsers without
- * `animation-timeline` get the complete static diagram — every station drawn,
- * every label present — rather than a broken or empty frame. That fallback is
- * also the `prefers-reduced-motion` state and the mobile state, which is why it
- * had to be a complete composition rather than a poster: if the still frame
- * cannot carry the argument, the argument is wrong.
+ * So this is the actual flow, in something close to the actual admin. There is
+ * nothing to decode: an agent asks for a discount, the engine shows what it
+ * would change, the write stops and waits for a person, and the approved
+ * operation lands in an append-only log with a revert beside it. The pause in
+ * the middle is the whole product.
  *
- * The 3D version replaces the SVG inside this same chapter later; the DOM
- * ledger, the ranges and the fallback stay exactly as they are.
+ * Still CSS scroll-driven over real DOM, so the chapter costs no JavaScript and
+ * no hydration, the text stays selectable and translatable, and a reader who
+ * never scrolls — narrow viewport, reduced motion, no `animation-timeline` —
+ * gets the finished panel with every stage visible at once rather than a
+ * broken frame.
  */
-const STATIONS = [
-  {
-    key: 'plan',
-    stamp: 'plan',
-    state: '',
-    title: 'The agent proposes',
-    body: 'An instruction arrives from a coding agent, the admin assistant, or a buyer agent.',
-  },
-  {
-    key: 'scope',
-    stamp: 'scope',
-    state: 'action',
-    title: 'The key is checked, not the intent',
-    body: 'The tool declares the scope it needs. The key either carries it or the call stops here — nothing is inferred from phrasing.',
-  },
-  {
-    key: 'confirm',
-    stamp: 'confirm',
-    state: 'pending',
-    title: 'The mechanism refuses to turn',
-    body: 'A write halts and returns a preview. Advancing needs a token the server issued and a person released.',
-  },
-  {
-    key: 'execute',
-    stamp: 'execute',
-    state: 'action',
-    title: 'One indexed step',
-    body: 'Released, the ratchet advances exactly one tooth. Replaying the instruction does not move it twice.',
-  },
-  {
-    key: 'audit',
-    stamp: 'audited',
-    state: 'verified',
-    title: 'Recorded, and reversible',
-    body: 'Stamped into an append-only log, with the actor typed by origin. Anything it changed reverts from that row.',
-  },
+const PLAN = [
+  ['discounts.create', 'WEEKEND20 · −20%'],
+  ['products.update', '12 products in Sunglasses'],
+  ['settings.update_branding', 'announcement bar'],
 ];
 
 export function Interlock() {
   return (
     <section className="cw-interlock border-b border-cw-rule bg-cw-canvas">
       <div className="cw-interlock-viewport">
-        {/* `w-full` is load-bearing: the sticky viewport is a flex row, so without
-          it this shrink-to-fits to its content and the mechanism gets squeezed
-          into the right margin instead of filling the chapter. */}
-      <div className="mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 py-10">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
-            One operation, end to end
-          </p>
+        <div className="mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 py-10">
+          <div className="lg:grid lg:grid-cols-[34%_1fr] lg:items-center lg:gap-14">
+            <div>
+              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
+                One operation, end to end
+              </p>
+              <h2 className="mt-6 font-display [font-size:clamp(2rem,4vw,3.25rem)] [line-height:0.98] [letter-spacing:-0.03em] text-cw-fg">
+                It asks. You decide. It is written down.
+              </h2>
+              <p className="mt-6 max-w-[46ch] text-sm leading-relaxed text-cw-muted">
+                An agent can reach every tool its key allows — and still cannot
+                change your shop on its own. Writes stop, show their work, and
+                wait for a person. What you approve is recorded with the actor
+                that asked, and can be put back.
+              </p>
+            </div>
 
-          <div className="mt-6 lg:grid lg:grid-cols-[38%_1fr] lg:items-center lg:gap-14">
-            {/* The ledger. Text stays in the DOM — never rendered into the
-                drawing — so it is selectable, translatable and readable to a
-                screen reader in the order the mechanism runs. */}
-            <ol className="order-2 mt-8 space-y-px lg:order-1 lg:mt-0">
-              {STATIONS.map((s, i) => (
-                <li
-                  key={s.key}
-                  data-station={i}
-                  className="cw-station border-l-2 border-transparent py-2.5 pl-4"
-                >
-                  <span className="cw-stamp" data-state={s.state || undefined}>
-                    {s.stamp}
+            {/* The panel. Close enough to the real admin that there is nothing
+                to interpret — you are looking at the thing itself. */}
+            <div className="mt-10 lg:mt-0">
+              <div className="border border-cw-rule bg-cw-surface">
+                <div className="flex items-center justify-between border-b border-cw-rule px-4 py-2.5">
+                  <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-cw-muted">
+                    admin · assistant
                   </span>
-                  <h3 className="mt-2 text-sm font-medium text-cw-fg">{s.title}</h3>
-                  <p className="mt-1 max-w-[48ch] text-[0.8125rem] leading-snug text-cw-muted">
-                    {s.body}
-                  </p>
-                </li>
-              ))}
-            </ol>
+                  <span className="cw-stamp" data-state="action">
+                    apikey · discounts:write
+                  </span>
+                </div>
 
-            {/* The mechanism. Decorative: everything it says is said above. */}
-            <div className="order-1 lg:order-2">
-              <svg
-                viewBox="0 0 720 360"
-                className="w-full"
-                aria-hidden
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* The rail — the same datum the page is built on. */}
-                <line
-                  x1="24"
-                  y1="286"
-                  x2="696"
-                  y2="286"
-                  stroke="var(--cw-rail)"
-                  strokeWidth="1"
-                />
-                {[92, 226, 360, 494, 628].map((x, i) => (
-                  <g key={x}>
-                    <line
-                      x1={x}
-                      y1="278"
-                      x2={x}
-                      y2="294"
-                      stroke="var(--cw-rule)"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={x}
-                      y="314"
-                      textAnchor="middle"
-                      className="cw-tick"
-                      data-station={i}
-                      fill="var(--cw-muted)"
-                      fontSize="9"
-                      fontFamily="var(--font-mono)"
-                      letterSpacing="1.4"
-                    >
-                      {STATIONS[i].stamp.toUpperCase()}
-                    </text>
-                  </g>
-                ))}
+                <div className="space-y-4 px-5 py-5">
+                  {/* 1 — the request */}
+                  <div className="cw-step" data-step="0">
+                    <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-cw-muted">
+                      agent
+                    </p>
+                    <p className="mt-1.5 text-sm text-cw-fg">
+                      &ldquo;Set the sunglasses 20% down for the weekend and put
+                      it on the banner.&rdquo;
+                    </p>
+                  </div>
 
-                {/* your-repo/ — where the wheel ends up. */}
-                <g className="cw-repo">
-                  <rect
-                    x="604"
-                    y="150"
-                    width="92"
-                    height="92"
-                    fill="none"
-                    stroke="var(--cw-rule)"
-                    strokeDasharray="3 3"
-                  />
-                  <text
-                    x="650"
-                    y="136"
-                    textAnchor="middle"
-                    fill="var(--cw-muted)"
-                    fontSize="10"
-                    fontFamily="var(--font-mono)"
-                  >
-                    your-repo/
-                  </text>
-                </g>
+                  {/* 2 — what it would do, before it does it */}
+                  <div className="cw-step" data-step="1">
+                    <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-cw-muted">
+                      it would change
+                    </p>
+                    <ul className="mt-2 divide-y divide-cw-rule border-y border-cw-rule">
+                      {PLAN.map(([tool, what]) => (
+                        <li
+                          key={tool}
+                          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                        >
+                          <code className="font-mono text-xs text-cw-action">{tool}</code>
+                          <span className="text-xs text-cw-muted">{what}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-                {/* The pawl. Drops to block, lifts to release. */}
-                <g className="cw-pawl">
-                  <path
-                    d="M352 78 L368 78 L362 116 L358 116 Z"
-                    fill="var(--cw-pending)"
-                  />
-                </g>
+                  {/* 3 — the pause. The product. */}
+                  <div className="cw-step cw-await" data-step="2">
+                    <div className="flex flex-wrap items-center gap-3 border border-cw-pending px-4 py-3">
+                      <span className="cw-stamp" data-state="pending">
+                        waiting for you
+                      </span>
+                      <span className="text-xs text-cw-muted">
+                        Nothing has changed yet.
+                      </span>
+                      <span className="ml-auto flex gap-2">
+                        <span className="border border-cw-rule px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-cw-muted">
+                          Reject
+                        </span>
+                        <span className="bg-cw-action px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-cw-surface">
+                          Approve
+                        </span>
+                      </span>
+                    </div>
+                  </div>
 
-                {/* The wheel. Indexes one tooth, then leaves. */}
-                <g className="cw-wheel">
-                  <g transform="translate(360 196) scale(3.4) translate(-16 -16)">
-                    <path d={WHEEL_PATH} fill="currentColor" fillRule="evenodd" />
-                  </g>
-                </g>
+                  {/* 4 — approved, and written down */}
+                  <div className="cw-step" data-step="3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="cw-stamp" data-state="verified">
+                        applied
+                      </span>
+                      <span className="text-xs text-cw-muted">
+                        3 changes · approved by you
+                      </span>
+                    </div>
+                    <p className="mt-4 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-cw-muted">
+                      audit log
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-cw-rule pt-2 font-mono text-xs">
+                      <span className="text-cw-muted">10:42</span>
+                      <span className="text-cw-fg">apikey:sb_live_…4f2</span>
+                      <span className="text-cw-verified">discounts.create</span>
+                      <span className="ml-auto text-cw-action">revert ↩</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                {/* The instruction, and the receipt it becomes. */}
-                <g className="cw-puck">
-                  <rect x="-13" y="-13" width="26" height="26" fill="var(--cw-action)" />
-                  <text
-                    x="0"
-                    y="-24"
-                    textAnchor="middle"
-                    fill="var(--cw-muted)"
-                    fontSize="10"
-                    fontFamily="var(--font-mono)"
-                  >
-                    discount.update
-                  </text>
-                </g>
-              </svg>
+              <p className="mt-4 text-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-cw-muted">
+                the write stops here until you release it
+              </p>
             </div>
           </div>
         </div>

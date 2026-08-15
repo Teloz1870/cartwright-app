@@ -334,18 +334,11 @@ html > body[data-scroll-locked] {
   align-items: center;
 }
 
-/* Static end-state. */
-.cw-wheel {
-  color: var(--cw-fg);
-  transform: translateX(248px) rotate(45deg);
-  transform-origin: 360px 196px;
-}
-.cw-pawl {
-  transform: translateY(-26px);
-  opacity: 0.35;
-}
-.cw-puck {
-  transform: translate(494px, 286px);
+/* Static state — every stage present at once. This is what a narrow viewport,
+   an unsupported browser and reduced-motion receive, and it has to read as a
+   finished panel rather than a frame of something interrupted. */
+.cw-step {
+  opacity: 1;
 }
 .cw-station {
   border-left-color: var(--cw-rule);
@@ -353,178 +346,41 @@ html > body[data-scroll-locked] {
 
 @media (min-width: 1024px) {
   @supports (animation-timeline: view()) {
-    /* Motion says: authority is changing state. Nothing else moves. */
-    .cw-wheel,
-    .cw-pawl,
-    .cw-puck,
-    .cw-station,
-    .cw-tick {
-      animation-duration: 1ms; /* overridden by the timeline */
+    /* Each stage arrives as the reader reaches it, and then stays — the panel
+       accumulates rather than swapping, so the audit row can be read next to
+       the request that caused it. */
+    .cw-step {
+      animation-duration: 1ms; /* ignored — the timeline drives progress */
       animation-timing-function: linear;
       animation-fill-mode: both;
       animation-timeline: --interlock;
       animation-range: contain 0% contain 100%;
     }
-
-    .cw-puck {
-      animation-name: cw-puck-run;
-    }
-    .cw-pawl {
-      animation-name: cw-pawl-gate;
-    }
-    .cw-wheel {
-      animation-name: cw-wheel-index;
-    }
-    .cw-station[data-station='0'] {
-      animation-name: cw-station-0;
-    }
-    .cw-station[data-station='1'] {
-      animation-name: cw-station-1;
-    }
-    .cw-station[data-station='2'] {
-      animation-name: cw-station-2;
-    }
-    .cw-station[data-station='3'] {
-      animation-name: cw-station-3;
-    }
-    .cw-station[data-station='4'] {
-      animation-name: cw-station-4;
-    }
+    .cw-step[data-step='0'] { animation-name: cw-step-0; }
+    .cw-step[data-step='1'] { animation-name: cw-step-1; }
+    .cw-step[data-step='2'] { animation-name: cw-step-2; }
+    .cw-step[data-step='3'] { animation-name: cw-step-3; }
   }
 }
 
-/* The instruction travels, is held at CONFIRM, then completes as a receipt. */
-@keyframes cw-puck-run {
-  0% {
-    transform: translate(92px, 286px);
-    opacity: 0;
-  }
-  6% {
-    transform: translate(92px, 286px);
-    opacity: 1;
-  }
-  30% {
-    transform: translate(226px, 286px);
-  }
-  /* Held. The stop is the point — the mechanism cannot advance itself. */
-  46%,
-  62% {
-    transform: translate(330px, 286px);
-  }
-  84%,
-  100% {
-    transform: translate(494px, 286px);
-  }
+@keyframes cw-step-0 {
+  0% { opacity: 0; transform: translateY(6px); }
+  12%, 100% { opacity: 1; transform: none; }
 }
-
-/* Drops to block at CONFIRM, lifts once released. */
-@keyframes cw-pawl-gate {
-  0%,
-  40% {
-    transform: translateY(-26px);
-    opacity: 0.35;
-  }
-  46%,
-  62% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  70%,
-  100% {
-    transform: translateY(-26px);
-    opacity: 0.35;
-  }
+@keyframes cw-step-1 {
+  0%, 22% { opacity: 0; transform: translateY(6px); }
+  36%, 100% { opacity: 1; transform: none; }
 }
-
-/* One indexed tooth — not free spin. The mark has eight teeth, so a single
-   index is exactly 360/8 = 45°: the rotation has to agree with the geometry or
-   the claim "advances exactly one tooth" is decoration. A ratchet turns once,
-   deliberately, and then the wheel leaves with the customer. */
-@keyframes cw-wheel-index {
-  0%,
-  62% {
-    transform: translateX(0) rotate(0deg);
-    color: var(--cw-fg);
-  }
-  64% {
-    color: var(--cw-pending);
-  }
-  76% {
-    transform: translateX(0) rotate(45deg);
-    color: var(--cw-verified);
-  }
-  86% {
-    transform: translateX(0) rotate(45deg);
-    color: var(--cw-verified);
-  }
-  100% {
-    transform: translateX(248px) rotate(45deg);
-    color: var(--cw-fg);
-  }
+/* The hold. It appears at 44% and the next stage does not begin until 70%, so
+   a quarter of the chapter is spent on a panel that says nothing has happened
+   yet. That dwell is deliberate: the pause is the argument. */
+@keyframes cw-step-2 {
+  0%, 44% { opacity: 0; transform: translateY(6px); }
+  56%, 100% { opacity: 1; transform: none; }
 }
-
-/* Each ledger row takes the rule as its station comes up. */
-@keyframes cw-station-0 {
-  0%,
-  22% {
-    border-left-color: var(--cw-action);
-  }
-  24%,
-  100% {
-    border-left-color: var(--cw-rule);
-  }
-}
-@keyframes cw-station-1 {
-  0%,
-  24% {
-    border-left-color: var(--cw-rule);
-  }
-  26%,
-  42% {
-    border-left-color: var(--cw-action);
-  }
-  44%,
-  100% {
-    border-left-color: var(--cw-rule);
-  }
-}
-@keyframes cw-station-2 {
-  0%,
-  44% {
-    border-left-color: var(--cw-rule);
-  }
-  46%,
-  62% {
-    border-left-color: var(--cw-pending);
-  }
-  64%,
-  100% {
-    border-left-color: var(--cw-rule);
-  }
-}
-@keyframes cw-station-3 {
-  0%,
-  64% {
-    border-left-color: var(--cw-rule);
-  }
-  66%,
-  80% {
-    border-left-color: var(--cw-action);
-  }
-  82%,
-  100% {
-    border-left-color: var(--cw-rule);
-  }
-}
-@keyframes cw-station-4 {
-  0%,
-  82% {
-    border-left-color: var(--cw-rule);
-  }
-  84%,
-  100% {
-    border-left-color: var(--cw-verified);
-  }
+@keyframes cw-step-3 {
+  0%, 70% { opacity: 0; transform: translateY(6px); }
+  84%, 100% { opacity: 1; transform: none; }
 }
 
 /* ── Status stamps ─────────────────────────────────────────────────────────
@@ -610,11 +466,8 @@ html > body[data-scroll-locked] {
   .cw-marquee-track,
   .cw-rail-draw::before,
   .cw-rise,
-  .cw-wheel,
-  .cw-pawl,
-  .cw-puck,
-  .cw-station,
-  .cw-tick {
+  .cw-step,
+  .cw-station {
     animation: none !important;
   }
   .cw-rise {
