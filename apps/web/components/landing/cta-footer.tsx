@@ -7,11 +7,21 @@ import { contactEmail, social } from '@/lib/shared';
 
 type FooterLink = { label: string; href: string; icon?: ReactNode };
 
+/**
+ * The footer is now load-bearing, not decoration.
+ *
+ * The top nav used to carry an eleven-item "Explore" menu and a seven-item
+ * "Resources" menu, so the first thing a visitor met was a catalogue. The nav
+ * leads with the argument now — Safety, Docs, Designs, Pricing — and every
+ * route that left it landed here. Before removing anything from these columns,
+ * check `lib/layout.shared.tsx` and `app/sitemap.ts`: this is the only place
+ * some of these pages are linked from.
+ */
 const docsCols: { heading: string; links: FooterLink[] }[] = [
   {
-    heading: 'Explore',
+    heading: 'Design library',
     links: [
-      { label: 'Designs', href: '/designs' },
+      { label: 'Design packs', href: '/designs' },
       { label: 'Voices', href: '/verticals' },
       { label: 'Looks', href: '/looks' },
       { label: 'Mixer', href: '/mixer' },
@@ -30,6 +40,19 @@ const docsCols: { heading: string; links: FooterLink[] }[] = [
       { label: 'CLI options', href: '/docs/getting-started/cli-options' },
       { label: 'Architecture', href: '/docs/architecture/overview' },
       { label: 'Deployment', href: '/docs/deployment/vercel' },
+      { label: 'Guides', href: '/learn' },
+      { label: 'Glossary', href: '/glossary' },
+    ],
+  },
+  {
+    heading: 'Evaluate',
+    links: [
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Compare', href: '/compare' },
+      { label: 'Use cases', href: '/use-cases' },
+      { label: 'Integrations', href: '/integrations' },
+      { label: 'Showcase', href: '/showcase' },
+      { label: 'Onboarding', href: '/onboarding' },
     ],
   },
   {
@@ -38,12 +61,8 @@ const docsCols: { heading: string; links: FooterLink[] }[] = [
       { label: 'Changelog', href: '/changelog' },
       { label: 'Roadmap', href: '/docs/roadmap' },
       { label: 'FAQ', href: '/docs/faq' },
-      { label: 'Showcase', href: '/showcase' },
-    ],
-  },
-  {
-    heading: 'Community',
-    links: [
+      { label: 'Security', href: '/security' },
+      { label: 'Contact', href: '/contact' },
       { label: 'GitHub', href: social.templateRepo },
       {
         label: 'X / Twitter',
@@ -51,8 +70,6 @@ const docsCols: { heading: string; links: FooterLink[] }[] = [
         icon: <XLogo className="size-3.5" />,
       },
       { label: 'npm', href: social.npm },
-      { label: 'Contact', href: '/contact' },
-      { label: 'Security', href: '/security' },
     ],
   },
 ];

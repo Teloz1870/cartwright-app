@@ -178,6 +178,31 @@ test.describe('the phone is not an afterthought', () => {
   });
 });
 
+test('every link the homepage offers actually resolves', async ({ page, request }) => {
+  // `/security` shipped as three links and no page, one of them promising
+  // coordinated vulnerability reporting; `/docs/cli-options` pointed at a path
+  // that never existed. Both were found by reading, months late. This closes
+  // the class rather than the two instances — and it is also what catches a
+  // route being orphaned when it leaves the navigation, since the footer is
+  // the only thing linking several of them now.
+  await page.goto('/');
+  const hrefs = await page.evaluate(() =>
+    Array.from(new Set(
+      Array.from(document.querySelectorAll('a[href^="/"]'))
+        .map((a) => a.getAttribute('href')!)
+        .filter((h) => !h.startsWith('//') && !h.startsWith('/#')),
+    )),
+  );
+  expect(hrefs.length, 'the homepage should link somewhere').toBeGreaterThan(20);
+
+  const broken: string[] = [];
+  for (const href of hrefs) {
+    const res = await request.get(href, { maxRedirects: 5 });
+    if (res.status() >= 400) broken.push(`${res.status()} ${href}`);
+  }
+  expect(broken, 'dead internal links').toEqual([]);
+});
+
 test('the install command still reports the conversion event', async ({ page }) => {
   await page.goto('/');
   const command = page.getByText('npx create-cartwright@latest my-shop').first();

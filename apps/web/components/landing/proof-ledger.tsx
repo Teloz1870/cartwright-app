@@ -46,7 +46,7 @@ const ROWS = [
     proof: 'Gemini Live, server-dispatched tools',
     guardrail: 'Ephemeral tokens · session and daily caps',
     meaning: 'Customers can shop by speaking, under the same gates.',
-    href: '/docs/features/voice-shop',
+    href: '/docs/ai/voice-shop',
   },
   {
     surface: 'Local AI',
