@@ -12,10 +12,10 @@ export function InstallBand() {
           390px. The same trap as flexbox, one level up. */}
       <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] items-center">
         <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-terracotta">
             install
           </p>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">
+          <h2 className="mt-6 font-display [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em]">
             One line. Real shop in five minutes.
           </h2>
           <p className="mt-4 text-base text-cw-stone-400 max-w-md">

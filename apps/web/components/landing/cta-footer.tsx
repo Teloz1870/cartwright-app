@@ -61,8 +61,8 @@ export function CtaFooter() {
   return (
     <>
       <section className="border-b border-cw-stone-200 dark:border-cw-stone-800">
-        <div className="mx-auto max-w-6xl px-6 py-24 text-center">
-          <h2 className="mx-auto max-w-2xl text-3xl sm:text-4xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50">
+        <div className="mx-auto max-w-7xl px-6 py-24 text-center">
+          <h2 className="mx-auto max-w-[18ch] font-display text-cw-fg [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em]">
             Ship a real shop this week.
           </h2>
           <p className="mt-4 max-w-xl mx-auto text-base text-cw-stone-500 dark:text-cw-stone-400">
@@ -100,7 +100,7 @@ export function CtaFooter() {
 export function SiteFooter() {
   return (
     <footer className="bg-cw-stone-50 dark:bg-cw-stone-900/30 border-b border-cw-stone-200 dark:border-cw-stone-800">
-      <div className="mx-auto max-w-6xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
+      <div className="mx-auto max-w-7xl px-6 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div>
           <Wordmark />
           <p className="mt-3 max-w-sm text-sm text-cw-stone-500 dark:text-cw-stone-400">
@@ -143,7 +143,7 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 border-t border-cw-stone-200 dark:border-cw-stone-800 text-xs text-cw-stone-500 dark:text-cw-stone-400">
+      <div className="mx-auto max-w-7xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 border-t border-cw-stone-200 dark:border-cw-stone-800 text-xs text-cw-stone-500 dark:text-cw-stone-400">
         <span>© {new Date().getFullYear()} Teloz. MIT licensed.</span>
         <div className="flex items-center gap-4">
           <Link href="/legal/privacy" className="hover:text-cw-stone-700 dark:hover:text-cw-stone-300">
