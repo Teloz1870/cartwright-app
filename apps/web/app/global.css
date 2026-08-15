@@ -1,33 +1,246 @@
 @import 'tailwindcss';
-@import 'fumadocs-ui/css/neutral.css';
+/* `fumadocs-ui/css/neutral.css` is deliberately NOT imported. It ships a
+   higher-specificity `.dark #nd-sidebar` override that survives a generic
+   `.dark` bridge, which left the sidebar half-migrated. We define the full
+   Fumadocs theme ourselves below instead. */
 @import 'fumadocs-ui/css/preset.css';
 
-@theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE INTERLOCK — Cartwright design system
+   ═══════════════════════════════════════════════════════════════════════════
 
-  /* Cartwright palette — purple brand (2026 rebrand from terracotta/oker).
-     The token NAMES are kept (cw-terracotta/cw-oker) so the ~237 component
-     references don't all have to change; the VALUES are now the Cartwright
-     brand purple `#7c5cff` (matches the engine's --cw-brand). Primary =
-     terracotta tokens, secondary = oker tokens (a lighter purple). */
-  --color-cw-terracotta: #7c5cff;
-  --color-cw-terracotta-strong: #5b3fd6;
-  --color-cw-oker: #9d7bff;
-  --color-cw-oker-strong: #6b4ce6;
-  --color-cw-ink: #0a0a0b;
-  --color-cw-paper: #fafaf9;
-  --color-cw-stone-50: #fafaf9;
-  --color-cw-stone-100: #f5f5f4;
-  --color-cw-stone-200: #e7e5e4;
-  --color-cw-stone-300: #d6d3d1;
-  --color-cw-stone-400: #a8a29e;
-  --color-cw-stone-500: #737373;
-  --color-cw-stone-600: #525252;
-  --color-cw-stone-700: #404040;
-  --color-cw-stone-800: #262626;
-  --color-cw-stone-900: #171717;
-  --color-cw-code-bg: #1a1a1b;
+   The page is a cutaway of a trusted transaction machine. Iron, paper and
+   vermilion; ruled and architectural rather than soft and floating.
+
+   Four colours carry STATE and nothing else. They are not brand paint:
+     action    force is moving right now
+     verified  the operation completed and was recorded
+     pending   authority is waiting for a person
+     blocked   a gate stopped it
+   Never gradient them. Never use them decoratively.
+
+   MIGRATION NOTE — read before editing.
+   The 1687 `cw-*` class references across this app are NOT being rewritten in
+   one pass. Instead the legacy token names are re-pointed at the semantic ones
+   below, so the whole site re-skins at once and the codemod becomes cleanup
+   rather than a blocker. The names `terracotta` and `oker` are inherited debt
+   from a retired brand; they now resolve to `action` and its muted sibling.
+   Delete them when the last reference is gone — not before.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Type ───────────────────────────────────────────────────────────────
+     Three voices, deliberately unlike each other:
+       display — the human-facing declaration
+       sans    — operating language: navigation, prose, controls
+       mono    — evidence: endpoints, versions, machine state
+     Geist was one undifferentiated voice for all three, which is why claims,
+     explanation and proof read as the same undifferentiated interface. */
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-martian-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Legacy aliases (see MIGRATION NOTE) ─────────────────────────────── */
+  --color-cw-terracotta: var(--color-cw-action);
+  --color-cw-terracotta-strong: #a3320f;
+  --color-cw-oker: #b4611f;
+  --color-cw-oker-strong: #8f4a14;
+  --color-cw-ink: #0d100e;
+  --color-cw-paper: #f2efe6;
+  --color-cw-code-bg: #0d100e;
+
+  /* The old ramp, re-tinted onto the Interlock neutrals. Low = light,
+     high = dark; components already rely on that direction in both themes.
+     The previous ramp was warm at the light end and cold neutral at the dark
+     end — internally inconsistent, and part of why the page felt unresolved. */
+  --color-cw-stone-50: #fbf8f0;
+  --color-cw-stone-100: #f2efe6;
+  --color-cw-stone-200: #e4e0d3;
+  --color-cw-stone-300: #cfccc1;
+  --color-cw-stone-400: #a8a498;
+  --color-cw-stone-500: #66685f;
+  --color-cw-stone-600: #4e5049;
+  --color-cw-stone-700: #33382f;
+  --color-cw-stone-800: #22261f;
+  --color-cw-stone-900: #171815;
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+  --ease-mech: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The semantic palette is declared `inline` so Tailwind emits the utilities as
+   an indirection (`color: var(--cw-muted)`) instead of baking a literal. That
+   is what lets `text-cw-muted` follow the theme with no `dark:` variant — and
+   retiring those 653 hand-written variants is the point of having a semantic
+   layer at all. A plain `@theme` block bakes the light value in and the token
+   silently stops switching, which is exactly the bug this replaced. */
+@theme inline {
+  --color-cw-canvas: var(--cw-canvas);
+  --color-cw-surface: var(--cw-surface);
+  --color-cw-fg: var(--cw-ink);
+  --color-cw-muted: var(--cw-muted);
+  --color-cw-rule: var(--cw-rule);
+  --color-cw-action: var(--cw-action);
+  --color-cw-verified: var(--cw-verified);
+  --color-cw-pending: var(--cw-pending);
+  --color-cw-blocked: var(--cw-blocked);
+}
+
+/* Runtime tokens. Tailwind's @theme cannot re-declare per-theme, so the
+   semantic values live here as plain custom properties too — this is what the
+   Fumadocs bridge and the Interlock components read. */
+:root {
+  --cw-canvas: #f2efe6;
+  --cw-surface: #fbf8f0;
+  --cw-ink: #171815;
+  --cw-muted: #66685f;
+  --cw-rule: #cfccc1;
+  --cw-action: #c33f16;
+  --cw-verified: #177b57;
+  --cw-pending: #8f5b00;
+  /* Was #d73c3e, which measured 3.97:1 on canvas — large-text only, failing AA
+     for the stamp labels that actually carry this colour. Same hue family,
+     now 4.77:1. Action and Verified pass at ~4.5:1 with thin margin: do not
+     apply opacity to these as text, and do not set them on a tinted stamp
+     background without recomputing the composited pair. */
+  --cw-blocked: #c52f32;
+  --cw-rail: color-mix(in oklab, var(--cw-rule) 78%, var(--cw-ink));
+}
+
+/* Dark is the same machine under low workshop light — warm ink on green-black,
+   hard rules. Not a neon variant: no bloom, no glass, no glowing text. */
+.dark {
+  --cw-canvas: #0d100e;
+  --cw-surface: #151916;
+  --cw-ink: #eceadf;
+  --cw-muted: #a5a89d;
+  --cw-rule: #33382f;
+  --cw-action: #ff6a3d;
+  --cw-verified: #4cd49b;
+  --cw-pending: #f1b84b;
+  --cw-blocked: #ff7477;
+  --cw-rail: color-mix(in oklab, var(--cw-rule) 70%, var(--cw-ink));
+}
+
+/* ── The Fumadocs theme ────────────────────────────────────────────────────
+   Fumadocs owns the header, docs sidebar, TOC, search and all prose styling,
+   and `lib/layout.shared.tsx` hands it data rather than render control. Its
+   colour variables are the one supported seam that makes the chrome carry the
+   brand — before this the navbar knew nothing about the accent at all.
+
+   Two things learned the hard way, both worth keeping:
+
+   1. This is the FULL token set, not a partial bridge. Fumadocs mixes roles
+      widely — code blocks read `card`, tabs read `secondary`, hover reads
+      `accent`, active nav reads `primary/10` — so any token left undefined
+      leaves a half-migrated surface behind.
+   2. `primary` is INK, not vermilion. Fumadocs composites it at /10 and /80,
+      and vermilion only just clears AA at full strength; at reduced opacity it
+      fails. Vermilion is the ring, the rail and the semantic states — nowhere
+      that a framework can dilute it.
+
+   Code blocks therefore become warm `card` surfaces. If black slabs are wanted
+   later, do it as a dedicated Shiki theme — do NOT darken `card`, which
+   accordions, callouts, sidebars and search results also consume.
+
+   The `@theme inline` block below is not optional decoration: `neutral.css`
+   did two jobs, and dropping it dropped both. It supplied values AND it
+   registered the tokens with Tailwind, which is what lets `preset.css` build
+   its own `bg-fd-*` utilities. Declaring the raw values on `:root` alone left
+   Tailwind unable to resolve `bg-fd-diff-remove` and the whole stylesheet
+   failed to compile. Values live on `:root`/`.dark`; registration lives here. */
+@theme inline {
+  --color-fd-background: var(--fd-background);
+  --color-fd-foreground: var(--fd-foreground);
+  --color-fd-muted: var(--fd-muted);
+  --color-fd-muted-foreground: var(--fd-muted-foreground);
+  --color-fd-popover: var(--fd-popover);
+  --color-fd-popover-foreground: var(--fd-popover-foreground);
+  --color-fd-card: var(--fd-card);
+  --color-fd-card-foreground: var(--fd-card-foreground);
+  --color-fd-article: var(--fd-article);
+  --color-fd-border: var(--fd-border);
+  --color-fd-primary: var(--fd-primary);
+  --color-fd-primary-foreground: var(--fd-primary-foreground);
+  --color-fd-secondary: var(--fd-secondary);
+  --color-fd-secondary-foreground: var(--fd-secondary-foreground);
+  --color-fd-accent: var(--fd-accent);
+  --color-fd-accent-foreground: var(--fd-accent-foreground);
+  --color-fd-ring: var(--fd-ring);
+  --color-fd-overlay: var(--fd-overlay);
+  --color-fd-info: var(--fd-info);
+  --color-fd-warning: var(--fd-warning);
+  --color-fd-error: var(--fd-error);
+  --color-fd-success: var(--fd-success);
+  --color-fd-idea: var(--fd-idea);
+  --color-fd-diff-add: var(--fd-diff-add);
+  --color-fd-diff-add-symbol: var(--fd-diff-add-symbol);
+  --color-fd-diff-remove: var(--fd-diff-remove);
+  --color-fd-diff-remove-symbol: var(--fd-diff-remove-symbol);
+}
+
+:root {
+  --fd-background: #f2efe6;
+  --fd-foreground: #171815;
+  --fd-muted: #eae6dc;
+  --fd-muted-foreground: #66685f;
+  --fd-popover: #fbf8f0;
+  --fd-popover-foreground: #171815;
+  --fd-card: #fbf8f0;
+  --fd-card-foreground: #171815;
+  --fd-article: #fbf8f0;
+  --fd-border: #cfccc1;
+  --fd-primary: #171815;
+  --fd-primary-foreground: #fbf8f0;
+  --fd-secondary: #e5e0d4;
+  --fd-secondary-foreground: #171815;
+  --fd-accent: #ddd7c8;
+  --fd-accent-foreground: #171815;
+  --fd-ring: #c33f16;
+  --fd-overlay: rgb(13 16 14 / 52%);
+
+  --fd-info: #275d8c;
+  --fd-warning: #8f5b00;
+  --fd-error: #c52f32;
+  --fd-success: #177b57;
+  --fd-idea: #c33f16;
+
+  --fd-diff-add: rgb(23 123 87 / 12%);
+  --fd-diff-add-symbol: #177b57;
+  --fd-diff-remove: rgb(197 47 50 / 12%);
+  --fd-diff-remove-symbol: #c52f32;
+}
+
+.dark {
+  --fd-background: #0d100e;
+  --fd-foreground: #eceadf;
+  --fd-muted: #1e231e;
+  --fd-muted-foreground: #a5a89d;
+  --fd-popover: #151916;
+  --fd-popover-foreground: #eceadf;
+  --fd-card: #151916;
+  --fd-card-foreground: #eceadf;
+  --fd-article: #151916;
+  --fd-border: #33382f;
+  --fd-primary: #eceadf;
+  --fd-primary-foreground: #0d100e;
+  --fd-secondary: #242a23;
+  --fd-secondary-foreground: #eceadf;
+  --fd-accent: #2b322a;
+  --fd-accent-foreground: #eceadf;
+  --fd-ring: #ff6a3d;
+  --fd-overlay: rgb(0 0 0 / 66%);
+
+  --fd-info: #7fb7f0;
+  --fd-warning: #f1b84b;
+  --fd-error: #ff7477;
+  --fd-success: #4cd49b;
+  --fd-idea: #ff6a3d;
+
+  --fd-diff-add: rgb(76 212 155 / 14%);
+  --fd-diff-add-symbol: #4cd49b;
+  --fd-diff-remove: rgb(255 116 119 / 14%);
+  --fd-diff-remove-symbol: #ff7477;
 }
 
 html {
@@ -39,67 +252,124 @@ html > body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px !important;
 }
 
-/* Hero terminal — typed prompt animation */
-@keyframes cw-caret-blink {
-  0%, 60% { opacity: 1; }
-  61%, 100% { opacity: 0; }
+/* ── The rail ──────────────────────────────────────────────────────────────
+   The page's spatial datum. Claims sit left of it; evidence, status and
+   receipts attach to its right. It is what makes sections read as stations on
+   one mechanism instead of fourteen independent landing-page blocks. */
+.cw-rail-track {
+  position: relative;
+}
+.cw-rail-track::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 24px;
+  width: 1px;
+  background: var(--cw-rail);
+}
+@media (min-width: 1024px) {
+  .cw-rail-track::before {
+    left: 62%;
+  }
 }
 
-.cw-caret {
-  display: inline-block;
-  width: 0.55ch;
-  background: var(--color-cw-terracotta);
-  margin-left: 2px;
-  animation: cw-caret-blink 1.05s steps(1) infinite;
+/* Drawn on entry — the one piece of first-viewport motion besides the
+   headline. Declared as a plain animation so browsers without scroll-driven
+   timelines still get it. */
+@keyframes cw-rail-draw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.cw-rail-draw::before {
+  transform-origin: top;
+  animation: cw-rail-draw 680ms var(--ease-mech) both;
 }
 
-@keyframes cw-type-1 {
-  0%, 5% { width: 0; }
-  35%, 100% { width: 31ch; }
+/* ── Entrance ──────────────────────────────────────────────────────────────
+   First viewport only. Lines rise from an overflow mask; nothing else moves. */
+@keyframes cw-rise {
+  from {
+    transform: translateY(0.9em);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
-@keyframes cw-type-2-fade {
-  0%, 40% { opacity: 0; }
-  45%, 100% { opacity: 1; }
+.cw-rise {
+  display: block;
+  animation: cw-rise 520ms var(--ease-mech) both;
+}
+.cw-rise-2 {
+  animation-delay: 70ms;
 }
 
+/* ── Status stamps ─────────────────────────────────────────────────────────
+   Squared, not pills. READ / WRITE / CONFIRM / AUDITED. */
+.cw-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-family: var(--font-mono);
+  /* Martian Mono narrowed — a squared label should stay compact. Code keeps
+     the 100% default. */
+  font-stretch: 87.5%;
+  font-size: 0.6875rem;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  color: var(--cw-muted);
+}
+.cw-stamp[data-state='action'] {
+  color: var(--cw-action);
+}
+.cw-stamp[data-state='verified'] {
+  color: var(--cw-verified);
+}
+.cw-stamp[data-state='pending'] {
+  color: var(--cw-pending);
+}
+.cw-stamp[data-state='blocked'] {
+  color: var(--cw-blocked);
+}
+
+/* ── Legacy: the install-command line ──────────────────────────────────────
+   The typewriter is deliberately gone — developers read the command instantly
+   and delaying it is theatrical friction. The layout properties stay because
+   `CopyCommand` still relies on them for its single-line clamp. */
 .cw-typed-line {
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
   vertical-align: bottom;
-  animation: cw-type-1 2.4s steps(31, end) 0.4s 1 both;
 }
-
+.cw-caret {
+  display: none;
+}
 .cw-typed-output {
-  opacity: 0;
-  animation: cw-type-2-fade 0.6s ease-out 3s 1 both;
+  opacity: 1;
 }
 
-/* Subtle grid background for hero */
-.cw-grid-bg {
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(115, 115, 115, 0.14) 1px, transparent 0);
-  background-size: 28px 28px;
-  background-position: -1px -1px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 40%, transparent 80%);
-}
-
-.dark .cw-grid-bg {
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(245, 245, 244, 0.07) 1px, transparent 0);
-}
-
-/* Integrations page — marquee logo band */
+/* Retained: the integrations logo band. */
 @keyframes cw-marquee-x {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
-
 .cw-marquee-track {
   animation: cw-marquee-x 50s linear infinite;
   width: max-content;
 }
-
 .cw-marquee-mask {
   mask-image: linear-gradient(
     to right,
@@ -110,8 +380,22 @@ html > body[data-scroll-locked] {
   );
 }
 
+/* Retained, re-tinted: the hero field. Flat and warm, not a gradient mesh. */
+.cw-grid-bg {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--cw-rule) 90%, transparent) 1px, transparent 0);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 40%, transparent 80%);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .cw-marquee-track {
+  .cw-marquee-track,
+  .cw-rail-draw::before,
+  .cw-rise {
     animation: none;
+  }
+  .cw-rise {
+    opacity: 1;
+    transform: none;
   }
 }

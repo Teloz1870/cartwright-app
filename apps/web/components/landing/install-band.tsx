@@ -26,7 +26,7 @@ export function InstallBand() {
               Quick start →
             </ButtonLink>
             <ButtonLink
-              href="/docs/cli-options"
+              href="/docs/getting-started/cli-options"
               variant="ghost"
               size="lg"
               className="text-cw-stone-300 hover:text-cw-stone-50 hover:bg-cw-stone-800"
