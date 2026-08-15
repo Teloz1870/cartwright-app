@@ -337,7 +337,7 @@ html > body[data-scroll-locked] {
 /* Static end-state. */
 .cw-wheel {
   color: var(--cw-fg);
-  transform: translateX(248px) rotate(60deg);
+  transform: translateX(248px) rotate(45deg);
   transform-origin: 360px 196px;
 }
 .cw-pawl {
@@ -436,8 +436,10 @@ html > body[data-scroll-locked] {
   }
 }
 
-/* One indexed tooth — not free spin. A ratchet turns once, deliberately, and
-   then the wheel leaves with the customer. */
+/* One indexed tooth — not free spin. The mark has eight teeth, so a single
+   index is exactly 360/8 = 45°: the rotation has to agree with the geometry or
+   the claim "advances exactly one tooth" is decoration. A ratchet turns once,
+   deliberately, and then the wheel leaves with the customer. */
 @keyframes cw-wheel-index {
   0%,
   62% {
@@ -448,15 +450,15 @@ html > body[data-scroll-locked] {
     color: var(--cw-pending);
   }
   76% {
-    transform: translateX(0) rotate(60deg);
+    transform: translateX(0) rotate(45deg);
     color: var(--cw-verified);
   }
   86% {
-    transform: translateX(0) rotate(60deg);
+    transform: translateX(0) rotate(45deg);
     color: var(--cw-verified);
   }
   100% {
-    transform: translateX(248px) rotate(60deg);
+    transform: translateX(248px) rotate(45deg);
     color: var(--cw-fg);
   }
 }

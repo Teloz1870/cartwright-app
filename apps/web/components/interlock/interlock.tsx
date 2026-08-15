@@ -64,7 +64,10 @@ export function Interlock() {
   return (
     <section className="cw-interlock border-b border-cw-rule bg-cw-canvas">
       <div className="cw-interlock-viewport">
-        <div className="mx-auto flex h-full max-w-7xl flex-col justify-center px-6 py-10">
+        {/* `w-full` is load-bearing: the sticky viewport is a flex row, so without
+          it this shrink-to-fits to its content and the mechanism gets squeezed
+          into the right margin instead of filling the chapter. */}
+      <div className="mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 py-10">
           <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
             One operation, end to end
           </p>
