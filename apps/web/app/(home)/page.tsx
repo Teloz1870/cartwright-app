@@ -1,4 +1,5 @@
 import { Hero } from '@/components/landing/hero';
+import { FirstRun } from '@/components/landing/first-run';
 import { Interlock } from '@/components/interlock/interlock';
 import { ThreeDoors } from '@/components/landing/three-doors';
 import { ProofLedger } from '@/components/landing/proof-ledger';
@@ -68,6 +69,7 @@ export default async function HomePage() {
           them. AgentSurface's eleven cards and FeatureGrid's nine became one
           ledger. */}
       <Hero />
+      <FirstRun />
       <Interlock />
       <ThreeDoors />
       <ProofLedger />
