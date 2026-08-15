@@ -1,14 +1,9 @@
 import { Hero } from '@/components/landing/hero';
-import { FlagshipSpotlight } from '@/components/landing/flagship-spotlight';
-import { VoiceShopDemo } from '@/components/landing/voice-shop-demo';
+import { Interlock } from '@/components/interlock/interlock';
 import { ThreeDoors } from '@/components/landing/three-doors';
-import { HowItWorks } from '@/components/landing/how-it-works';
-import { FeatureGrid } from '@/components/landing/feature-grid';
-import { AgentSurface } from '@/components/landing/agent-surface';
+import { ProofLedger } from '@/components/landing/proof-ledger';
+import { ExitFreedom } from '@/components/landing/exit-freedom';
 import { ShowcaseTeaser } from '@/components/landing/showcase-teaser';
-import { CompareTeaser } from '@/components/landing/compare-teaser';
-import { LivePreview } from '@/components/landing/live-preview';
-import { CodePeek } from '@/components/landing/code-peek';
 import { InstallBand } from '@/components/landing/install-band';
 import { Faq } from '@/components/landing/faq';
 import { CtaFooter } from '@/components/landing/cta-footer';
@@ -57,21 +52,27 @@ export default async function HomePage() {
          
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Section order tells one story: the thesis (Hero), the proof it's
-          designed (Flagship), the three doors, what each door feels like
-          (VoiceShop, LivePreview, HowItWorks, AgentSurface), the receipts
-          (Showcase, Compare), then the inventory and the close. */}
+      {/* Seven arguments, each changing the state of one operation — not
+          fourteen independent bands sharing a padding value.
+
+          1 the claim · 2 one action becoming trustworthy · 3 who may operate
+          it · 4 the receipts · 5 what you keep · 6 it is running in production
+          · 7 start.
+
+          What left the homepage, and why: the FABLE spotlight and the design
+          marketplace moved to /designs, because putting the flagship directly
+          after the hero changed the argument from trusted operation to visual
+          variety before trust was established. Voice folds into Three Doors as
+          one input modality rather than a standalone promo. LivePreview,
+          HowItWorks, CodePeek and CompareTeaser moved to the pages that own
+          them. AgentSurface's eleven cards and FeatureGrid's nine became one
+          ledger. */}
       <Hero />
-      <FlagshipSpotlight />
+      <Interlock />
       <ThreeDoors />
-      <VoiceShopDemo />
-      <LivePreview />
-      <HowItWorks />
-      <AgentSurface />
+      <ProofLedger />
+      <ExitFreedom />
       <ShowcaseTeaser />
-      <CompareTeaser />
-      <FeatureGrid />
-      <CodePeek />
       <InstallBand />
       <Faq />
       <CtaFooter />

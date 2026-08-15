@@ -309,6 +309,222 @@ html > body[data-scroll-locked] {
   animation-delay: 70ms;
 }
 
+/* ── The Interlock ─────────────────────────────────────────────────────────
+   A scroll-controlled mechanism, because the visitor is inspecting a process
+   rather than watching a trailer. CSS view timelines keep it off the main
+   thread, reverse for free when the user scrolls back, and need no JS at all.
+
+   The base rules below are the COMPLETE STATIC DIAGRAM: puck delivered, wheel
+   indexed, pawl lifted, every station legible. That is what a browser without
+   `animation-timeline` renders, what `prefers-reduced-motion` renders, and what
+   mobile renders. The animation is layered on top inside @supports — it is an
+   enhancement over a finished picture, never the thing that completes it. */
+.cw-interlock {
+  /* Scroll distance the chapter gets. Long enough for five stations to land
+     distinctly, short enough not to feel like a hostage situation. */
+  height: 240vh;
+  view-timeline-name: --interlock;
+  view-timeline-axis: block;
+}
+.cw-interlock-viewport {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+/* Static end-state. */
+.cw-wheel {
+  color: var(--cw-fg);
+  transform: translateX(248px) rotate(60deg);
+  transform-origin: 360px 196px;
+}
+.cw-pawl {
+  transform: translateY(-26px);
+  opacity: 0.35;
+}
+.cw-puck {
+  transform: translate(494px, 286px);
+}
+.cw-station {
+  border-left-color: var(--cw-rule);
+}
+
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    /* Motion says: authority is changing state. Nothing else moves. */
+    .cw-wheel,
+    .cw-pawl,
+    .cw-puck,
+    .cw-station,
+    .cw-tick {
+      animation-duration: 1ms; /* overridden by the timeline */
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --interlock;
+      animation-range: contain 0% contain 100%;
+    }
+
+    .cw-puck {
+      animation-name: cw-puck-run;
+    }
+    .cw-pawl {
+      animation-name: cw-pawl-gate;
+    }
+    .cw-wheel {
+      animation-name: cw-wheel-index;
+    }
+    .cw-station[data-station='0'] {
+      animation-name: cw-station-0;
+    }
+    .cw-station[data-station='1'] {
+      animation-name: cw-station-1;
+    }
+    .cw-station[data-station='2'] {
+      animation-name: cw-station-2;
+    }
+    .cw-station[data-station='3'] {
+      animation-name: cw-station-3;
+    }
+    .cw-station[data-station='4'] {
+      animation-name: cw-station-4;
+    }
+  }
+}
+
+/* The instruction travels, is held at CONFIRM, then completes as a receipt. */
+@keyframes cw-puck-run {
+  0% {
+    transform: translate(92px, 286px);
+    opacity: 0;
+  }
+  6% {
+    transform: translate(92px, 286px);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(226px, 286px);
+  }
+  /* Held. The stop is the point — the mechanism cannot advance itself. */
+  46%,
+  62% {
+    transform: translate(330px, 286px);
+  }
+  84%,
+  100% {
+    transform: translate(494px, 286px);
+  }
+}
+
+/* Drops to block at CONFIRM, lifts once released. */
+@keyframes cw-pawl-gate {
+  0%,
+  40% {
+    transform: translateY(-26px);
+    opacity: 0.35;
+  }
+  46%,
+  62% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  70%,
+  100% {
+    transform: translateY(-26px);
+    opacity: 0.35;
+  }
+}
+
+/* One indexed tooth — not free spin. A ratchet turns once, deliberately, and
+   then the wheel leaves with the customer. */
+@keyframes cw-wheel-index {
+  0%,
+  62% {
+    transform: translateX(0) rotate(0deg);
+    color: var(--cw-fg);
+  }
+  64% {
+    color: var(--cw-pending);
+  }
+  76% {
+    transform: translateX(0) rotate(60deg);
+    color: var(--cw-verified);
+  }
+  86% {
+    transform: translateX(0) rotate(60deg);
+    color: var(--cw-verified);
+  }
+  100% {
+    transform: translateX(248px) rotate(60deg);
+    color: var(--cw-fg);
+  }
+}
+
+/* Each ledger row takes the rule as its station comes up. */
+@keyframes cw-station-0 {
+  0%,
+  22% {
+    border-left-color: var(--cw-action);
+  }
+  24%,
+  100% {
+    border-left-color: var(--cw-rule);
+  }
+}
+@keyframes cw-station-1 {
+  0%,
+  24% {
+    border-left-color: var(--cw-rule);
+  }
+  26%,
+  42% {
+    border-left-color: var(--cw-action);
+  }
+  44%,
+  100% {
+    border-left-color: var(--cw-rule);
+  }
+}
+@keyframes cw-station-2 {
+  0%,
+  44% {
+    border-left-color: var(--cw-rule);
+  }
+  46%,
+  62% {
+    border-left-color: var(--cw-pending);
+  }
+  64%,
+  100% {
+    border-left-color: var(--cw-rule);
+  }
+}
+@keyframes cw-station-3 {
+  0%,
+  64% {
+    border-left-color: var(--cw-rule);
+  }
+  66%,
+  80% {
+    border-left-color: var(--cw-action);
+  }
+  82%,
+  100% {
+    border-left-color: var(--cw-rule);
+  }
+}
+@keyframes cw-station-4 {
+  0%,
+  82% {
+    border-left-color: var(--cw-rule);
+  }
+  84%,
+  100% {
+    border-left-color: var(--cw-verified);
+  }
+}
+
 /* ── Status stamps ─────────────────────────────────────────────────────────
    Squared, not pills. READ / WRITE / CONFIRM / AUDITED. */
 .cw-stamp {
@@ -391,11 +607,25 @@ html > body[data-scroll-locked] {
 @media (prefers-reduced-motion: reduce) {
   .cw-marquee-track,
   .cw-rail-draw::before,
-  .cw-rise {
-    animation: none;
+  .cw-rise,
+  .cw-wheel,
+  .cw-pawl,
+  .cw-puck,
+  .cw-station,
+  .cw-tick {
+    animation: none !important;
   }
   .cw-rise {
     opacity: 1;
     transform: none;
+  }
+  /* The chapter stops being a scroll stage and becomes what it always was
+     underneath: one finished diagram, at its natural height. */
+  .cw-interlock {
+    height: auto;
+  }
+  .cw-interlock-viewport {
+    position: static;
+    height: auto;
   }
 }
