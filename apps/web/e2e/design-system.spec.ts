@@ -178,6 +178,72 @@ test.describe('the phone is not an afterthought', () => {
   });
 });
 
+test.describe('the site cannot claim what the repo does not hold', () => {
+  // Drift was the most expensive defect on this site: "86 tools across 35
+  // domains" in two components against a registry of 87, "28 design packs, 8
+  // voices, 9 plugins" against a manifest of 26/5/5, "All 15 integrations"
+  // beside a page rendering 23, and a roadmap announcing v0.33.0 while the CLI
+  // shipped v0.44.1. Every one was written by hand and then left behind.
+
+  test('the integrations page renders exactly what the pricing page promises', async ({
+    page,
+  }) => {
+    await page.goto('/pricing');
+    const promised = await page.getByText(/All \d+ integrations are included/).textContent();
+    const claimed = Number(promised?.match(/\d+/)?.[0]);
+    expect(claimed, 'pricing states a number').toBeGreaterThan(0);
+
+    await page.goto('/integrations');
+    // Every shipped integration links out to the vendor; the planned Plus ones
+    // are listed separately and deliberately not counted here.
+    const rendered = await page.evaluate(
+      () => document.querySelectorAll('main a[target="_blank"], main a[rel*="noopener"]').length,
+    );
+    expect(
+      rendered,
+      `pricing promises ${claimed} integrations; /integrations renders ${rendered}`,
+    ).toBeGreaterThanOrEqual(claimed);
+  });
+
+  test('the fallback engine version matches the ref the CLI ships', async ({ request }) => {
+    // lib/engine.ts fetches the live version and falls back to a constant. The
+    // constant sat six minor versions behind for months because nothing
+    // compared it to apps/cli/src/refs.ts, which the bump workflow does keep
+    // current.
+    const fs = await import('node:fs/promises');
+    const engine = await fs.readFile('lib/engine.ts', 'utf8');
+    const refs = await fs.readFile('../cli/src/refs.ts', 'utf8');
+    // Anchored to line start on purpose: refs.ts documents the line shape in a
+    // comment as `export const DEFAULT_REF = "vX.Y.Z";`, and an unanchored
+    // match reads the placeholder instead of the value.
+    const fallback = engine.match(/^export const FALLBACK_ENGINE_VERSION = '([^']+)'/m)?.[1];
+    const shipped = refs.match(/^export const DEFAULT_REF = "v([^"]+)"/m)?.[1];
+    expect(fallback, 'a fallback version is declared').toBeTruthy();
+    expect(shipped, 'the CLI declares a template ref').toBeTruthy();
+    expect(fallback, 'fallback must track the shipped template ref').toBe(shipped);
+    void request;
+  });
+
+  test('no page states a hardcoded engine version as current', async () => {
+    const fs = await import('node:fs/promises');
+    // "Ships in engine v0.30.0" is a historical fact and correct to freeze.
+    // "Cartwright is at v0.33.0 today" is a claim about now, and rots.
+    const suspects = [
+      'content/docs/roadmap.mdx',
+      'content/docs/introduction.mdx',
+      'content/docs/api/mcp-tools.mdx',
+    ];
+    const offenders: string[] = [];
+    for (const f of suspects) {
+      const text = await fs.readFile(f, 'utf8');
+      if (/\b(is at|currently at|today at)\s+\*{0,2}v\d+\.\d+\.\d+/i.test(text)) {
+        offenders.push(f);
+      }
+    }
+    expect(offenders, 'present-tense version claims').toEqual([]);
+  });
+});
+
 test('every link the homepage offers actually resolves', async ({ page, request }) => {
   // `/security` shipped as three links and no page, one of them promising
   // coordinated vulnerability reporting; `/docs/cli-options` pointed at a path

@@ -9,6 +9,7 @@ import {
   OperationContract,
   StatusStamp,
 } from '@/components/docs/proof';
+import { EngineFact } from '@/lib/engine-facts';
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
@@ -25,6 +26,8 @@ export function getMDXComponents(components?: MDXComponents) {
     Endpoint,
     ExitProof,
     StatusStamp,
+    // Cite a count without hardcoding it: <EngineFact k="toolCount" />
+    EngineFact,
     ...components,
   } satisfies MDXComponents;
 }

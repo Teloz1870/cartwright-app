@@ -19,6 +19,7 @@ import { ComparisonTable } from '@/components/landing/comparison-table';
 import { FeatureMatrix } from '@/components/landing/feature-matrix';
 import JsonLd from '@/components/JsonLd';
 import { pageOg } from '@/lib/og';
+import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 const ALL_INTEGRATION_LOGOS: BrandSlug[] = [
   'stripe', 'vercel', 'resend', 'turso', 'anthropic', 'sentry',
@@ -303,7 +304,7 @@ export default function ServicesPage() {
             href="/integrations"
             className="mt-5 text-sm font-medium text-cw-terracotta hover:underline"
           >
-            All 15 integrations are included in every tier →
+            All {ENGINE_FACTS.integrationsShipped} integrations are included in every tier →
           </Link>
         </div>
 
