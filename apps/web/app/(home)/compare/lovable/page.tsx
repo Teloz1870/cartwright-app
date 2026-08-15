@@ -4,6 +4,7 @@ import JsonLd from '@/components/JsonLd';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { LOVABLE } from '@/lib/comparisons';
 import { pageOg } from '@/lib/og';
+import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 /**
  * "Graduate from Lovable" — a dedicated comparison landing page.
@@ -208,7 +209,7 @@ export default function LovableComparePage() {
             applies them as the live theme in one click — so your new site opens looking like the
             app you already love. It transfers the design vibe (colors, typography, tone), not the
             layout or code, and uses Firecrawl under the hood (bring your own key). From there,
-            currently 28 design packs, 8 industry voices, and 9 in-repo plugins are yours to mix —
+            currently {ENGINE_FACTS.designs} design packs, {ENGINE_FACTS.voices} industry voices and {ENGINE_FACTS.plugins} in-repo plugins are yours to mix —
             or let your agent build something custom.
           </p>
         </section>

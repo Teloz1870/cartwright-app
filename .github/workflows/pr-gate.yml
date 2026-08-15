@@ -1,0 +1,65 @@
+name: PR gate
+
+# This repository had no pull_request workflow at all: `lint` and `test` existed
+# as scripts that nothing ever ran, and Vercel's build does not run them either.
+# A redesign touching 1687 token references across ~30 routes went in with
+# nothing standing between it and main.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: pr-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: lint · typecheck · unit · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Build FIRST. `LayoutProps`, `PageProps` and `RouteContext` are types
+      # Next generates into `.next/types/` — on a fresh clone they do not exist
+      # yet, so `tsc --noEmit` fails with TS2304 on seven files that are
+      # perfectly correct. It passes locally only because a previous build left
+      # the directory behind, which is exactly the kind of works-on-my-machine
+      # this gate is here to catch. It caught it on its own first run.
+      - run: pnpm --filter web build
+      - run: pnpm --filter web exec tsc --noEmit
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web test
+
+  design-system:
+    name: design system contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Playwright's own image so the browser matches the one the tests were
+    # written against, without a per-run browser download.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # These assert tokens, contrast, mobile overflow and the conversion
+      # event — not pixels. Screenshot baselines rendered on a maintainer's
+      # macOS would differ from Linux CI on antialiasing alone, and a gate that
+      # fails for reasons that are not defects gets switched off.
+      - run: pnpm --filter web test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

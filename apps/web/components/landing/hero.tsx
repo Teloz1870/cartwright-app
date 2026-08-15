@@ -1,76 +1,81 @@
 import Link from 'next/link';
-import { ButtonLink } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { social } from '@/lib/shared';
 import { getEngineVersion } from '@/lib/engine';
 
+/**
+ * The five-second argument: AI runs the shop, you keep the keys.
+ *
+ * Two reading velocities in one composition rather than a persona gate. The
+ * owner reads the declaration; the developer's eye goes straight down the rail
+ * to the command, the version and the licence. Both are served without asking
+ * anyone to pick a door before they know what the product is.
+ *
+ * The install command is not typed out character by character any more.
+ * Developers read it instantly and the delay was theatrical friction.
+ */
 export async function Hero() {
-  // Live engine version from the engine CHANGELOG (ISR-cached, fail-soft) —
-  // the same maintained source the /changelog header uses. Never hardcode a
-  // version here; it drifts the moment a release ships.
+  // Live engine version from the engine CHANGELOG (ISR-cached, fail-soft).
+  // Never hardcode a version here; it drifts the moment a release ships.
   const engineVersion = await getEngineVersion();
+
   return (
-    <section className="relative overflow-hidden border-b border-cw-stone-200 dark:border-cw-stone-800">
+    <section className="relative overflow-hidden border-b border-cw-rule">
       <div aria-hidden className="absolute inset-0 cw-grid-bg" />
-      <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
-        <div className="flex flex-col items-center text-center">
-          <Badge tone="terracotta" className="mb-6">
-            <span className="size-1.5 rounded-full bg-cw-terracotta" />
-            Open source · engine v{engineVersion}
-          </Badge>
-          <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
-            The build engine AIs{' '}
-            <span className="relative inline-block">
-              <span className="relative z-10">reach for.</span>
-              <span
-                aria-hidden
-                className="absolute inset-x-0 -bottom-1 h-3 bg-cw-terracotta/20 dark:bg-cw-terracotta/30 -z-0"
-              />
-            </span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-base sm:text-lg text-cw-stone-500 dark:text-cw-stone-400 leading-relaxed">
-            Generating a site is becoming free — owning and{' '}
-            <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">operating</span>{' '}
-            a real business is the hard part. Cartwright is an open-source
-            Next.js 16 engine scaffolded into a repo you own: design, database,
-            checkout, and an admin your AI can operate. One{' '}
-            <span className="font-mono text-xs text-cw-terracotta">brand.mode</span>{' '}
-            flag ships it as a corporate site, a webshop, or an agent
-            storefront — selling to people on their phones and to buyer agents
-            reading your{' '}
-            <span className="font-mono text-xs">/llms.txt</span>.
-          </p>
-          <p className="mt-3 text-xs sm:text-sm text-cw-terracotta font-mono">
-            ↓ click the mic to try voice shopping
-          </p>
 
-          <div className="mt-10 w-full max-w-2xl">
-            <CopyCommand command="npx create-cartwright@latest my-shop" />
+      <div className="cw-rail-track cw-rail-draw relative mx-auto max-w-7xl px-6 pt-24 pb-20 sm:pt-32 sm:pb-28">
+        <div className="lg:grid lg:grid-cols-[1fr_38%] lg:gap-10">
+          {/* Left of the rail: the claim. */}
+          <div className="pl-12 lg:pl-0 lg:pr-14">
+            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
+              Open source · MIT · Next.js
+            </p>
+
+            <h1 className="mt-7 font-display text-cw-fg [font-size:clamp(3rem,9vw,7.5rem)] [line-height:0.88] [letter-spacing:-0.04em]">
+              <span className="cw-rise">AI runs the shop.</span>
+              <span className="cw-rise cw-rise-2 text-cw-muted">You keep the keys.</span>
+            </h1>
+
+            <p className="mt-8 max-w-[62ch] text-base sm:text-lg leading-relaxed text-cw-muted">
+              Cartwright is an AI-native commerce engine built for trusted
+              operation: scoped tools, confirmation-gated writes, auditable
+              actions, agent checkout — and a repo you can leave with.
+            </p>
+
+            <div className="mt-10 max-w-xl">
+              <CopyCommand command="npx create-cartwright@latest my-shop" />
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href="/security"
+                className="font-mono text-xs uppercase tracking-[0.14em] text-cw-action underline-offset-4 hover:underline"
+              >
+                Inspect the safety model →
+              </Link>
+              <Link
+                href={social.templateRepo}
+                className="font-mono text-xs uppercase tracking-[0.14em] text-cw-muted underline-offset-4 hover:underline"
+              >
+                Source on GitHub
+              </Link>
+            </div>
           </div>
 
-          <p className="mt-3 text-xs sm:text-sm text-cw-stone-500 dark:text-cw-stone-400 font-mono">
-            Measured cold run: designed, verified homepage in 99 s →{' '}
-            <Link
-              href="/docs/getting-started/ai-quick-start"
-              className="text-cw-terracotta hover:underline"
-            >
-              AI agent quick start
-            </Link>
-          </p>
-
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <ButtonLink href="/docs/getting-started/quick-start" size="lg">
-              Get started
-            </ButtonLink>
-            <ButtonLink href={social.templateRepo} variant="outline" size="lg">
-              View on GitHub
-            </ButtonLink>
-          </div>
-
-          <p className="mt-6 text-xs text-cw-stone-500 dark:text-cw-stone-400 font-mono">
-            MIT · Next.js 16 · Tailwind v4 · Prisma · Stripe
-          </p>
+          {/* Right of the rail: what is verifiable right now. */}
+          <dl className="mt-14 pl-12 lg:mt-2 lg:pl-8 space-y-5 font-mono text-xs">
+            {[
+              ['engine', `v${engineVersion}`],
+              ['licence', 'MIT'],
+              ['platform fee', '0%'],
+              ['repo', 'yours, from commit one'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-baseline justify-between gap-4 border-b border-cw-rule pb-2">
+                <dt className="uppercase tracking-[0.14em] text-cw-muted">{k}</dt>
+                <dd className="text-cw-fg">{v}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </div>
     </section>

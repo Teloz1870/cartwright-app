@@ -5,12 +5,17 @@ import { ButtonLink } from '@/components/ui/button';
 export function InstallBand() {
   return (
     <Section className="bg-cw-stone-900 dark:bg-cw-ink text-cw-stone-50 border-cw-stone-800">
+      {/* `min-w-0` on both columns: a grid item defaults to `min-width: auto`
+          and refuses to shrink below its content's min-content width, so the
+          mono install command — wider in Martian Mono than in the Geist Mono it
+          replaced — set the column width and pushed the page 194px sideways at
+          390px. The same trap as flexbox, one level up. */}
       <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] items-center">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+        <div className="min-w-0">
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-terracotta">
             install
           </p>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">
+          <h2 className="mt-6 font-display [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em]">
             One line. Real shop in five minutes.
           </h2>
           <p className="mt-4 text-base text-cw-stone-400 max-w-md">
@@ -26,7 +31,7 @@ export function InstallBand() {
               Quick start →
             </ButtonLink>
             <ButtonLink
-              href="/docs/cli-options"
+              href="/docs/getting-started/cli-options"
               variant="ghost"
               size="lg"
               className="text-cw-stone-300 hover:text-cw-stone-50 hover:bg-cw-stone-800"
@@ -35,16 +40,19 @@ export function InstallBand() {
             </ButtonLink>
           </div>
         </div>
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <CopyCommand command="npx create-cartwright@latest my-shop" />
-          <div className="grid grid-cols-3 gap-2 text-xs font-mono text-cw-stone-400">
-            <span className="rounded-md border border-cw-stone-800 px-3 py-2 text-center">
+          {/* Stacked on a phone. Three columns of mono at 390px cannot fit —
+              grid items default to `min-width: auto`, so they refuse to shrink
+              below their content and widen the page instead of wrapping. */}
+          <div className="grid grid-cols-1 gap-2 text-xs font-mono text-cw-stone-400 sm:grid-cols-3">
+            <span className="min-w-0 truncate rounded-md border border-cw-stone-800 px-3 py-2 text-center">
               pnpm create cartwright
             </span>
-            <span className="rounded-md border border-cw-stone-800 px-3 py-2 text-center">
+            <span className="min-w-0 truncate rounded-md border border-cw-stone-800 px-3 py-2 text-center">
               npm create cartwright@latest
             </span>
-            <span className="rounded-md border border-cw-stone-800 px-3 py-2 text-center">
+            <span className="min-w-0 truncate rounded-md border border-cw-stone-800 px-3 py-2 text-center">
               bunx create-cartwright
             </span>
           </div>

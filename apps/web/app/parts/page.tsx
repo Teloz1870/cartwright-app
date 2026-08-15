@@ -34,6 +34,7 @@ export default function PartsPage() {
           Parts · the section catalogue
         </Badge>
         <SectionHeader
+          as="h1"
           title="Compose pages from swappable Parts"
           description="A Part is a prop-driven page section — a hero, a bento grid, a marquee, a pricing table. You compose them in the Visual Builder, in any order. Every Part is a cw-* atom, so it adopts the active design / Voice palette: drop the same Part onto any palette-adaptive skin and it wears that skin's colours. The third piece of the mixer — Skin × Voice × Parts."
         />

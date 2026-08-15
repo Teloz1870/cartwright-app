@@ -34,6 +34,7 @@ export default function VerticalsPage() {
           Voices · verticals
         </Badge>
         <SectionHeader
+          as="h1"
           title="Re-tone any design for your industry"
           description="Content and design are orthogonal in Cartwright — so a Voice re-tones a site for an industry without touching the design. A Voice = identity (tone, audience, formality) + genome copy overrides + a fitting palette + a palette-reactive 3D scene + a suggested skin. We call the combination the Vibe. Apply one and the whole page adopts it — copy, colours, and 3D. The second axis of the mixer: Skin × Voice × Parts."
         />

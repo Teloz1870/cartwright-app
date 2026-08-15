@@ -52,6 +52,7 @@ export default function ProPage() {
           ⭐ Cartwright Pro
         </Badge>
         <SectionHeader
+          as="h1"
           title="$100k design, priced for everyone."
           description="Pro is the breakthrough layer on top of Cartwright. Interactive elements no $5 template has — a live build-your-own configurator, scroll-cinema, a 3D product showroom — plus complete super-pro designs where the frontend and backend stand sharp together. Buy an element for the price of a coffee, or get them all with Pro."
         />

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { hasVideo } from '@/lib/design-media';
+import { useMotionAllowed } from '@/lib/use-motion-allowed';
 
 /**
  * Big framed homepage preview for a design detail page. Renders an autoplaying,
@@ -19,13 +20,11 @@ export function DesignHeroImage({
   swatches: string[];
 }) {
   const [failed, setFailed] = useState(false);
-  // Render the static poster on SSR/first paint; upgrade to the autoplaying
-  // video only after mount AND only when the user hasn't asked for reduced
-  // motion (mirrors the engine's three.js reduced-motion fallback).
-  const [motion, setMotion] = useState(false);
-  useEffect(() => {
-    setMotion(!window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }, []);
+  // Static poster on SSR and first paint; the autoplaying video is an upgrade
+  // that only happens once we know the reader has not asked for less motion
+  // (mirrors the engine's three.js reduced-motion fallback). Subscribed rather
+  // than copied into state, so changing the setting takes effect immediately.
+  const motion = useMotionAllowed();
 
   if (failed) {
     if (swatches.length === 0) return null;

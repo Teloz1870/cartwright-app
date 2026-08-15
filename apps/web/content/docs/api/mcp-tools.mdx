@@ -3,7 +3,7 @@ title: MCP tools
 description: The full tool surface available via /api/mcp and /api/v1/tools.
 ---
 
-Cartwright exposes 86 tools across 35 domains (the live catalog at `GET /api/v1/tools` on any shop is always the authority). Every tool can be called by an external AI agent (MCP at `/api/mcp`), a REST client (`/api/v1/tools`), the storefront chat assistant, or the admin AI — all funneled through the same `lib/tools/registry.ts`.
+Cartwright exposes <EngineFact k="toolCount" /> tools (the live catalog at `GET /api/v1/tools` on any shop is always the authority — this page is a guide, not a registry). Every tool can be called by an external AI agent (MCP at `/api/mcp`), a REST client (`/api/v1/tools`), the storefront chat assistant, or the admin AI — all funneled through the same `lib/tools/registry.ts`.
 
 This page is a reference catalogue. For the validation pipeline and audit-log behaviour see [Architecture: tool registry](/docs/architecture/tool-registry).
 

@@ -2,20 +2,46 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './global.css';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Instrument_Serif, Instrument_Sans, Martian_Mono } from 'next/font/google';
 import SearchDialog from '@/components/search';
 import JsonLd from '@/components/JsonLd';
 import { xHandle } from '@/lib/shared';
 
-const geistSans = Geist({
+/**
+ * Three voices — declaration, explanation, evidence.
+ *
+ * The site previously ran Geist Sans + Geist Mono for everything, so product
+ * claims, prose, navigation and the wordmark all spoke in one undifferentiated
+ * interface voice. The Interlock direction depends on those three registers
+ * being audibly different.
+ *
+ * These are the freely licensed stand-ins for Signifier + Söhne, which are Klim
+ * commercial licences. When there is revenue to justify buying those, this is a
+ * three-line change; the CSS variables below are the only contract.
+ */
+const displaySerif = Instrument_Serif({
   subsets: ['latin'],
-  variable: '--font-geist-sans',
+  weight: '400',
+  variable: '--font-instrument-serif',
   display: 'swap',
 });
 
-const geistMono = Geist_Mono({
+/** 400 for prose, 500 for controls, 600 only for short emphasis. */
+const interfaceSans = Instrument_Sans({
   subsets: ['latin'],
-  variable: '--font-geist-mono',
+  variable: '--font-instrument-sans',
+  display: 'swap',
+});
+
+/**
+ * Evidence only — endpoints, versions, machine state. Never body copy.
+ * The `wdth` axis is loaded on purpose: stamps run at 87.5% so a squared label
+ * stays compact, while code sits at 100%.
+ */
+const machineMono = Martian_Mono({
+  subsets: ['latin'],
+  axes: ['wdth'],
+  variable: '--font-martian-mono',
   display: 'swap',
 });
 
@@ -66,7 +92,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${displaySerif.variable} ${interfaceSans.variable} ${machineMono.variable}`}
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen font-sans antialiased">

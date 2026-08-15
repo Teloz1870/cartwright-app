@@ -36,6 +36,7 @@ export default function SvgItemsPage() {
           SVG items
         </Badge>
         <SectionHeader
+          as="h1"
           title="Hand-crafted, palette-adaptive marks & illustrations"
           description="Premium inline SVG components — brand marks, section dividers and hero illustrations. Every item is a pure server component (zero client JS) that reads your brand's palette tokens at runtime, so the same mark renders in each shop's own colours. The previews below are live: they're rendered in this site's palette right now."
         />

@@ -219,6 +219,11 @@ export function MixerStudio({
   // Deep-linking: /mixer?skin=&voice=&header=&footer= (e.g. "Use in the
   // Mixer" from a Look or /chrome card). Read once on mount — window-based so
   // the page itself stays fully static.
+  // A one-shot read of window.location on mount. There is no external store to
+  // subscribe to here: the query string does not change while this component
+  // is alive, and the page is deliberately static so the values cannot be
+  // handed down from the server instead.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const skin = params.get('skin');
@@ -236,6 +241,7 @@ export function MixerStudio({
     setHydratedFromUrl(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep the URL shareable: reflect the current composition into the query
   // string (replaceState — no history spam, no navigation).
@@ -260,11 +266,16 @@ export function MixerStudio({
   const footerOptions = selectableChrome.filter((c) => c.kind === 'footer');
 
   // Changing skin can orphan a design-locked pick — fall back to the default.
-  useEffect(() => {
+  // Adjusted during render rather than in an effect: an effect renders once
+  // with the orphaned selection and then again without it, which is the
+  // cascading render the hooks rule objects to. This is React's documented
+  // pattern for state that has to follow a prop.
+  const [seenSlug, setSeenSlug] = useState(design.slug);
+  if (seenSlug !== design.slug) {
+    setSeenSlug(design.slug);
     if (headerKey && !headerOptions.some((c) => c.key === headerKey)) setHeaderKey(null);
     if (footerKey && !footerOptions.some((c) => c.key === footerKey)) setFooterKey(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [design.slug]);
+  }
 
   const header = headerKey ? (chrome.find((c) => c.key === headerKey) ?? null) : null;
   const footer = footerKey ? (chrome.find((c) => c.key === footerKey) ?? null) : null;
