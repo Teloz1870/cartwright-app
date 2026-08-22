@@ -143,3 +143,27 @@ describe('llms.txt stays a navigation index, not a document', () => {
     expect(routeExists('/api/llms.txt')).toBe(true);
   });
 });
+
+describe('llms.txt is a markdown index, not a text file with URLs in it', () => {
+  // The other half of `llms-txt-formatting`: the size fix alone left it at
+  // partial credit, because "include markdown links to deeper resources" means
+  // [text](url), not a bare URL after a colon.
+  const source = read('app/llms.txt/route.ts');
+
+  it('opens with a markdown heading', () => {
+    expect(source).toContain('const INTRO = `# Cartwright');
+  });
+
+  it('links to deeper resources in markdown syntax', () => {
+    const links = source.match(/\[[^\]]+\]\(/g) ?? [];
+    expect(links.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it('leaves no bare-URL list item behind', () => {
+    // `- Label: https://…` is the shape that scored as prose rather than an index.
+    const bare = source
+      .split('\n')
+      .filter((l) => /^- [^[]*: (https?:\/\/|\$\{SITE_URL\})/.test(l.trim()));
+    expect(bare).toEqual([]);
+  });
+});

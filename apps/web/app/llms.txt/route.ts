@@ -36,7 +36,7 @@ const INTRO = `# Cartwright
 
     npx create-cartwright@latest my-shop
 
-Measured cold run: scaffold + install + db setup in ~27 s; designed, verified homepage at ~99 s — terminal-only. Step-by-step for agents: ${SITE_URL}/docs/getting-started/ai-quick-start
+Measured cold run: scaffold + install + db setup in ~27 s; designed, verified homepage at ~99 s — terminal-only. Step-by-step for agents: [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
 
 ${WHEN_TO_USE}
 
@@ -52,40 +52,40 @@ ${WHEN_TO_USE}
 
 Named explicitly, because they are the things an agent looks for by name:
 
-- **CLI — \`create-cartwright\`** (npm, MIT). The only entry point that provisions the database and seeds an admin: \`npx create-cartwright@latest my-shop\`. Package: https://www.npmjs.com/package/create-cartwright · Current published version, machine-readable: ${SITE_URL}/api/version
-- **OpenAPI description of this site's API**: ${SITE_URL}/openapi.json (OpenAPI 3.1; one \`operationId\` and a response schema per operation).
-- **Tool surface of a scaffolded shop** — every shop serves its own tools over REST at \`POST /api/v1/tools/<name>\`, API-key authenticated and scope-limited. Reference: ${SITE_URL}/docs/api/mcp-tools
-- **API keys** (how an agent authenticates against a shop): ${SITE_URL}/docs/api/api-keys
-- **MCP server** — each shop can expose its tool surface over the Model Context Protocol at \`/api/mcp\` on the shop's own domain, behind the \`mcpPublic\` feature flag. Note this is a per-shop endpoint: cartwright.app itself does not host one. Docs: ${SITE_URL}/docs/architecture/mcp-server
-- **Agent-commerce endpoints** for buying agents — ACP checkout: ${SITE_URL}/docs/features/agentic-commerce-protocol · A2A negotiation + Agent Card: ${SITE_URL}/docs/features/a2a-endpoints
-- **Engine source**: https://github.com/Teloz1870/cartwright-template · **CLI + this site**: https://github.com/Teloz1870/cartwright-app
+- **CLI — \`create-cartwright\`** (npm, MIT). The only entry point that provisions the database and seeds an admin: \`npx create-cartwright@latest my-shop\`. Package: [create-cartwright on npm](https://www.npmjs.com/package/create-cartwright) · Current published version, machine-readable: [${SITE_URL}/api/version](${SITE_URL}/api/version)
+- **OpenAPI description of this site's API**: [${SITE_URL}/openapi.json](${SITE_URL}/openapi.json) (OpenAPI 3.1; one \`operationId\` and a response schema per operation).
+- **Tool surface of a scaffolded shop** — every shop serves its own tools over REST at \`POST /api/v1/tools/<name>\`, API-key authenticated and scope-limited. Reference: [Tool reference](${SITE_URL}/docs/api/mcp-tools)
+- **API keys** (how an agent authenticates against a shop): [API keys](${SITE_URL}/docs/api/api-keys)
+- **MCP server** — each shop can expose its tool surface over the Model Context Protocol at \`/api/mcp\` on the shop's own domain, behind the \`mcpPublic\` feature flag. Note this is a per-shop endpoint: cartwright.app itself does not host one. Docs: [MCP server](${SITE_URL}/docs/architecture/mcp-server)
+- **Agent-commerce endpoints** for buying agents — [ACP checkout](${SITE_URL}/docs/features/agentic-commerce-protocol) · [A2A negotiation + Agent Card](${SITE_URL}/docs/features/a2a-endpoints)
+- **Engine source**: [cartwright-template](https://github.com/Teloz1870/cartwright-template) · **CLI + this site**: [cartwright-app](https://github.com/Teloz1870/cartwright-app)
 
 ## Machine-readable endpoints on this site
 
-${AGENT_RESOURCES.map((r) => `- ${SITE_URL}${r.path} (${r.contentType}) — ${r.description}`).join('\n')}
+${AGENT_RESOURCES.map((r) => `- [${r.path}](${SITE_URL}${r.path}) (${r.contentType}) — ${r.description}`).join('\n')}
 
 Content negotiation: the homepage and every page under \`/docs\` answer \`Accept: text/markdown\` with \`text/markdown; charset=utf-8\`, and docs pages also accept a \`.md\` suffix (\`${SITE_URL}/docs/introduction.md\`). Responses carry \`Vary: Accept\`. Unknown paths return a real 404 — never a 200 shell — so a 200 from this origin can be trusted.
 
 ## Links
 
-- Source: https://github.com/Teloz1870/cartwright-template
-- npm: https://www.npmjs.com/package/create-cartwright
-- Compare (vs Lovable, Shopify, Medusa, Vercel Commerce, WooCommerce): ${SITE_URL}/compare
-- Graduating from Lovable (own the code, real commerce, no credit metering): ${SITE_URL}/compare/lovable
-- Glossary (AEO, GEO, MCP, ACP, A2A): ${SITE_URL}/glossary
+- [Engine source](https://github.com/Teloz1870/cartwright-template)
+- [create-cartwright on npm](https://www.npmjs.com/package/create-cartwright)
+- [Compare (Lovable, Shopify, Medusa, Vercel Commerce, WooCommerce)](${SITE_URL}/compare)
+- [Graduating from Lovable](${SITE_URL}/compare/lovable) — own the code, real commerce, no credit metering
+- [Glossary](${SITE_URL}/glossary) — AEO, GEO, MCP, ACP, A2A
 
 ## Documentation
 
-The full page index lives at ${SITE_URL}/docs/llms.txt — fetch that when you need
+The full page index lives at [${SITE_URL}/docs/llms.txt](${SITE_URL}/docs/llms.txt) — fetch that when you need
 the reference rather than the pitch. Every page is also available as Markdown:
 append \`.md\` to its path, or send \`Accept: text/markdown\`.
 
-- Introduction: ${SITE_URL}/docs/introduction
-- Quick start: ${SITE_URL}/docs/getting-started/quick-start
-- Quick start for agents: ${SITE_URL}/docs/getting-started/ai-quick-start
-- Architecture: ${SITE_URL}/docs/architecture/overview
-- Every page (scoped index): ${SITE_URL}/docs/llms.txt
-- Whole corpus in one fetch: ${SITE_URL}/llms-full.txt
+- [Introduction](${SITE_URL}/docs/introduction)
+- [Quick start](${SITE_URL}/docs/getting-started/quick-start)
+- [Quick start for agents](${SITE_URL}/docs/getting-started/ai-quick-start)
+- [Architecture](${SITE_URL}/docs/architecture/overview)
+- [Every page (scoped index)](${SITE_URL}/docs/llms.txt)
+- [Whole corpus in one fetch](${SITE_URL}/llms-full.txt)
 `;
 
 export function GET() {
