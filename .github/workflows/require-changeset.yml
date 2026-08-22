@@ -1,0 +1,75 @@
+name: Require a changeset for CLI changes
+
+# Why this exists
+#
+# #269 fixed a real scaffold bug, merged clean with every check green — and
+# could never reach a user, because it carried no changeset. Changesets only
+# publishes what a changeset describes, so the fix sat on `main` while the
+# release scaffold gate kept failing on the very bug it fixed. Two gate runs
+# were spent before anyone thought to compare `npm view create-cartwright
+# version` against the repo.
+#
+# The failure is silent by construction: nothing is red, the PR merges, and the
+# symptom appears later and somewhere else. So this check makes it loud at the
+# only moment it is cheap to fix — while the PR is still open.
+#
+# Escape hatch: label the PR `no-release` for a change that genuinely ships
+# nothing to users (a test, a comment, a workflow). The label is deliberately
+# explicit rather than inferred from paths, so skipping a release is a decision
+# someone made rather than a side effect of where a file happens to live.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - "apps/cli/src/**"
+      - "apps/cli/package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  changeset:
+    name: changeset present
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: A CLI change must publish, or say why not
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+
+          if printf '%s' "$LABELS" | grep -q '"no-release"'; then
+            echo "::notice::labelled no-release — this PR is not expected to publish"
+            exit 0
+          fi
+
+          # Only .md files under .changeset/ describe a release; config.json and
+          # README.md live there too and must not count as one.
+          added=$(git diff --name-only --diff-filter=A "$BASE" "$HEAD" -- '.changeset/*.md' \
+            | grep -v '/README\.md$' || true)
+
+          if [ -n "$added" ]; then
+            echo "✓ changeset present:"
+            printf '  %s\n' $added
+            exit 0
+          fi
+
+          cat >&2 <<'MSG'
+          ✗ This PR changes apps/cli/src/ but adds no changeset.
+
+            Changesets publishes only what a changeset describes, so without one
+            the change merges cleanly and then never reaches a user — the exact
+            way #269's /icon fix stalled while the release gate kept failing on
+            the bug it had already fixed.
+
+            Add one:      pnpm changeset
+            Or, if this genuinely ships nothing:  label the PR `no-release`
+          MSG
+          exit 1
