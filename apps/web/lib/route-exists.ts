@@ -61,10 +61,14 @@ export function routeExists(urlPath: string): boolean {
 
   if (METADATA_ROUTES[clean]) return existsSync(fromRoot(METADATA_ROUTES[clean]));
   if (clean === '/') return existsSync(fromRoot('app/(home)/page.tsx'));
-  if (clean.startsWith('/docs')) return docsContentPath(clean).some(existsSync);
 
-  // A route handler (`/api/*`, `/llms.txt`, `/openapi.json`, …).
+  // A route handler (`/api/*`, `/llms.txt`, `/openapi.json`, `/docs/llms.txt`, …).
+  // Checked BEFORE the docs content lookup: a static segment under `/docs` is a
+  // real route and Next resolves it ahead of the catch-all page, so treating
+  // every `/docs/*` path as MDX would report a shipped route as missing.
   if (existsSync(routeHandlerPath(clean))) return true;
+
+  if (clean.startsWith('/docs')) return docsContentPath(clean).some(existsSync);
 
   // …or a rendered page, either inside a route group or not. Route groups are
   // parentheses directories that do not appear in the URL, so `/contact` may

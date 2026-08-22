@@ -68,7 +68,10 @@ describe('ARD catalog shape (spec version 1.0)', () => {
 
   it('gives every entry the five required fields', () => {
     for (const e of AI_CATALOG.entries) {
-      expect(e.identifier, e.displayName).toMatch(/^urn:ai:cartwright\.app:/);
+      // ARD §4.2.1: `urn:air:<publisher>:<namespace>:<name>`, publisher an FQDN.
+      expect(e.identifier, e.displayName).toMatch(
+        /^urn:air:cartwright\.app:[a-z0-9-]+:[a-z0-9-]+$/,
+      );
       expect(e.displayName.length).toBeGreaterThan(0);
       expect(e.type, e.displayName).toMatch(/^[a-z]+\/[a-z0-9.+-]+$/);
       expect(e.url.startsWith(SITE_URL), e.displayName).toBe(true);
@@ -98,6 +101,49 @@ describe('API catalog shape (RFC 9727 / RFC 9264)', () => {
     expect(API_CATALOG_CONTENT_TYPE).toContain(
       'profile="https://www.rfc-editor.org/info/rfc9727"',
     );
+  });
+});
+
+describe('the trust manifest claims only what we can back', () => {
+  const manifests = [
+    AI_CATALOG.host.trustManifest,
+    ...AI_CATALOG.entries.map((e) => e.trustManifest),
+  ];
+
+  it('is present on the host and on every entry', () => {
+    expect(manifests.length).toBeGreaterThan(1);
+    for (const m of manifests) expect(m).toBeDefined();
+  });
+
+  it('binds identity to the same domain as the urn:air namespace', () => {
+    // ARD §5.1: the identity's trust domain MUST align with the domain in the
+    // discovery identifier. An HTTPS FQDN URI is one of the three forms the
+    // spec names, and it is the one a site with TLS can honestly assert.
+    for (const m of manifests) {
+      expect(m.identity).toBe('https://cartwright.app');
+      expect(m.identityType).toBe('https');
+    }
+    for (const e of AI_CATALOG.entries) {
+      expect(e.identifier.startsWith('urn:air:cartwright.app:')).toBe(true);
+    }
+  });
+
+  it('states provenance that anyone can go and verify', () => {
+    for (const m of manifests) {
+      const [p] = m.provenance;
+      expect(p.relation).toBe('publishedFrom');
+      expect(p.sourceId).toBe('https://github.com/Teloz1870/cartwright-app');
+    }
+  });
+
+  it('asserts NO attestation and NO signature', () => {
+    // The load-bearing negative. We hold no SOC2 or HIPAA audit and publish no
+    // detached JWS; either would be a forgery with a schema around it, and the
+    // whole value of the object is that a client can rely on it.
+    const blob = JSON.stringify(AI_CATALOG);
+    expect(blob).not.toContain('attestations');
+    expect(blob).not.toContain('signature');
+    expect(blob).not.toContain('SOC2');
   });
 });
 

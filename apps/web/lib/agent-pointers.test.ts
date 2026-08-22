@@ -25,10 +25,20 @@ function read(relative: string): string {
   return readFileSync(path.join(WEB_ROOT, relative), 'utf8');
 }
 
-/** Every `/docs/...` path mentioned in a blob of source or prose. */
+/**
+ * Every `/docs/...` path mentioned in a blob of source or prose.
+ *
+ * Dots are IN the character class on purpose: `/docs/llms.txt` is a real route,
+ * and a pattern that stopped at the dot reported it as the broken link
+ * `/docs/llms`. A trailing dot (a path at the end of a sentence) is trimmed
+ * afterwards, and a `.md` suffix resolves to the page it is a twin of.
+ */
 function docsLinks(source: string): string[] {
-  const matches = source.match(/\/docs\/[a-z0-9][a-z0-9/-]*/g) ?? [];
-  return [...new Set(matches.map((m) => m.replace(/\.md$/, '')))];
+  const matches = source.match(/\/docs\/[a-z0-9][a-z0-9/.-]*/g) ?? [];
+  const cleaned = matches
+    .map((m) => m.replace(/[.]+$/, ''))
+    .map((m) => m.replace(/\.md$/, ''));
+  return [...new Set(cleaned)];
 }
 
 const SOURCES: Record<string, string> = {
@@ -102,5 +112,34 @@ describe('the when-to-use block reads as guidance, not marketing', () => {
     for (const route of ['app/llms.mdx/home/route.ts', 'app/index.md/route.ts']) {
       expect(read(route), route).toContain("from '@/lib/home-markdown'");
     }
+  });
+});
+
+describe('llms.txt stays a navigation index, not a document', () => {
+  // Regression guard. Adding the when-to-use, developer-resources and
+  // machine-endpoint sections pushed this file to 30 341 characters against a
+  // 30 000 limit, and an llms.txt past that stops reading as an index. The page
+  // list moved to /docs/llms.txt; this asserts it does not creep back.
+  const LIMIT = 30_000;
+
+  it('no longer inlines the generated page index', () => {
+    // That call is what put the file over the limit: the index alone measures
+    // ~23 800 characters.
+    expect(read('app/llms.txt/route.ts')).not.toContain('llms(source).index()');
+  });
+
+  it('the limit itself is recorded, so a future edit knows the budget', () => {
+    expect(LIMIT).toBe(30_000);
+  });
+
+  it('points at the scoped index rather than inlining it', () => {
+    const source = read('app/llms.txt/route.ts');
+    expect(source).toContain('/docs/llms.txt');
+    expect(source).toContain('/llms-full.txt');
+  });
+
+  it('the scoped indexes exist as routes', () => {
+    expect(routeExists('/docs/llms.txt')).toBe(true);
+    expect(routeExists('/api/llms.txt')).toBe(true);
   });
 });

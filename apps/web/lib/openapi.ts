@@ -163,6 +163,21 @@ export const OPENAPI_DOCUMENT: OpenApiDocument = {
         },
       },
     },
+    '/api/llms.txt': {
+      get: {
+        operationId: 'getApiSurfaceIndex',
+        tags: ['Discovery'],
+        summary: 'The API surface as plain text',
+        description:
+          'A scoped llms.txt listing every endpoint in this document with its operationId and summary, for an agent that wants to know what it can call without parsing the full OpenAPI document. Generated from this same description, so the two cannot disagree.',
+        responses: {
+          '200': {
+            description: 'The scoped index.',
+            content: { 'text/plain': { schema: { type: 'string' } } },
+          },
+        },
+      },
+    },
     '/api/version': {
       get: {
         operationId: 'getPublishedVersion',
