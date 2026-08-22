@@ -8,6 +8,7 @@ import { baseOptions } from '@/lib/layout.shared';
 import { SubmitForm } from '@/components/designs/submit-form';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/designs/submit' },
   title: 'Submit a design',
   description:
     'Share your Cartwright design with the community. Paste your design.md, affirm the license, and submit — it opens a pre-filled GitHub issue for review. No account needed here.',

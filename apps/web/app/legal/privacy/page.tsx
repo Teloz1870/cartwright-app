@@ -4,6 +4,7 @@ import { contactEmail } from '@/lib/shared';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/legal/privacy' },
   title: 'Privacy policy',
   description:
     'Privacy policy for cartwright.app — what we collect and how we use it.',

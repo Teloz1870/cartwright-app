@@ -6,6 +6,7 @@ import { contactEmail, social } from '@/lib/shared';
 import { Mail, Code2, Star, ShieldCheck } from 'lucide-react';
 
 export const metadata = {
+  alternates: { canonical: '/contact' },
   title: 'Contact',
   description:
     'Talk to a human at Cartwright. Setup help, partnerships, press, security disclosures — anything that does not fit a GitHub issue.',

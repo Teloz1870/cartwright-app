@@ -32,7 +32,13 @@ export async function Hero() {
             </p>
 
             <h1 className="mt-7 font-display text-cw-fg [font-size:clamp(3rem,9vw,7.5rem)] [line-height:0.88] [letter-spacing:-0.04em]">
-              <span className="cw-rise">AI runs the shop.</span>
+              <span className="cw-rise">AI runs the shop.</span>{' '}
+              {/* The space is for text extraction, not layout. Both spans are
+                  `display: block`, so this whitespace text node collapses and
+                  renders as nothing — but without it the h1's text content is
+                  the run-together "AI runs the shop.You keep the keys.", which
+                  is exactly what a crawler, a screen reader and an AI
+                  summariser read. */}
               <span className="cw-rise cw-rise-2 text-cw-muted">You keep the keys.</span>
             </h1>
 

@@ -14,6 +14,7 @@ import { social } from '@/lib/shared';
  * If a control is removed from the engine, remove the row.
  */
 export const metadata: Metadata = {
+  alternates: { canonical: '/security' },
   title: 'Security',
   description:
     'How Cartwright constrains an AI operator: scoped tools, confirmation gates the model cannot forge, an audit log that can be reverted — and how to report a vulnerability.',

@@ -6,6 +6,7 @@ import { BrandLogo } from '@/components/landing/brand-logo';
 import { ArrowRight, GitBranch, Rocket, ShieldCheck } from 'lucide-react';
 
 export const metadata = {
+  alternates: { canonical: '/learn' },
   title: 'Learn — from idea to live shop',
   description:
     'Never used GitHub or deployed a website? This is the friendly, no-terminal path from a scaffolded Cartwright shop to a live store on GitHub + Vercel — the free stack you own.',

@@ -5,7 +5,7 @@ import './global.css';
 import { Instrument_Serif, Instrument_Sans, Martian_Mono } from 'next/font/google';
 import SearchDialog from '@/components/search';
 import JsonLd from '@/components/JsonLd';
-import { xHandle } from '@/lib/shared';
+import { contactEmail, xHandle } from '@/lib/shared';
 
 /**
  * Three voices — declaration, explanation, evidence.
@@ -73,14 +73,50 @@ export const metadata = {
 
 // Organization JSON-LD — sitewide. Lets Google + AI crawlers resolve the brand
 // entity (name, logo, repo, social) on every page without executing JS.
+//
+// `contactPoint` and `address` are what let an AI answer "who are these people,
+// how do I reach them" without inferring it, and what a verifier looks for when
+// deciding whether a business is real rather than a landing page. The address is
+// the registered address of Teloz — the company that publishes Cartwright — so
+// `parentOrganization` states that relationship instead of leaving the two
+// entities looking like one.
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': 'https://cartwright.app/#organization',
   name: 'Cartwright',
   url: 'https://cartwright.app',
   logo: 'https://cartwright.app/opengraph-image',
   description:
     'Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source Next.js engine: scaffold a website, webshop, or agent-marketplace with one command.',
+  email: contactEmail,
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: contactEmail,
+      url: 'https://cartwright.app/contact',
+      availableLanguage: ['en', 'da'],
+    },
+    {
+      '@type': 'ContactPoint',
+      contactType: 'technical support',
+      url: 'https://github.com/Teloz1870/cartwright-template/issues',
+      availableLanguage: ['en'],
+    },
+  ],
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Holmvej 15',
+    postalCode: '6780',
+    addressLocality: 'Skærbæk',
+    addressCountry: 'DK',
+  },
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'Teloz',
+    url: 'https://teloz.net',
+  },
   sameAs: [
     'https://github.com/Teloz1870/cartwright-template',
     'https://www.npmjs.com/package/create-cartwright',

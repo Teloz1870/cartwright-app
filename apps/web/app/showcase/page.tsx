@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { baseOptions } from '@/lib/layout.shared';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/showcase' },
   title: 'Showcase',
   description:
     'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from, now running every feature. Plus Northbound Coffee and the Teloz B2B site.',
