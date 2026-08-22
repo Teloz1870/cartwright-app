@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Section, SectionHeader } from '@/components/landing/section';
+import { Station } from '@/components/landing/station';
 
 /**
  * Landing teaser for /showcase — proof the engine runs real shops, not
@@ -33,13 +33,14 @@ const sites = [
 
 export function ShowcaseTeaser() {
   return (
-    <Section>
-      <SectionHeader
-        eyebrow="Built with Cartwright"
-        title="Real sites, running the engine today."
-        description="Every release ships only after these three live sites pass it — a max-features webshop, an open demo shop, and a website-mode company site."
-      />
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <Station
+      index="05"
+      label={<>Built with<br />Cartwright</>}
+      id="s05"
+      title="Three live sites gate every release."
+      lede="Nothing ships until all three pass it — a max-features webshop, an open demo shop, and the same engine running in website mode with no cart at all."
+    >
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {sites.map((site) => (
           <Link
             key={site.name}
@@ -85,6 +86,6 @@ export function ShowcaseTeaser() {
           </Link>
         ))}
       </div>
-    </Section>
+    </Station>
   );
 }

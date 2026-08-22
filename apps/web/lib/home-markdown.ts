@@ -1,5 +1,6 @@
 import { AGENT_RESOURCES, SITE_URL } from './agent-resources';
 import { WHEN_TO_USE } from './when-to-use';
+import { COLD_RUN, HOME_H1_TEXT, HOME_LEDE, INSTALL_COMMAND } from './home-copy';
 
 /**
  * The homepage as Markdown, and the frontmatter helper both Markdown surfaces use.
@@ -43,13 +44,13 @@ export function frontmatter(fields: {
   return `---\n${lines.join('\n')}\n---\n\n`;
 }
 
-const HOME_BODY = `# Cartwright — AI runs the shop. You keep the keys.
+const HOME_BODY = `# Cartwright — ${HOME_H1_TEXT}
 
-Cartwright is an AI-native commerce engine built for trusted operation: scoped
-tools, confirmation-gated writes, auditable actions, agent checkout — and a repo
-you can leave with.
+${HOME_LEDE}
 
-    npx create-cartwright@latest my-shop
+    ${INSTALL_COMMAND}
+
+${COLD_RUN.provenance}: ${COLD_RUN.running} · ${COLD_RUN.designed}.
 
 Open source, MIT licensed, Next.js. You own the code, the database and the AI
 layer; there are no platform fees and no per-transaction cut.
@@ -91,8 +92,7 @@ ${AGENT_RESOURCES.map((r) => `- \`${r.path}\` — ${r.description}`).join('\n')}
 /** The homepage Markdown document, frontmatter included. */
 export const HOME_MARKDOWN =
   frontmatter({
-    title: 'Cartwright — AI runs the shop. You keep the keys.',
-    description:
-      'An AI-native commerce engine built for trusted operation: scoped tools, confirmation-gated writes, auditable actions, agent checkout — and a repo you can leave with.',
+    title: `Cartwright — ${HOME_H1_TEXT}`,
+    description: HOME_LEDE,
     canonical: `${SITE_URL}/`,
   }) + HOME_BODY;

@@ -1,24 +1,18 @@
-import { Section } from '@/components/landing/section';
+import { Station } from '@/components/landing/station';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { ButtonLink } from '@/components/ui/button';
 
 export function InstallBand() {
   return (
-    <Section className="bg-cw-stone-900 dark:bg-cw-ink text-cw-stone-50 border-cw-stone-800">
+    <Station index="07" label="Start" id="s07" live title="One line. Real shop in five minutes.">
       {/* `min-w-0` on both columns: a grid item defaults to `min-width: auto`
           and refuses to shrink below its content's min-content width, so the
           mono install command — wider in Martian Mono than in the Geist Mono it
           replaced — set the column width and pushed the page 194px sideways at
           390px. The same trap as flexbox, one level up. */}
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] items-center">
+      <div className="mt-6 grid gap-10 lg:grid-cols-[1.1fr_1fr] items-center">
         <div className="min-w-0">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-terracotta">
-            install
-          </p>
-          <h2 className="mt-6 font-display [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em]">
-            One line. Real shop in five minutes.
-          </h2>
-          <p className="mt-4 text-base text-cw-stone-400 max-w-md">
+          <p className="mt-4 text-base text-cw-muted max-w-md">
             Works on macOS, Linux, and Windows (via WSL). Node 22+ required.
             No GitHub token, no marketplace install — just npm.
           </p>
@@ -58,6 +52,6 @@ export function InstallBand() {
           </div>
         </div>
       </div>
-    </Section>
+    </Station>
   );
 }

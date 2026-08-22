@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Station } from '@/components/landing/station';
 
 /**
  * Ownership as a primary capability, not a footnote.
@@ -19,17 +20,15 @@ const RECEIPT = [
 
 export function ExitFreedom() {
   return (
-    <section className="border-b border-cw-rule bg-cw-canvas">
-      <div className="cw-rail-track mx-auto max-w-7xl px-6 py-20 sm:py-24">
-        <div className="lg:grid lg:grid-cols-[1fr_38%] lg:gap-14">
-          <div className="pl-12 lg:pl-0 lg:pr-14">
-            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
-              Exit freedom
-            </p>
-            <h2 className="mt-6 max-w-[18ch] font-display [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em] text-cw-fg">
-              The first commit is the exit plan.
-            </h2>
-            <p className="mt-7 max-w-[62ch] text-base sm:text-lg leading-relaxed text-cw-muted">
+    <Station
+      index="04"
+      label="What you keep"
+      id="s04"
+      title="The first commit is the exit plan."
+    >
+      <div className="mt-6 lg:grid lg:grid-cols-[1fr_38%] lg:gap-14">
+          <div>
+            <p className="max-w-[62ch] text-base sm:text-lg leading-relaxed text-cw-muted">
               Cartwright scaffolds into a repository you own and then gets out of
               the way. There is no control plane holding your storefront up, and
               no per-order cut on the way through.
@@ -62,8 +61,7 @@ export function ExitFreedom() {
               </div>
             ))}
           </dl>
-        </div>
       </div>
-    </section>
+    </Station>
   );
 }

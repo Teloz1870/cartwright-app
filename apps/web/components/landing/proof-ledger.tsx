@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Station } from '@/components/landing/station';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 /**
@@ -59,16 +60,13 @@ const ROWS = [
 
 export function ProofLedger() {
   return (
-    <section className="border-b border-cw-rule bg-cw-canvas">
-      <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
-        <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-cw-muted">
-          What is actually shipping
-        </p>
-        <h2 className="mt-6 max-w-[20ch] font-display [font-size:clamp(2.25rem,5vw,4rem)] [line-height:0.95] [letter-spacing:-0.03em] text-cw-fg">
-          Every claim has a receipt.
-        </h2>
-
-        <div className="mt-12 overflow-x-auto">
+    <Station
+      index="03"
+      label="Receipts"
+      id="s03"
+      title="Every claim has a receipt."
+    >
+      <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[54rem] border-collapse text-left">
             <thead>
               <tr className="border-y border-cw-rule">
@@ -98,8 +96,7 @@ export function ProofLedger() {
               ))}
             </tbody>
           </table>
-        </div>
       </div>
-    </section>
+    </Station>
   );
 }

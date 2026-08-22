@@ -1,4 +1,4 @@
-import { Section, SectionHeader } from '@/components/landing/section';
+import { Station } from '@/components/landing/station';
 import { Accordion } from '@/components/ui/accordion';
 import { contactEmail } from '@/lib/shared';
 import JsonLd from '@/components/JsonLd';
@@ -118,16 +118,21 @@ const faqJsonLd = {
 
 export function Faq() {
   return (
-    <Section>
+    <Station
+      index="06"
+      label="Honest answers"
+      id="s06"
+      title="Honest answers, no marketing-speak."
+      lede="If your question is not here, open a GitHub issue. We will add it."
+    >
       <JsonLd data={faqJsonLd} />
-      <SectionHeader
-        eyebrow="FAQ"
-        title="Honest answers, no marketing-speak."
-        description="If your question is not here, open a GitHub issue. We will add it."
-      />
-      <div className="mt-10 max-w-3xl">
+      {/* All eight questions ship in the DOM. `faqJsonLd` asserts eight Q&A
+          pairs and Google requires every `acceptedAnswer` to be present on the
+          page, so the visible set and `mainEntity` must stay the same length —
+          the accordion collapses with a `0fr` grid row, it does not unmount. */}
+      <div className="mt-6 max-w-3xl">
         <Accordion items={items} />
       </div>
-    </Section>
+    </Station>
   );
 }
