@@ -17,37 +17,70 @@ import { SITE_URL } from './agent-resources';
  * route in this repo, and that neither mentions `/api/mcp`.
  */
 
+/**
+ * The trust manifest attached to every ARD entry.
+ *
+ * ARD §5.1 makes exactly one field required: `identity`, a cryptographic
+ * workload identifier — "a SPIFFE ID, DID, **or HTTPS FQDN URI**" — whose trust
+ * domain must align with the domain in the entry's `urn:air:` namespace. An
+ * HTTPS URI on the same domain is the honest form for a site that has TLS and
+ * no workload-identity infrastructure: the binding is real, and it is exactly as
+ * strong as it claims to be.
+ *
+ * `attestations` and `signature` are OPTIONAL and deliberately absent. We hold
+ * no SOC2 or HIPAA audit and publish no detached JWS, and a manifest asserting
+ * either would be a forgery with a schema around it — worse than no manifest,
+ * because the whole point of the object is that a client can rely on it.
+ *
+ * `provenance` states the one lineage fact that is verifiable by anyone: this
+ * site is published from a public repository they can go and read.
+ */
+const TRUST_MANIFEST = {
+  identity: 'https://cartwright.app',
+  identityType: 'https',
+  provenance: [
+    {
+      relation: 'publishedFrom',
+      sourceId: 'https://github.com/Teloz1870/cartwright-app',
+    },
+  ],
+} as const;
+
 /** Agentic Resource Discovery — agenticresourcediscovery.org, spec version 1.0. */
 export const AI_CATALOG = {
   specVersion: '1.0',
   host: {
     displayName: 'Cartwright',
     identifier: 'cartwright.app',
+    trustManifest: TRUST_MANIFEST,
   },
   entries: [
     {
-      identifier: 'urn:ai:cartwright.app:doc:llms-index',
+      identifier: 'urn:air:cartwright.app:doc:llms-index',
       displayName: 'Cartwright agent index',
       type: 'text/plain',
       url: `${SITE_URL}/llms.txt`,
       description:
         'Start here: what Cartwright is, an explicit "when to use this" section naming the jobs it fits and the jobs it does not, and an index of every documentation page.',
+      trustManifest: TRUST_MANIFEST,
     },
     {
-      identifier: 'urn:ai:cartwright.app:api:public',
+      identifier: 'urn:air:cartwright.app:api:public',
       displayName: 'Cartwright public HTTP API',
       type: 'application/vnd.oai.openapi+json',
       url: `${SITE_URL}/openapi.json`,
       description:
         'OpenAPI 3.1 description of the public endpoints served by cartwright.app: published CLI version, Plus access-key verification, design-gallery counts and the contact surfaces. No authentication required.',
+      trustManifest: TRUST_MANIFEST,
     },
     {
-      identifier: 'urn:ai:cartwright.app:doc:corpus',
+      identifier: 'urn:air:cartwright.app:doc:corpus',
       displayName: 'Cartwright documentation corpus',
       type: 'text/plain',
       url: `${SITE_URL}/llms-full.txt`,
       description:
         'Every documentation page concatenated as one plain-text document, for ingestion in a single fetch instead of a crawl.',
+      trustManifest: TRUST_MANIFEST,
     },
   ],
 } as const;

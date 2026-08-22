@@ -1,5 +1,3 @@
-import { source } from '@/lib/source';
-import { llms } from 'fumadocs-core/source';
 import { AGENT_RESOURCES, SITE_URL } from '@/lib/agent-resources';
 import { WHEN_TO_USE } from '@/lib/when-to-use';
 
@@ -22,6 +20,14 @@ export const revalidate = false;
 //     name found nothing; naming them here is the half we control.
 //   - Machine-readable endpoints — generated from AGENT_RESOURCES, the same
 //     array the 404 recovery body renders from, so the two lists cannot drift.
+//
+// The full documentation index used to be appended here. It is not any more:
+// with the three sections above, the file measured 30 341 characters against a
+// 30 000 limit, and an llms.txt over that limit stops reading as a navigation
+// index and starts reading as a document. The page list moved to
+// `/docs/llms.txt` — scoped, generated from the same `source` — and this file
+// links to it. That is the shape llms.txt is supposed to have anyway: an index
+// that points at deeper resources, not one that inlines them.
 const INTRO = `# Cartwright
 
 > Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source (MIT), AI-first Next.js engine: scaffold a corporate website, webshop, or agent-marketplace with one command — you own the code, the database, and the AI layer.
@@ -68,12 +74,22 @@ Content negotiation: the homepage and every page under \`/docs\` answer \`Accept
 - Graduating from Lovable (own the code, real commerce, no credit metering): ${SITE_URL}/compare/lovable
 - Glossary (AEO, GEO, MCP, ACP, A2A): ${SITE_URL}/glossary
 
-## Documentation index
+## Documentation
 
+The full page index lives at ${SITE_URL}/docs/llms.txt — fetch that when you need
+the reference rather than the pitch. Every page is also available as Markdown:
+append \`.md\` to its path, or send \`Accept: text/markdown\`.
+
+- Introduction: ${SITE_URL}/docs/introduction
+- Quick start: ${SITE_URL}/docs/getting-started/quick-start
+- Quick start for agents: ${SITE_URL}/docs/getting-started/ai-quick-start
+- Architecture: ${SITE_URL}/docs/architecture/overview
+- Every page (scoped index): ${SITE_URL}/docs/llms.txt
+- Whole corpus in one fetch: ${SITE_URL}/llms-full.txt
 `;
 
 export function GET() {
-  return new Response(INTRO + llms(source).index(), {
+  return new Response(INTRO, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       Vary: 'Accept',
