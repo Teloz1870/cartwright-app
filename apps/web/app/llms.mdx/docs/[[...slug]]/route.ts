@@ -1,6 +1,8 @@
 import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
 import { MARKDOWN_CONTENT_TYPE } from '@/lib/content-negotiation';
 import { recoveryMarkdown, SITE_URL } from '@/lib/agent-resources';
+import { frontmatter } from '@/lib/home-markdown';
+import { discoveryLinkHeader } from '@/lib/discovery-links';
 
 export const revalidate = false;
 
@@ -41,10 +43,21 @@ export async function GET(
     });
   }
 
-  return new Response(await getLLMText(page), {
+  // Frontmatter, so a caller reads title/description/canonical as metadata
+  // instead of scraping them back out of the prose. `page.url` is the HTML
+  // page this document is a representation OF — stating it keeps the Markdown
+  // twin and the HTML resolving to one entity.
+  const head = frontmatter({
+    title: page.data.title,
+    description: page.data.description,
+    canonical: `${SITE_URL}${page.url}`,
+  });
+
+  return new Response(head + (await getLLMText(page)), {
     headers: {
       'Content-Type': MARKDOWN_CONTENT_TYPE,
       Vary: 'Accept',
+      Link: `<${SITE_URL}${page.url}>; rel="canonical", ${discoveryLinkHeader(page.url)}`,
     },
   });
 }

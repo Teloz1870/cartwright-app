@@ -34,7 +34,9 @@ function docsLinks(source: string): string[] {
 const SOURCES: Record<string, string> = {
   'llms.txt': read('app/llms.txt/route.ts'),
   'when-to-use': WHEN_TO_USE,
-  'home markdown': read('app/llms.mdx/home/route.ts'),
+  // The document itself, not the route that serves it: the body moved into a
+  // shared module when /index.md started serving the same bytes.
+  'home markdown': read('lib/home-markdown.ts'),
   'openapi': JSON.stringify(OPENAPI_DOCUMENT),
   '404 page': read('app/not-found.tsx'),
 };
@@ -95,5 +97,10 @@ describe('the when-to-use block reads as guidance, not marketing', () => {
     // depending on which door it came through.
     expect(SOURCES['llms.txt']).toContain('WHEN_TO_USE');
     expect(SOURCES['home markdown']).toContain('WHEN_TO_USE');
+    // …and both routes that serve the homepage Markdown import that one module,
+    // rather than carrying a second copy of the prose.
+    for (const route of ['app/llms.mdx/home/route.ts', 'app/index.md/route.ts']) {
+      expect(read(route), route).toContain("from '@/lib/home-markdown'");
+    }
   });
 });

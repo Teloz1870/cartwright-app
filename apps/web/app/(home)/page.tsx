@@ -18,7 +18,13 @@ import { getEngineVersion } from '@/lib/engine';
  * on the page that actually is `/`.
  */
 export const metadata = {
-  alternates: { canonical: '/' },
+  alternates: {
+    canonical: '/',
+    // The Markdown twin, advertised where an HTML client will see it. The URL
+    // must genuinely serve Markdown — an alternate pointing at HTML is worse
+    // than none, because the caller follows it and stops trusting the rest.
+    types: { 'text/markdown': '/index.md' },
+  },
 };
 
 // softwareVersion is read from the engine CHANGELOG at build/ISR time (see
