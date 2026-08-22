@@ -1,5 +1,5 @@
 import { Card, CardBody, CardTitle } from '@/components/ui/card';
-import { Section, SectionHeader } from '@/components/landing/section';
+import { Station } from '@/components/landing/station';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 /**
@@ -51,13 +51,14 @@ const doors = [
 
 export function ThreeDoors() {
   return (
-    <Section>
-      <SectionHeader
-        eyebrow="Three doors, one house"
-        title="Everyone operates the same shop."
-        description="A human, a coding agent, and a shopping agent all work the same engine — one database, one audit log, one repo that belongs to you."
-      />
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <Station
+      index="02"
+      label="Operators"
+      id="s02"
+      title="Everyone operates the same shop."
+      lede="A human, a coding agent, and a shopping agent all work the same engine — one database, one audit log, one repo that belongs to you."
+    >
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {doors.map((d) => (
           <Card key={d.title} className="flex flex-col">
             <div className="flex items-center justify-between">
@@ -83,6 +84,6 @@ export function ThreeDoors() {
           Leave anytime — it&apos;s your repo.
         </span>
       </p>
-    </Section>
+    </Station>
   );
 }

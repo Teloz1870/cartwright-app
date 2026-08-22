@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { GET } from '../app/llms.mdx/home/route';
+import { HOME_H1_TEXT, INSTALL_COMMAND } from './home-copy';
 import { GET as NOT_FOUND_GET } from '../app/llms.mdx/not-found/route';
 import { MARKDOWN_CONTENT_TYPE } from './content-negotiation';
 
@@ -44,21 +45,27 @@ describe('GET /llms.mdx/home', () => {
   });
 
   it('states the same install command the React homepage renders', async () => {
-    const body = await GET().text();
-    const command = hero.match(/command="([^"]+)"/)?.[1];
-    expect(command, 'hero.tsx no longer renders a CopyCommand').toBeTruthy();
-    expect(body).toContain(command!);
+    // Both read `INSTALL_COMMAND`. This used to grep `command="…"` out of
+    // hero.tsx's source, which made every restyle of the hero a failing
+    // Markdown test — accurate about the trigger, wrong about the cause.
+    expect(await GET().text()).toContain(INSTALL_COMMAND);
+    expect(hero).toContain('INSTALL_COMMAND');
   });
 
   it('states the same headline claim the React homepage renders', async () => {
-    const body = await GET().text();
-    // The h1 is split across two spans for the rise animation; rejoin it the
-    // way a reader sees it.
-    const spans = [...hero.matchAll(/<span className="cw-rise[^"]*">([^<]+)<\/span>/g)].map(
-      (m) => m[1],
-    );
-    expect(spans.length, 'hero.tsx h1 structure changed').toBe(2);
-    expect(body).toContain(spans.join(' '));
+    // Same story: the old assertion matched `<span className="cw-rise…">` and
+    // required exactly two, so restyling the h1 failed with "hero.tsx h1
+    // structure changed" and invited someone to edit the Markdown instead.
+    expect(await GET().text()).toContain(HOME_H1_TEXT);
+    expect(hero).toContain('HOME_H1_LINES');
+  });
+
+  it('renders the h1 from the shared lines, joined by an explicit space', () => {
+    // The one thing the hero must still do in markup: JSX drops whitespace-only
+    // nodes between elements, so without `{' '}` the h1's text content is the
+    // run-together "AI runs the shop.You keep the keys."
+    expect(hero).toContain("{' '}");
+    expect(HOME_H1_TEXT).toBe('AI runs the shop. You keep the keys.');
   });
 
   it('carries the when-to-use guidance, not just a description', async () => {

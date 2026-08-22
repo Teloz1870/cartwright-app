@@ -25,6 +25,14 @@ export const ENGINE_FACTS = {
   adminToolCount: 37,
   /** Of those, the ones that stop and require a server-issued confirmation. */
   confirmGatedCount: 25,
+  /**
+   * Minutes a confirmation token stays valid. Authority: the engine's
+   * `lib/confirmation-tokens.ts` (`TTL_MS = 5 * 60 * 1000`).
+   *
+   * Here because the homepage's gate panel renders it, and the mockup it was
+   * built from said 15 — the exact class of drift this file exists to stop.
+   */
+  confirmTokenTtlMinutes: 5,
 
   /**
    * Services /integrations actually renders — 6 featured + 17 secondary.

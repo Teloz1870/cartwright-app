@@ -1,6 +1,6 @@
 import { Hero } from '@/components/landing/hero';
-import { FirstRun } from '@/components/landing/first-run';
-import { Interlock } from '@/components/interlock/interlock';
+import { Spine } from '@/components/landing/station';
+import { FourGates } from '@/components/landing/four-gates';
 import { ThreeDoors } from '@/components/landing/three-doors';
 import { ProofLedger } from '@/components/landing/proof-ledger';
 import { ExitFreedom } from '@/components/landing/exit-freedom';
@@ -70,30 +70,27 @@ export default async function HomePage() {
          
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Seven arguments, each changing the state of one operation — not
-          fourteen independent bands sharing a padding value.
+      {/* Eight stations on one spine, in the order the argument is made:
+          the claim · one write end to end · who may operate it · the receipts ·
+          what you keep · it is running in production · the honest answers ·
+          start.
 
-          1 the claim · 2 one action becoming trustworthy · 3 who may operate
-          it · 4 the receipts · 5 what you keep · 6 it is running in production
-          · 7 start.
-
-          What left the homepage, and why: the FABLE spotlight and the design
-          marketplace moved to /designs, because putting the flagship directly
-          after the hero changed the argument from trusted operation to visual
-          variety before trust was established. Voice folds into Three Doors as
-          one input modality rather than a standalone promo. LivePreview,
-          HowItWorks, CodePeek and CompareTeaser moved to the pages that own
-          them. AgentSurface's eleven cards and FeatureGrid's nine became one
-          ledger. */}
-      <Hero />
-      <FirstRun />
-      <Interlock />
-      <ThreeDoors />
-      <ProofLedger />
-      <ExitFreedom />
-      <ShowcaseTeaser />
-      <InstallBand />
-      <Faq />
+          Two components left the page rather than moving. FirstRun duplicated
+          the install band four screens above it. The Interlock was a 240vh
+          scroll-driven chapter whose whole argument — the pause before a write —
+          is now Station 01's second gate, legible at once and with no
+          `animation-timeline` fallback to maintain. Both still exist; neither is
+          mounted here. */}
+      <Spine>
+        <Hero />
+        <FourGates />
+        <ThreeDoors />
+        <ProofLedger />
+        <ExitFreedom />
+        <ShowcaseTeaser />
+        <Faq />
+        <InstallBand />
+      </Spine>
       <CtaFooter />
     </div>
   );
