@@ -641,6 +641,32 @@ describe("patchProxyContent", () => {
     // idempotent
     expect(patchProxyContent(out)).toBe(out);
   });
+
+  it("leaves a template that exempts /icon in the handler completely alone", () => {
+    // Engine #433 onward: /icon is handled by isAssetExempt() in the proxy
+    // BODY and deliberately left inside the matcher so merchant redirects still
+    // reach it. Patching the matcher here removed /icon from the middleware,
+    // took /iconography with it (the exclusion is a prefix), and red-gated the
+    // release scaffold gate on the engine's own locale-exempt-routes test.
+    const input = [
+      `import { isAssetExempt, isProtocolExempt } from '@/lib/locale-exempt';`,
+      `export function proxy(req) {`,
+      `  if (isAssetExempt(pathname)) { return NextResponse.next(); }`,
+      `}`,
+      `export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|opengraph-image|.*\\\\..*|hero).*)'] };`,
+    ].join("\n");
+
+    expect(patchProxyContent(input)).toBe(input);
+    expect(patchProxyContent(input)).not.toContain("favicon.ico|icon|");
+  });
+
+  it("still patches a legacy template, so --ref stable keeps its /icon fix", () => {
+    // v0.44.1 — what `--ref stable` resolves to at the time of writing — has no
+    // isAssetExempt branch. Dropping the patch outright would 404 /icon on every
+    // scaffold cut from it, with no test anywhere to catch it.
+    const legacy = `export const config = { matcher: ['/((?!_next/static|favicon.ico|.*\\\\..*).*)'] };`;
+    expect(patchProxyContent(legacy)).toContain("favicon.ico|icon|");
+  });
 });
 
 describe("migratePrismaConfig", () => {

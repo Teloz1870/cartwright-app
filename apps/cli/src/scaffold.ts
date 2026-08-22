@@ -641,6 +641,23 @@ export function patchCatalogFiltersContent(original: string): string {
  * served directly. Idempotent: skips if already excluded.
  */
 export function patchProxyContent(original: string): string {
+  // Engines from the locale-exempt release (#433) onward already exempt `/icon`
+  // — but in the HANDLER (`lib/locale-exempt.ts` → `isAssetExempt`), and they
+  // keep `/icon` INSIDE the matcher on purpose, so the merchant-redirect lookup
+  // still applies to it. On such a template this patch is not a second safety
+  // net, it is a regression: excluding `/icon` from the matcher takes it out of
+  // the middleware altogether, which
+  //   - drops that redirect coverage,
+  //   - swallows the sibling names, because the exclusion is a PREFIX: every
+  //     scaffold cut so far serves `/iconography` as a hard 404 instead of
+  //     redirecting it to `/da/iconography`,
+  //   - and fails the engine's own tests/unit/locale-exempt-routes.test.ts,
+  //     which asserts `/icon` is carried by the proxy branch and not by the
+  //     matcher. That assertion is what red-gated the release scaffold gate.
+  // Older refs (`--ref stable` is still v0.44.1, which predates #433) and the
+  // site profile's `proxy.static.ts` have no such branch and DO still need it,
+  // so this stays — it just steps aside when the template handles /icon itself.
+  if (/isAssetExempt\s*\(/.test(original)) return original;
   if (original.includes("favicon.ico|icon|")) return original;
   return original.replace(/favicon\.ico\|/, "favicon.ico|icon|");
 }
