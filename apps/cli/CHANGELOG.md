@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.7.7
+
+### Patch Changes
+
+- ad72d46: Bump pinned `modern-web-guidance` version to 0.0.184 (was 0.0.176).
+
 ## 2.7.6
 
 ### Patch Changes
