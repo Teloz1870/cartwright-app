@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rewritePath } from 'fumadocs-core/negotiation';
 import { docsContentRoute, docsRoute } from '@/lib/shared';
+import { discoveryLinkHeader } from '@/lib/discovery-links';
 import {
   HTML_TYPE,
   MARKDOWN_TYPE,
@@ -82,7 +83,9 @@ function isMachineRoute(pathname: string): boolean {
     pathname === '/openapi.json' ||
     pathname === '/static.json' ||
     pathname === '/sitemap.xml' ||
-    pathname === '/robots.txt'
+    pathname === '/robots.txt' ||
+    pathname === '/index.md' ||
+    pathname.startsWith('/.well-known/')
   );
 }
 
@@ -98,6 +101,21 @@ function hasMarkdownVariant(pathname: string): boolean {
 /** Every response leaving this proxy states that it varies on `Accept`. */
 function withVary(response: NextResponse): NextResponse {
   response.headers.set('Vary', mergeVaryAccept(response.headers.get('Vary')));
+  return response;
+}
+
+/**
+ * Advertise the machine-readable surface at the HTTP layer.
+ *
+ * The `<link rel="alternate">` in the document head only reaches a client that
+ * already parsed the HTML. A crawler doing `HEAD`, or one deciding what to fetch
+ * before it fetches anything, sees only headers — so the same facts ride here
+ * too (RFC 8288). Never overwrites a `Link` a route handler set for itself.
+ */
+function withDiscoveryLinks(response: NextResponse, pathname: string): NextResponse {
+  if (!response.headers.has('Link')) {
+    response.headers.set('Link', discoveryLinkHeader(pathname));
+  }
   return response;
 }
 
@@ -138,7 +156,7 @@ export default function proxy(request: NextRequest) {
     }
   }
 
-  return withVary(NextResponse.next());
+  return withDiscoveryLinks(withVary(NextResponse.next()), pathname);
 }
 
 /**

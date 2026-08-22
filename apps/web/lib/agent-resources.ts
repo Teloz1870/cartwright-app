@@ -60,6 +60,20 @@ export const AGENT_RESOURCES: AgentResource[] = [
     contentType: 'text/html',
   },
   {
+    path: '/.well-known/api-catalog',
+    title: 'API catalog (RFC 9727)',
+    description:
+      'The standard place to ask whether this origin has an API and where its description lives.',
+    contentType: 'application/linkset+json',
+  },
+  {
+    path: '/.well-known/ai-catalog.json',
+    title: 'Agentic resource catalog (ARD)',
+    description:
+      'Every agentic resource this origin serves, as an Agentic Resource Discovery catalogue.',
+    contentType: 'application/json',
+  },
+  {
     path: '/sitemap.xml',
     title: 'Sitemap',
     description: 'Every indexable URL on this origin.',

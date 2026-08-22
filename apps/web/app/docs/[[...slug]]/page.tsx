@@ -60,7 +60,11 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
     // ways to reach one page: a trailing slash, the `.md` suffix form, a search
     // result carrying tracking parameters. Naming the canonical URL collapses
     // those into a single entity for a crawler instead of several near-duplicates.
-    alternates: { canonical: page.url },
+    alternates: {
+      canonical: page.url,
+      // Every docs page already answers `<path>.md`; say so in the head.
+      types: { 'text/markdown': `${page.url}.md` },
+    },
     openGraph: {
       images: getPageImage(page).url,
     },
