@@ -8,6 +8,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('.', import.meta.url)),
+      // Mirrors tsconfig's `collections/*` → `./.source/*`. fumadocs-mdx
+      // generates that directory (the `postinstall` and `types:check` scripts
+      // both run it), and `lib/source.ts` imports through the alias — so
+      // without this any test that reaches the docs source fails to resolve
+      // rather than failing an assertion.
+      collections: fileURLToPath(new URL('./.source', import.meta.url)),
     },
   },
   test: {

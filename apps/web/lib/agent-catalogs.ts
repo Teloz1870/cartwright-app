@@ -11,10 +11,15 @@ import { SITE_URL } from './agent-resources';
  * endpoint which 404s is worse than no catalogue, because a caller wastes a
  * request AND stops trusting the rest of the file.
  *
- * Concretely, that is why neither one lists an MCP server. cartwright.app does
- * not host one; every scaffolded *shop* does, at `/api/mcp` on its own domain.
- * `lib/agent-catalogs.test.ts` asserts that every URL in both documents is a
- * route in this repo, and that neither mentions `/api/mcp`.
+ * This origin now DOES host an MCP server, so the ARD catalogue names it. It
+ * did not until the server shipped, and the test that used to assert the
+ * catalogues stayed silent about `/api/mcp` was right for exactly as long as
+ * that was true — advertising an endpoint before it answers is the failure this
+ * file exists to prevent. The rule is unchanged; the fact underneath it moved.
+ *
+ * Note the scale difference the entry states outright: this server is four
+ * read-only tools. Every scaffolded *shop* serves the full tool registry at
+ * `/api/mcp` on its own domain.
  */
 
 /**
@@ -71,6 +76,15 @@ export const AI_CATALOG = {
       url: `${SITE_URL}/openapi.json`,
       description:
         'OpenAPI 3.1 description of the public endpoints served by cartwright.app: published CLI version, Plus access-key verification, design-gallery counts and the contact surfaces. No authentication required.',
+      trustManifest: TRUST_MANIFEST,
+    },
+    {
+      identifier: 'urn:air:cartwright.app:server:mcp',
+      displayName: 'Cartwright documentation MCP server',
+      type: 'application/mcp-server+json',
+      url: `${SITE_URL}/api/mcp`,
+      description:
+        'Streamable HTTP MCP server, unauthenticated and read-only: documentation search, the design-pack catalogue, the published CLI version, and a fit/no-fit summary of the engine.',
       trustManifest: TRUST_MANIFEST,
     },
     {
