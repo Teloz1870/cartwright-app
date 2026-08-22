@@ -3,6 +3,7 @@ import { CopyCommand } from '@/components/landing/copy-command';
 import { CheckIcon } from 'lucide-react';
 
 export const metadata = {
+  alternates: { canonical: '/thank-you' },
   title: 'Thank you',
   description: 'Your payment was received — here is what happens next.',
 };

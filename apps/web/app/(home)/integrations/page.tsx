@@ -4,6 +4,7 @@ import { CopyCommand } from '@/components/landing/copy-command';
 import { BrandLogo, type BrandSlug } from '@/components/landing/brand-logo';
 
 export const metadata = {
+  alternates: { canonical: '/integrations' },
   title: 'Integrations',
   description:
     'Every integration that ships pre-wired with Cartwright — Stripe, Vercel, Resend, Turso, Anthropic, Sentry, and a dozen more. Real logos. Real SDK calls. Production-ready.',

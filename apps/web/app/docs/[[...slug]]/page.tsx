@@ -56,6 +56,11 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   return {
     title: page.data.title,
     description: page.data.description,
+    // Docs are the most-crawled part of this site and the part with the most
+    // ways to reach one page: a trailing slash, the `.md` suffix form, a search
+    // result carrying tracking parameters. Naming the canonical URL collapses
+    // those into a single entity for a crawler instead of several near-duplicates.
+    alternates: { canonical: page.url },
     openGraph: {
       images: getPageImage(page).url,
     },

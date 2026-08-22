@@ -10,6 +10,17 @@ import { Faq } from '@/components/landing/faq';
 import { CtaFooter } from '@/components/landing/cta-footer';
 import { getEngineVersion } from '@/lib/engine';
 
+/**
+ * The root layout supplies this page's title, description, Open Graph and
+ * Twitter metadata. The one signal it cannot supply is the canonical URL:
+ * `alternates.canonical` on a LAYOUT stamps the same URL onto every page that
+ * inherits from it, which is worse than having none at all. So it belongs here,
+ * on the page that actually is `/`.
+ */
+export const metadata = {
+  alternates: { canonical: '/' },
+};
+
 // softwareVersion is read from the engine CHANGELOG at build/ISR time (see
 // lib/engine.ts), so the structured-data version AI crawlers read is never stale.
 function buildJsonLd(engineVersion: string) {

@@ -10,6 +10,7 @@ import { baseOptions } from '@/lib/layout.shared';
 import { PROMPT_LIBRARY, PROMPT_CATEGORIES } from '@/lib/design-prompts';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/designs/prompts' },
   title: 'Design prompt library',
   description:
     'Copy-paste prompts that build premium Cartwright designs with an AI coding agent (Claude Code, Codex, …). Dark-luxe, editorial, brutalist, modern SaaS, 3D heroes, e-commerce.',

@@ -4,6 +4,7 @@ import { contactEmail } from '@/lib/shared';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/legal/terms' },
   title: 'Terms of use',
   description: 'Terms of use for cartwright.app.',
 };
