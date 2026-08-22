@@ -43,18 +43,31 @@ describe('every catalogued URL resolves', () => {
   });
 
   it('catches a URL that does not resolve (the check is not vacuous)', () => {
-    expect(routeExists('/.well-known/mcp.json')).toBe(false);
+    // Deliberately a path nothing plans to add. This assertion used to use
+    // `/.well-known/mcp.json`, which stopped being a counter-example the moment
+    // the MCP server shipped — a vacuity guard has to name something that will
+    // stay absent.
+    expect(routeExists('/.well-known/there-is-no-such-document.json')).toBe(false);
     expect(routeExists('/openapi.json')).toBe(true);
   });
 });
 
-describe('neither catalogue advertises what we do not host', () => {
-  it('says nothing about an MCP server on this origin', () => {
-    // Every scaffolded SHOP serves /api/mcp on its own domain. This site does
-    // not, and a catalogue entry claiming otherwise would send agents at a 404.
-    const blob = JSON.stringify([AI_CATALOG, API_CATALOG]);
-    expect(blob).not.toContain('/api/mcp');
-    expect(blob).not.toContain('mcp-server+json');
+describe('the MCP entry is claimed only because the server exists', () => {
+  // This block used to assert the OPPOSITE — that neither catalogue mentioned
+  // `/api/mcp` — and it was correct for exactly as long as this origin hosted
+  // no server. The rule never changed: advertise nothing that does not answer.
+  // What changed is the fact underneath it, so the assertion follows the route.
+  it('names the MCP server, and the route backing it is in this repo', () => {
+    expect(JSON.stringify(AI_CATALOG)).toContain('/api/mcp');
+    expect(routeExists('/api/mcp')).toBe(true);
+    expect(routeExists('/.well-known/mcp.json')).toBe(true);
+  });
+
+  it('describes it as read-only, so no caller expects to write through it', () => {
+    const entry = AI_CATALOG.entries.find((e) => e.url.endsWith('/api/mcp'));
+    expect(entry).toBeDefined();
+    expect(entry!.description).toMatch(/read-only/i);
+    expect(entry!.type).toBe('application/mcp-server+json');
   });
 });
 

@@ -74,6 +74,13 @@ export const AGENT_RESOURCES: AgentResource[] = [
     contentType: 'application/json',
   },
   {
+    path: '/.well-known/mcp.json',
+    title: 'MCP server manifest',
+    description:
+      'Where this origin speaks Model Context Protocol, and which read-only tools it registers.',
+    contentType: 'application/json',
+  },
+  {
     path: '/sitemap.xml',
     title: 'Sitemap',
     description: 'Every indexable URL on this origin.',

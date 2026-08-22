@@ -97,6 +97,7 @@ export const OPENAPI_DOCUMENT: OpenApiDocument = {
   servers: [{ url: SITE_URL, description: 'Production' }],
   tags: [
     { name: 'Discovery', description: 'Machine-readable documents describing this site.' },
+    { name: 'MCP', description: 'The Model Context Protocol server this site hosts.' },
     { name: 'Releases', description: 'What version of the CLI is currently published.' },
     { name: 'Plus', description: 'Verification for Cartwright Plus access keys.' },
     { name: 'Designs', description: 'Public design-gallery popularity counts.' },
@@ -158,6 +159,54 @@ export const OPENAPI_DOCUMENT: OpenApiDocument = {
         responses: {
           '200': {
             description: 'The search index.',
+            content: { 'application/json': { schema: { type: 'object' } } },
+          },
+        },
+      },
+    },
+    '/api/mcp': {
+      post: {
+        operationId: 'callMcpServer',
+        tags: ['MCP'],
+        summary: 'Model Context Protocol endpoint (Streamable HTTP)',
+        description:
+          'JSON-RPC over Streamable HTTP. Stateless — no `initialize` handshake is required and no session is tracked. Four read-only tools: `describe_engine`, `search_docs`, `list_designs`, `get_cli_version`. No authentication: every tool answers from data already published over plain HTTP. The manifest at /.well-known/mcp.json lists them. Note this is the documentation SITE\u2019s server; a shop built with Cartwright serves a much larger, authenticated one on its own domain.',
+        requestBody: {
+          required: true,
+          description: 'A JSON-RPC 2.0 request, per the MCP specification.',
+          content: { 'application/json': { schema: { type: 'object' } } },
+        },
+        responses: {
+          '200': {
+            description: 'A JSON-RPC response.',
+            content: { 'application/json': { schema: { type: 'object' } } },
+          },
+        },
+      },
+      get: {
+        operationId: 'describeMcpServer',
+        tags: ['MCP'],
+        summary: 'Human-readable summary of the MCP server',
+        description:
+          'Returns a plain JSON description of the endpoint and its tools, so a person following the link from a catalogue does not meet a bare protocol error. A client that announces `application/json` or `text/event-stream` is routed to the transport instead.',
+        responses: {
+          '200': {
+            description: 'The summary.',
+            content: { 'application/json': { schema: { type: 'object' } } },
+          },
+        },
+      },
+    },
+    '/.well-known/mcp.json': {
+      get: {
+        operationId: 'getMcpManifest',
+        tags: ['MCP'],
+        summary: 'MCP server manifest',
+        description:
+          'Where a client looks to learn whether this origin speaks MCP, on what transport, and which tools it registers. Generated from the same registry the server itself loads, so it cannot advertise a tool that is not there.',
+        responses: {
+          '200': {
+            description: 'The manifest.',
             content: { 'application/json': { schema: { type: 'object' } } },
           },
         },
