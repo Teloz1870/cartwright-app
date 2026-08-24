@@ -24,13 +24,18 @@ describe("bump-workflow version anchors", () => {
     expect(engine).toMatch(/^export const FALLBACK_ENGINE_VERSION = '\d+\.\d+\.\d+';$/m);
   });
 
-  it("the workflow seds BOTH constants", () => {
+  it("the workflow seds BOTH constants AND commits both files", () => {
     const workflow = readFileSync(
       join(repoRoot, ".github/workflows/bump-template-ref.yml"),
       "utf8",
     );
     expect(workflow).toContain('export const DEFAULT_REF = "');
     expect(workflow).toContain("export const FALLBACK_ENGINE_VERSION = '");
+    // The v0.48.0 bump proved the sed alone is not enough: create-pull-request
+    // only commits what add-paths names, so the patched file must be listed.
+    const addPaths = workflow.match(/add-paths: \|\n([\s\S]*?)\n\n/)?.[1] ?? "";
+    expect(addPaths).toContain("apps/cli/src/refs.ts");
+    expect(addPaths).toContain("apps/web/lib/engine.ts");
   });
 
   it("the two constants agree right now", () => {
