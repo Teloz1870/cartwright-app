@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/showcase' },
   title: 'Showcase',
   description:
-    'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from, now running every feature. Plus Northbound Coffee and the Teloz B2B site.',
+    'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from. Plus KompositZaun.de, a complete German fence-system shop with a live-stock BOM configurator, Northbound Coffee and the Teloz B2B site.',
 };
 
 const buildFacts = [
@@ -46,6 +46,34 @@ const buildFacts = [
     term: 'AI Brew Guide',
     description:
       'An in-shop chat assistant that recommends beans and pour-over recipes.',
+  },
+];
+
+const kompositzaunFacts = [
+  {
+    term: '482 products as one system',
+    description:
+      'Steel posts, rails and WPC boards in four finishes — sold per running metre as complete kits, not loose parts.',
+  },
+  {
+    term: 'A BOM configurator, not a picker',
+    description:
+      'Enter your fence run; it computes the exact bill of materials — posts, rails, boards, screws — against the supplier\u2019s live stock, per part.',
+  },
+  {
+    term: 'Three-class freight logic',
+    description:
+      'Parcel, pallet or forwarding agent (RABEN) — decided by what is actually in the cart, not a flat guess.',
+  },
+  {
+    term: 'German market, done properly',
+    description:
+      'de locale end to end, 19% MwSt, EU consent banner, Widerrufsrecht — the compliance surface a real shop needs on day one.',
+  },
+  {
+    term: 'Its own design pack',
+    description:
+      'A bespoke system-narrative homepage — numbered chapters, four-colour WPC gallery — on the engine\u2019s standard DesignPack contract.',
   },
 ];
 
@@ -189,8 +217,8 @@ export default function ShowcasePage() {
                 Solbrillen.dk
               </strong>{' '}
               is the eyewear store Cartwright was extracted from — now running
-              every feature. Alongside it: a specialty-coffee shop and a B2B
-              agency site. Browse them, check out in Stripe test mode, talk to
+              every feature. Alongside it: a complete German fence-system shop,
+              a specialty-coffee shop and a B2B agency site. Browse them, check out in Stripe test mode, talk to
               their AI assistants.
             </p>
           </div>
@@ -323,6 +351,63 @@ export default function ShowcasePage() {
               </div>
               <div className="mt-3">
                 <Badge tone="oker">test mode — nightly reset</Badge>
+              </div>
+            </Card>
+          </div>
+        </Section>
+
+        <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
+          <SectionHeader
+            eyebrow="The complete build \u00b7 newest"
+            title="KompositZaun.de"
+            description="The most complete Cartwright shop yet \u2014 a German WPC fence-system store built by Cartwright\u2019s own maker. Not a catalogue of products but a catalogue of SYSTEMS: fences sold per running metre, computed as exact bills of materials against a live supplier inventory. Currently pre-launch: browse everything, check out in Stripe test mode."
+          />
+          <div className="mt-12 grid gap-12 lg:grid-cols-[1.25fr_1fr] items-start">
+            <div>
+              <BrowserFrame
+                src="/showcase/kompositzaun-hero.jpg"
+                width={1200}
+                height={630}
+                sizes="(min-width: 1024px) 56vw, 100vw"
+                alt="KompositZaun.de WPC fence-system storefront in a browser frame"
+                domain="kompositzaun.de"
+                glow
+              />
+            </div>
+
+            <Card>
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+                The build
+              </p>
+              <ul className="mt-4 space-y-3.5">
+                {kompositzaunFacts.map((fact) => (
+                  <li key={fact.term} className="flex gap-3">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                    <div>
+                      <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                        {fact.term}
+                      </p>
+                      <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                        {fact.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 border-t border-cw-stone-200 dark:border-cw-stone-800" />
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <ButtonLink
+                  href="https://kompositzaun-de-teloz-s-projects.vercel.app/de"
+                  size="lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Visit the shop
+                  <ExternalArrow />
+                </ButtonLink>
+              </div>
+              <div className="mt-3">
+                <Badge tone="oker">pre-launch \u00b7 Stripe test mode</Badge>
               </div>
             </Card>
           </div>
