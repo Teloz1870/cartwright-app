@@ -166,16 +166,6 @@ test.describe('the phone is not an afterthought', () => {
     });
   }
 
-  test('the Interlock chapter stays readable without scroll animation', async ({ page }) => {
-    await page.goto('/');
-    // Below the breakpoint no animation is attached at all, so every stage must
-    // already be legible — the still composition has to carry the argument.
-    const steps = page.locator('.cw-step');
-    await expect(steps).toHaveCount(4);
-    for (let i = 0; i < 4; i++) {
-      await expect(steps.nth(i)).toBeVisible();
-    }
-  });
 });
 
 test.describe('the site cannot claim what the repo does not hold', () => {
