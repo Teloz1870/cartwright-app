@@ -1,0 +1,41 @@
+---
+title: Agent readiness
+description: Every Cartwright store answers AI agents with a typed, rate-limited, honestly-discoverable public surface — and you can measure yours with a public scorecard.
+---
+
+AI agents — ChatGPT, Claude, Perplexity, shopping copilots, IDE agents — increasingly *are* the customer's first visit. A Cartwright store doesn't just tolerate them; it gives them a real, documented, safe interface. And because claims are cheap, you can point an independent scanner at your store and get a public scorecard.
+
+<Callout type="info">
+Ships in engine **v0.46.0**. Everything below is profile-aware and flag-gated — a capability your store doesn't run is a genuine 404, never a false advertisement.
+</Callout>
+
+## Measure it — the public scorecard
+
+[Is Agentic](https://is-agentic.com) is an independent scanner that probes a domain the way an agent would — discovery files, machine-readable errors, typed APIs, trust pages, crawler access — and publishes a scorecard anyone can check.
+
+- **See a live example**: the [scorecard for our demo store](https://is-agentic.com/scan/demo.cartwright.app/da), Northbound Coffee Roasters, running the current engine unmodified.
+- **Test your own store**: run `npx is-agentic your-domain.com` or scan it at [is-agentic.com](https://is-agentic.com) — no signup, the result is a shareable public page.
+
+We deliberately don't print a score here: scores move with the scanner's rubric and with every release. The live scorecard is the honest reference — always current, always public, never our word for it.
+
+## What an agent gets from your store
+
+**A narrow, anonymous read surface.** Product search and lookup, category and published-page listing — five read-only tools, rate-limited per IP, over both REST and MCP. Drafts, customers, orders, admin and every write stay behind scoped Bearer keys, and an invalid key never falls back to anonymous access.
+
+**A typed contract.** OpenAPI 3.1 generated from the same tool registry the store actually runs, one typed operation per tool, with per-operation security — plus an SSR [developers page](https://demo.cartwright.app/da/developers) documenting auth, scopes, rate limits and versioning.
+
+**Machine-readable errors.** Agent-facing errors are RFC 9457 Problem Details (`application/problem+json`) with a `code` and a `resolution`, and rate-limited responses carry `RateLimit-*` and `Retry-After` headers — an agent that hits a wall is told which wall and what to do about it.
+
+**Trust anchors and markdown.** Locale-aware about/privacy/contact pages, correct canonical/hreflang/social metadata resolved from the runtime URL, and `Accept: text/markdown` content negotiation so text-first agents skip the HTML — including real markdown 404s with recovery links.
+
+**Honest discovery.** `llms.txt`, an RFC 9727 API catalog, MCP server cards and a digest-verified public Agent Skill describe only interfaces that exist in your store's profile. White-label gating means a fork never claims to be Cartwright.
+
+## The honesty rule
+
+The engine never enables a capability just to score points. OAuth, A2A cards, payment protocols and other advertised surfaces appear in discovery only when they are switched on *and working* in your store. A scanner probing a disabled surface gets a genuine 404 — which costs points and earns trust. We think that trade is the whole game.
+
+## Related
+
+- [Agent Optimization](/docs/features/agent-optimization) — the design system as an agent-readable, agent-buildable surface
+- [A2A endpoints](/docs/features/a2a-endpoints) — agent-to-agent commerce
+- [MCP tools](/docs/api/mcp-tools) — the tool surface behind the contract

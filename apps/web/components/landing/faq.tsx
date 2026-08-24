@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Station } from '@/components/landing/station';
 import { Accordion } from '@/components/ui/accordion';
 import { contactEmail, social } from '@/lib/shared';
@@ -82,6 +83,36 @@ const items = [
     ),
     plain:
       'The admin ships with agentic helpers — drafting product copy, generating SEO metadata, answering customer questions in the storefront chat, and exposing an /api/mcp endpoint so external agents can act on the shop with tools you define. The Plus roadmap adds MCP integrations for Klaviyo, HubSpot, Slack, Zapier, Airtable, Notion and more.',
+  },
+  {
+    q: 'Can AI agents actually use a Cartwright store?',
+    a: (
+      <>
+        Yes — every store ships a typed, rate-limited public surface for agents
+        (OpenAPI, MCP, markdown negotiation, honest discovery), and you can
+        verify it yourself: scan any store at{' '}
+        <a href="https://is-agentic.com" className="text-cw-terracotta">
+          is-agentic.com
+        </a>{' '}
+        and compare with the{' '}
+        <a
+          href="https://is-agentic.com/scan/demo.cartwright.app/da"
+          className="text-cw-terracotta"
+        >
+          live scorecard for our demo store
+        </a>
+        . How it works:{' '}
+        <Link
+          href="/docs/features/agent-readiness"
+          className="text-cw-terracotta"
+        >
+          agent readiness
+        </Link>
+        .
+      </>
+    ),
+    plain:
+      'Yes — every store ships a typed, rate-limited public surface for agents (OpenAPI, MCP, markdown negotiation, honest discovery). Verify it yourself: scan any store at is-agentic.com and compare with the live scorecard for our demo store (is-agentic.com/scan/demo.cartwright.app/da). See the agent-readiness docs for how it works.',
   },
   {
     q: 'Where do I get support?',
