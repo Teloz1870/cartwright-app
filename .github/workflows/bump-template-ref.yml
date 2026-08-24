@@ -136,6 +136,7 @@ jobs:
           delete-branch: true
           add-paths: |
             apps/cli/src/refs.ts
+            apps/web/lib/engine.ts
             .changeset/template-bump-*.md
 
       - name: Summary
