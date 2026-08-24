@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.7.8
+
+### Patch Changes
+
+- 4e76188: Make scaffold migrations idempotent against newer engine refs, remove false dependency warnings from the light profile, and document all three profiles and their support routes.
+- a4bc7d8: Bump default template ref to v0.46.0 (was v0.45.0).
+
 ## 2.7.7
 
 ### Patch Changes
