@@ -3,33 +3,41 @@ title: CLI Options
 description: All flags accepted by create-cartwright.
 ---
 
-`create-cartwright` is the public scaffolder for Cartwright shops. In the current `v0.1.0-beta` source it parses these flags:
+`create-cartwright` is the public scaffolder for Cartwright sites and shops. Use `@latest` for the current stable CLI; its default template channel remains pinned to a tagged engine release.
 
 | Flag | Default | What it does |
 | --- | --- | --- |
-| `--yes`, `-y` | `false` | Skip prompts and use defaults. Defaults are project name from the positional argument, Turso database choice, AI enabled, detected package manager, install enabled, and git enabled. |
-| `--template <name>` | `generic` | Industry template selector. The current public CLI accepts the value, but the template source ships only `generic` in v0.1. |
+| `--yes`, `-y` | `false` | Skip prompts and use defaults. It never creates a remote GitHub repository unless `--github` is also explicit. |
+| `--profile <light\|full\|site>` | `light` | `light` keeps the core site/shop engine; `full` keeps every module; `site` removes database, admin, auth and commerce. |
+| `--with <module>` | `contact-form` for `site` | Optional site-profile module. Pass `--with none` for the bare site; this flag is rejected for light/full. |
+| `--template <name>` | `website-corporate` (light/site), `generic` (full) | Starting mode and seed preset: `generic`, `website-corporate`, `coffee`, `sunglasses`, or `agent-marketplace`. Agent marketplace requires full; site requires website-corporate. |
+| `--db <turso\|postgres\|sqlite>` | `turso` | Database guidance for light/full. Site has no database and ignores this flag. |
+| `--ai`, `--no-ai` | prompt (`true` with `--yes`) | Include or omit the AI integration hint. Site has no AI runtime surface. |
+| `--ref <stable\|next\|tag\|branch>` | `stable` | Engine channel. Stable resolves to the tagged release baked into that CLI build; next resolves to the public development branch. |
+| `--look <url>` | — | Apply a public Cartwright look after scaffold. Database-backed palette/scene parts require a prepared light/full database. |
 | `--pm <pnpm\|npm\|yarn\|bun>` | auto-detect | Override the package manager used for dependency install. |
+| `--start`, `--no-start` | prompt in interactive runs | Start the dev server after a successful scaffold. `--yes` and non-TTY runs never start it implicitly. |
+| `--github` | `false` | Explicitly create and push a private GitHub repository using `gh`. |
+| `--no-github` | `false` | Do not offer GitHub publishing. |
 | `--no-install` | `false` | Skip dependency installation after the template is downloaded. |
 | `--no-git` | `false` | Skip `git init`, `git add -A`, and the initial commit. |
+| `--skip-skills` | `false` | Skip optional agent-skill setup. |
+| `--no-telemetry` | `false` | Skip the anonymous scaffold event; `CARTWRIGHT_TELEMETRY=0` and `DO_NOT_TRACK=1` are also honored. |
+| `--help`, `-h` | — | Print the CLI's authoritative current help. |
 
 ```bash
-npx create-cartwright@latest my-shop --yes --template=generic --pm=pnpm
+npx create-cartwright@latest my-shop --yes --profile light --template coffee --db=sqlite --pm=pnpm
 ```
 
-The interactive prompts ask for database choice and whether AI commerce features should be included. With `--yes`, the CLI selects Turso and enables AI.
-
-<Callout type="warn">
-The current public CLI source does not parse `--db`, `--ai`, or `--no-ai` yet. If you pass them today, Node's `parseArgs` rejects the unknown options. Use the prompts or `--yes` defaults until those flags land.
-</Callout>
-
-The documented non-interactive target contract is:
+For a database-free website:
 
 ```bash
-npx create-cartwright@latest my-shop --yes --db=turso --ai
+npx create-cartwright@latest my-site --yes --profile site
+# bare core without the default contact form:
+npx create-cartwright@latest my-site --yes --profile site --with none
 ```
 
-Use that form only after checking the installed CLI version supports it:
+The CLI help is the source of truth for the installed version:
 
 ```bash
 npx create-cartwright@latest --help

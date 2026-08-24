@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { hasVideo } from '@/lib/design-media';
 import { useMotionAllowed } from '@/lib/use-motion-allowed';
 
@@ -71,12 +72,13 @@ export function DesignHeroImage({
 
   return (
     <div className={frame}>
-      <img
+      <Image
         src={`/designs/${slug}.jpg`}
         width={1280}
         height={800}
         alt={`${name} — homepage preview`}
-        decoding="async"
+        sizes="(max-width: 1024px) calc(100vw - 3rem), 960px"
+        preload
         onError={() => setFailed(true)}
         className={media}
       />

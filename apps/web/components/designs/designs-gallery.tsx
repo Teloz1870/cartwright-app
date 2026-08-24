@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { DesignEntry } from "@/lib/designs-data";
@@ -78,12 +79,11 @@ function Preview({ slug, palette }: { slug: string; palette: DesignEntry["palett
   }
 
   return (
-    <img
+    <Image
       src={`/designs/${slug}.jpg`}
       width={1280}
       height={800}
-      loading="lazy"
-      decoding="async"
+      sizes="(max-width: 768px) calc(100vw - 3rem), (max-width: 1280px) 50vw, 33vw"
       alt=""
       onError={() => setFailed(true)}
       className={imgClass}

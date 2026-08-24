@@ -24,7 +24,7 @@ const altContacts = [
     icon: Code2,
     label: 'GitHub Issues',
     detail: 'Bug reports + docs corrections',
-    href: social.github,
+    href: social.issues,
     external: true,
   },
   {
