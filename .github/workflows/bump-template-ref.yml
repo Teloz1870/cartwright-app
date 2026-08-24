@@ -15,7 +15,9 @@ name: Bump template ref
 #   1. Resolves the latest tag on cartwright-template via `gh release view`.
 #      Falls back to scanning git tags if no GitHub Release exists.
 #   2. Compares to the DEFAULT_REF currently in apps/cli/src/refs.ts.
-#   3. If different: sed the new value into refs.ts, add a Changeset, and
+#   3. If different: sed the new value into refs.ts AND the web fallback
+#      (apps/web/lib/engine.ts FALLBACK_ENGINE_VERSION — the design-system
+#      contract e2e pins the two together), add a Changeset, and
 #      open a PR via peter-evans/create-pull-request. Merging that PR triggers
 #      the existing Release workflow which publishes a new patch to npm.
 #   4. If equal: log "no bump needed" and exit cleanly.
@@ -87,6 +89,16 @@ jobs:
             apps/cli/src/refs.ts
           # Sanity check the substitution actually happened:
           grep -q "export const DEFAULT_REF = \"$LATEST\";" apps/cli/src/refs.ts
+
+          # The web app's FALLBACK_ENGINE_VERSION must track DEFAULT_REF — the
+          # design-system contract e2e (apps/web/e2e/design-system.spec.ts)
+          # pins them together, so a bump PR that only touches refs.ts fails
+          # its own CI (it did, for v0.46.0 and v0.47.0). The constant has NO
+          # v-prefix; the tag has one — strip it for the replacement.
+          BARE="${LATEST#v}"
+          sed -i -E "s|^export const FALLBACK_ENGINE_VERSION = '[^']+';|export const FALLBACK_ENGINE_VERSION = '${BARE}';|" \
+            apps/web/lib/engine.ts
+          grep -q "export const FALLBACK_ENGINE_VERSION = '${BARE}';" apps/web/lib/engine.ts
 
       - name: Add changeset
         if: steps.resolve.outputs.skip != 'true'

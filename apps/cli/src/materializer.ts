@@ -348,6 +348,7 @@ export const SITE_PRUNED_SCRIPTS: readonly string[] = [
   "scripts/migrate-turso.ts",
   "scripts/p2k-scan.ts",
   "scripts/pgvector-setup.ts",
+  "scripts/publish-agent-card.ts",
   "scripts/restore-turso.ts",
   "scripts/build-registry-source.ts",
 ];
