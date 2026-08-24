@@ -4,7 +4,7 @@
  *
  * Usage:
  *   npx create-cartwright@latest [name] [--yes]
- *                                [--profile=light|full]
+ *                                [--profile=light|full|site] [--with=<module>]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
  *                                [--template=website-corporate|coffee|sunglasses|agent-marketplace|generic]
@@ -18,10 +18,12 @@
  *   its skin (brand.config.ts designSlug) + palette/scene/chrome (seeded DB).
  *   Fail-soft: a broken look warns and never breaks the scaffold.
  *
- * Profiles (one engine, two scaffold profiles — see ./profile-light.ts):
+ * Profiles (one engine, three scaffold profiles):
  *   --profile light (default) → website-mode default, curated design set,
  *                               FULL-ONLY modules (A2A, UCP, WebMCP, hoptify) pruned
  *   --profile full            → everything — identical to the pre-profile scaffold
+ *   --profile site            → plain website, no database/admin/auth/commerce;
+ *                               contact form included unless `--with none`
  *
  * Subcommands:
  *   npx create-cartwright design install <slug> [--ref <tag>] [--force]
@@ -1000,7 +1002,7 @@ async function run(): Promise<void> {
     pc.bold("Next steps:"),
     `  cd ${finalSlug}`,
     `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
-    pc.dim("  Content lives in brand.config.ts; design via designs/ or /the shipped packs."),
+    pc.dim("  Content lives in brand.config.ts; design via designs/ and the shipped packs."),
     "",
     pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
     pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),

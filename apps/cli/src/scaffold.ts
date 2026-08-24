@@ -517,12 +517,10 @@ export function patchFooterGithubUrlGate(original: string): PatchResult {
   };
 }
 
-/** The exact Teloz agency paragraph shipped in messages/<locale>.json
- * (SaaSHome.cartwrightDesc2) — the last sentence pitches Teloz's consulting
- * model by name, and next-intl serializes the whole namespace into the
- * customer's rendered homepage payload. Anchored per locale on the EXACT
- * template strings; the replacement keeps the product-true ownership message
- * and drops the agency pitch. */
+/** Legacy Teloz agency paragraphs previously shipped in
+ * messages/<locale>.json (SaaSHome.cartwrightDesc2). The replacement keeps the
+ * product-true ownership message and drops the agency pitch. Newer engine refs
+ * already ship neutral Cartwright copy, so this migration must be idempotent. */
 const CARTWRIGHT_DESC2_REPLACEMENTS: ReadonlyArray<{ from: string; to: string }> = [
   {
     from:
@@ -540,11 +538,11 @@ const CARTWRIGHT_DESC2_REPLACEMENTS: ReadonlyArray<{ from: string; to: string }>
 
 /**
  * De-Teloz the SaaSHome marketing copy in a messages/<locale>.json source.
- * Called once per locale file; a file is OK as long as ONE locale anchor
- * matches (en.json never contains the Danish string and vice versa). Only
- * when no anchor matches at all does it warn — that means the template's
- * copy drifted (or the namespace was removed upstream, in which case there
- * is nothing left to leak).
+ * Called once per locale file; a file is OK as long as one locale anchor
+ * matches (en.json never contains the Danish string and vice versa). If the
+ * field is already Teloz-free, leave it untouched and silent. Warn only when
+ * an unknown Teloz-bearing variant remains, because that could leak agency
+ * identity into a new customer's rendered payload.
  */
 export function patchMessagesCartwrightCopy(original: string): PatchResult {
   let out = original;
@@ -556,10 +554,21 @@ export function patchMessagesCartwrightCopy(original: string): PatchResult {
     }
   }
   if (!matched) {
+    try {
+      const parsed = JSON.parse(original) as {
+        SaaSHome?: { cartwrightDesc2?: unknown };
+      };
+      const current = parsed.SaaSHome?.cartwrightDesc2;
+      if (typeof current !== "string" || !/\bTeloz\b/i.test(current)) {
+        return { src: original, warnings: [] };
+      }
+    } catch {
+      // A malformed messages file is uncertain rather than demonstrably safe.
+    }
     return {
       src: original,
       warnings: [
-        "SaaSHome.cartwrightDesc2 Teloz paragraph — anchor not found, skipped (copy changed or removed upstream).",
+        "SaaSHome.cartwrightDesc2 still mentions Teloz but no known migration anchor matched — verify the scaffold copy.",
       ],
     };
   }
@@ -851,7 +860,7 @@ export function databaseNote(db: Database): string {
     case "sqlite":
       return [
         pc.bold("SQLite (local only):"),
-        "  No extra setup. dev.db is created by `prisma db push`.",
+        "  No extra setup. `db:setup` creates dev.db and seeds the local admin/demo data.",
       ].join("\n");
   }
 }
@@ -864,8 +873,9 @@ export function databaseNote(db: Database): string {
  * wheel is a deliberate Cartwright-branded placeholder until the customer sets
  * their own mark (logo contract: outline paths, themeable stroke).
  *
- * Fail-soft: anchored on the exact Teloz markPaths string + the exact favicon
- * colors; drift → warning, never clobber a customer-customized mark.
+ * Fail-soft: anchored on the exact Teloz markPaths string + legacy favicon
+ * colors. An already-migrated mark or any complete custom favicon palette is
+ * a silent no-op; missing properties or an unknown mark still warn.
  */
 export function patchLogoForScaffold(original: string): PatchResult {
   const warnings: string[] = [];
@@ -879,7 +889,7 @@ export function patchLogoForScaffold(original: string): PatchResult {
   ].join(",\n");
   if (src.includes(telozMark)) {
     src = src.replace(telozMark, wheelMark);
-  } else {
+  } else if (!src.includes(`"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"`)) {
     warnings.push(
       "logo markPaths anchor not found — skipped (template logo drifted; verify the scaffold does not ship the Teloz mark).",
     );
@@ -889,8 +899,11 @@ export function patchLogoForScaffold(original: string): PatchResult {
   const faviconFg = /faviconFg:\s*"#f4efe6"/;
   if (faviconBg.test(src) && faviconFg.test(src)) {
     src = src.replace(faviconBg, `faviconBg: "#18181b"`).replace(faviconFg, `faviconFg: "#fafafa"`);
-  } else {
-    warnings.push("favicon color anchors not found — skipped (kept template favicon colors).");
+  } else if (
+    !/faviconBg:\s*["'][^"']+["']/.test(src) ||
+    !/faviconFg:\s*["'][^"']+["']/.test(src)
+  ) {
+    warnings.push("favicon color properties not found — verify the scaffold icon palette.");
   }
 
   return { src, warnings };

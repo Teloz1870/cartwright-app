@@ -3,10 +3,12 @@
  *
  * "A real site — design, database, backend — live in minutes."
  *
- * One engine, two scaffold profiles (never a separate light codebase):
+ * One engine, three scaffold profiles (never separate product codebases):
  *   light (default) → website-mode scaffold with the curated design set and
  *                     the FULL-ONLY modules pruned (see LIGHT_EXCLUDED_PATHS).
  *   full            → everything, byte-identical to the pre-profile scaffold.
+ *   site            → manifest-materialized website with no database, admin,
+ *                     auth or commerce (implemented in materializer.ts).
  *
  * What light prunes is driven by the engine's core audit
  * (cartwright-private/internal-docs/core-audit.md, owner-approved on engine
@@ -456,6 +458,7 @@ export function applyCodemod(
 export function applyLightProfile(targetDir: string): LightProfileReport {
   const warnings: string[] = [];
   const removedPaths: string[] = [];
+  let actuallyPrunedDependencies: string[] = [];
 
   for (const rel of LIGHT_EXCLUDED_PATHS) {
     const abs = join(targetDir, rel);
@@ -500,6 +503,11 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
 
   applyCodemod(targetDir, "package.json", (src) => {
     const r = prunePackageJsonForLight(src);
+    const configured = [
+      ...LIGHT_PRUNED_DEPENDENCIES,
+      ...LIGHT_PRUNED_DEV_DEPENDENCIES,
+    ];
+    actuallyPrunedDependencies = configured.filter((name) => !r.missing.includes(name));
     // Already-absent deps are the EXPECTED state once the engine removes them
     // at the source (e.g. @ai-sdk/openai + ts-node, engine PR #212) — staying
     // silent keeps the scaffold output clean for AIs that treat warnings as
@@ -511,9 +519,12 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
   // install skips the resolution step. Only relevant for pnpm users (other
   // package managers get no lockfile from tryInstall anyway); if the template
   // ever stops shipping a pnpm lockfile this is a skipped no-op.
-  if (existsSync(join(targetDir, "pnpm-lock.yaml"))) {
+  if (
+    actuallyPrunedDependencies.length > 0 &&
+    existsSync(join(targetDir, "pnpm-lock.yaml"))
+  ) {
     applyCodemod(targetDir, "pnpm-lock.yaml", (src) => {
-      const r = pruneLockfileForLight(src);
+      const r = pruneLockfileForLight(src, actuallyPrunedDependencies);
       for (const name of r.missing) {
         warnings.push(`pnpm-lock.yaml — no importer entry for "${name}".`);
       }
@@ -556,6 +567,6 @@ export function lightProfileNote(): string {
     "Excluded from this scaffold: A2A/agent-marketplace, UCP identity-linking, WebMCP,",
     `hoptify, and ${LIGHT_PRUNED_DESIGNS.length} non-curated design packs (kept: ${LIGHT_KEPT_DESIGNS.filter((s) => s !== "studio" && s !== "aurora-shop").join(", ")}).`,
     "Add a design back any time:  npx cartwright design install <slug>",
-    "Want everything? Re-scaffold with:  npx create-cartwright --profile full",
+    "Want everything? Re-scaffold with:  npx create-cartwright@latest --profile full",
   ].join("\n");
 }

@@ -61,16 +61,19 @@ Honest long-form comparisons: [cartwright.app/compare](https://cartwright.app/co
 
 ## Profiles
 
-One engine, two scaffold profiles — never a separate light codebase.
+One engine, three profile-aware outputs — choose only the surface your project needs.
 
 | Profile | What you get |
 |---|---|
 | `light` (**default**) | The lean "real site in minutes" kit: website-mode default, a curated design set (`aurora-site`, `fable`, `stillwater`, `halo`, `jungle`, `meridian`, `brutalist`, `apex` + the structural `aurora-shop`/`studio`), full mode-gated webshop, builder/mixer, genome, MCP/JSON-LD discovery, admin, database. Heavy full-only modules are pruned from the scaffold: A2A/agent-marketplace, UCP identity-linking, WebMCP, hoptify, and the 16 non-curated design packs. |
 | `full` | Everything the engine ships — identical to the pre-profile scaffold. Required for `--template agent-marketplace`. |
+| `site` | A plain, deployable website with no database, admin, auth, catalogue, cart or checkout. The contact form is included by default; pass `--with none` for the bare site. Discovery advertises only interfaces that remain. |
 
 ```bash
 npx create-cartwright@latest my-site                  # light (default)
 npx create-cartwright@latest my-shop --profile full   # everything
+npx create-cartwright@latest my-site --profile site   # no database or commerce
+npx create-cartwright@latest my-site --profile site --with none
 ```
 
 Pruned designs can be added back to a light project at any time:
@@ -95,7 +98,7 @@ Seven checks, no fixes, no mutations, no network:
 | Cartwright project | `brand.config.ts` + `prisma/schema.prisma` + `package.json` exist |
 | Release marker | `.cartwright/release.json` — engine version, channel, release date |
 | Engine up to date | marker version vs the latest template tag **this CLI build** knows (offline compare — an older CLI knows an older latest) |
-| Scaffold profile | `.cartwright/profile.json` — light/full + kept designs (absent = full or pre-profile, fine) |
+| Scaffold profile | `.cartwright/profile.json` — light/full/site + retained modules or designs (absent = full or pre-profile, fine) |
 | Node version | major ≥ 22 (the engine's `engines` requirement) |
 | Environment | `.env.local` exists; `AUTH_SECRET` set (not a placeholder); `DATABASE_URL` or the `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` pair |
 | Database baseline | runs the project's own `db:verify` gate (exit 2 = migration-baseline drift); skipped on older engines |
@@ -107,8 +110,9 @@ Exit code is `1` only when a check **fails** (warnings — e.g. an older engine 
 | Flag | Default | What it does |
 |---|---|---|
 | `--yes`, `-y` | false | Skip prompts, use defaults |
-| `--profile=<light\|full>` | `light` | Scaffold profile (see above) |
-| `--template=<slug>` | `website-corporate` (light) / `generic` (full) | Mode + seed-data preset |
+| `--profile=<light\|full\|site>` | `light` | Scaffold profile (see above) |
+| `--with=<module>` | `contact-form` for `site` | Optional site-profile module; use `--with none` for bare core |
+| `--template=<slug>` | `website-corporate` (light/site) / `generic` (full) | Mode + seed-data preset; site supports `website-corporate` only |
 | `--look=<url>` | — | Scaffold wearing a shared look (see below) |
 | `--help`, `-h` | — | Print usage |
 | `--db=<turso\|postgres\|sqlite>` | (prompt) | Database choice — drives next-steps guidance |
@@ -169,7 +173,7 @@ nothing is written to a database.
 | Channel | What it is | When to use |
 |---|---|---|
 | `stable` (default) | Latest tagged release of the template. Battle-tested across the maintainer's canary deploys before tagging. | Production scaffolds. New shops. |
-| `next` | Bleeding-edge: the `next` branch on `cartwright-template`, updated on every push to the template's source repo. | Trying features that haven't been cut into a stable release yet. Not for production. |
+| `next` | Bleeding-edge: the public `next` branch on `cartwright-template`. | Trying features that haven't been cut into a stable release yet. Not for production. |
 | `vX.Y.Z` (any tag) | Pin to a specific historical release. | Reproducing a known-good scaffold. |
 | `<branch>` (any branch) | Pin to a branch on the mirror. | Power-user experimentation. |
 
@@ -178,7 +182,7 @@ Examples:
 ```bash
 npx create-cartwright@latest my-shop                    # → stable (default)
 npx create-cartwright@latest my-shop --ref next         # → bleeding-edge
-npx create-cartwright@latest my-shop --ref v0.1.0-beta  # → pin to a tag
+npx create-cartwright@latest my-shop --ref v0.45.0      # → pin to a tag
 ```
 
 The spinner shows the channel and the resolved ref so you can see exactly what you pulled — useful when reporting issues.
@@ -186,7 +190,7 @@ The spinner shows the channel and the resolved ref so you can see exactly what y
 ## What it does
 
 1. Three prompts (project name, database, AI features) — skippable with `--yes`.
-2. Downloads a sanitised snapshot from [`cartwright-template`](https://github.com/Teloz1870/cartwright-template) at the resolved `--ref` channel (default `stable`).
+2. Downloads a sanitised snapshot from [`cartwright-template`](https://github.com/Teloz1870/cartwright-template) at the resolved `--ref` channel (default `stable`) and applies the selected profile.
 3. Generates a random 32-byte `AUTH_SECRET` and writes `.env.local`.
 4. Patches `brand.config.ts` — `storeName` (Title Case of project name) + `storeSlug` (kebab-case).
 5. Optional: `git init` + initial commit.
@@ -203,9 +207,14 @@ The spinner shows the channel and the resolved ref so you can see exactly what y
 
 The CLI scaffolds from [`cartwright-template`](https://github.com/Teloz1870/cartwright-template) — the public, MIT-licensed engine template repo, auto-synced on every release tag. No GitHub token required, and the code you scaffold is yours to fork, modify, and ship.
 
-## Source
+## Source and support
 
 This CLI is part of the [`cartwright-app`](https://github.com/Teloz1870/cartwright-app) monorepo. PRs welcome.
+
+- Engine or scaffold bug: [`cartwright-template` Issues](https://github.com/Teloz1870/cartwright-template/issues)
+- CLI or documentation bug: [`cartwright-app` Issues](https://github.com/Teloz1870/cartwright-app/issues)
+- Setup and support routes: [FAQ](https://cartwright.app/docs/faq) and [contact](https://cartwright.app/contact)
+- Security report: follow [`SECURITY.md`](https://github.com/Teloz1870/cartwright-app/security/policy), never a public issue
 
 ## License
 

@@ -441,6 +441,29 @@ describe("patchBrandConfigForLightContent", () => {
 });
 
 describe("applyLightProfile (filesystem)", () => {
+  it("only edits lockfile entries for dependencies removed from this template", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cw-light-current-deps-"));
+    try {
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({
+          dependencies: { next: "16.2.6" },
+          devDependencies: { "fast-check": "^4.8.0" },
+        }),
+      );
+      writeFileSync(
+        join(dir, "pnpm-lock.yaml"),
+        `lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      next:\n        specifier: 16.2.6\n        version: 16.2.6\n    devDependencies:\n      fast-check:\n        specifier: ^4.8.0\n        version: 4.8.0\n\npackages:\n`,
+      );
+
+      const report = applyLightProfile(dir);
+      expect(report.warnings.filter((warning) => warning.includes("pnpm-lock.yaml"))).toEqual([]);
+      expect(readFileSync(join(dir, "pnpm-lock.yaml"), "utf8")).not.toContain("specifier: ^4.8.0");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("removes excluded paths, applies codemods, writes the profile marker", () => {
     const dir = mkdtempSync(join(tmpdir(), "cw-light-"));
     try {
