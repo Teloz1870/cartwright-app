@@ -14,7 +14,9 @@ export const gitConfig = {
 // site + CLI), where docs/CLI issues live.
 export const social = {
   github: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
+  issues: `https://github.com/${gitConfig.user}/${gitConfig.repo}/issues`,
   templateRepo: 'https://github.com/Teloz1870/cartwright-template',
+  templateIssues: 'https://github.com/Teloz1870/cartwright-template/issues',
   npm: 'https://www.npmjs.com/package/create-cartwright',
   x: 'https://x.com/CartwrightApp',
 };

@@ -404,12 +404,19 @@ describe("patchMessagesCartwrightCopy", () => {
     expect(() => JSON.parse(src)).not.toThrow();
   });
 
-  it("warns + skips when the paragraph drifted or was removed upstream", () => {
+  it("is silent when upstream copy is already neutral", () => {
     const drifted = `{\n  "SaaSHome": {\n    "cartwrightDesc2": "Own your stack."\n  }\n}\n`;
     const { src, warnings } = patchMessagesCartwrightCopy(drifted);
     expect(src).toBe(drifted);
+    expect(warnings).toEqual([]);
+  });
+
+  it("warns when an unknown Teloz-bearing variant remains", () => {
+    const drifted = `{\n  "SaaSHome": {\n    "cartwrightDesc2": "Your stack, operated by Teloz."\n  }\n}\n`;
+    const { src, warnings } = patchMessagesCartwrightCopy(drifted);
+    expect(src).toBe(drifted);
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("skipped");
+    expect(warnings[0]).toContain("still mentions Teloz");
   });
 });
 
@@ -728,10 +735,17 @@ describe("patchLogoForScaffold", () => {
     expect(warnings.some((w) => w.includes("logo markPaths anchor not found"))).toBe(true);
   });
 
-  it("warns on favicon drift independently", () => {
+  it("preserves a complete custom favicon palette without warning", () => {
     const drifted = template.replace("#1e3f5a", "#ff0000");
-    const { warnings } = patchLogoForScaffold(drifted);
-    expect(warnings.some((w) => w.includes("favicon color anchors"))).toBe(true);
+    const { src, warnings } = patchLogoForScaffold(drifted);
+    expect(src).toContain('faviconBg: "#ff0000"');
+    expect(warnings).toEqual([]);
+  });
+
+  it("warns when a favicon color property is missing", () => {
+    const incomplete = template.replace(/\s*faviconFg: "#f4efe6",/, "");
+    const { warnings } = patchLogoForScaffold(incomplete);
+    expect(warnings.some((w) => w.includes("favicon color properties"))).toBe(true);
   });
 });
 

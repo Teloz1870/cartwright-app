@@ -5,30 +5,29 @@ description: Honest near-term plans, what is exploring vs committed, and what ca
 
 The [changelog](/changelog) shows the current engine release and the full shipped history — it reads the version from the engine, so it cannot go stale the way a number typed here would. The roadmap below is intentionally short and forward-looking. Items are marked `[committed]`, `[exploring]`, or `[planned]` so readers can tell production-ready from "we are not even sure we want this."
 
-## Now shipping
+## Shipping now
 
 A sample of what's already shipped and live in production — the [changelog](/changelog) has the complete list.
 
-- **Engine v0.11.0 — GEO / AI-discoverability** `[shipped]` — SoftwareApplication JSON-LD + a "Built with Cartwright" block in every shop's `llms.txt` so AI assistants can recommend the engine, plus agent rules for Gemini + Windsurf. Gated by the default-on, deletable `cartwrightBadge` flag. See the engine [CHANGELOG](/changelog).
-- **Engine v0.10.0 — 12 feature tracks** `[shipped]` — Resolvable Genome, SEO/GEO Lab (Pro, beta — GEO share-of-voice live; GSC + experiment automation in development), Firecrawl scraper + design-import, **Hoptify** (parody Shopify design + "import from Shopify" onboarding + Gemini logo generator), GDPR/DSAR, backup, blog, indexing controls, tax/VAT, shipping/fulfillment, and WooCommerce parity. All opt-in, default-off. See the engine [CHANGELOG](/changelog).
+- **Public MIT engine template** `[shipped]` — [`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template) is the source downloaded by the CLI. Tagged releases are the stable channel; public branches are visible for review and testing.
+- **`create-cartwright` on npm** `[shipped]` — `npx create-cartwright@latest` scaffolds `light`, `full`, and database-free `site` profiles. The CLI installs dependencies and prepares the selected profile rather than leaving a half-configured starter.
+- **AI discovery and commerce surfaces** `[shipped]` — MCP, structured data, `llms.txt`, agent rules and scoped API tooling live in the engine. Exact surfaces depend on the selected profile and enabled feature flags.
 - **[`/integrations`](/integrations) top-nav page** — 15 core integrations, plus the 10 planned Plus-tier MCP integrations, with real brand logos and category eyebrows.
 - **[`/onboarding`](/onboarding) Plus-tier preview** — type a URL, watch the five-agent migration demo, join the waitlist.
 - **[`/pricing`](/pricing) with four tiers** — Self-hosted $0, Plus $49/mo, Cloud $199/mo, Enterprise. Resend-backed waitlist for Plus and Cloud.
 - **A2A Headless Merchant foundation** — three new endpoints (`/api/agent-card`, `/api/negotiate`, `/api/escrow/verify`), Anchor-Resume negotiation engine, Guardian middleware, P2K scanner. See [changelog v3.1.0](/changelog).
 - **[`/docs/in-the-box`](/docs/in-the-box)** — developer-tone integration walkthrough sitting next to the marketing-tone `/integrations`.
 
-## Now (v0.1 → v0.2)
+## Current adoption work
 
-- **`create-cartwright` CLI on npm** `[committed]` — dogfooded on three platforms (Mac, Linux, WSL), then `npm publish create-cartwright@0.1.0-beta`.
 - **More industry templates** `[committed]` — at minimum `eyewear` and one home-goods category beyond `generic`.
-- **`demo.cartwright.app` live** `[committed]` — a real cartwright shop running in Stripe test mode with nightly DB reset. The single most important conversion asset for visitors.
+- **`demo.cartwright.app` live** `[shipped; continuously upgraded]` — the Northbound coffee shop is the public engine demo. Engine upgrades must preserve its coffee identity and storefront design.
 - **Auto-rendered `/changelog`** `[in progress]` — the homepage `SoftwareApplication` version and the `/changelog` "current engine release" line now read the engine version straight from `CHANGELOG.md` at build/ISR time (`lib/engine.ts`), so the version never goes stale. Full per-entry auto-render from `CHANGELOG.md` is the remaining step.
-- **`next-intl` adoption** `[committed]` — `messages/en.json` + `messages/da.json` everywhere customer-facing strings exist today.
-- **Video walkthrough** `[exploring]` — 5-minute screencast from `npx create-cartwright` to first sale. Probably v0.2; depends on bandwidth.
+- **Onboarding polish** `[in progress]` — clean scaffold output, profile-accurate docs, actionable GitHub issue routes, and reproducible smoke tests for every profile.
+- **Video walkthrough** `[exploring]` — 5-minute screencast from `npx create-cartwright` to first sale; timing depends on bandwidth.
 
-## Soon (v0.2 → v1.0)
+## Next
 
-- **Cartwright template public** `[planned, gated]` — flip when the [contributing milestones](/docs/contributing) are met. Expected 4-8 weeks after Solbrillen.dk launch.
 - **Shopify migration** `[self-hosted on-ramp shipped in v0.10.0; full agentic flow planned for Plus]` — the **Hoptify** "import from Shopify" onboarding shipped in v0.10.0: with a Firecrawl key it brings your palette (design-import) + products (scraper) across, fail-soft to a demo otherwise. The full five-step agentic migration (customers, deploy) is planned for Plus and still in development; interactive preview at [/onboarding](/onboarding).
 - **API auto-reference** `[planned]` — generate the `/docs/api/mcp-tools` page from `lib/tools/registry.ts` at build time instead of hand-maintaining it. The current page will drift; this fixes it.
 - **`cartwright upgrade` tooling** `[planned, Plus]` — automated fork upgrades. Today upgrades are manual: the `.cartwright/release.json` marker + changelog security advisories tell you what to pull, but nothing auto-updates your fork (see the engine's [versioning policy](https://github.com/Teloz1870/cartwright-template/blob/main/docs/versioning-policy.md)).
@@ -54,7 +53,8 @@ These are explicit non-goals. Listing them here so contributors do not propose t
 
 ## How to influence this
 
-- Open an issue on `Teloz1870/cartwright-app` with the use case — "is this even a real demand?" conversations are welcome there.
+- For engine and scaffold requests, [open an issue on `cartwright-template`](https://github.com/Teloz1870/cartwright-template/issues).
+- For docs and CLI requests, [open an issue on `cartwright-app`](https://github.com/Teloz1870/cartwright-app/issues).
 - Ship it yourself in a fork and document the integration; recipes get pulled upstream when they generalise.
 
 <Cards>

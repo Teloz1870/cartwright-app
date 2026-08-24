@@ -8,7 +8,7 @@ Your storefront is public, but `/admin` is locked. This page gets you signed in 
 ## TL;DR
 
 ```bash
-npx create-cartwright my-shop   # scaffolds, installs, AND creates + seeds the DB
+npx create-cartwright@latest my-shop   # scaffolds, installs, AND prepares the DB
 cd my-shop && pnpm dev
 # open http://localhost:3000/account/login → Password tab
 # email = brand.emails.admin (from brand.config.ts); password = cat .admin-credentials
@@ -20,14 +20,14 @@ The seed prints your admin **email + password** once and saves them to **`.admin
 
 <Steps>
 
-1. **Create the database + admin.** `npx create-cartwright` does this for you — it runs `prisma db push` + `prisma db seed` after installing dependencies. If you cloned manually or used `--no-install`, run them yourself from the project root:
+1. **Create the database + admin.** `npx create-cartwright@latest` does this for you through the engine's guarded setup command. If you cloned manually or used `--no-install`, use the same path from the project root:
 
 ```bash
-npx prisma db push      # create the SQLite schema (dev.db)
-npx prisma db seed      # create the admin user + demo data
+pnpm install
+pnpm db:setup           # apply schema + seed admin/demo; prints the login
 ```
 
-`db seed` prints a banner with your admin email + password and writes them to `.admin-credentials`.
+`db:setup` prints a banner with your admin email + password and writes them to `.admin-credentials`.
 
 2. **Start the app.**
 
@@ -52,14 +52,14 @@ A brand-new shop has no email provider, so the login page shows **only the Passw
 Set `ADMIN_PASSWORD` before seeding and the admin is created with exactly that (and no forced change):
 
 ```bash
-ADMIN_PASSWORD="your-strong-password" npx prisma db seed
+ADMIN_PASSWORD="your-strong-password" pnpm db:setup
 ```
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| "Wrong email or password" / no admin exists | You haven't seeded. Run `npx prisma db seed`. |
+| "Wrong email or password" / no admin exists | The setup did not finish. Run `pnpm db:setup`. |
 | Can't find the password | `cat .admin-credentials` in the project root (it's gitignored), or re-read the `db seed` output. |
 | Login page shows only Password (no magic-link) | Expected until `RESEND_API_KEY` is set. |
 | Magic-link "sent" but no email arrives | In dev there's no real send — open the newest file in `.mail-previews/`. |

@@ -1,6 +1,6 @@
 import { Station } from '@/components/landing/station';
 import { Accordion } from '@/components/ui/accordion';
-import { contactEmail } from '@/lib/shared';
+import { contactEmail, social } from '@/lib/shared';
 import JsonLd from '@/components/JsonLd';
 
 // Each item carries a `plain` string mirroring the visible answer, so the
@@ -87,7 +87,14 @@ const items = [
     q: 'Where do I get support?',
     a: (
       <>
-        GitHub Issues — on cartwright-template for the engine, on cartwright-app
+        GitHub Issues — on{' '}
+        <a href={social.templateIssues} className="text-cw-terracotta">
+          cartwright-template
+        </a>{' '}
+        for the engine, or{' '}
+        <a href={social.issues} className="text-cw-terracotta">
+          cartwright-app
+        </a>{' '}
         for docs/CLI bugs. Paid setup help is available — email{' '}
         <a href={`mailto:${contactEmail}`} className="text-cw-terracotta">
           {contactEmail}
@@ -100,9 +107,9 @@ const items = [
   },
   {
     q: 'When is 1.0?',
-    a: 'When the template contract is stable enough that we will not break your fork on minor bumps. Realistic target: 8–12 weeks after the first dogfood shop ships.',
+    a: 'When the template contract, upgrade guidance, and release gates are stable enough that minor updates should not break your fork. We do not publish a date before those conditions are true.',
     plain:
-      'When the template contract is stable enough that we will not break your fork on minor bumps. Realistic target: 8–12 weeks after the first dogfood shop ships.',
+      'When the template contract, upgrade guidance, and release gates are stable enough that minor updates should not break your fork. We do not publish a date before those conditions are true.',
   },
 ];
 

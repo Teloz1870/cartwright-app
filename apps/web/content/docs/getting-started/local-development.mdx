@@ -3,7 +3,7 @@ title: Local Development
 description: Running Cartwright locally with Prisma, seed data, and the dev server.
 ---
 
-Cartwright runs as a normal Next.js app. The private template uses Prisma with a SQLite schema. Runtime database access goes through `lib/db.ts`: if `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, Prisma uses the libSQL adapter; otherwise it falls back to local SQLite via `DATABASE_URL`.
+Cartwright runs as a normal Next.js app. The public template uses Prisma with a SQLite schema. Runtime database access goes through `lib/db.ts`: if `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, Prisma uses the libSQL adapter; otherwise it falls back to local SQLite via `DATABASE_URL`.
 
 <Tabs items={['SQLite','Turso']}>
   <Tab value="SQLite">
@@ -15,9 +15,10 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 ```bash
-cp .env.example .env
-npx prisma migrate deploy
-npx prisma db seed
+cp .env.example .env.local
+# replace AUTH_SECRET with a random value
+pnpm install
+pnpm db:setup
 pnpm dev
 ```
 
@@ -33,8 +34,8 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 ```bash
-npx prisma migrate deploy
-npx prisma db seed
+pnpm install
+pnpm db:setup
 pnpm dev
 ```
 
@@ -46,5 +47,5 @@ The dev server is `next dev`. If port `3000` is already in use, Next.js will pro
 The setup wizard is data-gated. `lib/setup-wizard.ts` shows it when `BrandingSettings.setupComplete` is false and the product count is zero. That lets fresh forks go through `/admin/setup` automatically without locking existing shops that already have products.
 
 <Callout type="warn">
-Do not run `npx prisma db seed` against a Turso production database unless it is fresh and disposable. The deploy guide notes that the seed script clears tables before inserting data. A real footgun: `npx prisma db seed` can still read Turso credentials from `.env`, even if you tried to unset variables in the shell.
+Do not run `pnpm db:setup` against a populated production database. It is an onboarding command that includes seed behavior; use the documented migration workflow for an existing production store.
 </Callout>
