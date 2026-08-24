@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
 import type { Metadata } from 'next';
@@ -15,6 +16,60 @@ export const metadata: Metadata = {
 };
 
 const RELEASES = [
+  {
+    version: '3.31.0',
+    date: 'August 2026',
+    title: 'The agentic day (engine v0.46.0\u2013v0.49.0)',
+    description: (
+      <>
+        On August 24, 2026 we pointed an independent public scanner at our own demo store and
+        shipped four engine releases against what it found. Measured publicly by{' '}
+        <a
+          href="https://is-agentic.com/scan/demo.cartwright.app/da"
+          className="text-cw-terracotta hover:underline"
+        >
+          is-agentic.com
+        </a>
+        : <strong>52/100 that morning, 79/100 by evening</strong> \u2014 the day\u2019s cleanest run
+        landed in the 80-band. The number keeps moving with the scanner\u2019s rubric, which is
+        exactly why we link the live scorecard instead of framing a screenshot. Four documentable
+        changes carried the jump: RFC 9457 problem+json on every edge of the API, a
+        markdown-native surface for text-first agents, an MCP handshake that works for real-world
+        clients, and a signed A2A agent card with the publish flow it never had.
+      </>
+    ),
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'The agent-ready public surface (v0.46.0) \u2014 five anonymous, rate-limited read tools over REST and MCP; OpenAPI 3.1 generated from the same tool registry the store runs, one typed operation per tool; RFC 9457 problem+json with a stable code and a resolution on every error \u2014 including unknown /api/* paths, which used to fall through to the HTML 404.',
+      'Markdown where agents read (v0.47.0) \u2014 /auth.md documents the real auth model (Bearer keys, named scopes \u2014 and says plainly that no OAuth flow is offered), /pricing.md publishes currency, VAT treatment and the live price range on webshops only, and the homepage answers as markdown via Accept negotiation, /index.md, or ?mode=agent \u2014 with YAML frontmatter and resolvable locale-canonical links throughout.',
+      'A handshake that works for real clients (v0.48.0\u2013v0.49.0) \u2014 two measured root causes closed: the MCP origin guard gained a deployment-aware tier (public-https accepts foreign https origins \u2014 the cookie-less anonymous surface has no CSRF to protect and TLS makes DNS rebinding unreachable, while local deployments keep the strict allowlist), and the transport stopped answering 406 to clients that send Accept: application/json alone.',
+      'The signed agent card (v0.48.0) \u2014 /.well-known/agent-card.json serves an ed25519-signed A2A card buyer agents can verify offline, and scripts/publish-agent-card.ts is the publish flow the card libraries never had: ephemeral keys, self-verified, transactional rotation, no stored signing secret.',
+      'What we deliberately did NOT do \u2014 no user-agent cloaking, no fabricated rate-limit headers, no OAuth discovery documents without an OAuth server, no sameAs profiles for a fictional demo brand. A capability a store does not run is a genuine 404. It costs scanner points and buys trust; we think that trade is the whole game.',
+      <>
+        Measure your own store: <code>npx is-agentic your-domain.com</code> \u2014 the result is a
+        public, shareable scorecard. How the surface works:{' '}
+        <Link href="/docs/features/agent-readiness" className="text-cw-terracotta hover:underline">
+          agent readiness
+        </Link>
+        .
+      </>,
+    ],
+  },
+  {
+    version: '3.30.0',
+    date: 'August 2026',
+    title: 'Identity ownership + the MCP hardening wave (engine v0.43.0\u2013v0.45.0)',
+    description:
+      'Three releases that made the store harder to break from the outside and harder to confuse from the inside: brand.config.ts became the default identity authority everywhere, the seed learned to refuse destroying customer work, and the MCP/agentic surfaces closed a whole class of framework-level bypasses \u2014 while the admin went English and the engine put on its vermilion identity.',
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Identity ownership by default (v0.43.0) \u2014 brand.config.ts is now the default authority for store name and commerce mode, with the same invariant applied to the live canaries; a database row can no longer quietly rename a code-configured store.',
+      'Destructive-seed safety (v0.43.0) \u2014 seeding refuses to wipe a database that already contains customer work, and a safe path creates an operator on an existing production database instead.',
+      'Streamable HTTP Origin validation (v0.44.0\u2013v0.44.1) \u2014 the DNS-rebinding protection the MCP specification requires, applied in front of every verb including the OPTIONS preflight Next.js used to answer before the guard; plus Next.js 16.3.0 and the security-patched NextAuth beta.',
+      'The OPTIONS bypass closure (v0.45.0) \u2014 framework-level preflight bypasses closed across MCP, ACP, UCP, A2A and merchant-feed surfaces, with profile-safe tests that keep the route guards preserved; locale-less route shadowing and login callbackUrl handling fixed along the way.',
+      'An English admin and the vermilion identity (v0.45.0) \u2014 the admin panel speaks English end to end, and the engine\u2019s own brand moved from purple to vermilion \u2014 identity surfaces only, customer palettes untouched.',
+    ],
+  },
   {
     version: '3.29.0',
     date: 'July 2026',
