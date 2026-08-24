@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.7.10
+
+### Patch Changes
+
+- 9c42ec0: Bump workflow now also updates the web fallback engine version, and the site profile prunes the db-coupled agent-card publish script (mirror of the engine audit list).
+- 42c92d9: Bump default template ref to v0.48.0 (was v0.47.0).
+
 ## 2.7.9
 
 ### Patch Changes
