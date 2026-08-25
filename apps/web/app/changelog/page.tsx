@@ -639,7 +639,7 @@ export default async function ChangelogPage() {
               Every shop knows its engine version
             </h2>
             <span className="ml-auto text-xs font-mono font-semibold uppercase tracking-wider text-cw-terracotta">
-              v0.23.0
+              since v0.23.0
             </span>
           </div>
           <p className="text-cw-stone-600 dark:text-cw-stone-300 text-lg leading-relaxed font-light">
@@ -649,7 +649,7 @@ export default async function ChangelogPage() {
             never drifts. Paired with a published{' '}
             <strong className="font-semibold text-cw-stone-700 dark:text-cw-stone-200">security advisories</strong>{' '}
             index in the engine changelog, a known fix can always be matched to the shops that need it — even
-            though you own the code and nothing auto-updates it. Live as of v0.23.0.
+            though you own the code and nothing auto-updates it. Shipping in every release since v0.23.0.
           </p>
         </div>
 
