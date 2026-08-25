@@ -15,11 +15,29 @@ export const metadata: Metadata = {
   ...pageOg('Changelog', CHANGELOG_DESCRIPTION),
 };
 
-const RELEASES = [
+/**
+ * One timeline entry. `engine` is the ENGINE version (or range) the entry
+ * covers — the same versioning as "Current engine release" in the header and
+ * the `.cartwright/release.json` marker in every shop, so the timeline and
+ * the header can never disagree. (The old site-local v3.x counter matched
+ * nothing a reader could install — it's gone.) Genesis-era entries that
+ * predate disciplined engine versioning carry no `engine` and render
+ * date-only; an unverifiable version number is worse than none.
+ */
+type Release = {
+  engine?: string;
+  date: string;
+  title: string;
+  description: React.ReactNode;
+  icon: React.ReactNode;
+  features: React.ReactNode[];
+};
+
+const RELEASES: Release[] = [
   {
-    version: '3.31.0',
+    engine: 'v0.46.0\u2013v0.49.0',
     date: 'August 2026',
-    title: 'The agentic day (engine v0.46.0\u2013v0.49.0)',
+    title: 'The agentic day',
     description: (
       <>
         On August 24, 2026 we pointed an independent public scanner at our own demo store and
@@ -56,9 +74,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.30.0',
+    engine: 'v0.43.0\u2013v0.45.0',
     date: 'August 2026',
-    title: 'Identity ownership + the MCP hardening wave (engine v0.43.0\u2013v0.45.0)',
+    title: 'Identity ownership + the MCP hardening wave',
     description:
       'Three releases that made the store harder to break from the outside and harder to confuse from the inside: brand.config.ts became the default identity authority everywhere, the seed learned to refuse destroying customer work, and the MCP/agentic surfaces closed a whole class of framework-level bypasses \u2014 while the admin went English and the engine put on its vermilion identity.',
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
@@ -71,9 +89,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.29.0',
+    engine: 'v0.41.0\u2013v0.42.0',
     date: 'July 2026',
-    title: 'What a downstream product found (engine v0.41.0–v0.42.0)',
+    title: 'What a downstream product found',
     description:
       'A commercial product built on Cartwright deployed to production, and reported back three rounds of findings. Almost none of them were crashes — they were silences: a value that quietly won an argument with your code, a form field that saved and changed nothing, a deploy that reported success while serving nothing. Every one is now either fixed or impossible to reintroduce without a test going red.',
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
@@ -87,9 +105,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.28.0',
+    engine: 'v0.37.0\u2013v0.40.0',
     date: 'July 2026',
-    title: 'The site profile + the trust wave (engine v0.37.0–v0.40.0)',
+    title: 'The site profile + the trust wave',
     description:
       'Four engine releases in one arc: a whole site becomes a portable artifact, the storefront speaks your language end to end, the agentic surfaces go spec-true and battle-tested, and the engine learns to scaffold a real site with no database at all — while Cartwright Plus activation and a locked-down public tool surface make it ready to run for money.',
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
@@ -103,9 +121,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.27.0',
+    engine: 'v0.35.1\u2013v0.36.3',
     date: 'June 2026',
-    title: 'First impressions + AI-agent hardening (engine v0.35.1–v0.36.3)',
+    title: 'First impressions + AI-agent hardening',
     description:
       'A fresh scaffold\'s very first render is now a designed moment instead of leftover template copy — and the scaffold itself got harder and friendlier for the AIs building on it: three external AIs (Claude, Codex, Gemini) each built a site on the engine, surfaced real gaps, and every one was fixed at the source.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -119,9 +137,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.26.0',
+    engine: 'v0.35.0',
     date: 'June 2026',
-    title: 'The Light release (engine v0.35.0)',
+    title: 'The Light release',
     description:
       'Cartwright is now told — and built — around one sentence: the build engine AIs reach for. A real site with design, database and backend, live in minutes. npx create-cartwright defaults to a lean light profile, heavy modules become installable plugins, the Mixer matures into a full composition system, and the AI onboarding path is measured: a cold agent goes from scaffold to a designed, verified homepage in 99 seconds. The engine is now formally MIT-licensed.',
     icon: <Package className="w-5 h-5 text-cw-terracotta" />,
@@ -135,9 +153,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.25.0',
+    engine: 'v0.34.0',
     date: 'June 2026',
-    title: 'The metamorphosis release (engine v0.34.0)',
+    title: 'The metamorphosis release',
     description:
       'The release where the design catalogue becomes a unified design language: two flagship designs shipped in one day, a library of installable SVG ornaments, and a signature motif giving every premium pack its own recognizable chrome. The public Mixer lets anyone compose a Skin × Voice live, and a new manifest + capture infrastructure means every gallery derives from one source — so growing the catalogue is now ~free.',
     icon: <Layers className="w-5 h-5 text-cw-terracotta" />,
@@ -151,7 +169,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.24.0',
+    engine: 'v0.34.0',
     date: 'June 2026',
     title: 'FABLE — the metamorphosis flagship',
     description:
@@ -166,9 +184,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.23.0',
+    engine: 'v0.33.0',
     date: 'June 2026',
-    title: 'The Page Mixer + the Apex flagship (engine v0.33.0)',
+    title: 'The Page Mixer + the Apex flagship',
     description:
       'Content and design are orthogonal in Cartwright, so this release lets a shop mix a vertical Voice (kindergarten, carpenter, café…) with any palette-adaptive design and compose the page from swappable Parts — plus a much deeper premium-design layer: a design now owns every page, four breakthrough Pro elements, per-design webshop overrides, and Apex, a flagship super-pro storefront that composes all of it on one palette-adaptive page. Additive and default-off end to end — an existing shop is byte-identical until it opts in.',
     icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
@@ -181,9 +199,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.22.0',
+    engine: 'v0.32.0',
     date: 'June 2026',
-    title: 'Design Slaraffenland — the design marketplace (engine v0.32.0)',
+    title: 'Design Slaraffenland — the design marketplace',
     description:
       'The premium-design marketplace foundation: a growing catalogue of code-built design packs, reusable three.js, design.md import and export/share, an agent-buildable design path, and a companion /designs marketplace on cartwright.app.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -195,9 +213,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.21.0',
+    engine: 'v0.31.0',
     date: 'June 2026',
-    title: 'Motion & effects — pages that feel alive (engine v0.31.0)',
+    title: 'Motion & effects — pages that feel alive',
     description:
       'A flag-gated layer of modern CSS scroll-driven animations (compositor-thread, no JS jank), an animated palette-adaptive aurora gradient + glassmorphism, and an optional per-section motion vocabulary the Visual Builder can assign. Default-off and canary-safe end to end.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -209,9 +227,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.20.0',
+    engine: 'v0.30.0',
     date: 'June 2026',
-    title: 'Agent-optimized design — read it, build with it, cite it (engine v0.30.0)',
+    title: 'Agent-optimized design — read it, build with it, cite it',
     description:
       'The design system (Aurora + the Magic Builder + the section catalogue) is now optimised for AI agents end to end: they can read it (registry + schemas), build with it (the builder tools), and cite it (Schema.org JSON-LD).',
     icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
@@ -223,9 +241,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.19.0',
+    engine: 'v0.29.0',
     date: 'June 2026',
-    title: 'Magic Builder + the Aurora flagship design (engine v0.29.0)',
+    title: 'Magic Builder + the Aurora flagship design',
     description:
       'Two big additions: a prompt-driven page builder, and a new flagship default design system — built on one shared set of section atoms, so the two are the same components.',
     icon: <Pencil className="w-5 h-5 text-cw-terracotta" />,
@@ -237,9 +255,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.18.0',
+    engine: 'v0.26.0\u2013v0.28.0',
     date: 'June 2026',
-    title: 'Admin, restructured & re-skinned + bulletproof first-run (engine v0.26.0–v0.28.0)',
+    title: 'Admin, restructured & re-skinned + bulletproof first-run',
     description:
       'A run of admin + developer-experience releases: the admin sidebar becomes a calm, grouped information architecture; the whole /admin backend is re-skinned to a clean light Shopify-Polaris look; and first-run database setup is made deterministic so onboarding can never get stuck. Admin-only and storefront-neutral — the three canaries render identically.',
     icon: <Package className="w-5 h-5 text-cw-terracotta" />,
@@ -251,9 +269,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.17.0',
+    engine: 'v0.25.0',
     date: 'June 2026',
-    title: 'Agentic commerce, completed: buy-in-ChatGPT, agent identity-linking & in-browser tools (engine v0.25.0)',
+    title: 'Agentic commerce, completed: buy-in-ChatGPT, agent identity-linking & in-browser tools',
     description:
       'Three agentic-web surfaces move from scaffold to wired: ACP delegated-payment completion, a full UCP OAuth identity-linking server, and WebMCP in-browser tools. All default-off and canary-safe — an existing shop is byte-identical until it opts in — and the ACP payment path ships code-ready but inert until external Stripe + ChatGPT access lands.',
     icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
@@ -265,9 +283,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.16.0',
+    engine: 'v0.24.0\u2013v0.24.2',
     date: 'June 2026',
-    title: 'Onboarding clarity, secure first-run & dark-mode polish (engine v0.24.0–v0.24.2)',
+    title: 'Onboarding clarity, secure first-run & dark-mode polish',
     description:
       'A DX + polish run across three patch releases: a fresh shop is sign-in-ready regardless of approach (CLI, IDE agent, or manual clone), the migration baseline is clean again, and the admin — plus the storefront — renders correctly in dark mode.',
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
@@ -279,9 +297,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.15.0',
+    engine: 'v0.23.0',
     date: 'June 2026',
-    title: 'Visual Builder + Vercel v0 (engine v0.23.0)',
+    title: 'Visual Builder + Vercel v0',
     description:
       'A governed, no-code page builder — and Vercel v0 as a native generation engine. Design a page in a three-panel UI, or let v0 turn a prompt into UI; either way the output lands as audited data you own, never code dumped to disk. Both ship default-off and canary-safe, so a shop that does not opt in is byte-identical to before.',
     icon: <Palette className="w-5 h-5 text-cw-terracotta" />,
@@ -293,9 +311,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.14.0',
+    engine: 'v0.22.0',
     date: 'June 2026',
-    title: 'AI-native commerce: semantic search, generative UI & agent surfaces (engine v0.22.0)',
+    title: 'AI-native commerce: semantic search, generative UI & agent surfaces',
     description:
       'Your catalog becomes semantically searchable, the storefront assistant composes its own product UI, and the agent-commerce surfaces (ACP, UCP) move closer to complete. All additive — semantic search falls back to lexical when embeddings are not primed, so there is no regression.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -307,9 +325,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.13.0',
+    engine: 'v0.21.0',
     date: 'June 2026',
-    title: 'Google Sheets, Drive & Docs + Stripe Subscriptions (engine v0.21.0)',
+    title: 'Google Sheets, Drive & Docs + Stripe Subscriptions',
     description:
       'The Google Workspace modules on top of the v0.20.0 connector, plus recurring billing. Everything is additive and default-off, so a shop that does not opt in is byte-identical to before.',
     icon: <Package className="w-5 h-5 text-cw-terracotta" />,
@@ -321,9 +339,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.12.0',
+    engine: 'v0.20.0',
     date: 'June 2026',
-    title: 'Google Workspace connector, Sign-In, FX auto-refresh & storefront i18n (engine v0.20.0)',
+    title: 'Google Workspace connector, Sign-In, FX auto-refresh & storefront i18n',
     description:
       'The Google integration foundation plus two gap-closers. The connector is fail-soft infrastructure (inert without credentials); the rest ship flag-off, so an existing shop is byte-identical until it opts in.',
     icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
@@ -335,9 +353,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.11.0',
+    engine: 'v0.19.0',
     date: 'June 2026',
-    title: 'Secure-by-default accounts & onboarding (engine v0.19.0)',
+    title: 'Secure-by-default accounts & onboarding',
     description:
       'The "finished package" customer surfaces and an onboarding/credential revamp. The headline: no more hardcoded admin password. Most items are additive; a few columns need pnpm db:push before enabling.',
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
@@ -349,9 +367,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.10.0',
+    engine: 'v0.18.0',
     date: 'June 2026',
-    title: 'Marketing automations, Prisma 7 & a security-docs pass (engine v0.18.0)',
+    title: 'Marketing automations, Prisma 7 & a security-docs pass',
     description:
       'A platform-hardening release. Resend — already your transactional transport — becomes an opt-in lifecycle email engine; the ORM jumps to Prisma 7\'s Rust-free client; and the security surface gets documented end to end. All additive and default-off: a shop that does not opt in is byte-identical to before.',
     icon: <Package className="w-5 h-5 text-cw-terracotta" />,
@@ -363,9 +381,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.9.0',
+    engine: 'v0.16.0',
     date: 'June 2026',
-    title: 'Agent-editable shop: structure, theme & catalog by AI + JSON (engine v0.16.0)',
+    title: 'Agent-editable shop: structure, theme & catalog by AI + JSON',
     description:
       'Where in-place editing (v0.14.0) lets you click and rewrite copy, this makes the shop\'s structure editable by agents and machine config — homepage section order, theme tokens, and the catalog itself. All default-off / additive: a shop that does not opt in is byte-identical to before.',
     icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
@@ -377,9 +395,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.8.0',
+    engine: 'v0.15.0',
     date: 'June 2026',
-    title: 'Sell in every currency, in every language (engine v0.15.0)',
+    title: 'Sell in every currency, in every language',
     description:
       'Day-one internationalisation, both halves. Checkout now charges in the customer\'s currency — not just shows the price in it — and the storefront translates Pages, Services and blog posts, not only products. All additive: a single-currency, single-language shop is byte-identical to before.',
     icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
@@ -391,9 +409,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.7.0',
+    engine: 'v0.14.0',
     date: 'June 2026',
-    title: 'In-place AI editing: edit your live storefront by clicking it (engine v0.14.0)',
+    title: 'In-place AI editing: edit your live storefront by clicking it',
     description:
       'Cartwright\'s owned take on click-to-edit, on infrastructure you own. Logged in as admin, toggle edit mode on your live storefront, click a copy element, type a plain-language note ("make this headline shorter"), and an AI proposes new copy shown as a before→after diff before it applies. One default-off, admin-only, base-locale-only flag — the storefront is byte-identical for everyone else.',
     icon: <Pencil className="w-5 h-5 text-cw-terracotta" />,
@@ -405,9 +423,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.6.0',
+    engine: 'v0.13.0',
     date: 'June 2026',
-    title: 'Order management: an HPOS-grade back office (engine v0.13.0)',
+    title: 'Order management: an HPOS-grade back office',
     description:
       'Turns /admin/ordrer from a flat list into a real back office: a scalable Orders workspace, admin-initiated returns/RMA, printable pick lists, and rule-based next-best-action. Everything ships behind four default-off, ecommerce-gated flags — an upgrade behaves exactly as before until you flip one, and website-mode shops never mount any of it.',
     icon: <Package className="w-5 h-5 text-cw-terracotta" />,
@@ -420,9 +438,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.5.0',
+    engine: 'v0.11.0',
     date: 'June 2026',
-    title: 'GEO: make AI recommend your shop (engine v0.11.0)',
+    title: 'GEO: make AI recommend your shop',
     description:
       'A GEO / AI-discoverability release. The engine now describes itself to AI assistants as a recommendable product and ships broader agent-rules coverage — so when someone asks an AI to "build me a shop," Cartwright can be in the answer. Additive and gated by the default-on, deletable cartwrightBadge flag.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -435,9 +453,9 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.4.0',
+    engine: 'v0.10.0',
     date: 'May 2026',
-    title: 'The big one: 12 feature tracks (engine v0.10.0)',
+    title: 'The big one: 12 feature tracks',
     description:
       'The largest single release — twelve subsystems land in one tag, every one opt-in and default-off so an upgrade behaves exactly as before until you flip a flag. The authoritative flag list is lib/feature-flags/manifest.ts, and the customer-facing /built-with-cartwright tour now renders itself from that manifest, so it can never go stale at release time again.',
     icon: <Sparkles className="w-5 h-5 text-cw-terracotta" />,
@@ -456,7 +474,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.3.0',
+    engine: 'v0.7.0',
     date: 'May 2026',
     title: 'Design System: pick a design, import from any AI tool',
     description:
@@ -477,7 +495,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.2.0',
+    engine: 'v0.3.0',
     date: 'May 2026',
     title: 'Voice Shop & Local AI v2',
     description:
@@ -496,7 +514,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.1.0',
+    // Genesis era: predates disciplined engine versioning; date-only on the timeline.
     date: 'May 2026',
     title: 'Headless Merchant: A2A Foundation',
     description: 'The full Agent-to-Agent architecture lands. Cartwright shops can now serve buyer agents end-to-end — signed Agent Card discovery, deterministic negotiation, Verify-then-Pay escrow with cryptographic Proof-of-Task-Execution, and human-in-the-loop oversight via /admin/agentic. All gated behind brand.features.a2a so your storefront stays clean unless you opt in.',
@@ -518,7 +536,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '3.0.0',
+    // Genesis era: predates disciplined engine versioning; date-only on the timeline.
     date: 'May 2026',
     title: 'Software 3.0: Vibe Templates & AI Localization',
     description: 'Our biggest update ever. We introduce Vibe Templates, allowing you to build and inject infinitely scalable layouts directly via Cursor or Vercel v0.',
@@ -534,7 +552,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '2.5.0',
+    // Genesis era: predates disciplined engine versioning; date-only on the timeline.
     date: 'April 2026',
     title: 'Local AI & Agentic Commerce',
     description: 'Make the platform independent with local AI via Ollama, and make your product catalog machine-readable with the Agentic Commerce Protocol (ACP).',
@@ -550,7 +568,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '2.0.0',
+    // Genesis era: predates disciplined engine versioning; date-only on the timeline.
     date: 'March 2026',
     title: 'The Golden Stack & Multi-Tenant Architecture',
     description: 'A complete rewrite of the core engine to run B2B SaaS and Webshops on the exact same platform without compromises.',
@@ -567,7 +585,7 @@ const RELEASES = [
     ],
   },
   {
-    version: '1.0.0',
+    // Genesis era: predates disciplined engine versioning; date-only on the timeline.
     date: 'January 2026',
     title: 'Initial Release: Cartwright Engine',
     description: 'The first version of our vision for a self-custody e-commerce platform.',
@@ -637,7 +655,7 @@ export default async function ChangelogPage() {
 
         <div className="space-y-16">
           {RELEASES.map((release, index) => (
-            <article key={release.version} className="relative grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 md:gap-12">
+            <article key={release.title} className="relative grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 md:gap-12">
               {/* Timeline dot & line - hidden on mobile */}
               {index !== RELEASES.length - 1 && (
                 <div className="hidden md:block absolute left-[calc(25%-1.5rem)] top-12 bottom-[-4rem] w-px bg-cw-stone-200 dark:bg-cw-stone-800" />
@@ -648,7 +666,11 @@ export default async function ChangelogPage() {
                 <div className="hidden md:flex absolute right-[-2.25rem] top-2.5 w-6 h-6 rounded-full border-4 border-cw-paper dark:border-cw-ink bg-cw-stone-100 dark:bg-cw-stone-800 items-center justify-center z-10">
                   <div className="w-2 h-2 rounded-full bg-cw-stone-400" />
                 </div>
-                <h3 className="text-2xl font-black text-cw-stone-900 dark:text-cw-stone-50 mb-1">v{release.version}</h3>
+                {release.engine ? (
+                  <h3 className="text-2xl font-black text-cw-stone-900 dark:text-cw-stone-50 mb-1">
+                    {release.engine}
+                  </h3>
+                ) : null}
                 <time className="text-sm text-cw-stone-500 uppercase tracking-wider font-semibold">{release.date}</time>
               </div>
 
