@@ -129,6 +129,10 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "lib/escrow",
   "lib/negotiation",
   "app/api/agent-card",
+  // The canonical A2A discovery mount re-exports the pruned route above.
+  // tsc's globs skip dot-directories, so only `next build` catches the leak —
+  // measured: a light scaffold's build failed on exactly this file.
+  "app/.well-known/agent-card.json",
   "app/api/negotiate",
   "app/api/escrow",
   "app/admin/agentic",
