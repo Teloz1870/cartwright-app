@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.8.2
+
+### Patch Changes
+
+- 9d9f7a7: Scaffold from engine v0.51.1. The v0.51.0 tree failed the full-profile scaffold gate (a shipped test hardcoded `webMcp === false`, which is wrong for the webshop templates that now scaffold with the flag on); v0.51.1 fixes the assertion and restores release coherence. Gate against the new ref: light/site/full 3/3.
+
 ## 2.8.1
 
 ### Patch Changes
