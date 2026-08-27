@@ -20,7 +20,7 @@
  *
  * Profiles (one engine, three scaffold profiles):
  *   --profile light (default) → website-mode default, curated design set,
- *                               FULL-ONLY modules (A2A, UCP, WebMCP, hoptify) pruned
+ *                               FULL-ONLY modules (A2A, UCP, hoptify) pruned
  *   --profile full            → everything — identical to the pre-profile scaffold
  *   --profile site            → plain website, no database/admin/auth/commerce;
  *                               contact form included unless `--with none`
@@ -165,7 +165,8 @@ Options:
   --profile <light|full|site>  Scaffold profile (default: light).
                            light = website-mode default, curated design set,
                                    heavy full-only modules (A2A agent-marketplace,
-                                   UCP identity-linking, WebMCP, hoptify) pruned.
+                                   UCP identity-linking, hoptify) pruned. WebMCP ships
+                                   in every profile (flag webMcp, default off).
                                    Add designs back: cartwright design install <slug>
                            full  = everything the engine ships — use this for
                                    agent-marketplace mode or to keep all 26 designs.
