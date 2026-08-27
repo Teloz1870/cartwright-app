@@ -1,36 +1,46 @@
 ---
 title: WebMCP (in-browser agent tools)
-description: Expose storefront actions — search, cart, navigate — as browser-native tools to in-browser AI agents via document.modelContext, so they act reliably instead of scraping the DOM.
+description: Every page of the storefront registers typed, page-contextual agent tools via document.modelContext — search, cart, per-product add-to-cart, declarative forms, even design-pack tools — behind one default-off flag.
 ---
 
-Where the [MCP server](/docs/architecture/mcp-server) lets *external* agents call your shop over HTTP, **WebMCP** brings agent tools into the browser tab itself. An in-browser AI agent (a browser assistant, an on-page agent) can call your storefront's declared tools directly — `search_products`, `add_to_cart` — instead of guessing which button to click or scraping the DOM.
+Where the [MCP server](/docs/architecture/mcp-server) lets *external* agents call your shop over HTTP, **WebMCP** brings agent tools into the browser tab itself. An in-browser AI agent (ChatGPT's built-in browser, a browser assistant) calls your storefront's declared tools directly instead of guessing at the DOM — and the tools are **page-contextual**: the product page sells its own product, the cart page edits its own lines.
 
-It's gated behind `brand.features.webMcp` (default-off) and only mounts on a webshop. When off, nothing is registered and every other browser is unaffected.
+It's gated behind `brand.features.webMcp` (default-off, runtime tier) and requires webshop mode. When off, nothing registers and the HTML is byte-identical. Every scaffold profile with a runtime (`light` and `full`) ships the whole surface, dormant until you flip the flag in `/admin/features` — no deploy needed.
 
 <Callout type="warn">
-**Experimental, by design.** WebMCP is a Chromium-only origin-trial feature (Chrome 149) and a W3C Web Machine Learning Community Group **draft** — not a shipped standard. The namespace is still moving (`document.modelContext`, with `navigator.modelContext` deprecated in Chrome 150). Cartwright feature-detects both and no-ops everywhere else, but this flag is **kept off the canary mosaic** until the spec stabilises.
+**Experimental, by design.** WebMCP is a W3C Web Machine Learning CG **draft** — supported today by Chrome (origin trial / `chrome://flags/#enable-webmcp-testing`) and ChatGPT's built-in browser. The namespace still moves (`document.modelContext`, with `navigator.modelContext` deprecated in Chrome 150); Cartwright feature-detects both and no-ops everywhere else.
 </Callout>
 
-## What it exposes
+## Three registration styles
 
-When `webMcp` is on, a small client component registers these tools via `document.modelContext.registerTool()` (falling back to the deprecated `navigator.modelContext`):
+1. **Imperative, per route.** Site-wide tools mount from the layout; page-contextual tools mount server-gated on the catalogue, product and cart pages. The server narrows exactly what each page knows (live variants, prices, stock, the filtered list) into the tool descriptor — the agent reads what the human sees, and tools appear/disappear with navigation.
+2. **Declarative forms.** The search, contact and newsletter forms carry `toolname` attributes — the *form itself* is the tool, answered via `SubmitEvent.respondWith`. Autosubmit only on read-only search; the human confirms communication. The checkout form is deliberately **not** annotated.
+3. **Design-pack tools.** A pack can ship its own (`DesignPack.webMcpToolBindings`) — the crema pack's homepage brew calculator doubles as `calculate_brew_ratio`, computed from the same math module as the visible widget.
 
-| Tool | Effect |
+## The tools
+
+| Surface | Tools |
 |---|---|
-| `search_products` | Free-text catalogue search (read-only) — returns matching products |
-| `get_cart` | Read the current cart: line items, quantities, total (read-only) |
-| `add_to_cart` | Add a product (optionally a variant) — reuses the same server action as the Add-to-cart button |
-| `navigate` | Go to an internal page (e.g. `/produkter?q=oak`) — **same-origin only**; external and protocol-relative paths are rejected |
+| Site-wide | `search_products` · `get_cart` (verification-rich returns: line handles, stock ceilings, structured money) · same-origin `navigate` |
+| Catalogue page | `list_visible_products` (exactly what the human sees, zero network) · `filter_products` (schema server-derived from live categories) |
+| Product page | `add_current_product_to_cart` (the page's product; variants + stock in the descriptor) |
+| Cart page | `update_cart_item_quantity` · `remove_cart_item` · `go_to_checkout` (opens the page — nothing more) |
+| Forms | `site_search` (autosubmit) · `contact_store` · `newsletter_signup` |
+| Design pack | e.g. crema's `calculate_brew_ratio` |
 
-Each tool declares a JSON-Schema input and runs the same server-side validation and stock logic the storefront already uses — there's no separate, less-guarded path. Read-only tools are marked so the agent knows they're safe to call freely; cleanup uses an `AbortSignal` (WebMCP has no `unregisterTool`).
+A **test-enforced safety moat** holds the whole browser surface to the cart/catalogue tool families — aggregated across every registration surface including design packs. *No order-placing tool exists in the browser*; checkout stays the human's. Every cart mutation returns the fresh cart so the agent verifies instead of assumes.
+
+## What each profile ships
+
+| Profile | WebMCP |
+|---|---|
+| `light` (default) | Everything, dormant behind the flag |
+| `full` | Everything, same flag |
+| `site` (static) | Nothing — no runtime to register against |
 
 ## Trying it
 
-In Chrome 146+ enable `chrome://flags/#enable-webmcp-testing` (no origin-trial token needed for the flag path), open a webshop with `webMcp` on, and visit **`/<locale>/webmcp-check`** — a flag-gated page that reports whether WebMCP is available and lists the registered tool names. For a real origin trial, set `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN` and the token is server-emitted into the document head.
-
-<Callout type="info">
-Following the modern-web-guidance pattern: tools are atomic and composable, destructive actions aren't auto-submitted without confirmation, and `add_to_cart` is allowed un-gated only because it's reversible from the cart page.
-</Callout>
+In Chrome 146+ enable `chrome://flags/#enable-webmcp-testing` — or just open the shop in ChatGPT's desktop-app browser. On a webshop with `webMcp` on, visit **`/<locale>/webmcp-check`**: the full tool inventory grouped by surface (rendered from the same constants the moat test verifies), the safety model, and a live registration panel. For an origin trial, set `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN` and the token is server-emitted into the document head.
 
 <Cards>
   <Card title="MCP server" href="/docs/architecture/mcp-server" />

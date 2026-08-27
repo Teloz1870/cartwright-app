@@ -66,7 +66,7 @@ const proofs = [
     badge: 'In-browser',
     endpoint: 'document.modelContext',
     title: 'WebMCP tools in the tab',
-    body: "The storefront registers search_products, get_cart, add_to_cart and a same-origin navigate as browser-native WebMCP tools, so an in-browser agent acts reliably instead of scraping the DOM. Experimental (Chrome 149 origin-trial), default-off (webMcp).",
+    body: "Every page registers typed, page-contextual WebMCP tools: site-wide search/cart/navigate, the product page's own add-to-cart with live variants and stock, cart editing with verifiable returns, declarative form tools — behind a test-enforced moat (checkout stays the human's). Experimental (Chrome origin-trial + ChatGPT's browser), default-off (webMcp).",
   },
 ];
 
