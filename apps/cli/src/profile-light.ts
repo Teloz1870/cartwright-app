@@ -13,7 +13,7 @@
  * What light prunes is driven by the engine's core audit
  * (cartwright-private/internal-docs/core-audit.md, owner-approved on engine
  * PR #207). The rule is CONSERVATIVE: only modules the audit marks FULL-ONLY
- * (A2A/agent-marketplace, UCP identity-linking, WebMCP) plus hoptify and the
+ * (A2A/agent-marketplace, UCP identity-linking) plus hoptify and the
  * non-curated design packs are removed. Every §2 "plugin" module (reviews,
  * blog, voice, three, phone-widget, …) stays compiled-in with its flag
  * default-off until `npx cartwright add <x>` exists to install it back.
@@ -21,9 +21,17 @@
  * `npx cartwright design install <slug>`.
  *
  * Every removal was verified against the v0.34.0 template: zero static (or
- * statically-resolved dynamic) imports from kept code into any pruned path,
- * except the two single-line WebMcpRegistrar references in
- * app/[locale]/layout.tsx, which `pruneWebMcpFromLayoutSource` removes.
+ * statically-resolved dynamic) imports from kept code into any pruned path.
+ *
+ * WebMCP is deliberately NOT pruned (owner decision 2026-08, the challenge-era
+ * surface): every scaffold ships the full in-browser agent surface — the
+ * registrar, per-route mounts, declarative forms, /webmcp-check and the whole
+ * webmcp test suite — dormant behind the default-off `webMcp` runtime flag
+ * (the layout gates on `ecommerceEnabled && features.webMcp`, so a light
+ * scaffold renders byte-identically until the merchant flips it on). Pruning
+ * it also broke v0.50.0-light scaffolds outright: the engine ships NINE
+ * webmcp test files and cross-surface imports (the showcase imports the
+ * registrar's bindings), so a partial prune fails typecheck out of the box.
  * Notably NOT pruned (verified unsafe / out of scope for v1):
  *   - lib/search + ProductEmbedding: core lib/tools/products.ts has
  *     build-resolved `await import("@/lib/search/…")` calls.
@@ -104,7 +112,7 @@ export const LIGHT_PRUNED_DESIGNS: ReadonlyArray<{ slug: string; exportName: str
  * hoptify entry in the registry, so the shipped tests/unit/plugins.test.ts
  * "every declared file exists" + "route mounts wired" invariants fail on a
  * fresh light scaffold. hoptify is the only registry plugin whose files the
- * light profile prunes (a2a/ucp/webmcp are pruned modules, not registry plugins).
+ * light profile prunes (a2a/ucp are pruned modules, not registry plugins).
  */
 export const LIGHT_PRUNED_PLUGINS: ReadonlyArray<{ slug: string; exportName: string }> = [
   { slug: "hoptify", exportName: "hoptifyPlugin" },
@@ -121,9 +129,16 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "lib/escrow",
   "lib/negotiation",
   "app/api/agent-card",
+  // The canonical A2A discovery mount re-exports the pruned route above.
+  // tsc's globs skip dot-directories, so only `next build` catches the leak —
+  // measured: a light scaffold's build failed on exactly this file.
+  "app/.well-known/agent-card.json",
   "app/api/negotiate",
   "app/api/escrow",
   "app/admin/agentic",
+  // The A2A publish helper imports ../lib/a2a — with the module pruned it
+  // broke typecheck on EVERY light scaffold from v0.48 (published 2.7.10-2.7.12).
+  "scripts/publish-agent-card.ts",
   "tests/unit/a2a",
   "tests/unit/escrow",
   "tests/unit/negotiation",
@@ -136,25 +151,12 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "app/.well-known/ucp",
   "tests/unit/ucp-oauth.test.ts",
   "tests/unit/ucp-capability-profile.test.ts",
-  // ── FULL-ONLY: WebMCP (audit §3; layout mount removed via codemod) ───────
-  //    NOTE the asymmetry: components/webmcp/ (the per-page PDP/cart tool
-  //    mounts, engine WebMCP 2.0) is deliberately KEPT — the PDP and cart
-  //    pages import those mounts with a single line each, the mounts gate on
-  //    brand.features.webMcp (default-off) and import only core modules
-  //    (lib/model-context, lib/safe-path, cart actions), so they compile and
-  //    stay dormant in a light scaffold. Their unit tests are pruned below
-  //    with the rest of the webmcp test surface because several of them
-  //    import the pruned WebMcpRegistrar for the tool-binding invariants.
-  "lib/webmcp",
-  "components/WebMcpRegistrar.tsx",
-  "components/WebMcpCheck.tsx",
-  "app/[locale]/webmcp-check",
-  "tests/unit/webmcp-paths.test.ts",
-  "tests/unit/webmcp-registrar.test.tsx",
-  "tests/unit/webmcp-pdp-tools.test.tsx",
-  "tests/unit/webmcp-cart-tools.test.tsx",
-  "tests/unit/webmcp-moat.test.ts",
-  "tests/unit/webmcp-forms.test.tsx",
+  // ── WebMCP: deliberately NOT excluded (tombstone, 2026-08-27) ────────────
+  //    Every profile ships the full WebMCP surface, dormant behind the
+  //    default-off `webMcp` flag — see the header docblock. Do NOT re-add
+  //    lib/webmcp / WebMcpRegistrar / webmcp-check / tests/unit/webmcp-* here:
+  //    a partial prune breaks typecheck (nine test files, cross-surface
+  //    imports), and the audit decision that once pruned them is superseded.
   // ── hoptify (audit §4 owner call) — full-only, removed entirely from light:
   //    design pack via LIGHT_PRUNED_DESIGNS; impl (lib/ + app/admin) + the PLUGIN
   //    dir below; its plugins/registry.ts entry via LIGHT_PRUNED_PLUGINS (the
@@ -338,18 +340,6 @@ export function pruneDesignMotifsSource(
 }
 
 /**
- * Remove the two WebMcpRegistrar lines from app/[locale]/layout.tsx source:
- * the import and the flag-gated JSX mount. Both are single, self-contained
- * lines containing the token, so a line filter is exact.
- */
-export function pruneWebMcpFromLayoutSource(src: string): string {
-  return src
-    .split("\n")
-    .filter((line) => !line.includes("WebMcpRegistrar"))
-    .join("\n");
-}
-
-/**
  * Remove the proven-orphan deps (see LIGHT_PRUNED_DEPENDENCIES /
  * LIGHT_PRUNED_DEV_DEPENDENCIES) from a package.json source string. Runs
  * BEFORE install, so the scaffold never downloads them. Deps not present
@@ -505,13 +495,6 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
     warnings,
   );
 
-  applyCodemod(
-    targetDir,
-    join("app", "[locale]", "layout.tsx"),
-    pruneWebMcpFromLayoutSource,
-    warnings,
-  );
-
   applyCodemod(targetDir, "brand.config.ts", patchBrandConfigForLightContent, warnings);
 
   applyCodemod(targetDir, "package.json", (src) => {
@@ -577,8 +560,9 @@ export function applyLightProfile(targetDir: string): LightProfileReport {
 export function lightProfileNote(): string {
   return [
     "Profile: light (default) — a real site: design, database, backend — live in minutes.",
-    "Excluded from this scaffold: A2A/agent-marketplace, UCP identity-linking, WebMCP,",
+    "Excluded from this scaffold: A2A/agent-marketplace, UCP identity-linking,",
     `hoptify, and ${LIGHT_PRUNED_DESIGNS.length} non-curated design packs (kept: ${LIGHT_KEPT_DESIGNS.filter((s) => s !== "studio" && s !== "aurora-shop").join(", ")}).`,
+    "WebMCP ships in full (in-browser agent tools; flag `webMcp`, default off).",
     "Add a design back any time:  npx cartwright design install <slug>",
     "Want everything? Re-scaffold with:  npx create-cartwright@latest --profile full",
   ].join("\n");

@@ -15,7 +15,6 @@ import {
   prunePluginsRegistrySource,
   pruneDesignOptionsSource,
   pruneDesignMotifsSource,
-  pruneWebMcpFromLayoutSource,
   prunePackageJsonForLight,
   patchBrandConfigForLightContent,
   applyLightProfile,
@@ -299,14 +298,21 @@ describe("pruneDesignMotifsSource", () => {
   });
 });
 
-describe("pruneWebMcpFromLayoutSource", () => {
-  it("removes exactly the import + mount lines", () => {
-    const out = pruneWebMcpFromLayoutSource(LAYOUT_SRC);
-    expect(out).not.toContain("WebMcpRegistrar");
-    expect(out).toContain("VoiceShopMount"); // neighbours untouched
-    expect(out).toContain("WelcomeGuide");
-    expect(out).toContain("<main>x</main>");
-    expect(LAYOUT_SRC.split("\n").length - out.split("\n").length).toBe(2);
+describe("light ships the full WebMCP surface", () => {
+  // Owner decision 2026-08 (challenge-era surface): every profile keeps the
+  // whole in-browser agent surface, dormant behind the default-off `webMcp`
+  // flag. A partial prune broke v0.50.0-light typecheck out of the box
+  // (published as 2.7.13): the engine ships nine webmcp test files and
+  // cross-surface imports (the showcase imports the registrar's bindings).
+  it("excludes NOTHING webmcp-shaped", () => {
+    for (const rel of LIGHT_EXCLUDED_PATHS) {
+      expect(/webmcp/i.test(rel), `${rel} must not be excluded`).toBe(false);
+    }
+  });
+  it("excludes the a2a publish helper alongside its pruned module", () => {
+    // scripts/publish-agent-card.ts imports ../lib/a2a — shipping it with the
+    // module pruned broke typecheck on every light scaffold (2.7.10–2.7.12).
+    expect(LIGHT_EXCLUDED_PATHS).toContain("scripts/publish-agent-card.ts");
   });
 });
 
@@ -496,9 +502,9 @@ describe("applyLightProfile (filesystem)", () => {
       // removed
       expect(existsSync(join(dir, "lib/a2a"))).toBe(false);
       expect(existsSync(join(dir, "lib/ucp"))).toBe(false);
-      expect(existsSync(join(dir, "lib/webmcp"))).toBe(false);
+      expect(existsSync(join(dir, "lib/webmcp"))).toBe(true); // WebMCP ships
       expect(existsSync(join(dir, "lib/hoptify"))).toBe(false);
-      expect(existsSync(join(dir, "components/WebMcpRegistrar.tsx"))).toBe(false);
+      expect(existsSync(join(dir, "components/WebMcpRegistrar.tsx"))).toBe(true); // WebMCP ships
       expect(existsSync(join(dir, "designs/saas-dark"))).toBe(false);
       expect(existsSync(join(dir, "tests/unit/ucp-oauth.test.ts"))).toBe(false);
       // kept
@@ -507,8 +513,10 @@ describe("applyLightProfile (filesystem)", () => {
       // codemods applied
       const idx = readFileSync(join(dir, "designs/index.ts"), "utf8");
       expect(idx).not.toContain("saasDarkDesign");
+      // Layout is BYTE-IDENTICAL on the WebMCP axis: no codemod touches it
+      // any more (the registrar mount ships, gated on the default-off flag).
       const layout = readFileSync(join(dir, "app/[locale]/layout.tsx"), "utf8");
-      expect(layout).not.toContain("WebMcpRegistrar");
+      expect(layout).toBe(LAYOUT_SRC);
       const brand = readFileSync(join(dir, "brand.config.ts"), "utf8");
       expect(brand).toContain("newsletter: false");
       const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
