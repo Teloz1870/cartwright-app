@@ -26,6 +26,13 @@ export const ENGINE_FACTS = {
   /** Of those, the ones that stop and require a server-issued confirmation. */
   confirmGatedCount: 25,
   /**
+   * WebMCP tools a v0.50 storefront can register in the browser page itself:
+   * 3 global + 2 catalogue + 1 PDP + 3 cart + 3 declarative forms + 1 crema
+   * pack tool. Authority: the engine's WebMCP binding constants (the same
+   * ones its moat test aggregates).
+   */
+  webMcpToolCount: 13,
+  /**
    * Minutes a confirmation token stays valid. Authority: the engine's
    * `lib/confirmation-tokens.ts` (`TTL_MS = 5 * 60 * 1000`).
    *

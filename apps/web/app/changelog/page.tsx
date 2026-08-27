@@ -35,6 +35,38 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.50.0\u2013v0.50.1',
+    date: 'August 2026',
+    title: 'WebMCP-native storefronts',
+    description: (
+      <>
+        The storefront page itself becomes an agent surface. With the <code>webMcp</code> flag
+        on, every route registers the tools that make sense on that page via the draft{' '}
+        <code>document.modelContext</code> API — the product page sells its own product, the
+        cart edits itself, the catalogue lists and filters — so a browser agent acts through
+        a typed API instead of guessing at the DOM. The whole surface is default-off, and with
+        the flag off the HTML is byte-identical.
+      </>
+    ),
+    icon: <Code2 className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Contextual per-route tools (v0.50.0) \u2014 the product page registers add_current_product_to_cart with its variants enumerated in the schema (and REQUIRED when the product has them, so an agent cannot create the base-price line the human UI cannot); the cart page registers update_cart_item_quantity, remove_cart_item and go_to_checkout \u2014 which only OPENS checkout for the human; the catalogue registers list_visible_products (zero-network \u2014 exactly the server-narrowed list the human sees) and filter_products, whose schema is server-derived: live category slugs, the sort whitelist, real price bounds. The global registrar slims to search, get_cart and navigate.',
+      'Declarative form annotations (v0.50.0) \u2014 the site search, contact and newsletter forms carry toolname/tooldescription; WebMCP-enabled browsers surface them as agent tools, every other browser ignores the attributes. Agent-invoked submits are answered through event.respondWith with the actual outcome. Autosubmit only on search (read-only); contact and newsletter ask the human to confirm \u2014 and the checkout form is deliberately not annotated.',
+      'Design packs ship their own page tools (v0.50.0) \u2014 the new DesignPack.webMcpToolBindings seam lets a design register tools alongside its pages. First out: crema\u2019s calculate_brew_ratio, the homepage brew calculator\u2019s own math typed for agents \u2014 the same module the human\u2019s widget runs, under the review-gated PURE_COMPUTE class.',
+      'The test-enforced safety moat (v0.50.0) \u2014 the browser surface is limited to products.* and cart.*: no order-placing tool exists in the browser, period. One moat test aggregates every tool surface \u2014 global, catalogue, PDP, cart and every registered design pack \u2014 and requires globally unique names; a Playwright e2e walks home \u2192 catalogue \u2192 PDP \u2192 cart \u2192 checkout and asserts checkout is tool-free.',
+      '/webmcp-check, the agent-tools showcase (v0.50.0) \u2014 the full tool inventory grouped by registering surface, built from the SAME binding constants the moat test verifies, the safety moat explained in plain language, and setup steps for ChatGPT\u2019s built-in browser, the Chrome flag and the WebMCP Inspector \u2014 plus a live registration panel.',
+      <>
+        The whole surface ships in the light and full scaffolds behind the{' '}
+        <code>webMcp</code> flag, and v0.50.1 follows with a scaffold-profile correctness
+        patch. How it works:{' '}
+        <Link href="/docs/features/webmcp" className="text-cw-terracotta hover:underline">
+          WebMCP
+        </Link>
+        .
+      </>,
+    ],
+  },
+  {
     engine: 'v0.46.0\u2013v0.49.0',
     date: 'August 2026',
     title: 'The agentic day',
@@ -48,8 +80,8 @@ const RELEASES: Release[] = [
         >
           is-agentic.com
         </a>
-        : <strong>52/100 that morning, 79/100 by evening</strong> \u2014 the day\u2019s cleanest run
-        landed in the 80-band. The number keeps moving with the scanner\u2019s rubric, which is
+        : <strong>52/100 that morning, 79/100 by evening</strong> — the day’s cleanest run
+        landed in the 80-band. The number keeps moving with the scanner’s rubric, which is
         exactly why we link the live scorecard instead of framing a screenshot. Four documentable
         changes carried the jump: RFC 9457 problem+json on every edge of the API, a
         markdown-native surface for text-first agents, an MCP handshake that works for real-world
@@ -64,7 +96,7 @@ const RELEASES: Release[] = [
       'The signed agent card (v0.48.0) \u2014 /.well-known/agent-card.json serves an ed25519-signed A2A card buyer agents can verify offline, and scripts/publish-agent-card.ts is the publish flow the card libraries never had: ephemeral keys, self-verified, transactional rotation, no stored signing secret.',
       'What we deliberately did NOT do \u2014 no user-agent cloaking, no fabricated rate-limit headers, no OAuth discovery documents without an OAuth server, no sameAs profiles for a fictional demo brand. A capability a store does not run is a genuine 404. It costs scanner points and buys trust; we think that trade is the whole game.',
       <>
-        Measure your own store: <code>npx is-agentic your-domain.com</code> \u2014 the result is a
+        Measure your own store: <code>npx is-agentic your-domain.com</code> — the result is a
         public, shareable scorecard. How the surface works:{' '}
         <Link href="/docs/features/agent-readiness" className="text-cw-terracotta hover:underline">
           agent readiness

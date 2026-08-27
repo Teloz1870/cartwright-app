@@ -36,8 +36,8 @@ const doors = [
   {
     door: 'Door three',
     title: 'Shopping agents, over the wire',
-    body: 'llms.txt, JSON-LD on every citable page, a product feed, a built-in MCP server, and ACP checkout endpoints — so AI assistants can find your shop, cite it, and buy from it.',
-    foot: '/api/mcp · /api/acp',
+    body: 'llms.txt, JSON-LD on every citable page, a product feed, a built-in MCP server, ACP checkout endpoints — and WebMCP tools in the page itself, so browser agents act through a real API instead of the DOM.',
+    foot: '/api/mcp · /api/acp · document.modelContext',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="5" cy="12" r="2.5" />

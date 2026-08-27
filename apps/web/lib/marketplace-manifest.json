@@ -1,6 +1,6 @@
 {
   "$schema": "cartwright-marketplace-manifest-v3",
-  "version": "0.35.0",
+  "version": "0.50.0",
   "designs": [
     {
       "slug": "aurora-site",
@@ -64,8 +64,8 @@
       "premium": true,
       "threeD": false,
       "palette": {
-        "accent": "#d97757",
-        "accentDeep": "#c4623e",
+        "accent": "#7c5cff",
+        "accentDeep": "#5b3fd6",
         "cream": "#fafaf9",
         "sand": "#f5f5f4",
         "ink": "#0a0a0b",
@@ -160,6 +160,24 @@
         "sand": "#ffffff",
         "ink": "#0a0a0b",
         "muted": "#525252"
+      },
+      "motifSlug": null,
+      "hasOwnChrome": false
+    },
+    {
+      "slug": "crema",
+      "name": "Crema (cinematic dark roast)",
+      "description": "Cinematic dark-roast storefront: locked espresso palette, copper accents, full-bleed video hero, Fraunces display type. Makes a small catalogue feel like a collection.",
+      "mode": "webshop",
+      "premium": true,
+      "threeD": false,
+      "palette": {
+        "accent": "#cf7a3c",
+        "accentDeep": "#241610",
+        "cream": "#16100b",
+        "sand": "#211711",
+        "ink": "#f4ead9",
+        "muted": "#a08b74"
       },
       "motifSlug": null,
       "hasOwnChrome": false
@@ -469,6 +487,60 @@
       },
       "motifSlug": "mountain-illustration",
       "hasOwnChrome": true
+    },
+    {
+      "slug": "ember",
+      "name": "Ember (warm glow · soft tech)",
+      "description": "A warm-glow premium pack for site AND shop — a drifting pure-CSS gradient-mesh hero under bold Plus Jakarta Sans display type, cream cards lifted by soft terracotta glow shadows, an ink night-band of pulsing hand-drawn sparks, and a live featured-product grid in webshop mode. Palette-adaptive: the mesh, the glow and every EmberSpark re-tone to your brand.",
+      "mode": "both",
+      "premium": true,
+      "threeD": true,
+      "palette": {
+        "accent": "#e8553a",
+        "accentDeep": "#b83a24",
+        "cream": "#fdf6ef",
+        "sand": "#f7e8da",
+        "ink": "#2b1d16",
+        "muted": "#7d6557"
+      },
+      "motifSlug": "firefly-field",
+      "hasOwnChrome": true
+    },
+    {
+      "slug": "agentic-showcase",
+      "name": "Agentic Showcase",
+      "description": "A premium dark technical showcase for the full agentic profile. Demonstrates live MCP, OpenAPI, REST, trust and recovery contracts without claiming an external score before a current public report exists.",
+      "mode": "both",
+      "premium": true,
+      "threeD": false,
+      "palette": {
+        "accent": "#f5f5f5",
+        "accentDeep": "#ffffff",
+        "cream": "#050505",
+        "sand": "#101010",
+        "ink": "#f5f5f5",
+        "muted": "#a3a3a3"
+      },
+      "motifSlug": null,
+      "hasOwnChrome": true
+    },
+    {
+      "slug": "blank",
+      "name": "Blank Canvas (build from scratch)",
+      "description": "An intentionally bare starting point for a completely unique design. Minimal header, footer and homepage — heavily commented, made to be rewritten by you or your AI agent — while cart, checkout, admin, auth, AI tools and SEO keep working untouched. Neutral grayscale until you decide otherwise.",
+      "mode": "both",
+      "premium": false,
+      "threeD": false,
+      "palette": {
+        "accent": "#171717",
+        "accentDeep": "#000000",
+        "cream": "#ffffff",
+        "sand": "#f5f5f5",
+        "ink": "#171717",
+        "muted": "#737373"
+      },
+      "motifSlug": null,
+      "hasOwnChrome": true
     }
   ],
   "voices": [
@@ -622,6 +694,99 @@
       },
       "sampleEyebrow": "Introducing",
       "sampleHeadline": "Meet Fable 5"
+    },
+    {
+      "slug": "dentist",
+      "name": "Dentist / Dental clinic",
+      "description": "Calm, trust-first voice for a dental clinic — gentle, modern dentistry that puts nervous patients at ease and makes booking feel safe.",
+      "keywords": [
+        "dentist",
+        "dental",
+        "clinic",
+        "teeth",
+        "smile",
+        "hygiene",
+        "whitening",
+        "orthodontics"
+      ],
+      "tone": "warm",
+      "audience": "consumer",
+      "formality": "balanced",
+      "vibe": "calm, gentle, reassuring",
+      "suggestedDesign": "aurora-site",
+      "scene": "waves",
+      "palette": {
+        "accent": "#0e7490",
+        "accentDeep": "#155e75",
+        "cream": "#f7fbfc",
+        "sand": "#e4eef1",
+        "ink": "#16323a",
+        "muted": "#54707b"
+      },
+      "sampleEyebrow": "Gentle, modern dentistry",
+      "sampleHeadline": "A calm visit, a confident smile"
+    },
+    {
+      "slug": "restaurant",
+      "name": "Restaurant / Bistro",
+      "description": "Warm, generous voice for a neighbourhood restaurant or bistro — a short seasonal menu, honest cooking, and a table that's never rushed.",
+      "keywords": [
+        "restaurant",
+        "bistro",
+        "dining",
+        "menu",
+        "chef",
+        "kitchen",
+        "seasonal",
+        "eatery"
+      ],
+      "tone": "warm",
+      "audience": "consumer",
+      "formality": "balanced",
+      "vibe": "seasonal, generous, neighbourly",
+      "suggestedDesign": "ember",
+      "scene": "",
+      "palette": {
+        "accent": "#1e5e3e",
+        "accentDeep": "#14402b",
+        "cream": "#faf6ec",
+        "sand": "#f0e7d3",
+        "ink": "#241f17",
+        "muted": "#6f6754"
+      },
+      "sampleEyebrow": "From our kitchen",
+      "sampleHeadline": "Good food, close to home"
+    },
+    {
+      "slug": "fitness",
+      "name": "Fitness / Gym",
+      "description": "Energetic but grounded voice for a gym or training studio — encouraging coaching over posing, built around 'start where you are'.",
+      "keywords": [
+        "gym",
+        "fitness",
+        "training",
+        "workout",
+        "classes",
+        "membership",
+        "strength",
+        "yoga"
+      ],
+      "tone": "warm",
+      "audience": "consumer",
+      "formality": "casual",
+      "vibe": "energetic, encouraging, grounded",
+      "suggestedDesign": "aurora-site",
+      "scene": "gridflow",
+      "palette": {
+        "accent": "#be123c",
+        "accentDeep": "#881337",
+        "cream": "#fafafa",
+        "sand": "#ededef",
+        "ink": "#18181b",
+        "muted": "#5d5d66"
+      },
+      "sampleEyebrow": "Start where you are",
+      "sampleHeadline": "Stronger every week"
     }
   ],
   "scenes": [
@@ -1367,6 +1532,20 @@
       "mixable": true
     },
     {
+      "key": "ember-header",
+      "kind": "header",
+      "label": "Ember header",
+      "designSlug": "ember",
+      "mixable": true
+    },
+    {
+      "key": "ember-footer",
+      "kind": "footer",
+      "label": "Ember footer",
+      "designSlug": "ember",
+      "mixable": true
+    },
+    {
       "key": "halo-header",
       "kind": "header",
       "label": "Halo header",
@@ -1493,6 +1672,34 @@
       "mixable": false
     },
     {
+      "key": "agentic-showcase-header",
+      "kind": "header",
+      "label": "Agentic Showcase header",
+      "designSlug": "agentic-showcase",
+      "mixable": false
+    },
+    {
+      "key": "agentic-showcase-footer",
+      "kind": "footer",
+      "label": "Agentic Showcase footer",
+      "designSlug": "agentic-showcase",
+      "mixable": false
+    },
+    {
+      "key": "blank-header",
+      "kind": "header",
+      "label": "Blank Canvas header",
+      "designSlug": "blank",
+      "mixable": false
+    },
+    {
+      "key": "blank-footer",
+      "kind": "footer",
+      "label": "Blank Canvas footer",
+      "designSlug": "blank",
+      "mixable": false
+    },
+    {
       "key": "minimal-header",
       "kind": "header",
       "label": "Minimal header (mark + 3 links + CTA)",
@@ -1551,6 +1758,30 @@
       "name": "Live Canvas (3D)",
       "description": "AI-configurable three.js hero scenes (aurora, waves, orb, butterflies and more): palette-driven WebGL2 backdrops for any design pack, with an admin scene picker and a full-bleed scene-preview route.",
       "flag": "threeD"
+    },
+    {
+      "slug": "hoptify",
+      "name": "Hoptify (Hop off Shopify)",
+      "description": "Parody “import from Shopify” onboarding with real teeth: the /admin/hoptify migration theatre applies the Hoptify design, and with a Firecrawl key it actually imports your palette and products.",
+      "flag": "hoptify"
+    },
+    {
+      "slug": "logo-generator",
+      "name": "Logo generator (AI)",
+      "description": "AI logo tools for the admin settings page: an outline-logo generator (SVG paths via the chat model) and a flag-gated Gemini raster generator that uploads to Vercel Blob and sets the brand logo.",
+      "flag": "logoGenerator"
+    },
+    {
+      "slug": "design-import",
+      "name": "Design import",
+      "description": "Pull a color palette from any URL into your shop: Firecrawl fetches the page, AI derives a Cartwright palette, and you apply it as the live theme. Design vibe only (colors/typography/tone) — not layout. Requires FIRECRAWL_API_KEY.",
+      "flag": "designImport"
+    },
+    {
+      "slug": "google-workspace",
+      "name": "Google Workspace (Sheets, Docs, Drive)",
+      "description": "One shared Google OAuth2 connector serving three workspace features: two-way Google Sheets catalog sync (admin page + cron), Google Docs import to blog posts/pages, and Google Drive media import + scheduled logical DB backups.",
+      "flag": "sheetsSync"
     }
   ]
 }
