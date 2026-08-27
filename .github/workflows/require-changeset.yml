@@ -31,6 +31,12 @@ permissions:
 jobs:
   changeset:
     name: changeset present
+    # The changesets release PR (changeset-release/main) CONSUMES changesets —
+    # it deletes them and bumps apps/cli/package.json, so this check can never
+    # be green on it by construction. It is the publish vehicle itself, which
+    # is the very thing this check exists to guarantee — exempt it instead of
+    # merging every release over a red check with --admin.
+    if: github.head_ref != 'changeset-release/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
