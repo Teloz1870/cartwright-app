@@ -41,6 +41,15 @@ export type TemplateDefaults = {
     acp: boolean;
     a2a: boolean;
     adminAgenticDashboard: boolean;
+    /**
+     * WebMCP in-browser agent tools. Webshop templates scaffold with this ON
+     * ("WebMCP-native out of the box"): the flag is runtime-tier with an
+     * ecommerce precondition, the registrar no-ops in browsers without
+     * document.modelContext, and flag-off renders stay byte-identical — so
+     * the flip is inert everywhere except an agent-capable browser on an
+     * actual webshop.
+     */
+    webMcp: boolean;
   };
 };
 
@@ -52,6 +61,7 @@ export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>>
       acp: false,
       a2a: false,
       adminAgenticDashboard: false,
+      webMcp: false,
     },
   },
   coffee: {
@@ -61,6 +71,7 @@ export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>>
       acp: false,
       a2a: false,
       adminAgenticDashboard: false,
+      webMcp: true,
     },
   },
   sunglasses: {
@@ -70,6 +81,7 @@ export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>>
       acp: false,
       a2a: false,
       adminAgenticDashboard: false,
+      webMcp: true,
     },
   },
   "agent-marketplace": {
@@ -79,6 +91,7 @@ export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>>
       acp: true,
       a2a: true,
       adminAgenticDashboard: true,
+      webMcp: false,
     },
   },
   generic: {
@@ -88,6 +101,7 @@ export const TEMPLATE_DEFAULTS: Readonly<Record<TemplateSlug, TemplateDefaults>>
       acp: false,
       a2a: false,
       adminAgenticDashboard: false,
+      webMcp: true,
     },
   },
 };
@@ -211,7 +225,8 @@ export function patchFooterContent(original: string, storeName: string): string 
  * Patches:
  *   - industryTemplate: "<slug>"
  *   - mode: "<mode>"
- *   - features.webshop, features.acp, features.a2a, features.adminAgenticDashboard
+ *   - features.webshop, features.acp, features.a2a, features.adminAgenticDashboard,
+ *     features.webMcp
  *
  * The replacements are regex-anchored to the exact field shape produced by
  * the upstream brand.config.ts. If that shape ever changes the regexes here

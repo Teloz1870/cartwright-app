@@ -562,7 +562,7 @@ export function lightProfileNote(): string {
     "Profile: light (default) — a real site: design, database, backend — live in minutes.",
     "Excluded from this scaffold: A2A/agent-marketplace, UCP identity-linking,",
     `hoptify, and ${LIGHT_PRUNED_DESIGNS.length} non-curated design packs (kept: ${LIGHT_KEPT_DESIGNS.filter((s) => s !== "studio" && s !== "aurora-shop").join(", ")}).`,
-    "WebMCP ships in full (in-browser agent tools; flag `webMcp`, default off).",
+    "WebMCP ships in full (in-browser agent tools; webshop templates scaffold with `webMcp` on, website scaffolds keep it dormant).",
     "Add a design back any time:  npx cartwright design install <slug>",
     "Want everything? Re-scaffold with:  npx create-cartwright@latest --profile full",
   ].join("\n");
