@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/showcase' },
   title: 'Showcase',
   description:
-    'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from. Plus KompositZaun.de, a complete German fence-system shop with a live-stock BOM configurator, Northbound Coffee and the Teloz B2B site.',
+    'Real shops built on Cartwright — led by Solbrillen.dk, the eyewear store the engine was extracted from. Plus KompositZaun.de, a complete German fence-system shop with a live-stock BOM configurator, Northbound Coffee, the Teloz B2B site and AIware, a Danish AI consultancy in website mode.',
 };
 
 const buildFacts = [
@@ -128,6 +128,29 @@ const solbrillenFacts = [
   },
 ];
 
+const aiwareFacts = [
+  {
+    term: 'Website mode, two languages',
+    description:
+      'A Danish AI consultancy running the engine with no cart at all \u2014 da + en locale routing, service pages and lead capture instead of a catalogue.',
+  },
+  {
+    term: 'Agent-readable pages',
+    description:
+      'llms.txt with when-to-use guidance, so an agent knows what the consultancy does \u2014 and when to recommend it \u2014 without scraping a single page.',
+  },
+  {
+    term: 'The governed tool surface',
+    description:
+      'The same REST/MCP tool registry every Cartwright shop ships \u2014 scoped keys, confirmation gates, audit trail \u2014 operating a site that sells nothing.',
+  },
+  {
+    term: 'One config file',
+    description:
+      'Mode, locales, features and identity all come from brand.config.ts \u2014 the non-commerce face of the same engine.',
+  },
+];
+
 function ExternalArrow() {
   return (
     <svg
@@ -206,7 +229,7 @@ export default function ShowcasePage() {
           <div className="relative mx-auto max-w-2xl text-center">
             <Badge tone="terracotta" className="mb-6">
               <span className="size-1.5 rounded-full bg-cw-terracotta" />
-              Three live shops
+              Five live sites
             </Badge>
             <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-cw-stone-900 dark:text-cw-stone-50 leading-[1.05]">
               Shops built with Cartwright.
@@ -218,8 +241,9 @@ export default function ShowcasePage() {
               </strong>{' '}
               is the eyewear store Cartwright was extracted from — now running
               every feature. Alongside it: a complete German fence-system shop,
-              a specialty-coffee shop and a B2B agency site. Browse them, check out in Stripe test mode, talk to
-              their AI assistants.
+              a specialty-coffee shop, a B2B agency site and a Danish AI
+              consultancy with no cart at all. Browse them, check out in Stripe
+              test mode, talk to their AI assistants.
             </p>
           </div>
         </Section>
@@ -358,9 +382,9 @@ export default function ShowcasePage() {
 
         <Section className="bg-cw-stone-50 dark:bg-cw-stone-900/30">
           <SectionHeader
-            eyebrow="The complete build \u00b7 newest"
+            eyebrow="The complete build · newest"
             title="KompositZaun.de"
-            description="The most complete Cartwright shop yet \u2014 a German WPC fence-system store built by Cartwright\u2019s own maker. Not a catalogue of products but a catalogue of SYSTEMS: fences sold per running metre, computed as exact bills of materials against a live supplier inventory. Currently pre-launch: browse everything, check out in Stripe test mode."
+            description="The most complete Cartwright shop yet — a German WPC fence-system store built by Cartwright’s own maker. Not a catalogue of products but a catalogue of SYSTEMS: fences sold per running metre, computed as exact bills of materials against a live supplier inventory. Currently pre-launch: browse everything, check out in Stripe test mode."
           />
           <div className="mt-12 grid gap-12 lg:grid-cols-[1.25fr_1fr] items-start">
             <div>
@@ -407,7 +431,7 @@ export default function ShowcasePage() {
                 </ButtonLink>
               </div>
               <div className="mt-3">
-                <Badge tone="oker">pre-launch \u00b7 Stripe test mode</Badge>
+                <Badge tone="oker">pre-launch · Stripe test mode</Badge>
               </div>
             </Card>
           </div>
@@ -555,6 +579,51 @@ export default function ShowcasePage() {
                   Visit the live site
                   <ExternalArrow />
                 </ButtonLink>
+              </div>
+            </Card>
+          </div>
+        </Section>
+
+        <Section>
+          <SectionHeader
+            eyebrow="Website mode · consultancy"
+            title="AIware — a consultancy, not a shop"
+            description="A Danish AI consultancy on the same engine — website mode, da + en, no cart anywhere. The engine’s non-commerce face: agent-readable pages, the governed REST/MCP tool surface and i18n routing, all driven from brand.config.ts."
+          />
+          <div className="mt-12 max-w-2xl">
+            <Card>
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-cw-terracotta">
+                The build
+              </p>
+              <ul className="mt-4 space-y-3.5">
+                {aiwareFacts.map((fact) => (
+                  <li key={fact.term} className="flex gap-3">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cw-terracotta" />
+                    <div>
+                      <p className="text-sm font-semibold text-cw-stone-900 dark:text-cw-stone-50">
+                        {fact.term}
+                      </p>
+                      <p className="text-sm text-cw-stone-500 dark:text-cw-stone-400">
+                        {fact.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 border-t border-cw-stone-200 dark:border-cw-stone-800" />
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <ButtonLink
+                  href="https://aiware-iota.vercel.app"
+                  size="lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Visit the site
+                  <ExternalArrow />
+                </ButtonLink>
+              </div>
+              <div className="mt-3">
+                <Badge tone="oker">website mode · da + en</Badge>
               </div>
             </Card>
           </div>

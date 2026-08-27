@@ -29,6 +29,13 @@ const ROWS = [
     href: '/docs/architecture/mcp-server',
   },
   {
+    surface: 'WebMCP',
+    proof: `${ENGINE_FACTS.webMcpToolCount} page-contextual browser tools`,
+    guardrail: 'test-enforced moat — no order-placing tool in the browser',
+    meaning: 'A browser agent acts through a real API, not the DOM.',
+    href: '/docs/features/webmcp',
+  },
+  {
     surface: 'ACP',
     proof: 'Checkout sessions + product feed',
     guardrail: 'Deterministic totals, idempotent completion',
