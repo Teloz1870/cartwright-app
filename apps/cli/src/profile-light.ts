@@ -137,11 +137,24 @@ export const LIGHT_EXCLUDED_PATHS: readonly string[] = [
   "tests/unit/ucp-oauth.test.ts",
   "tests/unit/ucp-capability-profile.test.ts",
   // ── FULL-ONLY: WebMCP (audit §3; layout mount removed via codemod) ───────
+  //    NOTE the asymmetry: components/webmcp/ (the per-page PDP/cart tool
+  //    mounts, engine WebMCP 2.0) is deliberately KEPT — the PDP and cart
+  //    pages import those mounts with a single line each, the mounts gate on
+  //    brand.features.webMcp (default-off) and import only core modules
+  //    (lib/model-context, lib/safe-path, cart actions), so they compile and
+  //    stay dormant in a light scaffold. Their unit tests are pruned below
+  //    with the rest of the webmcp test surface because several of them
+  //    import the pruned WebMcpRegistrar for the tool-binding invariants.
   "lib/webmcp",
   "components/WebMcpRegistrar.tsx",
   "components/WebMcpCheck.tsx",
   "app/[locale]/webmcp-check",
   "tests/unit/webmcp-paths.test.ts",
+  "tests/unit/webmcp-registrar.test.tsx",
+  "tests/unit/webmcp-pdp-tools.test.tsx",
+  "tests/unit/webmcp-cart-tools.test.tsx",
+  "tests/unit/webmcp-moat.test.ts",
+  "tests/unit/webmcp-forms.test.tsx",
   // ── hoptify (audit §4 owner call) — full-only, removed entirely from light:
   //    design pack via LIGHT_PRUNED_DESIGNS; impl (lib/ + app/admin) + the PLUGIN
   //    dir below; its plugins/registry.ts entry via LIGHT_PRUNED_PLUGINS (the
