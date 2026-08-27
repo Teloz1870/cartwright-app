@@ -166,7 +166,7 @@ Options:
                            light = website-mode default, curated design set,
                                    heavy full-only modules (A2A agent-marketplace,
                                    UCP identity-linking, hoptify) pruned. WebMCP ships
-                                   in every profile (flag webMcp, default off).
+                                   in every profile; webshop templates enable it.
                                    Add designs back: cartwright design install <slug>
                            full  = everything the engine ships — use this for
                                    agent-marketplace mode or to keep all 26 designs.

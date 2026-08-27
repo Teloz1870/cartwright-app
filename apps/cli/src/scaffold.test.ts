@@ -491,6 +491,7 @@ const BRAND_FRAGMENT = `
     acp: false,
     a2a: false,
     adminAgenticDashboard: false,
+    webMcp: false,
     tryOn: false,
     aiStylist: true,
   },
@@ -530,6 +531,8 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`a2a: false`);
     // #5 regression: webshop mode must enable ecommerce, not leave it false.
     expect(out).toContain(`ecommerceEnabled: true`);
+    // Webshop scaffolds are WebMCP-native out of the box.
+    expect(out).toContain(`webMcp: true`);
   });
 
   it("sunglasses → webshop mode, legacy template name in industryTemplate", () => {
@@ -548,6 +551,8 @@ describe("patchBrandConfigForTemplate", () => {
     expect(out).toContain(`adminAgenticDashboard: false`);
     // website mode must keep ecommerce off
     expect(out).toContain(`ecommerceEnabled: false`);
+    // ...and WebMCP dormant (the flag has an ecommerce precondition).
+    expect(out).toContain(`webMcp: false`);
   });
 
   it("generic preserves webshop mode with no A2A flags on", () => {
@@ -580,6 +585,14 @@ describe("TEMPLATE_DEFAULTS — invariants", () => {
       expect(typeof d.features.acp).toBe("boolean");
       expect(typeof d.features.a2a).toBe("boolean");
       expect(typeof d.features.adminAgenticDashboard).toBe("boolean");
+      expect(typeof d.features.webMcp).toBe("boolean");
+    }
+  });
+
+  it("webMcp is on exactly for the webshop templates (ecommerce precondition)", () => {
+    for (const slug of TEMPLATE_SLUGS) {
+      const d = TEMPLATE_DEFAULTS[slug];
+      expect(d.features.webMcp, slug).toBe(d.mode === "webshop");
     }
   });
 

@@ -65,7 +65,7 @@ One engine, three profile-aware outputs — choose only the surface your project
 
 | Profile | What you get |
 |---|---|
-| `light` (**default**) | The lean "real site in minutes" kit: website-mode default, a curated design set (`aurora-site`, `fable`, `stillwater`, `halo`, `jungle`, `meridian`, `brutalist`, `apex` + the structural `aurora-shop`/`studio`), full mode-gated webshop, builder/mixer, genome, MCP/JSON-LD discovery, admin, database. Heavy full-only modules are pruned from the scaffold: A2A/agent-marketplace, UCP identity-linking, hoptify, and the 16 non-curated design packs. WebMCP (in-browser agent tools) ships in full, dormant behind the default-off `webMcp` flag. |
+| `light` (**default**) | The lean "real site in minutes" kit: website-mode default, a curated design set (`aurora-site`, `fable`, `stillwater`, `halo`, `jungle`, `meridian`, `brutalist`, `apex` + the structural `aurora-shop`/`studio`), full mode-gated webshop, builder/mixer, genome, MCP/JSON-LD discovery, admin, database. Heavy full-only modules are pruned from the scaffold: A2A/agent-marketplace, UCP identity-linking, hoptify, and the 16 non-curated design packs. WebMCP (in-browser agent tools) ships in full — **webshop templates scaffold with it ON** (the store is WebMCP-native out of the box); website-mode scaffolds keep it dormant behind the `webMcp` flag. |
 | `full` | Everything the engine ships — identical to the pre-profile scaffold. Required for `--template agent-marketplace`. |
 | `site` | A plain, deployable website with no database, admin, auth, catalogue, cart or checkout. The contact form is included by default; pass `--with none` for the bare site. Discovery advertises only interfaces that remain. |
 
@@ -182,7 +182,7 @@ Examples:
 ```bash
 npx create-cartwright@latest my-shop                    # → stable (default)
 npx create-cartwright@latest my-shop --ref next         # → bleeding-edge
-npx create-cartwright@latest my-shop --ref v0.45.0      # → pin to a tag
+npx create-cartwright@latest my-shop --ref v0.50.1      # → pin to a tag
 ```
 
 The spinner shows the channel and the resolved ref so you can see exactly what you pulled — useful when reporting issues.

@@ -1,11 +1,11 @@
 ---
 title: WebMCP (in-browser agent tools)
-description: Every page of the storefront registers typed, page-contextual agent tools via document.modelContext — search, cart, per-product add-to-cart, declarative forms, even design-pack tools — behind one default-off flag.
+description: Every page of the storefront registers typed, page-contextual agent tools via document.modelContext — search, cart, per-product add-to-cart, declarative forms, even design-pack tools — on by default for webshop scaffolds, one flag for everyone else.
 ---
 
 Where the [MCP server](/docs/architecture/mcp-server) lets *external* agents call your shop over HTTP, **WebMCP** brings agent tools into the browser tab itself. An in-browser AI agent (ChatGPT's built-in browser, a browser assistant) calls your storefront's declared tools directly instead of guessing at the DOM — and the tools are **page-contextual**: the product page sells its own product, the cart page edits its own lines.
 
-It's gated behind `brand.features.webMcp` (default-off, runtime tier) and requires webshop mode. When off, nothing registers and the HTML is byte-identical. Every scaffold profile with a runtime (`light` and `full`) ships the whole surface, dormant until you flip the flag in `/admin/features` — no deploy needed.
+It's gated behind `brand.features.webMcp` (runtime tier) and requires webshop mode. **Webshop templates** (`--template coffee | sunglasses | generic`) **scaffold with the flag ON — the store is WebMCP-native out of the box**; website-mode scaffolds ship the whole surface dormant until you flip the flag in `/admin/features` (no deploy needed). When off, nothing registers and the HTML is byte-identical.
 
 <Callout type="warn">
 **Experimental, by design.** WebMCP is a W3C Web Machine Learning CG **draft** — supported today by Chrome (origin trial / `chrome://flags/#enable-webmcp-testing`) and ChatGPT's built-in browser. The namespace still moves (`document.modelContext`, with `navigator.modelContext` deprecated in Chrome 150); Cartwright feature-detects both and no-ops everywhere else.
@@ -34,13 +34,13 @@ A **test-enforced safety moat** holds the whole browser surface to the cart/cata
 
 | Profile | WebMCP |
 |---|---|
-| `light` (default) | Everything, dormant behind the flag |
-| `full` | Everything, same flag |
+| `light` (default) | Everything — ON when scaffolded with a webshop template, dormant behind the flag otherwise |
+| `full` | Everything, same rule |
 | `site` (static) | Nothing — no runtime to register against |
 
 ## Trying it
 
-In Chrome 146+ enable `chrome://flags/#enable-webmcp-testing` — or just open the shop in ChatGPT's desktop-app browser. On a webshop with `webMcp` on, visit **`/<locale>/webmcp-check`**: the full tool inventory grouped by surface (rendered from the same constants the moat test verifies), the safety model, and a live registration panel. For an origin trial, set `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN` and the token is server-emitted into the document head.
+In Chrome 146+ enable `chrome://flags/#enable-webmcp-testing` — or just open the shop in ChatGPT's desktop-app browser. On a webshop (webshop templates scaffold with `webMcp` already on), visit **`/<locale>/webmcp-check`**: the full tool inventory grouped by surface (rendered from the same constants the moat test verifies), the safety model, and a live registration panel. For an origin trial, set `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN` and the token is server-emitted into the document head.
 
 <Cards>
   <Card title="MCP server" href="/docs/architecture/mcp-server" />
