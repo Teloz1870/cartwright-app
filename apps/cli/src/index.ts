@@ -106,6 +106,7 @@ import {
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
   patchBrandConfigForEnglishFirst,
+  patchBrandConfigForMarket,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
   patchLogoForScaffold,
@@ -116,6 +117,12 @@ import {
   patchMessagesCartwrightCopy,
   patchAIStylistButtonContent,
   type PatchResult,
+  type ScaffoldCountry,
+  type ScaffoldCurrency,
+  SCAFFOLD_COUNTRIES,
+  SCAFFOLD_CURRENCIES,
+  isScaffoldCountry,
+  isScaffoldCurrency,
   patchFooterContent,
   patchHeroVideoContent,
   patchCatalogFiltersContent,
@@ -189,6 +196,8 @@ Options:
                            palette/scene/chrome parts need the seeded database,
                            so they're skipped under --no-install.
   --db <turso|postgres|sqlite>   Database (default: turso).
+  --country <US|GB|DE|DK|SE|NO> Store country (default: US).
+  --currency <USD|EUR|GBP|DKK|SEK|NOK> Base/charge currency (default: USD).
   --ai / --no-ai           Include AI commerce features hint.
   --ref <stable|next|tag>  Template channel (default: stable).
   --pm <pnpm|npm|yarn|bun> Package manager (default: auto-detect).
@@ -346,6 +355,19 @@ function applyTemplateDefaults(
   if (patched !== original) writeFileSync(path, patched);
 }
 
+function applyMarketDefaults(
+  targetDir: string,
+  currency: ScaffoldCurrency,
+  country: ScaffoldCountry,
+): string[] {
+  const path = join(targetDir, "brand.config.ts");
+  if (!existsSync(path)) return ["brand.config.ts not found — market patch skipped."];
+  const original = readFileSync(path, "utf8");
+  const result = patchBrandConfigForMarket(original, currency, country);
+  if (result.src !== original) writeFileSync(path, result.src);
+  return result.warnings;
+}
+
 async function run(): Promise<void> {
   // Subcommand: `cartwright design install <slug>` — fetch a marketplace design
   // pack into an existing project. Everything below is the project scaffolder.
@@ -368,6 +390,8 @@ async function run(): Promise<void> {
     options: {
       yes: { type: "boolean", short: "y" },
       db: { type: "string" },
+      country: { type: "string" },
+      currency: { type: "string" },
       ai: { type: "boolean" },
       "no-ai": { type: "boolean" },
       "ai-gen": { type: "boolean" },
@@ -516,6 +540,50 @@ async function run(): Promise<void> {
     cancel(`Unknown database "${database}". Use turso, postgres, or sqlite.`);
     process.exit(1);
   }
+
+  // ── Market (independent from language) ─────────────────────────────────
+  const nonInteractive =
+    values.yes || !(process.stdout.isTTY === true && process.stdin.isTTY === true);
+  const rawCountry = values.country?.toUpperCase();
+  if (rawCountry && !isScaffoldCountry(rawCountry)) {
+    cancel(`Unknown country "${values.country}". Use ${SCAFFOLD_COUNTRIES.join(", ")}.`);
+    process.exit(1);
+  }
+  const country: ScaffoldCountry = rawCountry
+    ? (rawCountry as ScaffoldCountry)
+    : nonInteractive
+      ? "US"
+      : (exitOnCancel(
+          await select({
+            message: "Store country?",
+            options: [
+              { value: "US", label: "United States" },
+              { value: "GB", label: "United Kingdom" },
+              { value: "DE", label: "Germany" },
+              { value: "DK", label: "Denmark" },
+              { value: "SE", label: "Sweden" },
+              { value: "NO", label: "Norway" },
+            ],
+            initialValue: "US",
+          }),
+        ) as ScaffoldCountry);
+
+  const rawCurrency = values.currency?.toUpperCase();
+  if (rawCurrency && !isScaffoldCurrency(rawCurrency)) {
+    cancel(`Unknown currency "${values.currency}". Use ${SCAFFOLD_CURRENCIES.join(", ")}.`);
+    process.exit(1);
+  }
+  const currency: ScaffoldCurrency = rawCurrency
+    ? (rawCurrency as ScaffoldCurrency)
+    : nonInteractive
+      ? "USD"
+      : (exitOnCancel(
+          await select({
+            message: "Base and charge currency?",
+            options: SCAFFOLD_CURRENCIES.map((value) => ({ value, label: value })),
+            initialValue: country === "DK" ? "DKK" : country === "SE" ? "SEK" : country === "NO" ? "NOK" : country === "GB" ? "GBP" : country === "DE" ? "EUR" : "USD",
+          }),
+        ) as ScaffoldCurrency);
 
   // ── AI features ─────────────────────────────────────────────────────────
   const aiFlag = values.ai === true ? true : values["no-ai"] === true ? false : undefined;
@@ -669,6 +737,14 @@ async function run(): Promise<void> {
   // known shape. Always run — for `--template generic` (the default) the
   // patches are no-ops on a generic-defaulted brand.config.
   applyTemplateDefaults(targetDir, templateSlug);
+
+  const marketWarnings = applyMarketDefaults(targetDir, currency, country);
+  if (marketWarnings.length > 0) {
+    note(
+      marketWarnings.map((w) => `• ${w}`).join("\n"),
+      pc.yellow("market patches — skipped anchors (non-fatal)"),
+    );
+  }
 
   // LIGHT profile (default): prune the FULL-ONLY modules + non-curated design
   // packs and flip the light brand.config defaults. Fail-soft: warnings are
