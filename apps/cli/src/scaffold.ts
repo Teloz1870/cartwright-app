@@ -290,6 +290,98 @@ export function patchBrandConfigForTemplate(
  */
 export type PatchResult = { src: string; warnings: string[] };
 
+export const SCAFFOLD_CURRENCIES = ["USD", "EUR", "GBP", "DKK", "SEK", "NOK"] as const;
+export type ScaffoldCurrency = (typeof SCAFFOLD_CURRENCIES)[number];
+export const SCAFFOLD_COUNTRIES = ["US", "GB", "DE", "DK", "SE", "NO"] as const;
+export type ScaffoldCountry = (typeof SCAFFOLD_COUNTRIES)[number];
+
+const COUNTRY_NAMES: Record<ScaffoldCountry, string> = {
+  US: "United States",
+  GB: "United Kingdom",
+  DE: "Germany",
+  DK: "Denmark",
+  SE: "Sweden",
+  NO: "Norway",
+};
+
+// Canonical units per one DKK. Every scaffold is re-anchored from these
+// relative values so its selected base currency is always exactly rate 1.
+const CURRENCY_PER_DKK: Record<ScaffoldCurrency, number> = {
+  USD: 0.145,
+  EUR: 0.134,
+  GBP: 0.115,
+  DKK: 1,
+  SEK: 1.5,
+  NOK: 1.57,
+};
+const CURRENCY_LABELS: Record<ScaffoldCurrency, string> = {
+  USD: "US Dollar",
+  EUR: "Euro",
+  GBP: "British Pound",
+  DKK: "Danish Krone",
+  SEK: "Swedish Krona",
+  NOK: "Norwegian Krone",
+};
+
+export function isScaffoldCurrency(value: string): value is ScaffoldCurrency {
+  return SCAFFOLD_CURRENCIES.includes(value.toUpperCase() as ScaffoldCurrency);
+}
+
+export function isScaffoldCountry(value: string): value is ScaffoldCountry {
+  return SCAFFOLD_COUNTRIES.includes(value.toUpperCase() as ScaffoldCountry);
+}
+
+/** Patch country + base currency independently from language. */
+export function patchBrandConfigForMarket(
+  original: string,
+  currency: ScaffoldCurrency,
+  country: ScaffoldCountry,
+): PatchResult {
+  const warnings: string[] = [];
+  let out = original;
+  const apply = (
+    label: string,
+    re: RegExp,
+    replacement: (match: string, ...groups: string[]) => string,
+  ): void => {
+    if (!re.test(out)) {
+      warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      return;
+    }
+    out = out.replace(re, replacement);
+  };
+
+  apply(
+    "policies.currency",
+    /(policies:\s*\{[\s\S]*?\bcurrency:\s*)"[A-Z]{3}"/,
+    (_match, prefix) => `${prefix}"${currency}"`,
+  );
+  apply(
+    "policies.country",
+    /(policies:\s*\{[\s\S]*?\bcountry:\s*)"[A-Z]{2}"/,
+    (_match, prefix) => `${prefix}"${country}"`,
+  );
+  apply(
+    "company.country",
+    /(company:\s*\{[\s\S]*?\bcountry:\s*)"[^"]*"(?:\s+as\s+string)?/,
+    (_match, prefix) => `${prefix}"${COUNTRY_NAMES[country]}" as string`,
+  );
+
+  const basePerDkk = CURRENCY_PER_DKK[currency];
+  const rows = SCAFFOLD_CURRENCIES.map((code) => {
+    const rate = Number((CURRENCY_PER_DKK[code] / basePerDkk).toFixed(8));
+    return `      ${code}: { rate: ${rate}, label: "${CURRENCY_LABELS[code]}" },`;
+  }).join("\n");
+  apply(
+    "policies.supportedCurrencies",
+    /supportedCurrencies:\s*\{(?:\s*[A-Z]{3}:\s*\{[^}]*\},?)*\s*\}(?:\s+as\s+Record<string,\s*\{[^}]+\}>)?,/,
+    () =>
+      `supportedCurrencies: {\n${rows}\n    } as Record<string, { rate: number; label: string }>,`,
+  );
+
+  return { src: out, warnings };
+}
+
 /**
  * English-first scaffolds (owner decision 2026-06-11: scaffolds are born
  * en-only; the engine repo keeps da-first because it IS the live Teloz site).

@@ -7,6 +7,7 @@ import {
   patchBrandConfigContent,
   patchBrandConfigForTemplate,
   patchBrandConfigForEnglishFirst,
+  patchBrandConfigForMarket,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
   patchBrandConfigDesignSlug,
@@ -174,6 +175,55 @@ describe("patchBrandConfigForEnglishFirst", () => {
     expect(src).toBe(drifted); // untouched
     expect(warnings).toHaveLength(4); // locales, defaultLocale, tagline, disclaimer
     for (const w of warnings) expect(w).toContain("skipped");
+  });
+});
+
+const MARKET_FRAGMENT = [
+  `  policies: {`,
+  `    currency: "DKK",`,
+  `    country: "DK",`,
+  `    supportedCurrencies: {`,
+  `      DKK: { rate: 1, label: "Danske kroner" },`,
+  `      EUR: { rate: 0.134, label: "Euro" },`,
+  `      USD: { rate: 0.145, label: "US Dollar" },`,
+  `    },`,
+  `  },`,
+  `  company: {`,
+  `    country: "Danmark" as string,`,
+  `  },`,
+].join("\n");
+
+describe("patchBrandConfigForMarket", () => {
+  it("patches country and re-anchors all supported currencies to EUR", () => {
+    const { src, warnings } = patchBrandConfigForMarket(
+      MARKET_FRAGMENT,
+      "EUR",
+      "DE",
+    );
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`currency: "EUR"`);
+    expect(src).toContain(`country: "DE"`);
+    expect(src).toContain(`country: "Germany"`);
+    expect(src).toContain(`EUR: { rate: 1, label: "Euro" }`);
+    expect(src).toContain(`DKK: { rate: 7.46268657`);
+    for (const code of ["USD", "EUR", "GBP", "DKK", "SEK", "NOK"]) {
+      expect(src).toContain(`${code}: { rate:`);
+    }
+  });
+
+  it("keeps language untouched while selecting USD/US defaults", () => {
+    const withLocale = `${MARKET_FRAGMENT}\n  defaultLocale: "en",`;
+    const { src } = patchBrandConfigForMarket(withLocale, "USD", "US");
+    expect(src).toContain(`defaultLocale: "en"`);
+    expect(src).toContain(`currency: "USD"`);
+    expect(src).toContain(`country: "United States"`);
+  });
+
+  it("warns per missing anchor instead of crashing on template drift", () => {
+    const drifted = `export const brand = { locale: "en" };`;
+    const result = patchBrandConfigForMarket(drifted, "USD", "US");
+    expect(result.src).toBe(drifted);
+    expect(result.warnings).toHaveLength(4);
   });
 });
 
