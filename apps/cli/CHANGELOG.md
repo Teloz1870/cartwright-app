@@ -1,5 +1,30 @@
 # create-cartwright
 
+## 2.9.0
+
+### Minor Changes
+
+- f062675: Ask for country and base currency independently in every scaffold, add matching CLI flags, and re-anchor all six supported currency rates to the selected base.
+- c314c07: Scaffold from engine v0.52.2.
+
+  This is a prerequisite, not a routine bump. v0.52.0 is where the currency and
+  locale work landed — and the country/currency prompt this release adds is what
+  lets a user pick USD in the first place. Measured against the two refs: a USD
+  scaffold from v0.51.1 fails 25 assertions, from v0.52.2 it fails none. Shipping
+  the prompt while still pointing at v0.51.1 would have handed a new user a red
+  suite for choosing the option we just gave them.
+
+### Patch Changes
+
+- 1c452e1: The engine decides which dev-only scripts a `--profile site` scaffold prunes.
+
+  The list was written out by hand in two repositories with nothing checking they
+  agreed, so a script added to one and not the other meant either the engine's
+  audit asserted a pruning that never happened, or this CLI shipped a scaffold
+  containing a script it cannot run. The CLI now reads `sitePrunedScripts` from
+  `scaffold/manifest.json`; the old constant remains only as a fallback for
+  template refs cut before that field existed.
+
 ## 2.8.2
 
 ### Patch Changes
