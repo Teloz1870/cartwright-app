@@ -147,6 +147,10 @@ const I18N_FRAGMENT = [
   `    disclaimer: "Teloz ApS · CVR: Indsæt CVR · Alle rettigheder forbeholdes.",`,
   `    copyrightYear: 2026,`,
   `  },`,
+  `  contact: {`,
+  `    email: "kontakt@cartwright.app" as string,`,
+  `    hours: "Hverdage 9-17" as string,`,
+  `  },`,
 ].join("\n");
 
 describe("patchBrandConfigForEnglishFirst", () => {
@@ -162,6 +166,10 @@ describe("patchBrandConfigForEnglishFirst", () => {
     // brand.tagline (root) untouched — only footer.tagline is targeted
     expect(src).toContain(`tagline: "AI & Modern Commerce Agency",`);
     expect(src).toContain("copyrightYear: 2026");
+    // contact.hours renders verbatim on the public contact page, so a Danish
+    // placeholder there is visitor-facing, not just an untidy default.
+    expect(src).toContain(`hours: "Weekdays 9-17" as string,`);
+    expect(src).not.toContain("Hverdage");
   });
 
   it("a store name containing $ is inserted literally (no regex-pattern mishap)", () => {
@@ -173,7 +181,7 @@ describe("patchBrandConfigForEnglishFirst", () => {
     const drifted = `  someOtherField: true,\n  defaultLanguage: "da",\n`;
     const { src, warnings } = patchBrandConfigForEnglishFirst(drifted, "Shop");
     expect(src).toBe(drifted); // untouched
-    expect(warnings).toHaveLength(4); // locales, defaultLocale, tagline, disclaimer
+    expect(warnings).toHaveLength(5); // locales, defaultLocale, tagline, disclaimer, contact.hours
     for (const w of warnings) expect(w).toContain("skipped");
   });
 });

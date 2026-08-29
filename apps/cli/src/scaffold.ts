@@ -436,6 +436,13 @@ export function patchBrandConfigForEnglishFirst(
     /disclaimer:\s*"[^"]*"/,
     () => `disclaimer: "${storeName} · All rights reserved."`,
   );
+  // contact.hours — a placeholder the owner is meant to replace, but it renders
+  // verbatim on the public contact page (app/[locale]/contact/page.tsx), so an
+  // English scaffold's contact page read "Hverdage 9-17" until someone noticed.
+  // Anchored on the Danish copy itself rather than the `hours:` key: the value
+  // is what identifies the string we mean to replace, and anchoring on it means
+  // a template that already fixed this is left alone instead of overwritten.
+  apply("contact.hours", /"Hverdage 9-17"/, () => `"Weekdays 9-17"`);
 
   return { src: out, warnings };
 }
