@@ -64,6 +64,13 @@ export type ScaffoldManifest = {
     modules: string[];
     aliases: string[];
   }>;
+  /**
+   * Dev-only scripts a `site` materialization deletes, declared BY THE ENGINE
+   * (scaffold/site-pruned-scripts.ts). Optional: a template ref older than the
+   * engine release that introduced it has no such field, and those refs fall
+   * back to the constant below.
+   */
+  sitePrunedScripts?: string[];
 };
 
 export function loadScaffoldManifest(targetDir: string): ScaffoldManifest | null {
@@ -335,7 +342,21 @@ export const SITE_PRUNED_ZONES: readonly string[] = [
   "playwright.config.ts",
 ];
 
-export const SITE_PRUNED_SCRIPTS: readonly string[] = [
+/**
+ * FALLBACK ONLY — the engine owns this list.
+ *
+ * It used to be the truth, hand-mirrored against the engine's own copy in
+ * `scripts/site-profile-audit.ts`, with nothing checking that the two agreed.
+ * A script added to one and not the other means either the audit asserts a
+ * pruning that never happens, or the CLI ships a scaffold with a script it
+ * cannot run — which is how `scripts/capture-locales.mjs` (it imports
+ * Playwright, which the site profile prunes) reached CI.
+ *
+ * The engine now publishes `sitePrunedScripts` in `scaffold/manifest.json`.
+ * Prefer `sitePrunedScriptsFor(manifest)`; this list only serves template refs
+ * cut before that field existed.
+ */
+export const SITE_PRUNED_SCRIPTS_FALLBACK: readonly string[] = [
   "scripts/capture-gallery.mjs",
   "scripts/dev-screenshot.mjs",
   "scripts/admin-reset.ts",
@@ -352,6 +373,20 @@ export const SITE_PRUNED_SCRIPTS: readonly string[] = [
   "scripts/restore-turso.ts",
   "scripts/build-registry-source.ts",
 ];
+
+/**
+ * The engine's list when the template ref carries one, the frozen fallback
+ * otherwise. Reading it from the manifest is what stops the two repositories
+ * from drifting: the engine declares what it prunes, the CLI obeys.
+ */
+export function sitePrunedScriptsFor(
+  manifest: ScaffoldManifest | null | undefined,
+): readonly string[] {
+  const declared = manifest?.sitePrunedScripts;
+  return Array.isArray(declared) && declared.length
+    ? declared
+    : SITE_PRUNED_SCRIPTS_FALLBACK;
+}
 
 // ── Apply ────────────────────────────────────────────────────────────────────
 
@@ -524,7 +559,10 @@ export function applyMaterializer(
       ]);
       writeFileSync(lockPath, pruned.src);
     }
-    for (const zone of [...SITE_PRUNED_ZONES, ...SITE_PRUNED_SCRIPTS]) {
+    for (const zone of [
+      ...SITE_PRUNED_ZONES,
+      ...sitePrunedScriptsFor(manifest),
+    ]) {
       const abs = join(targetDir, zone);
       if (existsSync(abs)) {
         rmSync(abs, { recursive: true, force: true });
