@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.9.1
+
+### Patch Changes
+
+- d9a55bb: Point the stable scaffold channel at Cartwright v0.52.2 so new projects include the multicurrency release and its single-locale scaffold fixes.
+- 2054400: Bump default template ref to v0.54.0 (was v0.52.2).
+
 ## 2.9.0
 
 ### Minor Changes
