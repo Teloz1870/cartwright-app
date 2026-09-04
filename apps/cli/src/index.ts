@@ -109,6 +109,7 @@ import {
   patchBrandConfigForMarket,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
+  patchBrandConfigSameAs,
   patchLogoForScaffold,
   patchHeroImagesForScaffold,
   patchWebsiteCopyForScaffold,
@@ -300,9 +301,14 @@ function applyFirstImpressionPatches(targetDir: string, storeName: string): stri
       const english = patchBrandConfigForEnglishFirst(src, storeName);
       const copy = patchWebsiteCopyForScaffold(english.src, storeName);
       const github = patchBrandConfigGithubUrl(copy.src);
+      // company.sameAs feeds Organization JSON-LD (app/layout.tsx), so leaving
+      // Cartwright's profiles in makes every customer site ASSERT it is us to
+      // Google and AI crawlers. Empty it here rather than leaving it to the
+      // trust audit the customer may never read.
+      const sameAs = patchBrandConfigSameAs(github.src);
       // A customer scaffold must never ship the Teloz logo mark — swap in the
       // Cartwright wheel placeholder (owner mandate, 2026-06-11).
-      const logo = patchLogoForScaffold(github.src);
+      const logo = patchLogoForScaffold(sameAs.src);
       const heroImages = patchHeroImagesForScaffold(logo.src);
       const flag = patchBrandConfigForFirstRunWelcome(heroImages.src);
       return {
@@ -311,6 +317,7 @@ function applyFirstImpressionPatches(targetDir: string, storeName: string): stri
           ...english.warnings,
           ...copy.warnings,
           ...github.warnings,
+          ...sameAs.warnings,
           ...logo.warnings,
           ...heroImages.warnings,
           ...flag.warnings,
