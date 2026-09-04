@@ -166,6 +166,51 @@ export function titleCase(projectName: string): string {
     .join(" ");
 }
 
+/**
+ * Domains the ENGINE uses for its OWN identity. Any of these sitting in a
+ * config VALUE is upstream identity that must never reach a customer scaffold.
+ *
+ * Why this is a list and not one literal: the engine rebranded teloz.net →
+ * cartwright.app in #289 ("rebrand repo identity Teloz → Cartwright"), and this
+ * stripper still only knew `teloz.net`. The exact leak its docblock was written
+ * to prevent came straight back under the new domain — every scaffold shipped
+ * `url: "https://cartwright.app"` as its CANONICAL url, `admin@cartwright.app`
+ * as the seeded admin login, and `kontakt@cartwright.app` on its /contact page.
+ * A new engine domain must be ADDED here, never swapped in.
+ */
+export const ENGINE_DOMAINS: ReadonlyArray<string> = ["teloz.net", "cartwright.app"];
+
+/** RFC-2606 reserved — safe to publish, obviously a placeholder. */
+const PLACEHOLDER_DOMAIN = "example.com";
+
+/**
+ * Replace engine domains inside QUOTED STRING VALUES only, skipping comment
+ * lines. A blunt global replace would rewrite the documentation URLs the config
+ * deliberately carries (`… on cartwright.app`, `pricing landerer på
+ * cartwright.app`), turning helpful pointers into dead example.com links.
+ * Measured on a v0.54.0 scaffold: 7 identity fields must change, 3 comment
+ * mentions must not.
+ *
+ * Operating per line on quoted spans also covers array elements (e.g.
+ * `sameAs: [...]`), which a `field:`-anchored regex would miss.
+ */
+export function stripEngineDomains(src: string): string {
+  return src
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trimStart();
+      if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")) {
+        return line;
+      }
+      return line.replace(/"([^"]*)"/g, (whole, inner: string) => {
+        let next = inner;
+        for (const domain of ENGINE_DOMAINS) next = next.split(domain).join(PLACEHOLDER_DOMAIN);
+        return next === inner ? whole : `"${next}"`;
+      });
+    })
+    .join("\n");
+}
+
 export function patchBrandConfigContent(original: string, projectName: string): string {
   const storeName = titleCase(projectName);
   let out = original
@@ -173,13 +218,13 @@ export function patchBrandConfigContent(original: string, projectName: string): 
     .replace(/storeSlug:\s*"[^"]*"/, `storeSlug: "${projectName}"`);
 
   // Strip the upstream template's own brand identity. The engine repo doubles
-  // as the live Teloz site, so its brand.config.ts ships Teloz values. Without
-  // this every scaffold leaks "Teloz Agency" as the SEO/OG title, teloz.net as
-  // the domain + canonical URL, and @teloz.net contact + seeded-admin emails
-  // (the seed creates its admin user from brand.emails.admin).
+  // as a live site, so its brand.config.ts ships OUR values. Without this every
+  // scaffold leaks the engine's SEO/OG title, its domain + canonical URL, and
+  // its contact + seeded-admin emails (the seed creates its admin user from
+  // brand.emails.admin).
+  out = stripEngineDomains(out);
+
   out = out
-    // domain, url and every @teloz.net email → neutral, RFC-2606 placeholder
-    .replace(/teloz\.net/g, "example.com")
     // legal/company name (legalName + footer disclaimer) → the store name
     .replaceAll("Teloz ApS", storeName)
     // SEO/OG title (consumed by layout, manifest, PDP/PLP, mcp.json)
@@ -579,17 +624,47 @@ export function patchBrandConfigDesignSlug(original: string, skin: string): Patc
  *
  * Fail-soft across template generations: a pre-v0.36.0 template has no
  * `githubUrl` field at all (its hardcoded link is stripped by
- * patchFooterContent) — warn + skip. A field that already holds a non-Teloz
- * value (customer/upstream changed it) is a silent no-op.
+ * patchFooterContent) — warn + skip. A field already holding `""` is the
+ * intended end state and is a silent no-op. A field holding some OTHER
+ * non-empty value is left alone but now WARNS: that shape is indistinguishable
+ * from a drifted anchor, and treating it silently is how v0.52.0's repo-path
+ * URL shipped in every customer footer unnoticed.
  */
 export function patchBrandConfigGithubUrl(original: string): PatchResult {
-  const telozAnchor = /(githubUrl:\s*)"https:\/\/github\.com\/Teloz1870"/;
+  // Match ANY github.com/Teloz1870 URL, not just the bare profile. v0.52.0+
+  // ships `githubUrl: "https://github.com/Teloz1870/cartwright-template" as
+  // string` — a repo path, not the profile — and the old exact-match anchor
+  // silently fell through to the no-op branch below, so every scaffold kept
+  // OUR link in its footer. The trailing `[^"]*` also tolerates the `as string`
+  // suffix, which sits outside the quotes and is left untouched.
+  const telozAnchor = /(githubUrl:\s*)"https:\/\/github\.com\/Teloz1870[^"]*"/;
   if (telozAnchor.test(original)) {
     return { src: original.replace(telozAnchor, `$1""`), warnings: [] };
   }
-  if (/\bgithubUrl:/.test(original)) {
-    // Field exists but no longer points at Teloz — already neutral, no-op.
+  if (/githubUrl:\s*""/.test(original)) {
+    // Already neutral — the intended end state. Idempotent, no warning.
     return { src: original, warnings: [] };
+  }
+  const foreign = original.match(/githubUrl:\s*"([^"]*)"/);
+  if (foreign) {
+    // Field exists and holds a non-Teloz, non-empty value. That is PROBABLY a
+    // customer/upstream URL we must not clobber — but it is also exactly what a
+    // drifted anchor looks like, and this branch used to be silent, which is
+    // how the bug above shipped unnoticed. Say what was left in place.
+    return {
+      src: original,
+      warnings: [
+        `footer.githubUrl left as "${foreign[1]}" — not a Teloz URL, so it was treated as intentional. If this is not yours, clear it in brand.config.ts.`,
+      ],
+    };
+  }
+  if (/\bgithubUrl:/.test(original)) {
+    return {
+      src: original,
+      warnings: [
+        "footer.githubUrl found but its value could not be read — skipped (unexpected shape; check brand.config.ts).",
+      ],
+    };
   }
   return {
     src: original,
@@ -597,6 +672,60 @@ export function patchBrandConfigGithubUrl(original: string): PatchResult {
       "footer.githubUrl not found — skipped (template predates the v0.36.0 githubUrl field; the hardcoded footer link is handled separately).",
     ],
   };
+}
+
+/**
+ * Empty `company.sameAs` on a scaffold.
+ *
+ * schema.org `sameAs` is an IDENTITY assertion: it tells Google and every AI
+ * crawler that the listed profiles ARE this organization. The engine ships
+ * Cartwright's own two — the template repo and the npm package — and
+ * `app/layout.tsx` puts them straight into the Organization JSON-LD. Left in
+ * place, every customer site publishes machine-readable structured data
+ * claiming their company is the same entity as our repo. That is a worse leak
+ * than the footer link, because it is aimed at machines and is believed.
+ *
+ * The engine already knows: `lib/trust-content-audit.ts` raises "Replace
+ * Cartwright's default company.sameAs profiles…" as a finding. But an audit the
+ * customer must read and act on is not a substitute for the scaffolder simply
+ * not shipping it — stripping upstream identity is this file's whole job.
+ *
+ * A fresh shop has no authority profiles, so `[]` is the honest value; the
+ * customer fills it in when they have some. Fail-soft: an already-empty array
+ * is a silent no-op, a customised list is preserved AND reported (see the
+ * githubUrl branch for why silence is not an option), and a missing field warns.
+ */
+export function patchBrandConfigSameAs(original: string): PatchResult {
+  const block = /(sameAs:\s*)\[[\s\S]*?\](\s*as string\[\])?/;
+  const match = original.match(block);
+  if (!match) {
+    return {
+      src: original,
+      warnings: [
+        "company.sameAs not found — skipped (verify the scaffold does not publish Cartwright's profiles in its Organization JSON-LD).",
+      ],
+    };
+  }
+
+  const current = match[0];
+  const urls = [...current.matchAll(/["']([^"']+)["']/g)].map((m) => m[1]);
+  if (urls.length === 0) return { src: original, warnings: [] };
+
+  const ours =
+    /github\.com\/Teloz1870|npmjs\.com\/package\/create-cartwright|cartwright\.app/i;
+  const foreign = urls.filter((u) => !ours.test(u));
+  const cast = match[2] ?? "";
+  const src = original.replace(block, `$1[]${cast}`);
+
+  if (foreign.length > 0) {
+    return {
+      src,
+      warnings: [
+        `company.sameAs also held non-Cartwright profile(s) (${foreign.join(", ")}) — cleared with the rest. Re-add them in brand.config.ts if they are yours.`,
+      ],
+    };
+  }
+  return { src, warnings: [] };
 }
 
 /**
@@ -697,14 +826,35 @@ export function patchMessagesCartwrightCopy(original: string): PatchResult {
  * through brand.ai.* instead: config-true (the customer edits one field, both
  * modes follow) and English out of the box on v0.36.0 templates.
  * `ecommerceEnabled` stays used (className + panel prop), so the build is safe.
+ *
+ * Only load-bearing for refs BELOW v0.52.0. From v0.52.0 the engine routes both
+ * texts through `tSf(...)`/messages, so the anchors miss by design and the patch
+ * silently no-ops instead of warning. See the comment inside.
  */
 export function patchAIStylistButtonContent(original: string): PatchResult {
   const warnings: string[] = [];
   let out = original;
 
+  // Engine v0.52.0 (PR #507) replaced the hardcoded Danish website-mode
+  // fallbacks with `tSf(...)` reading messages/<locale>.json, which ships
+  // "AI consultant"/"Ask the AI consultant" in en.json. On such a ref the
+  // scaffold output is ALREADY correct and there is nothing to strip — but the
+  // old exact-string anchors miss, so this patch emitted two "template drift?"
+  // warnings on every v0.52.0+ scaffold. Pure noise, and noise trains the
+  // reader to ignore the warning block that also carries real findings.
+  //
+  // The patch is NOT obsolete: `--ref v0.51.1` (and older) still ship
+  // `ecommerceEnabled ? brand.ai.assistantLabel : "AI Konsulent"` with no
+  // consultant keys in en.json at all, so removing it would put Danish labels
+  // on an English scaffold. Keep the migration, and stay quiet when upstream
+  // has already done the job.
+  const upstreamFixed = /tSf\(\s*["']consultant(Label|OpenText)["']\s*\)/.test(original);
+
   const apply = (label: string, from: string, to: string): void => {
     if (!out.includes(from)) {
-      warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      if (!upstreamFixed) {
+        warnings.push(`${label} — anchor not found, skipped (template drift?).`);
+      }
       return;
     }
     out = out.replace(from, to);
@@ -988,8 +1138,10 @@ export function databaseNote(db: Database): string {
  * their own mark (logo contract: outline paths, themeable stroke).
  *
  * Fail-soft: anchored on the exact Teloz markPaths string + legacy favicon
- * colors. An already-migrated mark or any complete custom favicon palette is
- * a silent no-op; missing properties or an unknown mark still warn.
+ * colors. An already-migrated mark, or a favicon palette already on a known
+ * Cartwright pair, is a silent no-op. Missing properties, an unknown mark, or
+ * a palette that is neither legacy-Teloz nor known-Cartwright all warn — the
+ * last of those used to be silent, which hid the v0.52.0 vermilion change.
  */
 export function patchLogoForScaffold(original: string): PatchResult {
   const warnings: string[] = [];
@@ -1009,15 +1161,34 @@ export function patchLogoForScaffold(original: string): PatchResult {
     );
   }
 
+  // Legacy Teloz navy pair — still shipped by older refs (`--ref v0.51.1`),
+  // so the swap must stay for them.
   const faviconBg = /faviconBg:\s*"#1e3f5a"/;
   const faviconFg = /faviconFg:\s*"#f4efe6"/;
+  // Palettes that are ALREADY Cartwright-branded and must not be clobbered.
+  // v0.52.0+ ships vermilion (`#c33f16`/`#ffffff`, see the engine's own
+  // "Cartwright vermilion" comment); `#18181b`/`#fafafa` is what this patch
+  // writes, so an re-run must recognise its own output. Without this list both
+  // fell into the `else if` below, whose guard only fires when a property is
+  // MISSING — so a changed-but-present palette was a SILENT no-op, which is
+  // how the vermilion pair went unnoticed from v0.52.0 to v0.54.0.
+  const cartwrightPalettes: ReadonlyArray<readonly [string, string]> = [
+    ["#c33f16", "#ffffff"],
+    ["#18181b", "#fafafa"],
+  ];
+  const bgValue = src.match(/faviconBg:\s*["']([^"']+)["']/)?.[1];
+  const fgValue = src.match(/faviconFg:\s*["']([^"']+)["']/)?.[1];
+
   if (faviconBg.test(src) && faviconFg.test(src)) {
     src = src.replace(faviconBg, `faviconBg: "#18181b"`).replace(faviconFg, `faviconFg: "#fafafa"`);
-  } else if (
-    !/faviconBg:\s*["'][^"']+["']/.test(src) ||
-    !/faviconFg:\s*["'][^"']+["']/.test(src)
-  ) {
+  } else if (!bgValue || !fgValue) {
     warnings.push("favicon color properties not found — verify the scaffold icon palette.");
+  } else if (
+    !cartwrightPalettes.some(([bg, fg]) => bg === bgValue && fg === fgValue)
+  ) {
+    warnings.push(
+      `favicon palette is ${bgValue}/${fgValue} — neither the legacy pair this patch migrates nor a known Cartwright pair. Left as-is; verify the scaffold does not ship another brand's colors.`,
+    );
   }
 
   return { src, warnings };
