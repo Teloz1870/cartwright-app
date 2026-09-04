@@ -35,6 +35,19 @@ jobs:
       - run: pnpm --filter web exec tsc --noEmit
       - run: pnpm --filter web lint
       - run: pnpm --filter web test
+      # The CLI package had NO test step here, so `apps/cli`'s 291 tests never
+      # ran in CI — including the scaffold anchor-drift gate, whose entire job
+      # is to fail when a DEFAULT_REF bump breaks an identity patcher. That is
+      # how 2.9.1 shipped scaffolds carrying our own domain, sameAs profiles and
+      # GitHub URL: the bump PR's only gate was this file, and this file did not
+      # look. A gate nothing runs is not a gate.
+      #
+      # Note the drift gate reaches raw.githubusercontent.com for the template
+      # at DEFAULT_REF and FAILS (never skips) when it cannot — deliberate: an
+      # unrun drift gate reports green while the leak ships.
+      - run: pnpm --filter create-cartwright exec tsc --noEmit
+      - run: pnpm --filter create-cartwright lint
+      - run: pnpm --filter create-cartwright test
 
   design-system:
     name: design system contract

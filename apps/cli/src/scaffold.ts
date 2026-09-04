@@ -194,12 +194,29 @@ const PLACEHOLDER_DOMAIN = "example.com";
  * Operating per line on quoted spans also covers array elements (e.g.
  * `sameAs: [...]`), which a `field:`-anchored regex would miss.
  */
+/** A comment line, for the purposes of both patchers below. */
+export function isCommentLine(line: string): boolean {
+  const t = line.trimStart();
+  return t.startsWith("*") || t.startsWith("//") || t.startsWith("/*");
+}
+
+/**
+ * Blank every comment line, preserving length so indices still address the
+ * original. Lets a regex be run "as if" comments did not exist and the result
+ * spliced back into the real text — see patchBrandConfigSameAs.
+ */
+export function maskCommentLines(src: string): string {
+  return src
+    .split("\n")
+    .map((line) => (isCommentLine(line) ? " ".repeat(line.length) : line))
+    .join("\n");
+}
+
 export function stripEngineDomains(src: string): string {
   return src
     .split("\n")
     .map((line) => {
-      const trimmed = line.trimStart();
-      if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")) {
+      if (isCommentLine(line)) {
         return line;
       }
       return line.replace(/"([^"]*)"/g, (whole, inner: string) => {
@@ -697,17 +714,36 @@ export function patchBrandConfigGithubUrl(original: string): PatchResult {
  */
 export function patchBrandConfigSameAs(original: string): PatchResult {
   const block = /(sameAs:\s*)\[[\s\S]*?\](\s*as string\[\])?/;
-  const match = original.match(block);
+  // Match against a copy with COMMENT LINES blanked, then splice the original
+  // at the indices found. Without this the patcher is comment-blind and the
+  // engine's docblock sits directly above the array (it already says "Fjern/
+  // udskift ved fork"), so the moment a maintainer adds a worked example there
+  // — `Ingen? Skriv sameAs: [] ved fork.` — the regex matches the COMMENT's
+  // empty array, hits the `urls.length === 0` early return, and returns
+  // unchanged with no warning while the real profiles ship. A near-variant
+  // (`e.g. sameAs: ["https://x.test"]`) is worse: it rewrites the comment and
+  // leaves the array. Same silent-anchor failure this whole patch exists to
+  // kill, so it must not be reintroduced here.
+  const masked = maskCommentLines(original);
+  const match = block.exec(masked);
   if (!match) {
+    // `company.sameAs` only exists from engine v0.46.0. On an older `--ref`
+    // there is no field, nothing is published, and nothing needs doing — so
+    // this is a silent no-op, not a warning about a field that never existed.
+    if (!/\bsameAs\s*:/.test(masked)) return { src: original, warnings: [] };
     return {
       src: original,
       warnings: [
-        "company.sameAs not found — skipped (verify the scaffold does not publish Cartwright's profiles in its Organization JSON-LD).",
+        "company.sameAs found but its array could not be read — skipped (verify the scaffold does not publish Cartwright's profiles in its Organization JSON-LD).",
       ],
     };
   }
 
-  const current = match[0];
+  // Indices come from the masked copy but address the SAME offsets in the
+  // original, so slice the original — never `original.replace(block, …)`,
+  // which would re-run the regex and could land on a comment again.
+  const start = match.index;
+  const current = original.slice(start, start + match[0].length);
   const urls = [...current.matchAll(/["']([^"']+)["']/g)].map((m) => m[1]);
   if (urls.length === 0) return { src: original, warnings: [] };
 
@@ -715,7 +751,9 @@ export function patchBrandConfigSameAs(original: string): PatchResult {
     /github\.com\/Teloz1870|npmjs\.com\/package\/create-cartwright|cartwright\.app/i;
   const foreign = urls.filter((u) => !ours.test(u));
   const cast = match[2] ?? "";
-  const src = original.replace(block, `$1[]${cast}`);
+  const keyPrefix = current.match(/^sameAs:\s*/)?.[0] ?? "sameAs: ";
+  const src =
+    original.slice(0, start) + `${keyPrefix}[]${cast}` + original.slice(start + match[0].length);
 
   if (foreign.length > 0) {
     return {
@@ -848,7 +886,12 @@ export function patchAIStylistButtonContent(original: string): PatchResult {
   // consultant keys in en.json at all, so removing it would put Danish labels
   // on an English scaffold. Keep the migration, and stay quiet when upstream
   // has already done the job.
-  const upstreamFixed = /tSf\(\s*["']consultant(Label|OpenText)["']\s*\)/.test(original);
+  // BOTH must be present. Requiring only one meant a half-migrated file —
+  // `openText` on tSf(), `label` still `: "AI Rådgiver"` — counted as fixed,
+  // so the surviving Danish literal shipped with no warning at all.
+  const upstreamFixed =
+    /tSf\(\s*["']consultantLabel["']\s*\)/.test(original) &&
+    /tSf\(\s*["']consultantOpenText["']\s*\)/.test(original);
 
   const apply = (label: string, from: string, to: string): void => {
     if (!out.includes(from)) {
@@ -1166,15 +1209,20 @@ export function patchLogoForScaffold(original: string): PatchResult {
   const faviconBg = /faviconBg:\s*"#1e3f5a"/;
   const faviconFg = /faviconFg:\s*"#f4efe6"/;
   // Palettes that are ALREADY Cartwright-branded and must not be clobbered.
-  // v0.52.0+ ships vermilion (`#c33f16`/`#ffffff`, see the engine's own
-  // "Cartwright vermilion" comment); `#18181b`/`#fafafa` is what this patch
-  // writes, so an re-run must recognise its own output. Without this list both
-  // fell into the `else if` below, whose guard only fires when a property is
-  // MISSING — so a changed-but-present palette was a SILENT no-op, which is
-  // how the vermilion pair went unnoticed from v0.52.0 to v0.54.0.
+  // Measured per tag, because `--ref` can target any of them:
+  //   v0.37.0 → v0.44.1  #7c5cff (the retired Cartwright purple, 11 tags)
+  //   v0.45.0 → present  #c33f16 ("Cartwright vermilion", the engine's own name)
+  //   this patch writes  #18181b — so a re-run must recognise its own output.
+  // Omitting purple would make every `--ref v0.40.0` scaffold warn that it may
+  // "ship another brand's colors" about Cartwright's own former brand colour.
+  // Without this list entirely, all of them fell into the `else if` below,
+  // whose guard only fires when a property is MISSING — so a changed-but-
+  // present palette was a SILENT no-op, which is how the v0.45.0 vermilion
+  // change went unnoticed all the way to v0.54.0.
   const cartwrightPalettes: ReadonlyArray<readonly [string, string]> = [
     ["#c33f16", "#ffffff"],
     ["#18181b", "#fafafa"],
+    ["#7c5cff", "#ffffff"],
   ];
   const bgValue = src.match(/faviconBg:\s*["']([^"']+)["']/)?.[1];
   const fgValue = src.match(/faviconFg:\s*["']([^"']+)["']/)?.[1];

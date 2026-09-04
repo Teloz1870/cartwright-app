@@ -158,6 +158,26 @@ describe("engine-domain stripping (REGRESSION: the #289 rebrand re-opened this)"
   });
 });
 
+describe("patchAIStylistButtonContent — upstream-fixed detection", () => {
+  it("MUST NOT treat a HALF-migrated file as fixed", () => {
+    // Requiring only ONE tSf() call let a surviving Danish literal ship silently.
+    const half = [
+      'const label = ecommerceEnabled ? brand.ai.assistantLabel : "AI Konsulent";',
+      'const openText = tSf("consultantOpenText");',
+    ].join("\n");
+    const { warnings } = patchAIStylistButtonContent(half);
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  it("is quiet only when BOTH texts are upstream-fixed", () => {
+    const full = [
+      'const label = tSf("consultantLabel");',
+      'const openText = tSf("consultantOpenText");',
+    ].join("\n");
+    expect(patchAIStylistButtonContent(full).warnings).toEqual([]);
+  });
+});
+
 describe("patchFooterContent", () => {
   const FOOTER = [
     `<p>© {brand.footer.copyrightYear} {brand.storeName}</p>`,
@@ -460,16 +480,49 @@ describe("patchBrandConfigGithubUrl", () => {
     expect(warnings.join(" ")).toContain("acme/shop");
   });
 
+  it("MUST-FIX: is not fooled by a `sameAs: []` example in the comment above it", () => {
+    // The engine's docblock sits directly above the array and already says
+    // "Fjern/udskift ved fork", so an example there is a natural edit. A
+    // comment-blind regex matched the COMMENT's empty array, took the
+    // urls.length===0 early return, and left the real profiles shipping —
+    // silently, with the drift gate still green.
+    const input = [
+      `    /** Officielle authority-profiler. Ingen? Skriv sameAs: [] ved fork. */`,
+      `    sameAs: [`,
+      `      "https://github.com/Teloz1870/cartwright-template",`,
+      `    ] as string[],`,
+    ].join("\n");
+    const { src, warnings } = patchBrandConfigSameAs(input);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("Teloz1870");
+    expect(src).toContain("sameAs: [] as string[]");
+    // The comment itself must survive untouched.
+    expect(src).toContain("Ingen? Skriv sameAs: [] ved fork.");
+  });
+
+  it("MUST-FIX: does not mangle a commented example array", () => {
+    const input = [
+      `    /** e.g. sameAs: ["https://x.test"] */`,
+      `    sameAs: ["https://github.com/Teloz1870/cartwright-template"] as string[],`,
+    ].join("\n");
+    const { src } = patchBrandConfigSameAs(input);
+    expect(src).toContain(`e.g. sameAs: ["https://x.test"]`);
+    expect(src).not.toContain("Teloz1870");
+  });
+
+  it("is silent on a pre-v0.46.0 template that has no sameAs at all", () => {
+    // The field only exists from v0.46.0; warning about it on `--ref v0.40.0`
+    // reports a problem that cannot exist there.
+    const { src, warnings } = patchBrandConfigSameAs(`    country: "Denmark" as string,`);
+    expect(src).toBe(`    country: "Denmark" as string,`);
+    expect(warnings).toEqual([]);
+  });
+
   it("is a silent no-op on an already-empty sameAs", () => {
     const input = `    sameAs: [] as string[],`;
     const { src, warnings } = patchBrandConfigSameAs(input);
     expect(src).toBe(input);
     expect(warnings).toEqual([]);
-  });
-
-  it("warns when company.sameAs is absent entirely", () => {
-    const { warnings } = patchBrandConfigSameAs(`    country: "Denmark" as string,`);
-    expect(warnings.some((w) => w.includes("company.sameAs not found"))).toBe(true);
   });
 
   it("CROSS-TEMPLATE COMPAT: warns + skips when the field does not exist (pre-v0.36.0)", () => {
