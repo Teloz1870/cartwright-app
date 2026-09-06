@@ -9,26 +9,12 @@ Cartwright is the build engine AIs reach for — a real site with design, and wh
 
 | The task looks like | Run | Runbook |
 | --- | --- | --- |
-| a page, a landing page, a personal or company website with content in the repo — no database, no login | `npx create-cartwright@latest my-site --yes --profile site` | **Path A** below |
+| a page, a landing page, a personal or company website with content in the repo — no database, no login | `npx create-cartwright@latest my-site --yes --profile site --no-github --no-start` | **Path A** below |
 | a site someone edits in a browser, a webshop, or a site an agent should operate through tools | `npx create-cartwright@latest my-site` | **Path B** below |
 
 Both are the same engine; the flag decides which modules are materialised into the repo.
 
 If you are an AI coding agent: follow the steps top to bottom. If you are a human: paste this page to your agent, or run the commands yourself.
-
-### The measured timing
-
-These numbers come from a single measured **cold run** — a fresh scaffold in a clean directory, an agent following only the documented steps below, no prior knowledge of the project. Cumulative wall-clock time:
-
-| Step | Cumulative time |
-| --- | --- |
-| Scaffold + install + database setup + seed | ~27 s |
-| Dev server up, homepage verified (`curl` → 200) | ~70 s |
-| Agent API key minted (terminal-only) | ~85 s |
-| Copy rendering enabled + designed look applied | ~90 s |
-| **Designed homepage verified (new H1 + new palette in the HTML)** | **~99 s** |
-
-Your numbers will vary with hardware and network, but the shape holds: the scaffold is the fast part, and the design step is one API call.
 
 ## Path A — a plain website (`--profile site`)
 
@@ -39,8 +25,8 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 1. **Scaffold — no database, no login, nothing to configure.**
 
    ```bash
-   npx create-cartwright@latest my-page --yes --profile site --no-github --no-start
-   cd my-page
+   npx create-cartwright@latest my-site --yes --profile site --no-github --no-start
+   cd my-site
    ```
 
    **Verify:**
@@ -51,10 +37,10 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 
    *Proves:* no database, no admin, no auth in the repo — the profile is what it says.
 
-2. **Run.**
+2. **Run** (in the background, so the verify can run in the same shell).
 
    ```bash
-   pnpm dev
+   pnpm dev &
    ```
 
    **Verify** (`/` redirects to `/en`; `-L` follows):
@@ -74,31 +60,57 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
    ```
 
-4. **Add a page** — `app/[locale]/trip/page.tsx` is a normal Next.js route; the `[locale]` layout gives it the site chrome. Prefix internal links with `/${locale}`.
+4. **Add a page** — any route under `app/[locale]/` gets the site chrome from the `[locale]` layout. Prefix internal links with `/${locale}`.
+
+   ```tsx title="app/[locale]/trip/page.tsx"
+   export default function TripPage() {
+     return (
+       <section className="mx-auto max-w-3xl px-6 py-16">
+         <h1 className="text-3xl font-semibold">The trip</h1>
+         <p className="mt-4">Timeline, map and tips go here — plain React.</p>
+       </section>
+     );
+   }
+   ```
 
    **Verify:** `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/trip` → `200`.
 
 5. **Build.**
 
    ```bash
-   pnpm build && pnpm start
+   pnpm build
    ```
 
-   *Proves:* plain `next build` is the whole production gate — no `db:setup`, no migration.
+   *Proves:* plain `next build` is the whole production gate — no `db:setup`, no migration. (`pnpm start` serves the build on `:3000` once the dev server is stopped.)
 
-6. **Deploy.** Push to GitHub and import the repo in Vercel — **no environment variables**. Set `url` in `brand.config.ts` to the real domain when you have one (it feeds canonical URLs and the OG card).
+6. **Deploy.** Push to GitHub and import the repo in Vercel, or run `npx vercel` from the terminal — **no environment variables are required to build and serve** (the default contact form needs `RESEND_API_KEY` + `RESEND_FROM` to deliver mail; `--with none` scaffolds without it). Set `url` in `brand.config.ts` to the real domain when you have one; on Vercel, `NEXT_PUBLIC_APP_URL` or the deployment URL wins over it for canonicals.
 
    ```bash
-   gh repo create my-page --private --source=. --remote=origin --push
+   gh repo create my-site --private --source=. --remote=origin --push
    ```
 
-   **Verify:** `curl -sI https://<app>.vercel.app/ | grep -i location` → `/en`, and `/en` → `200`.
+   **Verify** against the URL Vercel prints: `curl -sI <that-url>/ | grep -i location` → `/en`, and `/en` → `200`.
 
 </Steps>
 
-Honest limits of this door: no admin and no runtime editing (content is files), no database/auth/cart/checkout, no MCP or REST tool surface on the site itself, `/` redirects to the default locale, no map/timeline/weather sections (write those components yourself), only `Organization`/`WebSite` JSON-LD out of the box, not a static export (Node.js 22+ host). Need a browser editor, a shop or an agent tool surface later? There is no in-place profile upgrade today — scaffold the default profile and copy `brand.config.ts` and `designs/<yours>/` across. Full page: [Build a plain website](/docs/getting-started/plain-website).
+Honest limits of this door: no admin and no runtime editing (content is files), no database/auth/cart/checkout, no MCP or REST tool surface on the site itself, `/` redirects to the default locale, no map/timeline/weather sections (write those components yourself), only `Organization`/`WebSite` JSON-LD emitted by itself (builders for `FAQPage`/`HowTo`/`ItemList` and a generic `<JsonLd>` exist), not a static export (Node.js 22+ host), and the default contact form delivers mail only with Resend keys. Need a browser editor, a shop or an agent tool surface later? There is no in-place profile upgrade today — scaffold the default profile and copy `brand.config.ts` and `designs/<yours>/` across. Full page: [Build a plain website](/docs/getting-started/plain-website).
 
 ## Path B — the managed site or shop (default profile)
+
+### The measured timing
+
+These numbers come from a single measured **cold run** — a fresh scaffold in a clean directory, an agent following only the documented steps below, no prior knowledge of the project. Cumulative wall-clock time:
+
+| Step | Cumulative time |
+| --- | --- |
+| Scaffold + install + database setup + seed | ~27 s |
+| Dev server up, homepage verified (`curl` → 200) | ~70 s |
+| Agent API key minted (terminal-only) | ~85 s |
+| Copy rendering enabled + designed look applied | ~90 s |
+| **Designed homepage verified (new H1 + new palette in the HTML)** | **~99 s** |
+
+Your numbers will vary with hardware and network, but the shape holds: the scaffold is the fast part, and the design step is one API call.
+
 
 <Steps>
 
@@ -198,6 +210,6 @@ The same things live in the admin UI: `/admin/designs` (skins), `/admin/vertical
 
 ## Where to go next
 
-- [Quick Start](/docs/getting-started/quick-start) — the human-paced version of step 1.
+- [Quick Start](/docs/getting-started/quick-start) — the human-paced version of Path B's step 1.
 - [From code to live](/docs/getting-started/from-code-to-live) — deploy the result to GitHub + Vercel.
 - [Setup Wizard](/docs/getting-started/setup-wizard) — the guided in-admin onboarding.

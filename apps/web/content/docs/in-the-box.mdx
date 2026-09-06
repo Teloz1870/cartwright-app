@@ -4,7 +4,7 @@ description: Every integration that ships pre-wired so a Cartwright shop can go 
 ---
 
 <Callout type="info" title="Which profile is this page about?">
-This tour describes the default `light` profile and `full`. The database-free **`site`** profile (`npx create-cartwright@latest my-site --profile site`) carries none of these integrations except the optional Resend contact form: it ships designed pages (<EngineFact k="siteDesignPacks" /> design packs), SEO/JSON-LD, sitemap, `llms.txt`, locale routing and an OG-image route, boots with zero environment variables and builds with plain `next build` — <EngineFact k="siteColdRunScaffold" /> to scaffold, <EngineFact k="siteColdRunBuild" /> to build. See [Build a plain website](/docs/getting-started/plain-website).
+This tour describes the default `light` profile and `full`. The database-free **`site`** profile (`npx create-cartwright@latest my-site --profile site`) needs none of these keys: hosting is Vercel, the Sentry hooks ship dormant (no DSN → no-op), and the only service it calls is Resend for the optional contact form. It ships designed pages (<EngineFact k="siteDesignPacks" /> design packs), SEO/JSON-LD, sitemap, `llms.txt`, locale routing and an OG-image route, boots with zero environment variables and builds with plain `next build` — <EngineFact k="siteColdRunScaffold" /> to scaffold, <EngineFact k="siteColdRunBuild" /> to build. See [Build a plain website](/docs/getting-started/plain-website).
 </Callout>
 
 A Cartwright shop ships with the integrations that normally take a sprint each to wire — payments, email, auth, hosting, database, storage, observability, rate limiting, i18n, and the AI providers. Paste a key in `/admin/setup` and the storefront is already calling the right SDK behind it. The CLI scaffolds the wiring; the wizard collects the keys; the deploy happens on Vercel; the first real order is possible in an afternoon, not a quarter.
@@ -115,7 +115,7 @@ The path looks like this:
 
 That's an afternoon of work for a developer who's seen this stack once before (default profile). A team that hasn't will spend a day; a team setting up Stripe + Resend + Turso + Vercel + Sentry from scratch usually spends a sprint.
 
-For a `site` scaffold, steps 3–4 do not exist — there are no keys to collect. Push to GitHub, import the repo in Vercel with no environment variables, and the build is the whole path.
+For a `site` scaffold, only step 1 and the Vercel import apply — there is no admin wizard, no keys to collect, no domain wizard and no products. Push to GitHub, import the repo in Vercel with no environment variables (Resend keys only if the contact form should deliver mail), and the build is the whole path.
 
 Honest about what's **not** in the box: your product catalogue, your brand assets (logo, photography, copy), your team's hiring pipeline, your tax-jurisdiction-specific accounting. Cartwright ships the rails; the train is yours.
 
