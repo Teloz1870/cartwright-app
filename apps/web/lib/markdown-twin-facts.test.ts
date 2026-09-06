@@ -20,6 +20,29 @@ describe('renderEngineFacts', () => {
 
   it('throws on a fact that does not exist — a typo must fail the build, not ship as a tag', () => {
     expect(() => renderEngineFacts('<EngineFact k="noSuchFact" />')).toThrow(/no such fact/);
+    expect(() => renderEngineFacts('<EngineFact />')).toThrow(/needs a k/);
+    // Inherited names are not facts.
+    expect(() => renderEngineFacts('<EngineFact k="toString" />')).toThrow(/no such fact/);
+  });
+
+  it('matches every spelling MDX accepts, and leaves code fences and inline code alone', () => {
+    const v = String(ENGINE_FACTS.siteRuntimeDeps);
+    expect(renderEngineFacts('<EngineFact k={"siteRuntimeDeps"} />')).toBe(v);
+    expect(renderEngineFacts("<EngineFact k={'siteRuntimeDeps'} />")).toBe(v);
+    expect(renderEngineFacts('<EngineFact k="siteRuntimeDeps"></EngineFact>')).toBe(v);
+    expect(renderEngineFacts('<EngineFact className="x" k="siteRuntimeDeps"/>')).toBe(v);
+    const example = 'Cite a fact: `<EngineFact k="toolCount" />` — like this:\n\n```tsx\n<EngineFact k="noSuchFact" />\n```\n\nDeps: <EngineFact k="siteRuntimeDeps" />';
+    const out = renderEngineFacts(example);
+    expect(out).toContain('`<EngineFact k="toolCount" />`');
+    expect(out).toContain('```tsx\n<EngineFact k="noSuchFact" />\n```');
+    expect(out).toContain(`Deps: ${v}`);
+  });
+
+  it('every fact is a scalar that survives String() and a Markdown table cell', () => {
+    for (const [k, v] of Object.entries(ENGINE_FACTS)) {
+      expect(['string', 'number'].includes(typeof v), `${k} is ${typeof v}`).toBe(true);
+      expect(String(v), k).not.toMatch(/[|\n]/);
+    }
   });
 
   it('every <EngineFact k> cited anywhere in content/docs names a real fact', () => {

@@ -94,8 +94,6 @@ export function EngineFact({ k }: { k: keyof typeof ENGINE_FACTS }) {
   return <>{ENGINE_FACTS[k]}</>;
 }
 
-const ENGINE_FACT_TAG = /<EngineFact\s+k=["']([A-Za-z0-9_]+)["']\s*\/>/g;
-
 /**
  * Resolve every `<EngineFact k="…" />` in a Markdown/MDX string to its value.
  *
@@ -105,12 +103,31 @@ const ENGINE_FACT_TAG = /<EngineFact\s+k=["']([A-Za-z0-9_]+)["']\s*\/>/g;
  * reached an AI reader as literal `<EngineFact k="siteColdRunScaffold" />`
  * (measured live 2026-09-06: eight raw tags and zero numbers on the
  * plain-website runbook — the exact surface the site-profile program exists
- * for). A typo in `k` throws: these bodies are produced at build time, and a
- * fact that cannot be cited must fail the build, not ship as a tag.
+ * for).
+ *
+ * Fenced code blocks and inline code spans are left untouched (a page that
+ * SHOWS the tag as an example keeps showing it). Outside code, the tag is
+ * matched in every spelling MDX accepts — `k="x"`, `k='x'`, `k={"x"}`,
+ * extra attributes, self-closing or `</EngineFact>` — and a key that is not
+ * a fact throws: these bodies are produced at build time, and a fact that
+ * cannot be cited must fail the build, not ship as a tag.
  */
 export function renderEngineFacts(markdown: string): string {
-  return markdown.replace(ENGINE_FACT_TAG, (_match, key: string) => {
-    if (!(key in ENGINE_FACTS)) throw new Error(`<EngineFact k="${key}" />: no such fact in ENGINE_FACTS`);
+  // Split into code and prose: fences first (so an inline-looking backtick
+  // inside a fence is not mistaken for a span), then inline spans.
+  const parts = markdown.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/);
+  return parts
+    .map((part, i) => (i % 2 === 1 ? part : replaceEngineFactTags(part)))
+    .join('');
+}
+
+function replaceEngineFactTags(prose: string): string {
+  const tag = /<EngineFact\b([^>]*?)\/?>(?:\s*<\/EngineFact>)?/g;
+  return prose.replace(tag, (match, attrs: string) => {
+    const k = /\bk\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*(?:"([^"]*)"|'([^']*)')\s*\})/.exec(attrs);
+    const key = k?.[1] ?? k?.[2] ?? k?.[3] ?? k?.[4];
+    if (!key) throw new Error(`${match}: <EngineFact> needs a k="…" attribute`);
+    if (!Object.hasOwn(ENGINE_FACTS, key)) throw new Error(`${match}: no such fact in ENGINE_FACTS`);
     return String(ENGINE_FACTS[key as keyof typeof ENGINE_FACTS]);
   });
 }
