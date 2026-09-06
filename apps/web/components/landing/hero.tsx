@@ -3,7 +3,8 @@ import { CopyCommand } from '@/components/landing/copy-command';
 import { Station } from '@/components/landing/station';
 import { GatePanel } from '@/components/landing/gate-panel';
 import { social } from '@/lib/shared';
-import { HOME_H1_LINES, HOME_LEDE, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_DOOR } from '@/lib/home-copy';
+import { HOME_H1_LINES, HOME_LEDE, INSTALL_COMMAND, SITE_DOOR } from '@/lib/home-copy';
+import { SiteCommand } from '@/components/landing/site-command';
 
 /**
  * Station 00 — the claim, and the machine holding a write next to it.
@@ -93,7 +94,7 @@ export function Hero() {
               engine, overkill". */}
           <p className="mt-3 text-sm text-cw-stone-500 dark:text-cw-stone-400">
             {SITE_DOOR}{' '}
-            <code className="font-mono text-cw-stone-700 dark:text-cw-stone-200">{INSTALL_COMMAND_SITE}</code>{' '}
+            <SiteCommand className="text-cw-stone-700 dark:text-cw-stone-200" />{' '}
             <Link href="/docs/getting-started/plain-website" className="text-cw-terracotta hover:underline">
               How it works →
             </Link>

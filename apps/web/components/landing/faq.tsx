@@ -5,6 +5,7 @@ import { contactEmail, social } from '@/lib/shared';
 import JsonLd from '@/components/JsonLd';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
 import { INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
+import { SiteCommand } from '@/components/landing/site-command';
 
 // Each item carries a `plain` string mirroring the visible answer, so the
 // FAQPage JSON-LD matches what users see (Google requires parity). The rendered
@@ -14,7 +15,7 @@ const items = [
     q: 'Can I build just a website — no shop, no login, no database?',
     a: (
       <>
-        Yes. <code>{INSTALL_COMMAND_SITE}</code> scaffolds a plain website: designed pages (
+        Yes. <SiteCommand /> scaffolds a plain website: designed pages (
         {ENGINE_FACTS.siteDesignPacks} design packs, <code>blank</code> among them), JSON-LD, sitemap,{' '}
         <code>llms.txt</code>, an Open Graph image route, locale routing and a contact form — in a
         plain Next.js repo with {ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required
@@ -174,6 +175,9 @@ const faqJsonLd = {
     acceptedAnswer: { '@type': 'Answer', text: it.plain },
   })),
 };
+
+/** Exported for the parity test: every `plain` must mirror its visible `a`. */
+export const FAQ_ITEMS = items;
 
 export function Faq() {
   return (
