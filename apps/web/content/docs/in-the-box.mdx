@@ -81,7 +81,7 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 ## Migration & import → Firecrawl
 
-`FIRECRAWL_API_KEY` powers three things. `lib/scrape/` scrapes product data from a URL into a structured product (`/admin/produkter/scrape`). `lib/design-import/` pulls a colour palette from any site into a live theme (`/admin/design-import`). And **Hoptify** (`/admin/hoptify`, `--profile full` only — the module is pruned from the default profile) is the tongue-in-cheek "import from Shopify" onboarding — with a key it lifts your palette and brings products across from the product URLs you list, fail-soft to a demo otherwise. All three are default-off flags (`designImport`, `hoptify`), so an upgrade adds nothing visible until you turn them on.
+`FIRECRAWL_API_KEY` powers three things. `lib/scrape/` scrapes product data from a URL into a structured product (`/admin/produkter/scrape`). `lib/design-import/` pulls a colour palette from any site into a live theme (`/admin/design-import`). And **Hoptify** (`/admin/hoptify`, `--profile full` only — the module is pruned from the default profile) is the tongue-in-cheek "import from Shopify" onboarding — with a key it lifts your palette and brings products across from the product URLs you list, fail-soft to a demo otherwise. Design import and Hoptify are default-off flags (`designImport`, `hoptify`), so an upgrade adds nothing visible until you turn them on; the product scraper needs only an admin sign-in.
 
 ## Tax & VAT → Stripe Tax (or built-in)
 

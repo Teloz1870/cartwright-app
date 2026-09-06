@@ -245,7 +245,7 @@ const secondary: Secondary[] = [
     brand: 'firecrawl',
     name: 'Firecrawl',
     category: 'Web scraping',
-    pitch: 'Scrape product data + brand palette from any URL — the engine behind design-import and the Hoptify "import from Shopify" onboarding.',
+    pitch: 'Scrape product data + brand palette from any URL — the engine behind design-import and the Hoptify "import from Shopify" onboarding (--profile full).',
     brandUrl: 'https://firecrawl.dev',
   },
 ];

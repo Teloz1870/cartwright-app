@@ -51,7 +51,7 @@ const SURFACES = [
 /** Every surface that promises redirects must say they live in Upstash Redis — without it nothing fires (proxy.ts reads the map from Redis only). */
 const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx'];
 
-/** Every surface that names Hoptify must couple it to --profile full within 300 chars. */
+/** Every surface that names Hoptify must couple it to --profile full within 600 chars. */
 const HOPTIFY_SURFACES = [
   'lib/comparisons.ts',
   'lib/use-cases.ts',
@@ -64,6 +64,10 @@ const HOPTIFY_SURFACES = [
   'content/docs/getting-started/choose-your-path.mdx',
   'app/(home)/onboarding/onboarding-client.tsx',
   'app/(home)/onboarding/page.tsx',
+  // Falsifier R3 grepped all of apps/web: these three sold Hoptify with no profile.
+  'app/(home)/pricing/page.tsx',
+  'app/(home)/integrations/page.tsx',
+  'content/docs/roadmap.mdx',
 ];
 
 const RETIRED = [
@@ -172,6 +176,11 @@ describe('origin claims stay honest', () => {
     expect(out.origins.find((o) => o.id === 'shopify')!.minProfile).toBe('full');
     expect(out.goodFit.join('\n')).toMatch(/planned, not built/);
     expect(routeExists(new URL(out.links.choosePath).pathname)).toBe(true);
+  });
+
+  it('comparison FAQ answers carry no backticks — they render as plain text and as FAQPage JSON-LD', () => {
+    // Falsifier R3: `--profile full` rendered literally on /compare/shopify.
+    expect(read('lib/comparisons.ts')).not.toMatch(/a: '[^']*`/);
   });
 
   it('the ratchet: exactly these origins are planned, and every origin points at a docs route that exists', () => {
