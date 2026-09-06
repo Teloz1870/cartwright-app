@@ -187,9 +187,13 @@ export function patchBrandConfigContent(original: string, projectName: string): 
     // at OUR domain — and in a database-backed profile the seed creates its
     // admin user from `brand.emails.admin`. Comments and the "Built with
     // Cartwright" `ownerUrl` keep naming us on purpose; identity fields do not.
-    .replace(/(\bdomain:\s*)"cartwright\.app"/, '$1"example.com"')
-    .replace(/(\burl:\s*)"https:\/\/cartwright\.app"/, '$1"https://example.com"')
-    .replace(/@cartwright\.app/g, "@example.com")
+    .replace(/(\bdomain:\s*)(["'])cartwright\.app\2/g, '$1$2example.com$2')
+    .replace(/(\burl:\s*)(["'])https:\/\/cartwright\.app\2/g, '$1$2https://example.com$2')
+    // Only inside a string literal: a comment that mentions an address at our
+    // domain is prose about us, and prose stays (`ownerUrl` and the
+    // "Built with Cartwright" link are literals we deliberately do not touch,
+    // because they are not `domain:` or `url:`).
+    .replace(/(["'][^"'\n]*)@cartwright\.app/g, "$1@example.com")
     // legal/company name (legalName + footer disclaimer) → the store name
     .replaceAll("Teloz ApS", storeName)
     // SEO/OG title (consumed by layout, manifest, PDP/PLP, mcp.json)

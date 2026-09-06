@@ -46,6 +46,33 @@ describe("dead script references", () => {
     expect(scripts.mixed).toBe("node scripts/kept.mjs && node scripts/gone.mjs");
   });
 
+  it("keeps a command that still does real work, and sees ./scripts paths", () => {
+    // Gemini's cases, each a real way to write a script:
+    const cases = JSON.stringify(
+      {
+        scripts: {
+          // one missing target, but `vitest run` is the point of the command
+          test: "vitest run && node scripts/gone.mjs",
+          // the path a template may write with a leading ./
+          "shot:dot": "node ./scripts/gone.mjs",
+          // a shell comment naming a path the command never runs
+          dev: "next dev # see scripts/gone.mjs for the capture harness",
+          // extensionless: Node resolves it at runtime, existsSync cannot
+          "shot:bare": "node scripts/kept",
+          "shot:real": "node scripts/gone.mjs",
+        },
+      },
+      null,
+      2,
+    );
+    const out = pruneDeadScriptReferences(cases, (rel) => rel === "scripts/kept.mjs");
+    expect(out.dropped).toEqual(["shot:dot", "shot:real"]);
+    const scripts = (JSON.parse(out.src) as { scripts: Record<string, string> }).scripts;
+    expect(scripts.test, "a compound command must survive — dropping it takes `vitest run` with it").toBeTruthy();
+    expect(scripts.dev, "a path inside a shell comment is not a dependency").toBeTruthy();
+    expect(scripts["shot:bare"], "an extensionless reference is resolved by the runtime, not by us").toBeTruthy();
+  });
+
   it("leaves a tree where nothing was pruned exactly as it found it", () => {
     const out = pruneDeadScriptReferences(pkg, () => true);
     expect(out.dropped).toEqual([]);
@@ -83,6 +110,24 @@ describe("the template's own identity never ships as the customer's", () => {
     expect(out).toContain("noreply@example.com");
     // In a database-backed profile the seed creates its admin from this one.
     expect(out).toContain("admin@example.com");
+  });
+
+  it("handles single quotes, and never rewrites an address inside prose", () => {
+    const single = patchBrandConfigContent(
+      `export const brand = {
+  domain: 'cartwright.app',
+  url: 'https://cartwright.app',
+  // Security reports go to security@cartwright.app — this line is about US.
+  emails: { admin: 'admin@cartwright.app' },
+};`,
+      "my-site",
+    );
+    expect(single).toContain("domain: 'example.com'");
+    expect(single).toContain("url: 'https://example.com'");
+    expect(single).toContain("admin: 'admin@example.com'");
+    expect(single, "a comment naming our address is prose, not the customer's identity").toContain(
+      "security@cartwright.app",
+    );
   });
 
   it("keeps the Built-with-Cartwright link and prose pointing at us", () => {

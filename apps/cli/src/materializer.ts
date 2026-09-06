@@ -311,8 +311,19 @@ export function pruneDeadScriptReferences(
   const scripts = (pkg.scripts ?? {}) as Record<string, string>;
   const dropped: string[] = [];
   for (const [key, command] of Object.entries(scripts)) {
-    // Only the engine's own scripts/ directory — never a bin from node_modules.
-    const referenced = command.match(/(?<![\w./-])scripts\/[\w.\-/]+/g) ?? [];
+    // A shell comment can name a path the command never runs.
+    const effective = command.split(/\s#\s/)[0];
+    // A command that also does real work (`vitest run && node scripts/x.mjs`)
+    // must survive even when the script half is gone — dropping it would take
+    // `vitest run` with it. Only a plain "run this one file" command is safe
+    // to remove, so anything with a shell operator is left alone.
+    if (/&&|\|\||;/.test(effective)) continue;
+    // The engine's own scripts/ directory, optionally written `./scripts/…`,
+    // and never a path inside node_modules. Extensionless references are
+    // skipped: Node resolves those at runtime and existsSync cannot.
+    const referenced = (effective.match(/(?<![\w-])\.?\/?scripts\/[\w.\-/]+/g) ?? [])
+      .map((raw) => raw.replace(/^\.\//, ""))
+      .filter((rel) => /\.[a-z]+$/i.test(rel));
     if (referenced.length && referenced.every((rel) => !fileExists(rel))) {
       delete scripts[key];
       dropped.push(key);
