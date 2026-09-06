@@ -43,7 +43,8 @@ export function InstallBand() {
           <p className="text-xs text-cw-stone-400">
             <code className="font-mono text-cw-stone-200 break-all">{INSTALL_COMMAND_SITE}</code> — a plain website, no database, no login:{' '}
             {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to build,{' '}
-            {SITE_COLD_RUN.boot} to a rendered homepage (measured, provenance on the docs page).
+            {SITE_COLD_RUN.boot} to a rendered homepage (measured;{' '}
+            <a href="/docs/getting-started/plain-website" className="underline hover:text-cw-stone-200">provenance on the guide</a>).
           </p>
           {/* Stacked on a phone. Three columns of mono at 390px cannot fit —
               grid items default to `min-width: auto`, so they refuse to shrink
