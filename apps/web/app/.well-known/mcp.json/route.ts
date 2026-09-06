@@ -18,7 +18,7 @@ export function GET(): Response {
     {
       name: 'cartwright.app',
       description:
-        "Documentation, design packs and release information for Cartwright, an open-source Next.js website + commerce engine (a plain --profile site website, or a shop with an AI-native admin). Read-only. A shop built with Cartwright serves its own, much larger MCP server on the shop's own domain.",
+        "Documentation, design packs and release information for Cartwright, an open-source Next.js website + commerce engine (a plain --profile site website, or a shop with an AI-native admin). describe_engine lists its three axes — profile, build method, origin. Read-only. A shop built with Cartwright serves its own, much larger MCP server on the shop's own domain.",
       version: '1.0.0',
       transport: {
         type: 'streamable-http',

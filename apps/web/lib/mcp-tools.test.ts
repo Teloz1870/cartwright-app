@@ -176,6 +176,18 @@ describe('describe_engine names both doors', () => {
     for (const p of out.profiles) expect(routeExists(new URL(p.runbook).pathname), p.runbook).toBe(true);
     expect(out.goodFit.join('\n')).toContain('--profile site');
     expect(out.notAFit.join('\n')).not.toContain('would go unused');
+    // A2: the default profile states its limits and its measured run too; the
+    // description names the two axes an agent otherwise guesses.
+    expect(out.profiles[1].limits?.length ?? 0).toBeGreaterThanOrEqual(2);
+    // Gemini: voice shopping is a flag-off plugin in light, not full-only; the pruned admin surface is the A2A/ACP dashboard.
+    expect(out.profiles[1].limits!.join('\n')).not.toMatch(/No [^.]*voice shopping/);
+    expect(out.profiles[1].limits!.join('\n')).toMatch(/\/admin\/agentic/);
+    expect(MCP_TOOLS.describe_engine.description).toMatch(/scratch, any URL/);
+    expect((out as unknown as { origins: { id: string }[] }).origins.map((o) => o.id)).toEqual(expect.arrayContaining(['scratch', 'google-doc']));
+    expect(JSON.stringify(out)).not.toMatch(/incl\. a blank canvas/);
+    expect(out.profiles[2].limits?.length ?? 0).toBeGreaterThanOrEqual(1);
+    expect(MCP_TOOLS.describe_engine.description).toMatch(/origin/);
+    expect(MCP_TOOLS.describe_engine.description).toMatch(/build method/);
   });
 
   it('the MCP server instructions and card name the site profile', () => {
