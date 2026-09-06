@@ -27,7 +27,7 @@ import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-cop
 
 /** Jobs the site profile is the right answer for — shared with describe_engine. */
 export const SITE_FITS = [
-  '"Build me a page" that should look designed and be found or shared — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page, `next build`, deploy; the design, SEO, share cards and locale routing are already there.',
+  '"Build me a page" that should look designed and be found or shared — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page, `next build`, deploy; the design, SEO, share cards and locale routing are already there. The contact form mails submissions to you (no database) — a quote request you must see and manage in an inbox is the default profile.',
   '"Build me a personal site / portfolio / company website" whose content can live in the repo (`brand.config.ts` and the design pack\'s files) rather than in a CMS — edited in files, not in a browser; browser editing is the default profile.',
   '"Build me a small site an AI can rebuild from a prompt" — the `blank` design pack is a homepage, header and footer you own entirely, with the site\'s SEO and locale routing still wrapped around them.',
 ] as const;
@@ -37,6 +37,7 @@ export const DEFAULT_FITS = [
   '"Build me a webshop / online store" where the user must own the code and the data — not a tenant account on someone else\'s platform.',
   '"Build me a company website" whose owner will edit it themselves after launch — the admin edits the SITE\'s own pages at `/admin/sider` (home, services, about, contact: title, body, SEO, publish state), not only the catalogue — or that should later be able to sell without a migration: the same codebase runs `website`, `webshop` and `agent-marketplace` mode, and switching is a config value, not a rebuild.',
   '"Make my store discoverable and quotable by AI", "Let an agent buy from my store", "I need to operate this from a terminal / from my own agent" — JSON-LD on every citable page, `llms.txt`, agent-commerce endpoints (ACP / A2A), and a scoped REST + MCP tool surface the owner controls.',
+  '"Build me a site that sells by quote, not cart" — a fence, kitchen or workshop that prices a configuration and takes a request for a quote a human answers. The default profile scaffolds in website mode (the `website-corporate` template: no cart, no checkout, no Stripe — a shop is a template choice, not the default), a quote form posts to the built-in `POST /api/inquiries`, and the request lands as a lead with a status in `/admin/leads`. The live-price configurator is a component you write; a section that hands its selection and total to the form is planned, not built.',
   '"Get me off Lovable / Shopify / WooCommerce and let me own it" — a plain Next.js repo with a Prisma schema, MIT licensed, no runtime callback to us. What moves today: products by CSV (simple products), pages and posts by the URL import (drafts), old URLs by admin-managed redirects; Shopify palette + products need `--profile full` (Hoptify). Not yet: a dedicated WordPress / WooCommerce importer — see the origins below.',
 ] as const;
 

@@ -61,6 +61,8 @@ This is the choice that can force the first: an origin that lands rows in the da
 
 **"Move my WordPress + WooCommerce site and keep my rankings."** Profile: the **default** — not `full`; nothing on this path needs it. Method: a shipped pack, or your own. Origin: WordPress/WooCommerce — today that is a CSV for simple products, the URL import for pages and posts, and an admin-managed redirect for every old path you care about (exact paths; `/?p=123` query permalinks are not matched yet). Say plainly that the dedicated importer is planned, not built, and that orders, customers and custom plugins do not move.
 
+**"Made-to-measure fences: pick height, length and colour, see a live price, send me a quote request — no cart, no checkout."** Profile: the **default** — the request must be *seen and managed*, which is a database and an admin; `site` would only mail it. The default profile scaffolds in **website mode** (the `website-corporate` template): no cart, no checkout, no Stripe — a shop is a template choice, not the default. Method: a shipped pack or your own; the configurator itself is a component you write (a route or a section). Origin: scratch. The form posts to the built-in `POST /api/inquiries` and the request lands as a lead with a status in `/admin/leads`; a configurator section that hands its selection and total to the form is planned, not built.
+
 ## When Cartwright is the wrong answer
 
 A web app — a dashboard, an internal tool — is `create-next-app`. A docs site or blog of hundreds of Markdown files wants a Markdown content pipeline, which this is not. A marketplace with many sellers, or embedding in an existing Shopify storefront, is not what the engine does. The full list lives in [`llms.txt`](/llms.txt) under "Not a fit".
