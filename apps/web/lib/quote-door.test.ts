@@ -28,6 +28,11 @@ describe('the quote door is named, and honestly', () => {
     expect(text).toContain('/api/inquiries');
     expect(text).toContain('/admin/leads');
     expect(text).toMatch(/planned, not built/);
+    // The configurator section EXISTS (Studio pack, Pro, every profile); what is missing is the bridge to the form.
+    expect(text).toMatch(/configurator section ships/);
+    expect(text).toMatch(/plain link/);
+    expect(text).not.toMatch(/no Stripe[^ ]/);
+    expect(text).toMatch(/no Stripe checkout/);
     expect(WHEN_TO_USE).toContain('/admin/leads');
   });
 

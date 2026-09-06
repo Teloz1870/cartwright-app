@@ -75,7 +75,7 @@ const items = [
         site and lands pages, services and posts as drafts you review (<code>siteImport</code> flag, Firecrawl
         key). <strong>From WooCommerce:</strong> product CSV import (simple products) plus the URL import
         today; a dedicated WooCommerce importer is planned, not built. Old URLs keep their rankings through
-        admin-managed redirects — exact paths, one at a time. Cartwright never runs on WordPress hosting — it
+        admin-managed redirects — exact paths, one at a time, and they need Upstash Redis. Cartwright never runs on WordPress hosting — it
         replaces the site and imports from it. Orders and customers never move.{' '}
         <Link href="/docs/getting-started/choose-your-path" className="text-cw-terracotta">
           Choose your path
@@ -84,7 +84,7 @@ const items = [
       </>
     ),
     plain:
-      "Three origins, each with its own door. From Shopify: scaffold with --profile full and use the Hoptify import at /admin/hoptify — palette and products from the product URLs you list (Firecrawl key + an AI key); pages and variants by hand. From any URL: the default profile's content.import_site crawls a site and lands pages, services and posts as drafts you review (siteImport flag, Firecrawl key). From WooCommerce: product CSV import (simple products) plus the URL import today; a dedicated WooCommerce importer is planned, not built. Old URLs keep their rankings through admin-managed redirects — exact paths, one at a time. Cartwright never runs on WordPress hosting — it replaces the site and imports from it. Orders and customers never move. Choose your path (cartwright.app/docs/getting-started/choose-your-path) works the four cases through.",
+      "Three origins, each with its own door. From Shopify: scaffold with --profile full and use the Hoptify import at /admin/hoptify — palette and products from the product URLs you list (Firecrawl key + an AI key); pages and variants by hand. From any URL: the default profile's content.import_site crawls a site and lands pages, services and posts as drafts you review (siteImport flag, Firecrawl key). From WooCommerce: product CSV import (simple products) plus the URL import today; a dedicated WooCommerce importer is planned, not built. Old URLs keep their rankings through admin-managed redirects — exact paths, one at a time, and they need Upstash Redis. Cartwright never runs on WordPress hosting — it replaces the site and imports from it. Orders and customers never move. Choose your path (cartwright.app/docs/getting-started/choose-your-path) works the four cases through.",
   },
   {
     q: 'How does this compare to Medusa, Saleor, or next-forge?',

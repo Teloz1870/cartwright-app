@@ -83,15 +83,15 @@ const migrateFromShopify: UseCase = {
   description:
     'Move from renting a hosted SaaS to owning your commerce codebase: import products and design, keep Stripe as the link key, and run a modern Next.js shop with AI built in.',
   answer:
-    'Migrating off Shopify with Cartwright means trading a rented SaaS for a codebase you own. You scaffold a Cartwright shop, import your products (CSV, plus a “Hoptify” onboarding that can pull design and catalogue across), point your DNS over, and keep Stripe as the link key for customers. The result is a modern TypeScript/Next.js shop with an AI-native admin and agent-commerce built in — no monthly platform fee and no per-transaction tax.',
+    'Migrating off Shopify with Cartwright means trading a rented SaaS for a codebase you own. You scaffold a Cartwright shop, import your products (CSV, plus the “Hoptify” onboarding under `--profile full` — it is pruned from the default profile — which brings the palette and the products from the URLs you list), point your DNS over, and keep Stripe as the link key for customers. The result is a modern TypeScript/Next.js shop with an AI-native admin and agent-commerce built in — no monthly platform fee and no per-transaction tax.',
   points: [
     { heading: 'Who it’s for', body: 'Shopify merchants who have outgrown app fees and theme limits and want to own the stack.' },
-    { heading: 'Import', body: 'Product CSV import plus the Hoptify onboarding, which can bring your palette and products across when a key is set.' },
+    { heading: 'Import', body: 'Product CSV import (simple products) plus the Hoptify onboarding — `--profile full`, a Firecrawl key and an AI key — which brings your palette and the products from the URLs you list; pages and variants by hand.' },
     { heading: 'Keep what matters', body: 'Stripe stays your processor and the customer link key, so billing continuity is preserved.' },
     { heading: 'Gain', body: 'A modern DX, AI/agent commerce, AI-search-ready structured data, and zero platform lock-in.' },
   ],
   faq: [
-    { q: 'How hard is it to migrate from Shopify?', a: 'Scaffold Cartwright, import products (CSV or the Hoptify onboarding), and point your DNS over. Stripe stays your processor and the customer link key, so billing continuity is preserved.' },
+    { q: 'How hard is it to migrate from Shopify?', a: 'Scaffold Cartwright (`--profile full` if you want the Hoptify onboarding), import products (CSV, or Hoptify from the URLs you list), and point your DNS over. Stripe stays your processor and the customer link key, so billing continuity is preserved.' },
     { q: 'Will I lose my customers or payment history?', a: 'No — Stripe remains the system of record for payments and the link key for customers, so history is preserved on Stripe’s side.' },
     { q: 'What do I gain over Shopify?', a: 'You own the code, pay no platform or per-transaction fees, and get a modern Next.js stack with AI-native admin and agent-commerce built in.' },
   ],

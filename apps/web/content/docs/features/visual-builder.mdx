@@ -33,6 +33,10 @@ Sections are a whitelist, each with a typed (Zod) props schema:
 
 Because every section validates against its own schema, an AI generation can fill a section's props but can **never emit arbitrary markup**. The structured sections are filled by Anthropic; the `vibe` section is filled by [Vercel v0](/docs/features/v0-generation) when `v0Generator` is on — v0's HTML is sanitized into the section's `{ html }` props and sanitized again on render, so even generated markup stays inside the same governance and render path.
 
+## Magic Builder — prompt to a page
+
+The builder's prompt door: `magic.plan_page` turns an intent ("a coffee subscription landing page") into an ordered list of whitelisted section keys with a per-section prompt — read-only, nothing written; `magic.generate_page` plans *and* fills every section on-brand and returns a Zod-valid layout plus per-node statuses, still without writing. Publishing is the same `pages.set_layout` call as the panels use, so the confirm token, the audit row and the revert path are identical whether a human dragged the sections or a model proposed them. The catalogue is the section registry above; the model cannot plan a section that is not in it.
+
 ## Stored as audited data
 
 Published layouts live in `Page.layoutJson` — a validated section tree. When it's `null` (the default), the page renders from your existing `body` / `vibeHtml`, so nothing changes until you build.

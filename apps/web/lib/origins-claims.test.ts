@@ -33,6 +33,9 @@ const SURFACES = [
   'content/docs/getting-started/choose-your-path.mdx',
 ];
 
+/** Every surface that promises redirects must say they live in Upstash Redis — without it nothing fires (proxy.ts reads the map from Redis only). */
+const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx'];
+
 const RETIRED = [
   'pull design + products across',
   'covers catalog exports from',
@@ -49,6 +52,19 @@ describe('origin claims stay honest', () => {
     const src = read(rel);
     if (!/WooCommerce|WordPress/.test(src)) return;
     expect(src).toMatch(/not yet|planned, not built|not built|simple products/i);
+  });
+
+  it.each(REDIRECT_SURFACES)('%s names Upstash Redis wherever it promises admin-managed redirects', (rel) => {
+    const src = read(rel);
+    expect(src).toMatch(/admin-managed redirect/);
+    expect(src).toMatch(/Upstash Redis|UPSTASH_REDIS/);
+  });
+
+  it('the Shopify use case couples Hoptify to --profile full (an untouched page must not undo the axis)', () => {
+    const src = read('lib/use-cases.ts');
+    const block = src.slice(src.indexOf("slug: 'migrate-from-shopify'"), src.indexOf("slug: 'migrate-from-shopify'") + 3000);
+    expect(block).toContain('--profile full');
+    expect(block).not.toContain('pull design and catalogue across');
   });
 
   it('the when-to-use block carries "not yet" and the query-permalink limit an AI otherwise promises', () => {

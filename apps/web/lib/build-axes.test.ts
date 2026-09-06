@@ -15,6 +15,7 @@ import { routeExists } from './route-exists';
  * and checked against the engine by hand when the manifest changes.
  */
 const ROOT = join(__dirname, '..');
+const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 const PROFILES = ['site', 'light', 'full'];
 
 describe('build methods (axis 2)', () => {
@@ -39,9 +40,21 @@ describe('build methods (axis 2)', () => {
     }
   });
 
-  it('is rendered in the when-to-use block, every method by name', () => {
-    for (const m of METHODS) expect(WHEN_TO_USE, m.id).toContain(m.name);
+  it('is rendered in the when-to-use block, every method as its own line', () => {
+    // A per-line marker, not a bare name: a cross-reference in another line
+    // ("see From a product CSV") kept a dropped origin green (falsifier M14).
+    for (const m of METHODS) expect(WHEN_TO_USE, m.id).toContain(`- **${m.name}** — `);
     expect(WHEN_TO_USE).toContain('none of the build methods binds you');
+  });
+
+  it('the literal first action is ON the page each method sends the reader to', () => {
+    // A docs pointer that exists but never mentions the entry is semantic
+    // drift routeExists cannot see (falsifier M5, nit 1).
+    for (const m of METHODS) {
+      const page = read(`content/docs${m.docs.replace(/^\/docs/, '')}.mdx`);
+      expect(page, `${m.id}: ${m.docs} must mention ${m.docsMention}`).toContain(m.docsMention);
+      expect(m.entry, m.id).toContain(m.docsMention);
+    }
   });
 });
 
@@ -76,8 +89,11 @@ describe('origins (axis 3)', () => {
     expect(NOT_A_FIT.join('\n')).toMatch(/WordPress hosting/);
   });
 
-  it('is rendered in the when-to-use block, every origin by name', () => {
-    for (const o of ORIGINS) expect(WHEN_TO_USE, o.id).toContain(o.name);
+  it('is rendered in the when-to-use block, every origin as its own line, with what it requires', () => {
+    for (const o of ORIGINS) {
+      expect(WHEN_TO_USE, o.id).toContain(`- **${o.name}** — needs`);
+      expect(WHEN_TO_USE, o.id).toContain(`Requires ${o.needs}.`);
+    }
   });
 
   it('the page that houses the axes exists and is in the docs navigation', () => {
