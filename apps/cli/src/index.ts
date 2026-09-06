@@ -1080,11 +1080,14 @@ async function run(): Promise<void> {
     `  cd ${finalSlug}`,
     `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
     pc.dim("  Content lives in brand.config.ts; design via designs/ and the shipped packs."),
+    pc.dim("  The guide for this profile: docs/simple-site.md"),
+    pc.dim("  (online: https://cartwright.app/docs/getting-started/plain-website)"),
     "",
     pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
     pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
     pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
-    pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
+    pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md —"),
+    pc.dim("  its first line says which sections this profile does not have."),
   ];
   const nextSteps = profile === "site"
     ? siteSteps

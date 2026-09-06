@@ -287,6 +287,55 @@ const SITE_PRUNED_SCRIPT_KEYS: readonly string[] = [
   "typecheck:native",
 ];
 
+/**
+ * Drop every script whose command runs a file the profile removed.
+ *
+ * `SITE_PRUNED_SCRIPT_KEYS` is a hand-kept list of KEYS, and it drifted: a real
+ * `create-cartwright@2.9.4 --profile site` scaffold shipped five scripts whose
+ * targets are in `removedPaths` — `admin:create` (→ scripts/admin-reset.ts),
+ * `capture:gallery`, `dev:screenshot`, `capture:locales` and `verify:design`,
+ * the last of which DESIGN.md tells the owner to run. Running any of them says
+ * "Cannot find module". Deriving the answer from the materialised tree closes
+ * the class instead of adding five more names to the list.
+ */
+export function pruneDeadScriptReferences(
+  src: string,
+  fileExists: (relativePath: string) => boolean,
+): { src: string; dropped: string[] } {
+  let pkg: Record<string, unknown>;
+  try {
+    pkg = JSON.parse(src) as Record<string, unknown>;
+  } catch {
+    return { src, dropped: [] };
+  }
+  const scripts = (pkg.scripts ?? {}) as Record<string, string>;
+  const dropped: string[] = [];
+  for (const [key, command] of Object.entries(scripts)) {
+    // A shell comment can name a path the command never runs.
+    const effective = command.split(/\s#\s/)[0];
+    // A command that also does real work (`vitest run && node scripts/x.mjs`)
+    // must survive even when the script half is gone — dropping it would take
+    // `vitest run` with it. Only a plain "run this one file" command is safe
+    // to remove, so anything with a shell operator is left alone.
+    if (/&&|\|\||;/.test(effective)) continue;
+    // The engine's own scripts/ directory, optionally written `./scripts/…`,
+    // and never a path inside node_modules. Extensionless references are
+    // skipped: Node resolves those at runtime and existsSync cannot.
+    const referenced = (effective.match(/(?<![\w-])\.?\/?scripts\/[\w.\-/]+/g) ?? [])
+      .map((raw) => raw.replace(/^\.\//, ""))
+      .filter((rel) => /\.[a-z]+$/i.test(rel));
+    if (referenced.length && referenced.every((rel) => !fileExists(rel))) {
+      delete scripts[key];
+      dropped.push(key);
+    }
+  }
+  // Nothing to drop → hand back the original bytes rather than a reserialised
+  // copy: a scaffold should not show a diff in a file this pass did not change.
+  if (!dropped.length) return { src, dropped };
+  pkg.scripts = scripts;
+  return { src: JSON.stringify(pkg, null, 2) + "\n", dropped };
+}
+
 export function rewritePackageJsonForSite(src: string): { src: string; missing: string[] } {
   const missing: string[] = [];
   let pkg: Record<string, unknown>;
@@ -576,6 +625,17 @@ export function applyMaterializer(
         rmSync(abs, { force: true });
         removedPaths.push(p);
       }
+    }
+
+    // Only now is the tree final: drop every script whose file this profile
+    // removed. Runs after the deletions above, and asks the disk rather than a
+    // hand-kept key list — that list had drifted by five scripts, including
+    // `verify:design`, which DESIGN.md tells the owner to run.
+    if (existsSync(pkgPath)) {
+      const dead = pruneDeadScriptReferences(readFileSync(pkgPath, "utf8"), (rel) =>
+        existsSync(join(targetDir, rel)),
+      );
+      if (dead.dropped.length) writeFileSync(pkgPath, dead.src);
     }
   }
 
