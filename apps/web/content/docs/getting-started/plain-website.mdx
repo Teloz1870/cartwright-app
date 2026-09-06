@@ -38,7 +38,7 @@ Measured cold run: <EngineFact k="siteColdRunScaffold" /> to scaffold and instal
 - **A designed homepage.** <EngineFact k="siteDesignPacks" /> design packs ship in the scaffold, including `blank` — not a design, a starting point you rewrite freely. Pick one with `designSlug` in `brand.config.ts`; the palette, chrome and motion follow.
 - **Found and cited by default.** `Organization` and `WebSite` JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt`, canonical URLs, and an Open Graph image route (`/opengraph-image` for the site, `/og?title=…` for any page) so a shared link carries a card.
 - **The engine's baseline.** Locale routing (`en` by default; add locales in `brand.config.ts`), scroll-driven motion presets you can switch on (`brand.features.motionEffects`, with `prefers-reduced-motion` guards), security headers with a report-only CSP, an accessibility baseline, and a contact form that mails you through Resend (`--with none` for the bare site).
-- **A plain Next.js repo.** `pnpm dev`, `pnpm build`, `pnpm start`. No `postinstall`, no migrations, no seed. Sentry's hooks ship dormant (no DSN, no-op) — nothing calls out unless you give it a key.
+- **A plain Next.js repo.** `pnpm dev`, `pnpm build`, `pnpm start`. No `postinstall`, no migrations, no seed. Sentry's hooks ship dormant (no DSN, no-op) — nothing calls out at runtime unless you give it a key.
 
 ## What you do not get, on purpose
 
@@ -86,7 +86,7 @@ curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/     # 200 (follow
 
 ## Make it yours
 
-- **Words.** `brand.config.ts` → `storeName`, `website.headline`, `website.tagline`, `website.cta`, `website.ctaHref`, and `url` — your real domain. On Vercel, `NEXT_PUBLIC_APP_URL` (or the deployment's own URL) wins over it for canonical URLs; `url` feeds the site's JSON-LD and the OG card.
+- **Words.** `brand.config.ts` → `storeName`, `website.headline`, `website.tagline`, `website.cta`, `website.ctaHref`, and `url` — your real domain. On Vercel, `NEXT_PUBLIC_APP_URL` (or the deployment's own URL) wins over it for canonicals, the Organization JSON-LD and the OG image URL; the homepage's `WebSite` JSON-LD reads `url` directly — set it to the real domain so the two agree.
 - **Look.** `designSlug` in `brand.config.ts` — slugs in `designs/options.ts`. For a bespoke one-page build set `designSlug: "blank"` and write `designs/blank/homepage.tsx`; its in-file guide explains the props. The `blank` pack brings its own bare header and footer (`designs/blank/chrome.tsx` — rewrite them too); SEO and locale routing stay wrapped around whatever you render.
 - **Pages.** Add `app/[locale]/trip/page.tsx` — a normal Next.js route; the `[locale]` layout gives it the site chrome. Prefix internal links with `/${locale}`.
 - **Images.** Drop them in `public/` and reference them by path.
