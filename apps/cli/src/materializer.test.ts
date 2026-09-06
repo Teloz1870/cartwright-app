@@ -269,10 +269,20 @@ describe("applyMaterializer (fixture template)", () => {
       "components/svg-items/design-motifs.ts",
       'export const DESIGN_MOTIFS = {\n  aurora: "a",\n  "shop-pack": "b",\n};\n',
     );
+    // `scripts/dev-screenshot.mjs` is in the site-pruned script FILES, so the
+    // materializer deletes it — and the script that runs it must go with it.
+    // `scripts/keep-me.mjs` is not pruned, so its script must survive.
+    write("scripts/dev-screenshot.mjs", "// capture\n");
+    write("scripts/keep-me.mjs", "// kept\n");
     write(
       "package.json",
       JSON.stringify({
-        scripts: { build: "prisma generate && next build", test: "vitest run" },
+        scripts: {
+          build: "prisma generate && next build",
+          test: "vitest run",
+          "verify:design": "node scripts/dev-screenshot.mjs",
+          "keep:me": "node scripts/keep-me.mjs",
+        },
         dependencies: { "next-auth": "^5" },
         devDependencies: { prisma: "^7" },
       }),
@@ -318,6 +328,15 @@ describe("applyMaterializer (fixture template)", () => {
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
     expect(pkg.scripts.build).toBe("next build");
     expect(pkg.dependencies["next-auth"]).toBeUndefined();
+    // The call site, not the pure function: a real scaffold shipped five
+    // scripts whose files this pass had just deleted (`admin:create`,
+    // `verify:design`, …) and running one printed "Cannot find module". The
+    // prune has to happen AFTER the deletions, so only an end-to-end
+    // assertion can see it — without this, removing the call from
+    // applyMaterializer leaves the whole suite green.
+    expect(existsSync(join(dir, "scripts/dev-screenshot.mjs"))).toBe(false);
+    expect(pkg.scripts["verify:design"]).toBeUndefined();
+    expect(pkg.scripts["keep:me"]).toBe("node scripts/keep-me.mjs");
     // Profile marker v2.
     const marker = JSON.parse(
       readFileSync(join(dir, ".cartwright/profile.json"), "utf8"),
