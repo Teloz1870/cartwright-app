@@ -28,6 +28,10 @@ When `vibeHtml` is non-null, the renderer prefers it over the default component 
 
 The sandbox shares the same sanitiser the API endpoint runs, so what you see is what publishes.
 
+## Mockup first — the homepage as a disposable mockup
+
+The same field and the same sanitiser power the mockup-first flow an agent uses before any real implementation: `POST /api/v1/tools/mockup.set` with a self-contained HTML mockup writes the homepage's `vibeHtml`, so the whole homepage *is* the mockup the moment the call returns — above the active design and above the first-run canvas. `mockup.clear` nulls it again once the real design lands (in `designs/blank/`, or as governed sections). Both tools are `settings:write`, confirm-gated and audited.
+
 ## API endpoints
 
 Three routes under `/api/admin/vibe/*`:

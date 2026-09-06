@@ -1,0 +1,75 @@
+---
+title: Choose your path — profile, build method, origin
+description: Three choices before the first line of code — which profile (site, light, full), how the front gets built (a shipped pack, the blank canvas, your own pack, or a generating tool), and where the content comes from (scratch, a URL, Shopify, WordPress/WooCommerce, a CSV, a Google Doc). Five requests worked through.
+---
+
+Cartwright is one engine with three choices in front of it. Most wrong turns — measured on real AI agents deciding from this site — come from making only the first choice and guessing the other two. Make all three, in this order, and note that the third can force the first.
+
+## 1. Profile — the infrastructure
+
+| Profile | What it is | Choose it when |
+| --- | --- | --- |
+| `--profile site` | A plain website: designed pages, SEO with JSON-LD, sitemap, `llms.txt`, an Open Graph image route, locale routing, a contact form. No database, no login, no admin — <EngineFact k="siteRuntimeDeps" /> runtime dependencies, zero required environment variables, a plain `next build`. | The content can live in files and nobody needs to edit it in a browser. One page or fifty. |
+| (default) `light` | Everything in `site` plus a database, an admin that edits the site's own pages at `/admin/sider`, Auth.js, optional Stripe checkout and the REST + MCP tool surface. | The owner will edit pages themselves, the site should sell, or an agent should operate it after launch. |
+| `--profile full` | Everything the engine ships, including the agent marketplace and the Shopify importer (Hoptify). | You need a module the default profile prunes — see the origin table below. |
+
+```bash
+npx create-cartwright@latest my-site --profile site   # plain website
+npx create-cartwright@latest my-shop                  # default: database + admin + tool surface
+npx create-cartwright@latest my-shop --profile full   # everything
+```
+
+Runbooks: [Build a plain website](/docs/getting-started/plain-website) · [Quick start](/docs/getting-started/quick-start) · [CLI options](/docs/getting-started/cli-options).
+
+## 2. Build method — you own the front
+
+Three equal freedoms and three generating tools. None of them binds you: an agent that wants to write its own pack is as right as one that picks a shipped one, and the MCP tool `list_designs` is the catalogue, not the choice.
+
+| Method | Profiles | Output | Start |
+| --- | --- | --- | --- |
+| **Use a shipped design pack** — <EngineFact k="designs" /> in the engine, <EngineFact k="siteDesignPacks" /> in a site scaffold; palette, chrome and motion follow the slug | all | files in your repo | `designSlug: "<slug>"` in `brand.config.ts` (or `/admin/designs` in the default profile) — [Picking a design](/docs/designs/picking-a-design) |
+| **Start from the blank canvas** — a bare homepage, header and footer you rewrite freely, no tokens to obey, any CSS or fonts; SEO, the sitemap, share cards and locale routing stay wrapped around whatever you render | all | files in your repo | `designSlug: "blank"`, then rewrite `designs/blank/homepage.tsx` and `designs/blank/chrome.tsx` — their in-file guides and `AGENTS.md → Blank canvas` in the scaffold explain the props |
+| **Write your own design pack** — the same contract every shipped pack uses: homepage, chrome, optional page and webshop templates | all | files in your repo | copy the closest `designs/<slug>/` to `designs/<yours>/`, edit its `design.md`, register it in `designs/index.ts` and `designs/options.ts` — [Writing your own design](/docs/designs/writing-your-own) · [with an IDE agent](/docs/designs/build-with-an-ide-agent) |
+| **Magic Builder** — describe the page; the model plans it from a whitelisted section catalogue and fills every section on-brand | default, full | data in the database | `magic.plan_page` → `magic.generate_page` → `pages.set_layout` (confirm-gated; nothing is written until you release it) — [Visual Builder](/docs/features/visual-builder) |
+| **Mockup first** — a disposable HTML mockup becomes the whole homepage the moment the call returns; implement it for real afterwards | default, full | data in the database | `mockup.set` / `mockup.clear` over `POST /api/v1/tools/<name>` — [Vibe Coding](/docs/features/vibe-coding) |
+| **Vercel v0** — text-to-UI, normalised and sanitised into `vibeHtml` | default, full | data in the database | the Vibe Sandbox at `/admin/vibe-sandbox` — [v0 generation](/docs/features/v0-generation) |
+
+<Callout>
+**Files or data is the real difference between the profiles.** A method that produces files works in every profile, `site` included. A method that produces data — a page layout, a mockup, a vibe section — needs the database, so it exists only in the default and full profiles. A pack written for `site` renders unchanged behind the admin later: there is no in-place profile upgrade, but the design carries over.
+</Callout>
+
+## 3. Origin — where the content comes from
+
+This is the choice that can force the first: an origin that lands rows in the database needs the default profile, and one needs `--profile full`. **Origin, not host:** Cartwright never runs on PHP or WordPress hosting — it replaces the site and imports from it.
+
+| Origin | Needs | Today | Not yet |
+| --- | --- | --- | --- |
+| **From scratch** | any profile | everything — the scaffold is the site | — |
+| **From any URL** (site import) | the default profile (`content.import_site` writes Page, Service and Post rows); the `siteImport` flag set in `brand.config.ts` and redeployed; `FIRECRAWL_API_KEY` (and `BLOB_READ_WRITE_TOKEN` for the copied hero image — without it the import still runs, without images) | crawls up to 200 pages, classifies each deterministically, lands pages and posts as **drafts**, first image copied to Blob (anything classified as a service lands as a draft in `/admin/services`) | products, SEO fields, hero images on CMS pages (services and posts get theirs), a redirect map, a review UI, and a public page for imported services — the storefront service routes are Teloz-only and pruned from the default profile, so reclassify services as pages. Drafts are reviewed in `/admin/sider` (pages), `/admin/blog` (posts) and `/admin/services` |
+| **From Shopify** (Hoptify) | `--profile full` — the module is pruned from the default profile; the `hoptify` flag, `FIRECRAWL_API_KEY` and an AI key | the brand palette (LLM-derived from the storefront) and products from the product URLs you list, in `/admin/hoptify` | pages, variants and SKUs, attributes, image hosting (images stay external); nothing uses the Shopify Admin API |
+| **From WordPress / WooCommerce** | the default profile — nothing on this path needs `full`; a WooCommerce product CSV export; the URL import's keys for pages and posts (`siteImport` flag, `FIRECRAWL_API_KEY`); Upstash Redis (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) for the redirect table — without it no redirect fires | products by CSV (simple products), pages and posts by the URL import (as drafts), old URLs by admin-managed redirects — exact paths, one at a time | **a dedicated WordPress / WooCommerce importer is planned, not built:** variants, categories, media, SEO fields and the permalink map (`/product/<slug>/`, `/product-category/<slug>/`, `/?p=123`). Query-string permalinks such as `/?p=123` are not matched by the redirect table today. Orders and customers never move; custom plugins are rebuilt, not migrated |
+| **From a product CSV** | the default profile; the fixed ten columns (`slug, name, description, priceKr, stock, brand, featured, categorySlug, images, attributes`); categories must exist first | simple products with images and attributes, at `/admin/produkter/import` | variants, SKU and weight; the column mapping is fixed — [Product variants](/docs/features/product-variants) |
+| **From a Google Doc** | the default profile; the Google Workspace connector and the `docsImport` runtime flag | one Doc → one draft blog post or info page, as safe engine markdown | products, batch import — [Google Docs import](/docs/features/google-docs-import) |
+
+## Five requests, worked through
+
+**"A fun, designed travel page for my daughter's trip, nice to share."** Profile: `--profile site` — files, and nobody edits in a browser. Method: the blank canvas — a timeline, a map and a weather card are ordinary React components you write in `designs/blank/homepage.tsx`; the share card, the sitemap and locale routing are already there. Origin: scratch. If it is one page you will never grow and it need not look designed, `create-next-app` is as fast — say so.
+
+**"A small website for my carpentry business — no shop yet, but I want to edit the pages myself later."** Profile: the **default** — "edit myself" means in a browser, and `/admin/sider` edits home, services, about and contact without touching files. Method: a shipped pack, or Magic Builder for the first draft of each page. Origin: scratch. `site` would be the wrong door here: its content is files.
+
+**"Move my Shopify shop over."** Profile: `--profile full` — the Hoptify importer is pruned from the default. Method: a shipped pack (Hoptify also lifts the palette). Origin: Shopify — products from the URLs you list; pages and variants by hand today.
+
+**"Move my WordPress + WooCommerce site and keep my rankings."** Profile: the **default** — not `full`; nothing on this path needs it. Method: a shipped pack, or your own. Origin: WordPress/WooCommerce — today that is a CSV for simple products, the URL import for pages and posts, and an admin-managed redirect for every old path you care about (exact paths; `/?p=123` query permalinks are not matched yet; the redirect table lives in Upstash Redis — set `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or nothing redirects). Say plainly that the dedicated importer is planned, not built, and that orders, customers and custom plugins do not move.
+
+**"Made-to-measure fences: pick height, length and colour, see a live price, send me a quote request — no cart, no checkout."** Profile: the **default** — the request must be *seen and managed*, which is a database and an admin; `site` would only mail it. The default profile scaffolds in **website mode** (the `website-corporate` template): no cart, no Stripe checkout — a shop is a template choice, not the default. Method: a shipped pack or your own. A `configurator` section ships (Pro, from the Studio pack, in every profile: up to five groups of discrete choices with price deltas and a live total), but its CTA is a plain link — a section that hands the selection and total to the form is **planned, not built** — and a made-to-measure pricer (length × height) is a component you write. Origin: scratch. The form posts to the built-in `POST /api/inquiries` and the request lands as a lead with a status in `/admin/leads`.
+
+## When Cartwright is the wrong answer
+
+A web app — a dashboard, an internal tool — is `create-next-app`. A docs site or blog of hundreds of Markdown files wants a Markdown content pipeline, which this is not. A marketplace with many sellers, or embedding in an existing Shopify storefront, is not what the engine does. The full list lives in [`llms.txt`](/llms.txt) under "Not a fit".
+
+<Cards>
+  <Card title="Build a plain website (no database)" href="/docs/getting-started/plain-website" />
+  <Card title="Quick start (default profile)" href="/docs/getting-started/quick-start" />
+  <Card title="AI Agent Quick Start" href="/docs/getting-started/ai-quick-start" />
+  <Card title="Designs — overview" href="/docs/designs/overview" />
+</Cards>

@@ -183,7 +183,8 @@ export default function AgenticOnboarding() {
               <p className="mt-4 text-center text-xs text-cw-stone-500 dark:text-cw-stone-400">
                 Demo only — the migration agent is in development for the Plus
                 tier. Available today, self-hosted: the Hoptify import
-                (palette + products via Firecrawl) and product CSV import.
+                (--profile full; palette + products from the URLs you list, via Firecrawl) and
+                product CSV import (simple products).
               </p>
             </motion.div>
           )}

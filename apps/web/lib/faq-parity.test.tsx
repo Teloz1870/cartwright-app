@@ -26,7 +26,6 @@ vi.mock('next/link', () => ({
 const LEGACY_PARAPHRASE = new Set([
   'Is cartwright open source?',
   'Will it cost me anything to run?',
-  'Can I migrate from Shopify or WooCommerce?',
   'What does the AI actually do?',
   'Can AI agents actually use a Cartwright store?',
   'Where do I get support?',

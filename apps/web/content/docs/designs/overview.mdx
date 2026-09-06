@@ -12,6 +12,16 @@ Cartwright separates **what you sell** (industry) from **how it looks** (design)
 
 This is new in **v0.7.0**. Before that, the homepage component was hardcoded from the industry slug (`saas` → SaaSHomeClient, `studio` → StudioHomeClient, everything else → a single fallback). v0.7.0 introduces a first-class `designs/` registry, a portable `design.md` format, and adapters for the three biggest AI design tools.
 
+## Start from the blank canvas
+
+`blank` is not a design — it is the starting point for a completely unique front, with free hands, in every profile. Activate it with `designSlug: "blank"` in `brand.config.ts` (or `/admin/designs` in the database-backed profiles, or the `design.set_slug` tool), then rewrite the files in `designs/blank/`, each of which carries its own in-file guide:
+
+- `homepage.tsx` — the whole homepage, a React Server Component receiving `DesignHomepageProps` (`settings`, `locale`, `featured`/`categories` in webshop mode, `genome`). Render `<section>`/`<div>`, never your own `<main>` — the engine wraps you in one (control it with the optional `layout` field in `index.ts`: `{ mainClassName: "" }` for full-bleed, `{ ownsMain: true }` to render it yourself).
+- `chrome.tsx` — `BlankHeader` and `BlankFooter`, wired through `siteChrome` in `index.ts`, so they replace the shared chrome on every page. Two components taking `{ locale }`.
+- `index.ts` — optional `pages: { contact, info, notFound }` and `webshop: { productCard, pdpLayout, categoryLayout }` templates; untemplated pages keep their default bodies in the pack's neutral palette.
+
+Any CSS, fonts or Tailwind go — scope styles under `.blank-canvas` or use a CSS Module; the `cw-*`/`sol-*` tokens are optional here. SEO, the sitemap, share cards and locale routing stay wrapped around whatever you render; in the database-backed profiles so do the admin, the database and the AI tools. The in-scaffold `AGENTS.md → Blank canvas` is the long form. See also [Writing your own design](/docs/designs/writing-your-own) for a pack that starts from a copy instead of from bare files.
+
 ## The two axes
 
 ```

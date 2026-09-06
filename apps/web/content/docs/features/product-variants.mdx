@@ -73,7 +73,7 @@ The storefront variant picker, once wired, will introspect the same way — surf
 - CSV import/export for migration from other platforms.
 - Stock adjustment with audit-logged reason ("annual count", "damage write-off").
 
-The CSV flow is also the recommended bulk-migration path from Shopify or WooCommerce — column mapping is configurable per import.
+The CSV flow is also the bulk path for simple products out of a Shopify or WooCommerce export — the ten columns are fixed (`slug, name, description, priceKr, stock, brand, featured, categorySlug, images, attributes`), categories must exist first, and variants, SKU and weight are not imported yet.
 
 ## Cart and order persistence
 

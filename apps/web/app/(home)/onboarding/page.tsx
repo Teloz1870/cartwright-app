@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/onboarding' },
   title: 'Agentic onboarding (Plus preview)',
   description:
-    'An interactive preview of the Plus migration agent: paste a Shopify or WooCommerce URL and watch a five-agent AI workforce rebuild it as a Cartwright shop. Demo only — the real agent is in development; Hoptify import and product CSV import are available self-hosted today.',
+    'An interactive preview of the Plus migration agent: paste a Shopify or WooCommerce URL and watch a five-agent AI workforce rebuild it as a Cartwright shop. Demo only — the real agent is in development; Hoptify import (--profile full) and product CSV import are available self-hosted today.',
 };
 
 export default function OnboardingPage() {

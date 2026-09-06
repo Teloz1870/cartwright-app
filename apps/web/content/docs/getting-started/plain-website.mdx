@@ -19,6 +19,8 @@ Measured cold run: <EngineFact k="siteColdRunScaffold" /> to scaffold and instal
 
 ## Is this the right door?
 
+The profile is the first of three choices — how the front gets built (a shipped pack, the blank canvas, your own pack) and where the content comes from (a URL, Shopify, WordPress/WooCommerce, a CSV) are the other two, and the origin can force the profile: [Choose your path](/docs/getting-started/choose-your-path).
+
 **Choose `--profile site` when the request looks like:**
 
 - *"Build me a page"* — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page (a timeline or a map is a component you write, as anywhere), `next build`, deploy; the design, SEO and locale routing are already there.
@@ -127,7 +129,7 @@ gh repo create my-site --private --source=. --remote=origin --push
 
 ## So, is it faster?
 
-Faster to a *finished* page, not to an *empty* one. `create-next-app` hands you a blank route in seconds; `--profile site` hands you a designed, SEO-wired site in a comparable time (the measured record is above — there is no measured create-next-app number here, so this is not a race claim). The time you save is the day that comes *after* `create-next-app` — layout, metadata, OG image, sitemap, locale routing, accessibility, security headers. What you do not save: a map, a timeline or a weather widget are components you write in either case. For a one-off page you will never grow, `create-next-app` is fine — and this page says so.
+Faster to a *finished* page, not to an *empty* one. `create-next-app` hands you a blank route in seconds; `--profile site` hands you a designed, SEO-wired site in a comparable time (the measured record is above — there is no measured create-next-app number here, so this is not a race claim). The time you save is the day that comes *after* `create-next-app` — layout, metadata, OG image, sitemap, locale routing, accessibility, security headers. What you do not save: a map, a timeline or a weather widget are components you write in either case. For a one-off page you will never grow, `create-next-app` is fine.
 
 ## When you outgrow it
 

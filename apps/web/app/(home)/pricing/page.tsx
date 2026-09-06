@@ -65,7 +65,7 @@ const tiers: Tier[] = [
       'Scaffold via `create-cartwright` CLI',
       'Storefront, admin, MCP server',
       'Blog, shipping, tax/VAT, wishlist, GDPR/DSAR, backup',
-      'Hoptify "import from Shopify" + design import (Firecrawl)',
+      'Hoptify "import from Shopify" (--profile full) + design import (Firecrawl)',
       'Resolvable Genome + indexing controls',
       'Bring your own Vercel, DB, Stripe, AI key',
       'Community support via GitHub Issues',
