@@ -101,32 +101,49 @@ export function EngineFact({ k }: { k: keyof typeof ENGINE_FACTS }) {
  * and the `/llms-full.txt` concatenation) is the processed MDX text — React
  * never runs over it, so the component tags an HTML reader sees as numbers
  * reached an AI reader as literal `<EngineFact k="siteColdRunScaffold" />`
- * (measured live 2026-09-06: eight raw tags and zero numbers on the
+ * (measured live 2026-09-06: 23 raw tags across the corpus, 12 of them on the
  * plain-website runbook — the exact surface the site-profile program exists
  * for).
  *
- * Fenced code blocks and inline code spans are left untouched (a page that
- * SHOWS the tag as an example keeps showing it). Outside code, the tag is
- * matched in every spelling MDX accepts — `k="x"`, `k='x'`, `k={"x"}`,
- * extra attributes, self-closing or `</EngineFact>` — and a key that is not
- * a fact throws: these bodies are produced at build time, and a fact that
- * cannot be cited must fail the build, not ship as a tag.
+ * Code is left alone: fenced blocks, indented blocks and inline spans keep
+ * whatever they show, so a page that documents the tag keeps documenting it.
+ * The processed text escapes SOME backticks as `&#x60;` — a real line reads
+ * "repo with `llms.txt&#x60;, …" — so the entity has to count as a delimiter
+ * when pairing spans; counting only literal backticks shifted parity by one
+ * and left three tags unresolved on the built site.
+ *
+ * Outside code the tag is matched in every spelling MDX accepts — `k="x"`,
+ * `k='x'`, `k={"x"}`, extra attributes, self-closing or `</EngineFact>` — and
+ * anything else (a missing key, a key that is not a fact, a computed key)
+ * throws: these bodies are produced at build time, so a fact that cannot be
+ * cited must fail the build rather than ship as markup.
  */
 export function renderEngineFacts(markdown: string): string {
-  // Split into code and prose: fences first (so an inline-looking backtick
-  // inside a fence is not mistaken for a span), then inline spans.
-  const parts = markdown.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/);
+  // A private-use code point that cannot occur in the source; it lets an
+  // escaped backtick take part in span pairing without changing a byte of the
+  // output (it is mapped back before returning).
+  const TICK = "";
+  const withTicks = markdown.split("&#x60;").join(TICK).split("&#96;").join(TICK);
+  const CODE = [
+    "```[\\s\\S]*?```", // fenced
+    "~~~[\\s\\S]*?~~~",
+    "(?:^|\\n)(?: {4}|\\t)[^\\n]*", // an indented code line
+    "[`\\uE000][^`\\uE000\\n]*[`\\uE000]", // inline span, either delimiter
+  ].join("|");
+  const parts = withTicks.split(new RegExp(`(${CODE})`, "g"));
   return parts
-    .map((part, i) => (i % 2 === 1 ? part : replaceEngineFactTags(part)))
-    .join('');
+    .map((part, i) => (i % 2 === 1 ? part ?? "" : replaceEngineFactTags(part ?? "")))
+    .join("")
+    .split(TICK)
+    .join("&#x60;");
 }
 
 function replaceEngineFactTags(prose: string): string {
-  const tag = /<EngineFact\b([^>]*?)\/?>(?:\s*<\/EngineFact>)?/g;
-  return prose.replace(tag, (match, attrs: string) => {
-    const k = /\bk\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*(?:"([^"]*)"|'([^']*)')\s*\})/.exec(attrs);
+  const tag = /<EngineFact\b[\s\S]*?(?:\/>|<\/EngineFact>)/g;
+  return prose.replace(tag, (match) => {
+    const k = /\bk\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*(?:"([^"]*)"|'([^']*)')\s*\})/.exec(match);
     const key = k?.[1] ?? k?.[2] ?? k?.[3] ?? k?.[4];
-    if (!key) throw new Error(`${match}: <EngineFact> needs a k="…" attribute`);
+    if (!key) throw new Error(`${match}: <EngineFact> needs a literal k="…" (a computed key cannot be resolved here)`);
     if (!Object.hasOwn(ENGINE_FACTS, key)) throw new Error(`${match}: no such fact in ENGINE_FACTS`);
     return String(ENGINE_FACTS[key as keyof typeof ENGINE_FACTS]);
   });

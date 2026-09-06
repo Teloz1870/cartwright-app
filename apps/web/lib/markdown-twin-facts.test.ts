@@ -20,7 +20,7 @@ describe('renderEngineFacts', () => {
 
   it('throws on a fact that does not exist — a typo must fail the build, not ship as a tag', () => {
     expect(() => renderEngineFacts('<EngineFact k="noSuchFact" />')).toThrow(/no such fact/);
-    expect(() => renderEngineFacts('<EngineFact />')).toThrow(/needs a k/);
+    expect(() => renderEngineFacts('<EngineFact />')).toThrow(/needs a literal k/);
     // Inherited names are not facts.
     expect(() => renderEngineFacts('<EngineFact k="toString" />')).toThrow(/no such fact/);
   });
@@ -36,6 +36,58 @@ describe('renderEngineFacts', () => {
     expect(out).toContain('`<EngineFact k="toolCount" />`');
     expect(out).toContain('```tsx\n<EngineFact k="noSuchFact" />\n```');
     expect(out).toContain(`Deps: ${v}`);
+  });
+
+  it('an escaped backtick still closes an inline span — the line that leaked on the built site', () => {
+    // Verbatim shape from the processed text of plain-website.mdx: the span
+    // opens with a literal backtick and closes with the entity. Counting only
+    // literal backticks shifted parity, so the tag after it was treated as
+    // code and shipped raw.
+    const line = 'repo with `llms.txt&#x60;, and **<EngineFact k="siteRuntimeDeps" /> runtime dependencies** and `next build` after.';
+    const out = renderEngineFacts(line);
+    expect(out).not.toMatch(/<EngineFact/);
+    expect(out).toContain(`**${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies**`);
+    // The entity is restored byte-for-byte, and real code is still untouched.
+    expect(out).toContain('`llms.txt&#x60;');
+    expect(out).toContain('`next build`');
+  });
+
+  it('leaves indented code blocks alone', () => {
+    const md = 'Prose:\n\n    <EngineFact k="noSuchFact" />\n\nDeps: <EngineFact k="siteRuntimeDeps" />';
+    const out = renderEngineFacts(md);
+    expect(out).toContain('    <EngineFact k="noSuchFact" />');
+    expect(out).toContain(`Deps: ${ENGINE_FACTS.siteRuntimeDeps}`);
+  });
+
+  it('a computed key throws instead of shipping the tag', () => {
+    expect(() => renderEngineFacts('Deps: <EngineFact k={someVar} />')).toThrow(/needs a literal k/);
+  });
+
+  it('the one spelling it cannot see is a key written with backticks — and no page uses it', () => {
+    // Backticks read as an inline code span, so such a tag is treated as code
+    // and left verbatim rather than throwing. The heuristic cannot tell a JSX
+    // template literal from a code span, so the guard is the corpus itself.
+    const md = 'Deps: <EngineFact k={`toolCount`} />';
+    expect(renderEngineFacts(md)).toBe(md);
+    const root = join(__dirname, '..', 'content', 'docs');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (name.endsWith('.mdx')) files.push(full);
+      }
+    };
+    walk(root);
+    for (const f of files) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/<EngineFact\b[\s\S]*?\/>/g)) {
+        expect(m[0], `${f}: an EngineFact tag with a backtick would be treated as code`).not.toContain('`');
+      }
+    }
+  });
+
+  it('an attribute containing > does not break the parse', () => {
+    expect(renderEngineFacts('<EngineFact title="a>b" k="siteRuntimeDeps" />')).toBe(String(ENGINE_FACTS.siteRuntimeDeps));
   });
 
   it('every fact is a scalar that survives String() and a Markdown table cell', () => {

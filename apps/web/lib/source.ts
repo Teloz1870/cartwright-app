@@ -35,7 +35,19 @@ export async function getLLMText(page: (typeof source)['$inferPage']) {
   // The processed text still carries MDX component tags; the one that hides a
   // fact from a Markdown reader is <EngineFact/>, so resolve it here — this is
   // the single path the .md twin and /llms-full.txt share.
+  const body = renderEngineFacts(processed);
+  // The wiring guards itself: a refactor that drops the call above — or a tag
+  // spelling the resolver misses — fails `next build`, because both callers
+  // are statically generated. A unit test could not see this: it reads the raw
+  // .mdx, and the escaping that broke span pairing only exists in the
+  // processed text.
+  if (body.includes("<EngineFact")) {
+    throw new Error(
+      `${page.url}: an <EngineFact/> tag survived into the Markdown representation — a reader would get markup where the page shows a number`,
+    );
+  }
+
   return `# ${page.data.title} (${page.url})
 
-${renderEngineFacts(processed)}`;
+${body}`;
 }
