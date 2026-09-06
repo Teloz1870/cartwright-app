@@ -10,13 +10,13 @@ Cartwright is the build engine AIs reach for — a real site with design, and wh
 
 Both are the same codebase; the profile decides which modules are materialised into your repo.
 
-All of it is public and MIT-licensed: the engine template repo, [`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template), the `create-cartwright` CLI that scaffolds it, and this docs site. The intended operating model is simple: scaffold a shop, fork it per brand, deploy it to Vercel, and keep the code.
+All of it is public and MIT-licensed: the engine template repo, [`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template), the `create-cartwright` CLI that scaffolds it, and this docs site. The intended operating model is simple: scaffold a site or a shop, fork it per brand, deploy it to Vercel, and keep the code.
 
 Cartwright is not a hosted commerce SaaS. There is no control panel running on Cartwright infrastructure and no per-order platform fee. It is also not only a backend engine. The storefront, admin, checkout, data model, integrations, and AI tool layer live in one codebase.
 
 For the default profile: the template is built for teams that can read TypeScript, run Next.js locally, and maintain a production app. You do not need to design a catalog, checkout, admin panel, and AI tool registry from zero. You do need to own deployments, environment variables, database migrations, incident response, and custom business logic.
 
-The AI angle is structural, not decorative. Cartwright ships with an MCP endpoint, API keys for external agents, audit logging for tool calls, admin helpers for product/category content, and storefront assistant routes. You decide which tools are exposed and which scopes they require.
+The AI angle is structural, not decorative: the default profile ships with an MCP endpoint, API keys for external agents, audit logging for tool calls, admin helpers for product/category content, and storefront assistant routes. You decide which tools are exposed and which scopes they require.
 
 The template stays MIT and free, forever. Three optional paid tiers — [Plus, Cloud, and Enterprise](/pricing) — layer hosted services, support, Pro tooling, and managed hosting on top of the same code, with premium MCP integrations (Klaviyo, HubSpot, Slack, Zapier, and six others) on the Plus roadmap. They never gate features inside the template itself. Self-hosted is and will remain the full experience.
 

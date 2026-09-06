@@ -40,7 +40,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 2. **Run** (in the background, so the verify can run in the same shell).
 
    ```bash
-   pnpm dev &
+   pnpm dev &   # assumes :3000 is free
    ```
 
    **Verify** (`/` redirects to `/en`; `-L` follows):
@@ -50,7 +50,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    # expect: 200
    ```
 
-   *Proves:* it boots with zero environment variables.
+   *Proves:* it boots without needing an environment variable. The CLI still writes a generic `.env`/`.env.local` (`DATABASE_URL`, `AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`); nothing in them is required by this profile — delete both and it still answers 200.
 
 3. **Make it say something.** Edit `website.headline` (and `tagline`, `cta`) in `brand.config.ts`, and pick a look with `designSlug` (slugs in `designs/options.ts`). For a bespoke one-page build set `designSlug: "blank"` and write `designs/blank/homepage.tsx` — its in-file guide explains the props; the header, footer, SEO and locale routing wrap whatever you render.
 
@@ -59,6 +59,8 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    ```bash
    curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
    ```
+
+   The `<h1>` is your `website.headline` on the shipped packs. The `blank` pack renders `storeName` until you rewrite `designs/blank/homepage.tsx` — that is the point of it.
 
 4. **Add a page** — any route under `app/[locale]/` gets the site chrome from the `[locale]` layout. Prefix internal links with `/${locale}`.
 
@@ -86,7 +88,8 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 6. **Deploy.** **No environment variables are required to build and serve** (the default contact form needs `RESEND_API_KEY` + `RESEND_FROM` to deliver mail; `--with none` scaffolds without it). Set `url` in `brand.config.ts` to the real domain when you have one; on Vercel, `NEXT_PUBLIC_APP_URL` or the deployment URL wins over it for canonicals. Either push to GitHub and import the repo at vercel.com, or deploy from the terminal and keep the URL it prints:
 
    ```bash
-   URL=$(npx vercel --yes --prod | tail -1)     # the deployment URL is the last line of stdout
+   npx vercel login                             # once; unauthenticated, the next line exits 1 with an empty $URL
+   URL=$(npx vercel --yes --prod | tail -n 1)   # the deployment URL is the last line of stdout
    ```
 
    **Verify** the deployment the same way as the local run:
