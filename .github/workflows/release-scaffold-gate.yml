@@ -114,8 +114,11 @@ jobs:
           # Provenance from the run itself: the version banner the CLI prints
           # (`create-cartwright vX.Y.Z` — the one npx executed) and the channel
           # it resolved. The engine's own marker is read at the end, from the
-          # scaffold.
-          EXECUTED=$(grep -o 'create-cartwright v[0-9][0-9A-Za-z.+-]*' scaffold.log | head -1 | sed 's/.* v//' || true)
+          # scaffold. The banner is colored even when piped (picocolors keeps
+          # color on under CI=true) and the badge pads a second space before
+          # the version, so strip the escapes first and allow any spacing —
+          # verified against the runner's own scaffold.log bytes.
+          EXECUTED=$(sed 's/\x1b\[[0-9;]*m//g' scaffold.log | grep -o 'create-cartwright *v[0-9][0-9A-Za-z.+-]*' | head -1 | sed 's/.*v//' || true)
           echo "CLI_EXECUTED=${EXECUTED}" >> "$GITHUB_ENV"
           CHANNEL=$(grep -o 'Template downloaded ([^)]*)' scaffold.log | head -1 | sed 's/.*(\(.*\))/\1/' || true)
           echo "TEMPLATE_CHANNEL=${CHANNEL:-unknown}" >> "$GITHUB_ENV"
@@ -267,7 +270,7 @@ jobs:
               `### ${out.profile} — ${complete ? "measured cold run" : `INCOMPLETE record (job ${out.jobStatus}) — do not quote`} (${out.date})`,
               ``, `| step | seconds |`, `|---|---|`,
               row("scaffold + install", s.scaffoldInstall), row("typecheck", s.typecheck), row("unit tests", s.unitTests), row("next build", s.build), row("boot → HTTP 200", s.bootTo200),
-              ``, `Provenance: create-cartwright@${out.cli ?? "?"} (${out.cliSource === "banner" ? "executed" : "npm view"}; input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
+              ``, `Provenance: create-cartwright@${out.cli ?? "?"} (${out.cliSource === "banner" ? "executed" : out.cliSource === "npm-view" ? "npm view" : "unknown"}; input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
               ``,
             ].join("\n");
             require("fs").appendFileSync(env.GITHUB_STEP_SUMMARY, md);
