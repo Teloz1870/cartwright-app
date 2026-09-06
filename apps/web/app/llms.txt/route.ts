@@ -86,6 +86,7 @@ append \`.md\` to its path, or send \`Accept: text/markdown\`.
 
 - [Introduction](${SITE_URL}/docs/introduction)
 - [Build a plain website (no database)](${SITE_URL}/docs/getting-started/plain-website)
+- [Choose your path — profile, build method, origin](${SITE_URL}/docs/getting-started/choose-your-path)
 - [Quick start](${SITE_URL}/docs/getting-started/quick-start)
 - [Quick start for agents](${SITE_URL}/docs/getting-started/ai-quick-start)
 - [Architecture](${SITE_URL}/docs/architecture/overview)

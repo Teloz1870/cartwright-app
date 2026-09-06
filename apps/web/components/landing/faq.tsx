@@ -68,16 +68,23 @@ const items = [
     q: 'Can I migrate from Shopify or WooCommerce?',
     a: (
       <>
-        Two paths. <strong>Today:</strong> scaffold cartwright, use the Hoptify import (palette +
-        products via Firecrawl) plus product CSV import, and point your DNS over. The Stripe
-        customer ID is the link key. <strong>Planned with Plus:</strong> an{' '}
-        <a href="/onboarding" className="text-cw-terracotta">agentic onboarding flow</a> that takes a
-        source URL and runs a five-agent migration to a deployed Cartwright shop. The interactive
-        preview is live today; the agent itself is still in development.
+        Three origins, each with its own door. <strong>From Shopify:</strong> scaffold with{' '}
+        <code>--profile full</code> and use the Hoptify import at <code>/admin/hoptify</code> — palette and
+        products from the product URLs you list (Firecrawl key + an AI key); pages and variants by hand.{' '}
+        <strong>From any URL:</strong> the default profile&apos;s <code>content.import_site</code> crawls a
+        site and lands pages, services and posts as drafts you review (<code>siteImport</code> flag, Firecrawl
+        key). <strong>From WooCommerce:</strong> product CSV import (simple products) plus the URL import
+        today; a dedicated WooCommerce importer is planned, not built. Old URLs keep their rankings through
+        admin-managed redirects — exact paths, one at a time. Cartwright never runs on WordPress hosting — it
+        replaces the site and imports from it. Orders and customers never move.{' '}
+        <Link href="/docs/getting-started/choose-your-path" className="text-cw-terracotta">
+          Choose your path
+        </Link>{' '}
+        works the four cases through.
       </>
     ),
     plain:
-      'Two paths. Today: scaffold Cartwright, use the Hoptify import (palette + products via Firecrawl) plus product CSV import, and point your DNS over — the Stripe customer ID is the link key. Planned with Plus: an agentic onboarding flow that takes a source URL and runs a five-agent migration to a deployed Cartwright shop; the interactive preview is live today, the agent itself is still in development.',
+      "Three origins, each with its own door. From Shopify: scaffold with --profile full and use the Hoptify import at /admin/hoptify — palette and products from the product URLs you list (Firecrawl key + an AI key); pages and variants by hand. From any URL: the default profile's content.import_site crawls a site and lands pages, services and posts as drafts you review (siteImport flag, Firecrawl key). From WooCommerce: product CSV import (simple products) plus the URL import today; a dedicated WooCommerce importer is planned, not built. Old URLs keep their rankings through admin-managed redirects — exact paths, one at a time. Cartwright never runs on WordPress hosting — it replaces the site and imports from it. Orders and customers never move. Choose your path (cartwright.app/docs/getting-started/choose-your-path) works the four cases through.",
   },
   {
     q: 'How does this compare to Medusa, Saleor, or next-forge?',

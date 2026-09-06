@@ -33,6 +33,7 @@ describe('the site profile is named on every entry surface', () => {
     'content/docs/in-the-box.mdx',
     'content/docs/why-cartwright.mdx',
     'content/docs/getting-started/plain-website.mdx',
+    'content/docs/getting-started/choose-your-path.mdx',
     'content/docs/getting-started/ai-quick-start.mdx',
     'content/docs/getting-started/cli-options.mdx',
     'content/docs/getting-started/quick-start.mdx',

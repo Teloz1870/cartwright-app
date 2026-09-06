@@ -3,7 +3,7 @@ import { DESIGNS } from '@/lib/designs-data';
 import { SITE_URL } from '@/lib/agent-resources';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
 import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-copy';
-import { DEFAULT_FITS, NOT_A_FIT, SITE_FITS } from './when-to-use';
+import { DEFAULT_FITS, NOT_A_FIT, SITE_FITS, METHODS, ORIGINS } from './when-to-use';
 
 /**
  * The four things an agent can ask this site, as MCP tools.
@@ -232,9 +232,19 @@ export const MCP_TOOLS = {
           'A webshop or company site the user must own the code and data for, not a tenant account on a platform.',
           'A store that AI agents can discover, cite and buy from.',
           'Operating a shop from a terminal or from your own agent, with no browser.',
-          'Migrating off Lovable, Shopify or WooCommerce onto owned code.',
+          'Migrating off Lovable, Shopify (--profile full, the Hoptify import) or WooCommerce (CSV + URL import today; a dedicated importer is planned, not built) onto owned code — see origins[].',
         ],
         notAFit: NOT_A_FIT,
+        // The two axes an agent otherwise guesses: how the front gets built,
+        // and where the content comes from (with the profile each origin
+        // forces). Same constants the when-to-use block renders.
+        axes: {
+          profile: 'the infrastructure — site / light (default) / full; see profiles[]',
+          method: 'how the front gets built — three equal freedoms (a shipped pack, the blank canvas, your own pack) and three generating tools; see methods[]',
+          origin: 'where the content comes from, and the profile it forces; see origins[]',
+        },
+        methods: METHODS,
+        origins: ORIGINS,
         scale: {
           tools: ENGINE_FACTS.toolCount,
           scopes: ENGINE_FACTS.scopeCount,
@@ -253,6 +263,7 @@ export const MCP_TOOLS = {
         },
         links: {
           documentation: `${SITE_URL}/docs/introduction`,
+          choosePath: `${SITE_URL}/docs/getting-started/choose-your-path`,
           agentIndex: `${SITE_URL}/llms.txt`,
           openapi: `${SITE_URL}/openapi.json`,
           source: 'https://github.com/Teloz1870/cartwright-template',
