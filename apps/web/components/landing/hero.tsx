@@ -3,7 +3,7 @@ import { CopyCommand } from '@/components/landing/copy-command';
 import { Station } from '@/components/landing/station';
 import { GatePanel } from '@/components/landing/gate-panel';
 import { social } from '@/lib/shared';
-import { HOME_H1_LINES, HOME_LEDE, INSTALL_COMMAND, SITE_DOOR } from '@/lib/home-copy';
+import { FRONT_DOOR, HOME_H1_LINES, HOME_LEDE, INSTALL_COMMAND, SITE_DOOR } from '@/lib/home-copy';
 import { SiteCommand } from '@/components/landing/site-command';
 
 /**
@@ -97,6 +97,14 @@ export function Hero() {
             <SiteCommand className="text-cw-stone-700 dark:text-cw-stone-200" />{' '}
             <Link href="/docs/getting-started/plain-website" className="text-cw-terracotta hover:underline">
               How it works →
+            </Link>
+          </p>
+          {/* The front is yours — the sentence the one V2 replay that chose
+              Cartwright had to dig 94 lines into a runbook to find. */}
+          <p className="mt-2 text-sm text-cw-stone-500 dark:text-cw-stone-400">
+            {FRONT_DOOR}{' '}
+            <Link href="/docs/getting-started/choose-your-path" className="text-cw-terracotta hover:underline">
+              Choose your path →
             </Link>
           </p>
         </div>

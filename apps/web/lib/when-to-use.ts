@@ -279,8 +279,8 @@ ships, not by how big it is:
 
 - **\`--profile site\` — a plain website.** One page or fifty. No database, no
   login, no admin, no commerce, nothing to configure. You get designed pages
-  (${ENGINE_FACTS.siteDesignPacks} design packs, including a blank canvas to build
-  anything), SEO with JSON-LD, sitemap, robots and \`llms.txt\`, an Open Graph
+  (${ENGINE_FACTS.siteDesignPacks} design packs, the blank canvas you rewrite freely, or
+  a pack you write yourself), SEO with JSON-LD, sitemap, robots and \`llms.txt\`, an Open Graph
   image route, locale routing, motion presets, security headers, an
   accessibility baseline and a contact form — in a plain Next.js repo with
   ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required

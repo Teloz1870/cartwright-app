@@ -1,3 +1,4 @@
+import { FRONT_DOOR } from '@/lib/home-copy';
 import { Card, CardBody, CardTitle } from '@/components/ui/card';
 import { Station } from '@/components/landing/station';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
@@ -84,7 +85,8 @@ export function ThreeDoors() {
           Leave anytime — it&apos;s your repo.
         </span>{' '}
         Don&apos;t need operators at all? <code className="font-mono text-xs">--profile site</code> keeps
-        the design packs, SEO and locale routing and leaves the database, admin and agent tools out.
+        the design packs, SEO and locale routing and leaves the database, admin and agent tools out.{' '}
+        {FRONT_DOOR}
       </p>
     </Station>
   );

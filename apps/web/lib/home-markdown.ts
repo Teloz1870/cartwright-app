@@ -1,6 +1,6 @@
 import { AGENT_RESOURCES, SITE_URL } from './agent-resources';
 import { WHEN_TO_USE } from './when-to-use';
-import { COLD_RUN, HOME_H1_TEXT, HOME_LEDE, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN, SITE_DOOR } from './home-copy';
+import { COLD_RUN, FRONT_DOOR, HOME_H1_TEXT, HOME_LEDE, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN, SITE_DOOR } from './home-copy';
 
 /**
  * The homepage as Markdown, and the frontmatter helper both Markdown surfaces use.
@@ -57,6 +57,8 @@ ${SITE_DOOR}
     ${INSTALL_COMMAND_SITE}
 
 ${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install · ${SITE_COLD_RUN.build} to build · ${SITE_COLD_RUN.boot} to HTTP 200 with a rendered H1.
+
+${FRONT_DOOR} Choosing among profile, build method and origin: https://cartwright.app/docs/getting-started/choose-your-path
 
 Open source, MIT licensed, Next.js. You own the code — and, in the default profile,
 the database and the AI layer; there are no platform fees and no per-transaction cut.

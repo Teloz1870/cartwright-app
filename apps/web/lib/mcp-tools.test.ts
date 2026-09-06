@@ -176,6 +176,12 @@ describe('describe_engine names both doors', () => {
     for (const p of out.profiles) expect(routeExists(new URL(p.runbook).pathname), p.runbook).toBe(true);
     expect(out.goodFit.join('\n')).toContain('--profile site');
     expect(out.notAFit.join('\n')).not.toContain('would go unused');
+    // A2: the default profile states its limits and its measured run too; the
+    // description names the two axes an agent otherwise guesses.
+    expect(out.profiles[1].limits?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(out.profiles[2].limits?.length ?? 0).toBeGreaterThanOrEqual(1);
+    expect(MCP_TOOLS.describe_engine.description).toMatch(/origin/);
+    expect(MCP_TOOLS.describe_engine.description).toMatch(/build method/);
   });
 
   it('the MCP server instructions and card name the site profile', () => {

@@ -47,6 +47,23 @@ export const INSTALL_COMMAND_SITE = 'npx create-cartwright@latest my-site --prof
 export const SITE_DOOR = 'Just a page or a plain website? No database, no login, nothing to configure:';
 
 /**
+ * The front is yours — said once, rendered everywhere an AI decides.
+ *
+ * Measured 2026-09-06 (replay V2, a designed one-pager): the only run that
+ * chose Cartwright had found the `blank` pack and quoted its promise ("own
+ * homepage + chrome, everything else keeps working — no fighting the
+ * framework"); the two that declined never saw it and argued against "a
+ * website *system*". A system is only oppressive when you cannot see which
+ * part is yours. The owner's rule is that the build method binds nobody — a
+ * shipped pack, the blank canvas and your own pack are three EQUAL freedoms —
+ * so this sentence names all three and ranks none. The plan called it
+ * BLANK_DOOR; it is wider than blank. Profile-honest on purpose: what keeps
+ * working in every profile comes first, the database-backed extras last.
+ */
+export const FRONT_DOOR =
+  'You own the front — pick one of the shipped design packs, start from the blank canvas and rewrite its homepage, header and footer freely, or write your own pack; SEO, the sitemap, share cards and locale routing keep working around whatever you render, and in the default profile so do the database, the admin and the AI tools.';
+
+/**
  * The site profile's measured cold run — copied, never typed, from the
  * release scaffold gate's `timings-site.json` artifact (cartwright-app
  * `.github/workflows/release-scaffold-gate.yml`), which scaffolds every

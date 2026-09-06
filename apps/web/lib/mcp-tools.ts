@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DESIGNS } from '@/lib/designs-data';
 import { SITE_URL } from '@/lib/agent-resources';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
-import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-copy';
+import { COLD_RUN, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-copy';
 import { DEFAULT_FITS, NOT_A_FIT, SITE_FITS, METHODS, ORIGINS } from './when-to-use';
 
 /**
@@ -174,7 +174,7 @@ export const MCP_TOOLS = {
   describe_engine: {
     title: 'What Cartwright is, and when to reach for it',
     description:
-      'Return a structured summary of Cartwright: what it is, its two profiles (including the database-free `--profile site` for plain websites), the jobs each fits, the jobs neither does, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
+      'Return a structured summary of Cartwright: what it is, its profiles (including the database-free `--profile site` for plain websites), the build methods (a shipped pack, the blank canvas, your own pack, the generating tools) and the origins content can come from (a URL, Shopify, WordPress/WooCommerce, a CSV) with the profile each origin forces, the jobs each profile fits, the jobs none does, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
     inputSchema: {},
     handler: async () =>
       asText({
@@ -218,12 +218,21 @@ export const MCP_TOOLS = {
             summary:
               'Managed site or shop: everything in site plus a database, an admin, Auth.js, optional Stripe checkout and a scoped REST + MCP tool surface. The admin edits the site\'s own pages at /admin/sider — home, services, about, contact — as well as the catalogue; that is the profile to choose when the owner will maintain the text themselves without touching files.',
             fits: DEFAULT_FITS,
+            measured: COLD_RUN,
+            limits: [
+              'The Shopify importer (Hoptify) is pruned from this profile — use --profile full for it.',
+              'No A2A, UCP, voice shopping or agentic admin — those ship in --profile full.',
+              'Needs a database and the environment the setup wizard collects (Turso, Postgres or SQLite locally; Resend and Stripe optional).',
+            ],
             runbook: `${SITE_URL}/docs/getting-started/ai-quick-start`,
           },
           {
             name: 'full',
             flag: '--profile full',
-            summary: 'Everything the engine ships, including the agent marketplace.',
+            summary: 'Everything the engine ships, including the agent marketplace and the Shopify importer.',
+            limits: [
+              'Everything ships and must be configured or left flag-off; there is no measured cold run vendored here for full (the release scaffold gate measures one on every engine release).',
+            ],
             runbook: `${SITE_URL}/docs/getting-started/cli-options`,
           },
         ],
