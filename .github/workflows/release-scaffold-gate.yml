@@ -118,7 +118,7 @@ jobs:
           # color on under CI=true) and the badge pads a second space before
           # the version, so strip the escapes first and allow any spacing —
           # verified against the runner's own scaffold.log bytes.
-          EXECUTED=$(sed 's/\x1b\[[0-9;]*m//g' scaffold.log | grep -o 'create-cartwright *v[0-9][0-9A-Za-z.+-]*' | head -1 | sed 's/.*v//' || true)
+          EXECUTED=$(sed 's/\x1b\[[0-9;]*m//g' scaffold.log | grep -o 'create-cartwright *v[0-9][0-9A-Za-z.+-]*' | head -1 | sed 's/^create-cartwright *v//' || true)
           echo "CLI_EXECUTED=${EXECUTED}" >> "$GITHUB_ENV"
           CHANNEL=$(grep -o 'Template downloaded ([^)]*)' scaffold.log | head -1 | sed 's/.*(\(.*\))/\1/' || true)
           echo "TEMPLATE_CHANNEL=${CHANNEL:-unknown}" >> "$GITHUB_ENV"
