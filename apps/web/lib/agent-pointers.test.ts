@@ -128,8 +128,12 @@ describe('llms.txt stays a navigation index, not a document', () => {
     expect(read('app/llms.txt/route.ts')).not.toContain('llms(source).index()');
   });
 
-  it('the limit itself is recorded, so a future edit knows the budget', () => {
+  it('the limit itself is recorded, so a future edit knows the budget', async () => {
     expect(LIMIT).toBe(30_000);
+    const { GET } = await import('../app/llms.txt/route');
+    const body = await GET().text();
+    expect(body.length).toBeLessThan(LIMIT);
+    expect(body).toContain('--profile site');
   });
 
   it('points at the scoped index rather than inlining it', () => {

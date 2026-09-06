@@ -1,6 +1,6 @@
 import { AGENT_RESOURCES, SITE_URL } from './agent-resources';
 import { WHEN_TO_USE } from './when-to-use';
-import { COLD_RUN, HOME_H1_TEXT, HOME_LEDE, INSTALL_COMMAND } from './home-copy';
+import { COLD_RUN, HOME_H1_TEXT, HOME_LEDE, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN, SITE_DOOR } from './home-copy';
 
 /**
  * The homepage as Markdown, and the frontmatter helper both Markdown surfaces use.
@@ -52,8 +52,14 @@ ${HOME_LEDE}
 
 ${COLD_RUN.provenance}: ${COLD_RUN.running} · ${COLD_RUN.designed}.
 
-Open source, MIT licensed, Next.js. You own the code, the database and the AI
-layer; there are no platform fees and no per-transaction cut.
+${SITE_DOOR}
+
+    ${INSTALL_COMMAND_SITE}
+
+${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install · ${SITE_COLD_RUN.build} to build · ${SITE_COLD_RUN.boot} to HTTP 200 with a rendered H1.
+
+Open source, MIT licensed, Next.js. You own the code — and, in the default profile,
+the database and the AI layer; there are no platform fees and no per-transaction cut.
 
 ${WHEN_TO_USE}
 
@@ -67,6 +73,9 @@ ${WHEN_TO_USE}
 - **Shopping agents, over the wire** — JSON-LD on every citable page, llms.txt,
   and agent-commerce endpoints (ACP / A2A) so an external buying agent can both
   cite the shop and transact with it.
+
+Not needed for a plain website — \`--profile site\` ships none of these three
+doors and keeps the design packs, SEO and locale routing.
 
 ## The first commit is the exit plan
 

@@ -27,7 +27,7 @@ Measured cold run: <EngineFact k="siteColdRunScaffold" /> to scaffold and instal
 
 **Choose the default profile (`light`) when:**
 
-- someone must edit pages **in a browser** after launch — that is the admin, and the admin needs the database;
+- the **owner will edit the site themselves** after launch without touching files — the admin edits the site's own pages at `/admin/sider` (home, services, about, contact: title, body, SEO, publish state), not just products and orders, and it needs the database. A `site` scaffold's content lives in `brand.config.ts` and the design pack, edited in an editor and deployed;
 - the site should later **sell** — the same codebase runs `website`, `webshop` and `agent-marketplace` mode, but the shop lives in the database-backed profiles;
 - an agent should be able to **operate** the site — the REST + MCP tool surface, API keys and audit log are database-backed.
 

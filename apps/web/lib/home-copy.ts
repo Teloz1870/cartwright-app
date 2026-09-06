@@ -35,7 +35,7 @@ export const INSTALL_COMMAND = 'npx create-cartwright@latest my-shop';
  * engine quoting this sentence alone still says what Cartwright is.
  */
 export const HOME_LEDE =
-  'Cartwright is an AI-native commerce engine built for trusted operation. The model proposes, the shop shows you exactly what would change, and nothing is written until you release it.';
+  'Cartwright is an open-source Next.js engine that builds a real website in one command — a plain site with no database, or a shop with an AI-native admin built for trusted operation: the model proposes, the shop shows you exactly what would change, and nothing is written until you release it.';
 
 /**
  * The second door. Always with the explicit flag, so it stays correct whether
@@ -60,9 +60,9 @@ export const SITE_DOOR = 'Just a page or a plain website? No database, no login,
  */
 export const SITE_COLD_RUN = {
   provenance:
-    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.3, engine v0.56.1 (614ff3e), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34040202701',
-  scaffold: '~22 s',
-  build: '~27 s',
+    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.4, engine v0.56.2 (a1bbe1f), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34045315774',
+  scaffold: '~24 s',
+  build: '~30 s',
   boot: '~2 s',
   runtimeDependencies: 20,
   devDependencies: 16,

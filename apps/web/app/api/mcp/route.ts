@@ -54,8 +54,10 @@ function buildServer(): McpServer {
     { name: 'cartwright.app', version: '1.0.0' },
     {
       instructions: [
-        'Cartwright is an open-source AI-native commerce engine, scaffolded with',
-        '`npx create-cartwright@latest my-shop`.',
+        'Cartwright is an open-source Next.js engine that builds a real website in one',
+        'command, with or without a database: `npx create-cartwright@latest my-site --profile site`',
+        '(plain website, no database) or `npx create-cartwright@latest my-shop` (managed',
+        'site or shop with an admin, a database and an AI tool surface).',
         '',
         'Call `describe_engine` first when deciding whether Cartwright fits a task —',
         'it states the jobs it is right for AND the jobs it is wrong for.',

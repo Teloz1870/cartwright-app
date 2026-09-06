@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { DESIGNS } from '@/lib/designs-data';
 import { SITE_URL } from '@/lib/agent-resources';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
+import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-copy';
+import { DEFAULT_FITS, NOT_A_FIT, SITE_FITS } from './when-to-use';
 
 /**
  * The four things an agent can ask this site, as MCP tools.
@@ -172,27 +174,67 @@ export const MCP_TOOLS = {
   describe_engine: {
     title: 'What Cartwright is, and when to reach for it',
     description:
-      'Return a structured summary of Cartwright: what it is, the jobs it fits, the jobs it does not, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
+      'Return a structured summary of Cartwright: what it is, its two profiles (including the database-free `--profile site` for plain websites), the jobs each fits, the jobs neither does, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
     inputSchema: {},
     handler: async () =>
       asText({
         name: 'Cartwright',
         summary:
-          'An open-source (MIT), AI-native Next.js commerce engine. One command scaffolds a real site — storefront, admin, database, Stripe checkout — that the user owns outright.',
-        install: 'npx create-cartwright@latest my-shop',
+          'An open-source (MIT) Next.js engine that scaffolds a real website in one command, with or without a database. Two doors: `--profile site` is a plain website (pages, design packs, SEO/JSON-LD, locale routing; no database, no admin, no commerce); the default profile is a managed site or shop with an admin, a database, Stripe checkout and an AI tool surface that the user owns outright.',
+        // `install` stays the string it always was (consumers may read it as a
+        // command); the site door is beside it, and both live in `profiles[]`.
+        install: INSTALL_COMMAND,
+        installSite: INSTALL_COMMAND_SITE,
         modes: ['website', 'webshop', 'agent-marketplace'],
+        modesApplyTo: 'the default profile — a site scaffold has no modes to switch',
+        profiles: [
+          {
+            name: 'site',
+            flag: '--profile site',
+            summary:
+              'A plain website: designed pages, design packs incl. a blank canvas, SEO/JSON-LD, sitemap, robots, llms.txt, OG-image route, locale routing, motion presets, security headers, contact form (Resend; --with none for the bare site).',
+            runtimeDependencies: ENGINE_FACTS.siteRuntimeDeps,
+            envVarsToBoot: ENGINE_FACTS.siteEnvVarsToBoot,
+            designPacks: ENGINE_FACTS.siteDesignPacks,
+            measured: SITE_COLD_RUN,
+            fits: SITE_FITS,
+            limits: [
+              'No in-place profile upgrade: to add the database, admin or a shop later, re-scaffold the default profile and carry over brand.config.ts and your design pack.',
+              'No admin and no runtime editing — content is files in the repo.',
+              'No database, auth, cart or checkout.',
+              'No MCP or REST tool surface on the site itself; discovery advertises only what runs.',
+              '/ redirects to /<defaultLocale> (/en in a new scaffold); there is no root page.',
+              'No map, timeline or weather sections — write those components yourself.',
+              'Organization/WebSite JSON-LD out of the box; no Event/TouristTrip builders.',
+              'Not a static export: needs a Node.js 22+ host (Vercel, a container).',
+              'The default contact form needs RESEND_API_KEY + RESEND_FROM to deliver in production.',
+            ],
+            runbook: `${SITE_URL}/docs/getting-started/plain-website`,
+          },
+          {
+            name: 'light',
+            default: true,
+            flag: '(none — the default)',
+            summary:
+              'Managed site or shop: everything in site plus a database, an admin, Auth.js, optional Stripe checkout and a scoped REST + MCP tool surface. The admin edits the site\'s own pages at /admin/sider — home, services, about, contact — as well as the catalogue; that is the profile to choose when the owner will maintain the text themselves without touching files.',
+            fits: DEFAULT_FITS,
+            runbook: `${SITE_URL}/docs/getting-started/ai-quick-start`,
+          },
+          {
+            name: 'full',
+            flag: '--profile full',
+            summary: 'Everything the engine ships, including the agent marketplace.',
+            runbook: `${SITE_URL}/docs/getting-started/cli-options`,
+          },
+        ],
         goodFit: [
+          'A plain website or a single page with no database — use --profile site.',
           'A webshop or company site the user must own the code and data for, not a tenant account on a platform.',
           'A store that AI agents can discover, cite and buy from.',
           'Operating a shop from a terminal or from your own agent, with no browser.',
           'Migrating off Lovable, Shopify or WooCommerce onto owned code.',
         ],
-        notAFit: [
-          'A pure blog, docs site or portfolio — the database, admin and auth layer would go unused.',
-          'A multi-seller marketplace with per-seller payouts. Cartwright is single-merchant.',
-          'Extending an existing Shopify or Salesforce storefront; Cartwright replaces a storefront rather than embedding in one.',
-          'Anything that cannot run on Node.js 22+.',
-        ],
+        notAFit: NOT_A_FIT,
         scale: {
           tools: ENGINE_FACTS.toolCount,
           scopes: ENGINE_FACTS.scopeCount,
