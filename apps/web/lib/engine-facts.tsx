@@ -63,11 +63,15 @@ export const ENGINE_FACTS = {
   siteDevDeps: SITE_COLD_RUN.devDependencies,
   siteEnvVarsToBoot: 0,
   /**
-   * Design packs registered in a fresh site scaffold's `designs/index.ts`
-   * (16 core-claimed + the unclaimed showcase pack), `blank` included.
-   * Authority: a real `create-cartwright@2.9.2 --profile site` scaffold.
+   * Design packs registered in a fresh site scaffold's `designs/index.ts`:
+   * aurora-site, saas-dark, studio, corporate-baseline, stack, jungle,
+   * agentic-showcase and blank. The nine Google-font packs moved to the
+   * `google-fonts` module (engine PR #564, first shipped in v0.56.0) so a site
+   * scaffold boots and builds with Google's CDN unreachable. Authority: the
+   * engine's `scaffold/manifest.json` core claims, verified against a real
+   * materialization of that commit (17 on create-cartwright@2.9.2).
    */
-  siteDesignPacks: 17,
+  siteDesignPacks: 8,
   siteColdRunScaffold: SITE_COLD_RUN.scaffold,
   siteColdRunBuild: SITE_COLD_RUN.build,
   siteColdRunBoot: SITE_COLD_RUN.boot,

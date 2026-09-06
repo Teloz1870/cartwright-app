@@ -28,7 +28,9 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     expect(ENGINE_FACTS.siteRuntimeDeps).toBe(SITE_COLD_RUN.runtimeDependencies);
     expect(ENGINE_FACTS.siteColdRunProvenance).toBe(SITE_COLD_RUN.provenance);
     expect(ENGINE_FACTS.siteEnvVarsToBoot).toBe(0);
-    expect(ENGINE_FACTS.siteDesignPacks).toBeGreaterThan(10);
+    // Pinned, not bounded: the count is copied from a real materialization and
+    // must move together with its authority comment (17 → 8 with engine v0.56.0).
+    expect(ENGINE_FACTS.siteDesignPacks).toBe(8);
   });
 
   it('names the site profile on every docs surface this program touches, with the explicit flag', () => {
