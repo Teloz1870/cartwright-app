@@ -56,7 +56,7 @@ ${SITE_DOOR}
 
     ${INSTALL_COMMAND_SITE}
 
-${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} · ${SITE_COLD_RUN.build} · ${SITE_COLD_RUN.boot}.
+${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install · ${SITE_COLD_RUN.build} to build · ${SITE_COLD_RUN.boot} to HTTP 200 with a rendered H1.
 
 Open source, MIT licensed, Next.js. You own the code, the database and the AI
 layer; there are no platform fees and no per-transaction cut.

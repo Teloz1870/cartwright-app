@@ -39,7 +39,7 @@ const INTRO = `# Cartwright
     ${INSTALL_COMMAND_SITE}   # plain website: no database, no login
     ${INSTALL_COMMAND}                   # default: database + admin + AI agent tools
 
-Measured cold runs — \`site\`: ${SITE_COLD_RUN.scaffold}, ${SITE_COLD_RUN.build}, ${SITE_COLD_RUN.boot} (${SITE_COLD_RUN.provenance}). Default: scaffold + install + db setup ~27 s; designed, verified homepage at ~99 s — terminal-only. Runbooks: [Build a plain website](${SITE_URL}/docs/getting-started/plain-website) · [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
+Measured cold runs — \`site\`: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (${SITE_COLD_RUN.provenance}). Default: scaffold + install + db setup ~27 s; designed, verified homepage at ~99 s — terminal-only. Runbooks: [Build a plain website](${SITE_URL}/docs/getting-started/plain-website) · [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
 
 ${WHEN_TO_USE}
 

@@ -71,8 +71,8 @@ ships, not by how big it is:
   accessibility baseline and a contact form — in a plain Next.js repo with
   ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required
   environment variables. It builds with \`next build\` and deploys to Vercel
-  unchanged. ${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold}, ${SITE_COLD_RUN.build},
-  ${SITE_COLD_RUN.boot}.
+  unchanged. ${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install,
+  ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage.
 - **the default profile (\`light\`) — a managed site or a shop.** Everything
   above plus a database, an admin, Auth.js, optional Stripe checkout and an AI
   tool surface (REST + MCP), so a human in a browser or an agent in a terminal
