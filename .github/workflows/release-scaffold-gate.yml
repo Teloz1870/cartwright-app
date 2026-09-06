@@ -12,12 +12,15 @@ name: Release scaffold gate
 # postpublish-smoke = fast structural check after npm publish.
 # release-scaffold-gate = slow functional proof before/around releases.
 #
-# It is also the engine's ONLY measured cold run: every leg records per-step
-# wall-clock durations plus the scaffold's provenance (CLI version, template
-# channel, the engine's own .cartwright/release.json marker, dependency and
-# file counts) into the job summary and a `timings-<profile>.json` artifact.
-# Those are the numbers cartwright.app is allowed to quote — always with the
-# date, CLI version and engine ref attached, never edited by hand.
+# It is also the engine's only automated, reproducible measured cold run:
+# every leg records per-step wall-clock durations plus the scaffold's
+# provenance (CLI version, template channel, the engine's own
+# .cartwright/release.json marker, dependency and file counts) into the job
+# summary and a `timings-<profile>.json` artifact, and marks the record
+# complete only when the whole leg passed. A number cartwright.app quotes is
+# copied out of that record — with its date, CLI version, engine ref and run
+# id — into the site's constants; the artifact itself expires with the run
+# retention, the copied provenance line does not.
 #
 # NOTE: the `site` leg needs a template ref that ships scaffold/manifest.json
 # (engine >= the B3 release) — on older refs the CLI exits with a clear error
@@ -30,11 +33,13 @@ on:
         description: "Template channel/ref to test (stable | next | vX.Y.Z)"
         default: "stable"
       cli:
-        description: "create-cartwright version to scaffold with"
+        description: "create-cartwright version to scaffold with (a version, tag or range — passed to npx as-is)"
         default: "latest"
       profile:
-        description: "Which leg(s) to run (all | light | full | site)"
+        description: "Which leg(s) to run"
+        type: choice
         default: "all"
+        options: [all, light, full, site]
   schedule:
     - cron: "40 4 * * 1" # Mondays 04:40 UTC — weekly drift canary
 
@@ -42,7 +47,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-scaffold-gate
+  # One group per shape: a single-leg dispatch must not cancel the weekly
+  # full run that happens to be in flight (and vice versa).
+  group: release-scaffold-gate-${{ inputs.profile || 'all' }}
   cancel-in-progress: true
 
 env:
@@ -60,6 +67,12 @@ jobs:
     name: ${{ matrix.profile }} profile
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Dispatch inputs reach the shell only through these variables — never
+      # interpolated into a `run:` script (GitHub's script-injection guidance).
+      PROFILE: ${{ matrix.profile }}
+      CLI_INPUT: ${{ inputs.cli || 'latest' }}
+      REF_INPUT: ${{ inputs.ref || 'stable' }}
     steps:
       - uses: pnpm/action-setup@v4
         with:
@@ -68,27 +81,35 @@ jobs:
         with:
           node-version: 22
 
-      - name: Resolve the CLI version under test
+      - name: Resolve the CLI version under test (provenance only)
         id: cli
         run: |
           set -euo pipefail
-          VERSION=$(npm view "create-cartwright@${{ inputs.cli || 'latest' }}" version | tail -1)
+          # The scaffold step passes $CLI_INPUT to npx untouched (a range or a
+          # dist-tag works there as it always has); this only records WHICH
+          # version that resolves to. --json is a string for one match and an
+          # array for a range — take the newest.
+          VERSION=$(npm view "create-cartwright@${CLI_INPUT}" version --json | node -e '
+            const v = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            process.stdout.write(Array.isArray(v) ? v[v.length - 1] : String(v));
+          ')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "→ create-cartwright@$VERSION, template ref: ${{ inputs.ref || 'stable' }}"
+          echo "→ create-cartwright@${CLI_INPUT} resolves to $VERSION; template ref: ${REF_INPUT}"
 
       - name: Scaffold (full install + db:setup + seed)
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP"
           START=$(date +%s)
-          npx --yes "create-cartwright@${{ steps.cli.outputs.version }}" gate-${{ matrix.profile }} \
+          npx --yes "create-cartwright@${CLI_INPUT}" "gate-${PROFILE}" \
             --yes --db=sqlite --no-ai --no-git --no-start \
-            --profile=${{ matrix.profile }} \
-            --ref=${{ inputs.ref || 'stable' }} \
+            "--profile=${PROFILE}" \
+            "--ref=${REF_INPUT}" \
             --pm=pnpm 2>&1 | tee scaffold.log
           echo "DUR_SCAFFOLD=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
-          test -d "gate-${{ matrix.profile }}"
-          # Provenance: the channel the CLI resolved, and the engine's own marker.
+          test -d "gate-${PROFILE}"
+          # Provenance: the channel the CLI resolved (the engine's own marker
+          # is read at the end, from the scaffold).
           CHANNEL=$(grep -o 'Template downloaded ([^)]*)' scaffold.log | head -1 | sed 's/.*(\(.*\))/\1/' || true)
           echo "TEMPLATE_CHANNEL=${CHANNEL:-unknown}" >> "$GITHUB_ENV"
 
@@ -96,7 +117,7 @@ jobs:
         if: matrix.profile != 'site'
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
           test -s .admin-credentials || { echo "::error::.admin-credentials missing/empty — db:setup/seed failed"; exit 1; }
           echo "✓ admin seeded"
 
@@ -128,23 +149,23 @@ jobs:
       - name: Typecheck
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
           START=$(date +%s); pnpm typecheck; echo "DUR_TYPECHECK=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
 
       - name: Unit tests
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
           START=$(date +%s); pnpm test; echo "DUR_TEST=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
 
       - name: Migration baseline verify (engine ≥ v0.40)
         if: matrix.profile != 'site'
-        run: cd "$RUNNER_TEMP/gate-${{ matrix.profile }}" && pnpm run --if-present db:verify
+        run: cd "$RUNNER_TEMP/gate-${PROFILE}" && pnpm run --if-present db:verify
 
       - name: Production build
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
           START=$(date +%s); pnpm build; echo "DUR_BUILD=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
 
       - name: Boot + HTTP 200 + rendered H1
@@ -155,7 +176,7 @@ jobs:
           ALLOW_SQLITE_IN_PRODUCTION: "1"
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
           START=$(date +%s)
           (pnpm start > server.log 2>&1 &)
           for i in $(seq 1 60); do
@@ -163,8 +184,9 @@ jobs:
             [ "$CODE" = "200" ] && break
             sleep 2
           done
-          echo "DUR_BOOT=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
           [ "$CODE" = "200" ] || { echo "::error::Homepage never returned 200 (last: $CODE)"; tail -50 server.log; exit 1; }
+          # Recorded only once the 200 is real — a timeout is not a boot time.
+          echo "DUR_BOOT=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
           H1=$(curl -sL http://localhost:3000/ | grep -o '<h1[^>]*>[^<]*' | head -1)
           [ -n "$H1" ] || { echo "::error::No H1 rendered"; exit 1; }
           echo "✓ 200 + H1: $H1"
@@ -174,61 +196,73 @@ jobs:
         run: |
           set -euo pipefail
           # `-L` above hides the redirect. A site scaffold has no root page: `/`
-          # must answer with a redirect to the locale home, and that home must
-          # be a real 200 — the exact two facts the docs describe.
+          # must answer with a redirect to the locale home (the CLI patches
+          # every scaffold to en-first), and that home must be a real 200 —
+          # the two facts the CLI's own next-steps line and the engine's agent
+          # briefings state.
           ROOT=$(curl -sI http://localhost:3000/ | tr -d '\r')
           CODE=$(printf '%s\n' "$ROOT" | head -1 | awk '{print $2}')
           LOC=$(printf '%s\n' "$ROOT" | grep -i '^location:' | awk '{print $2}')
           case "$CODE" in 301|302|307|308) ;; *) echo "::error::/ answered $CODE, expected a redirect to the locale home"; exit 1;; esac
           printf '%s' "$LOC" | grep -qE '^(https?://[^/]+)?/en/?$' || { echo "::error::/ redirected to '$LOC', expected /en"; exit 1; }
-          HOME=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en)
-          [ "$HOME" = "200" ] || { echo "::error::/en answered $HOME"; exit 1; }
+          HOMEPAGE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en)
+          [ "$HOMEPAGE" = "200" ] || { echo "::error::/en answered $HOMEPAGE"; exit 1; }
           echo "✓ / → $CODE $LOC → 200"
 
       - name: Identity patched (no template identity leakage)
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/gate-${{ matrix.profile }}"
-          grep -q 'storeSlug: "gate-${{ matrix.profile }}"' brand.config.ts \
+          cd "$RUNNER_TEMP/gate-${PROFILE}"
+          grep -q "storeSlug: \"gate-${PROFILE}\"" brand.config.ts \
             || { echo "::error::storeSlug not patched"; exit 1; }
           echo "✓ identity patched"
 
       - name: Timings + provenance (job summary + artifact)
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CLI_VERSION: ${{ steps.cli.outputs.version }}
         run: |
           set -euo pipefail
-          DIR="$RUNNER_TEMP/gate-${{ matrix.profile }}"
+          DIR="$RUNNER_TEMP/gate-${PROFILE}"
           MARKER="{}"; DEPS=null; DEVDEPS=null; FILES=null
-          if [ -d "$DIR" ]; then
+          if [ -f "$DIR/package.json" ]; then
             [ -f "$DIR/.cartwright/release.json" ] && MARKER=$(cat "$DIR/.cartwright/release.json")
             DEPS=$(node -e 'const p=require(process.argv[1]);console.log(Object.keys(p.dependencies??{}).length)' "$DIR/package.json")
             DEVDEPS=$(node -e 'const p=require(process.argv[1]);console.log(Object.keys(p.devDependencies??{}).length)' "$DIR/package.json")
             FILES=$(cd "$DIR" && find . -type f -not -path './node_modules/*' -not -path './.next/*' | wc -l | tr -d ' ')
           fi
+          export MARKER DEPS DEVDEPS FILES
           node -e '
-            const [profile, cli, ref, channel, deps, devDeps, files, marker] = process.argv.slice(1);
-            const n = (v) => (process.env[v] === undefined ? null : Number(process.env[v]));
+            const env = process.env;
+            const n = (v) => (env[v] === undefined ? null : Number(env[v]));
+            const num = (v) => (v === "null" || v === undefined ? null : Number(v));
+            const steps = { scaffoldInstall: n("DUR_SCAFFOLD"), typecheck: n("DUR_TYPECHECK"), unitTests: n("DUR_TEST"), build: n("DUR_BUILD"), bootTo200: n("DUR_BOOT") };
+            // Complete = the leg passed AND every step recorded a duration.
+            // Anything else is a partial record: useful for diagnosis, never
+            // for quoting.
+            const complete = env.JOB_STATUS === "success" && Object.values(steps).every((s) => s !== null);
+            let engine = {}; try { engine = JSON.parse(env.MARKER || "{}"); } catch { engine = { unparsable: true }; }
             const out = {
-              profile, cli, ref, templateChannel: channel,
-              engine: JSON.parse(marker),
-              runner: "ubuntu-latest", date: new Date().toISOString().slice(0, 10),
-              runId: process.env.GITHUB_RUN_ID, conclusionPartial: false,
-              steps: { scaffoldInstall: n("DUR_SCAFFOLD"), typecheck: n("DUR_TYPECHECK"), unitTests: n("DUR_TEST"), build: n("DUR_BUILD"), bootTo200: n("DUR_BOOT") },
-              scaffold: { dependencies: deps === "null" ? null : Number(deps), devDependencies: devDeps === "null" ? null : Number(devDeps), files: files === "null" ? null : Number(files) },
+              profile: env.PROFILE, cli: env.CLI_VERSION || null, cliInput: env.CLI_INPUT, ref: env.REF_INPUT,
+              templateChannel: env.TEMPLATE_CHANNEL || "unknown", engine,
+              runner: "ubuntu-latest", date: new Date().toISOString().slice(0, 10), runId: env.GITHUB_RUN_ID,
+              jobStatus: env.JOB_STATUS, complete, steps,
+              scaffold: { dependencies: num(env.DEPS), devDependencies: num(env.DEVDEPS), files: num(env.FILES) },
             };
-            require("fs").writeFileSync(`timings-${profile}.json`, JSON.stringify(out, null, 2) + "\n");
-            const s = out.steps, e = out.engine || {};
+            require("fs").writeFileSync(`timings-${out.profile}.json`, JSON.stringify(out, null, 2) + "\n");
+            const s = out.steps, e = out.engine;
             const row = (k, v) => `| ${k} | ${v ?? "—"} |`;
             const md = [
-              `### ${profile} — measured cold run (${out.date})`,
+              `### ${out.profile} — ${complete ? "measured cold run" : `INCOMPLETE record (job ${out.jobStatus}) — do not quote`} (${out.date})`,
               ``, `| step | seconds |`, `|---|---|`,
               row("scaffold + install", s.scaffoldInstall), row("typecheck", s.typecheck), row("unit tests", s.unitTests), row("next build", s.build), row("boot → HTTP 200", s.bootTo200),
-              ``, `Provenance: create-cartwright@${cli} · template ref \`${ref}\` (channel ${channel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
+              ``, `Provenance: create-cartwright@${out.cli ?? "?"} (input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
               ``,
             ].join("\n");
-            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+            require("fs").appendFileSync(env.GITHUB_STEP_SUMMARY, md);
             console.log(JSON.stringify(out, null, 2));
-          ' "${{ matrix.profile }}" "${{ steps.cli.outputs.version }}" "${{ inputs.ref || 'stable' }}" "${TEMPLATE_CHANNEL:-unknown}" "$DEPS" "$DEVDEPS" "$FILES" "$MARKER"
+          '
 
       - uses: actions/upload-artifact@v4
         if: always()
