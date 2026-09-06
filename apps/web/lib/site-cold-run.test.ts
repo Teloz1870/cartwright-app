@@ -26,6 +26,26 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     }
   });
 
+  it('is a receipt for the version customers actually get — not an older one', () => {
+    // The shape regexes below match `2.9.3` and `v0.56.1` forever, so the
+    // provenance could name a release that npm stopped serving hours ago while
+    // every gate stayed green (the docs door said 2.9.3 / v0.56.1 while the
+    // registry served 2.9.4 / v0.56.2). Both sides of the published pair live
+    // in this repo, so the currency is checkable offline.
+    const cliPkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'cli', 'package.json'), 'utf8')) as { version: string };
+    const refs = readFileSync(join(__dirname, '..', '..', 'cli', 'src', 'refs.ts'), 'utf8');
+    const defaultRef = /DEFAULT_REF\s*=\s*["'`](v\d+\.\d+\.\d+)["'`]/.exec(refs)?.[1];
+    expect(defaultRef, 'could not read DEFAULT_REF from apps/cli/src/refs.ts').toBeTruthy();
+    expect(
+      SITE_COLD_RUN.provenance,
+      `provenance cites a CLI other than the one this repo publishes (${cliPkg.version})`,
+    ).toContain(`create-cartwright@${cliPkg.version}`);
+    expect(
+      SITE_COLD_RUN.provenance,
+      `provenance cites an engine other than the CLI's DEFAULT_REF (${defaultRef})`,
+    ).toContain(`engine ${defaultRef} `);
+  });
+
   it('feeds the engine facts the docs cite', () => {
     expect(ENGINE_FACTS.siteRuntimeDeps).toBe(SITE_COLD_RUN.runtimeDependencies);
     expect(ENGINE_FACTS.siteColdRunProvenance).toBe(SITE_COLD_RUN.provenance);
