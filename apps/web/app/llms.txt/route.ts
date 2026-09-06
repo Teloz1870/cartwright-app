@@ -60,7 +60,7 @@ Named explicitly, because they are the things an agent looks for by name:
 - **OpenAPI description of this site's API**: [${SITE_URL}/openapi.json](${SITE_URL}/openapi.json) (OpenAPI 3.1; one \`operationId\` and a response schema per operation).
 - **Tool surface of a scaffolded shop** — every shop serves its own tools over REST at \`POST /api/v1/tools/<name>\`, API-key authenticated and scope-limited. Reference: [Tool reference](${SITE_URL}/docs/api/mcp-tools)
 - **API keys** (how an agent authenticates against a shop): [API keys](${SITE_URL}/docs/api/api-keys)
-- **MCP server** — each shop can expose its tool surface over the Model Context Protocol at \`/api/mcp\` on the shop's own domain, behind the \`mcpPublic\` feature flag. Note this is a per-shop endpoint: cartwright.app itself does not host one. Docs: [MCP server](${SITE_URL}/docs/architecture/mcp-server)
+- **MCP server** — each shop can expose its tool surface over the Model Context Protocol at \`/api/mcp\` on the shop's own domain, behind the \`mcpPublic\` feature flag. Note this is a per-shop endpoint; cartwright.app's own \`/api/mcp\` (see \`/.well-known/mcp.json\`) describes the engine, not a shop. Docs: [MCP server](${SITE_URL}/docs/architecture/mcp-server)
 - **Agent-commerce endpoints** for buying agents — [ACP checkout](${SITE_URL}/docs/features/agentic-commerce-protocol) · [A2A negotiation + Agent Card](${SITE_URL}/docs/features/a2a-endpoints)
 - **Engine source**: [cartwright-template](https://github.com/Teloz1870/cartwright-template) · **CLI + this site**: [cartwright-app](https://github.com/Teloz1870/cartwright-app)
 

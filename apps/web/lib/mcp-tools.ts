@@ -199,6 +199,7 @@ export const MCP_TOOLS = {
             measured: SITE_COLD_RUN,
             fits: SITE_FITS,
             limits: [
+              'No in-place profile upgrade: to add the database, admin or a shop later, re-scaffold the default profile and carry over brand.config.ts and your design pack.',
               'No admin and no runtime editing — content is files in the repo.',
               'No database, auth, cart or checkout.',
               'No MCP or REST tool surface on the site itself; discovery advertises only what runs.',

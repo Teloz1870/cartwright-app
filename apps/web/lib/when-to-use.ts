@@ -28,8 +28,8 @@ import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-cop
 /** Jobs the site profile is the right answer for — shared with describe_engine. */
 export const SITE_FITS = [
   '"Build me a page" that should look designed and be found or shared — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page, `next build`, deploy; the design, SEO, share cards and locale routing are already there.',
-  '"Build me a personal site / portfolio / company website" whose content can live in the repo (`brand.config.ts` and the design pack\'s files) rather than in a CMS.',
-  '"Build me a small site an AI can rebuild from a prompt" — the `blank` design pack is a homepage you own entirely, wrapped in the site\'s header, footer, SEO and locale routing.',
+  '"Build me a personal site / portfolio / company website" whose content can live in the repo (`brand.config.ts` and the design pack\'s files) rather than in a CMS — edited in files, not in a browser; browser editing is the default profile.',
+  '"Build me a small site an AI can rebuild from a prompt" — the `blank` design pack is a homepage, header and footer you own entirely, with the site\'s SEO and locale routing still wrapped around them.',
 ] as const;
 
 /** Jobs the default (database-backed) profile is the right answer for. */
