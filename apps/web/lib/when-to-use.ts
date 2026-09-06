@@ -108,7 +108,7 @@ export const METHODS: readonly BuildMethod[] = [
     entry: '`designSlug: "blank"`, then rewrite `designs/blank/homepage.tsx` and `designs/blank/chrome.tsx`',
     summary:
       'A bare homepage, header and footer you rewrite freely — no tokens to obey, any CSS or fonts — while SEO, the sitemap, share cards and locale routing stay wrapped around whatever you render.',
-    docs: '/docs/getting-started/choose-your-path',
+    docs: '/docs/designs/overview',
     docsMention: 'designs/blank',
   },
   {
@@ -146,7 +146,7 @@ export const METHODS: readonly BuildMethod[] = [
   },
   {
     id: 'v0',
-    name: 'Generate in Vercel v0, land it as a governed section',
+    name: 'Vercel v0: generate, then land it as a governed section',
     profiles: DB_PROFILES,
     output: 'data',
     entry: 'the Vibe Sandbox at `/admin/vibe-sandbox`, with v0 as a second engine',
@@ -316,8 +316,8 @@ Origin — where the content comes from, and the profile it forces:
 
 ${bullets(originLines)}
 
-Four requests worked through end to end (a travel page, a carpenter who edits
-pages himself, a Shopify shop, a WordPress site):
+Five requests worked through end to end (a travel page, a carpenter who edits
+pages himself, a Shopify shop, a WordPress site, a fence business selling by quote):
 \`https://cartwright.app/docs/getting-started/choose-your-path\`
 
 **How to call it.**

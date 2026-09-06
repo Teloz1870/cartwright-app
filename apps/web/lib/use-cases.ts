@@ -92,7 +92,7 @@ const migrateFromShopify: UseCase = {
   ],
   faq: [
     { q: 'How hard is it to migrate from Shopify?', a: 'Scaffold Cartwright (`--profile full` if you want the Hoptify onboarding), import products (CSV, or Hoptify from the URLs you list), and point your DNS over. Stripe stays your processor and the customer link key, so billing continuity is preserved.' },
-    { q: 'Will I lose my customers or payment history?', a: 'No — Stripe remains the system of record for payments and the link key for customers, so history is preserved on Stripe’s side.' },
+    { q: 'Will I lose my customers or payment history?', a: 'Nothing is imported into Cartwright — orders and customer records are not migrated. Stripe stays the processor and the system of record for payments, so payment history and customer objects are preserved on Stripe’s side and the Stripe customer ID remains the link key.' },
     { q: 'What do I gain over Shopify?', a: 'You own the code, pay no platform or per-transaction fees, and get a modern Next.js stack with AI-native admin and agent-commerce built in.' },
   ],
 };

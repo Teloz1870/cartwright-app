@@ -96,6 +96,23 @@ describe('origins (axis 3)', () => {
     }
   });
 
+  it('the page that houses the axes carries every method and origin the constants do (parity, not just existence)', () => {
+    const page = read('content/docs/getting-started/choose-your-path.mdx').replace(/\*/g, '');
+    for (const m of METHODS) expect(page, m.id).toContain(m.name.split(/[:,]/)[0]);
+    for (const o of ORIGINS) expect(page, o.id).toContain(o.name);
+  });
+
+  it('the worked requests are counted the same everywhere (Gemini R1: "four" survived a fifth)', () => {
+    const page = read('content/docs/getting-started/choose-your-path.mdx');
+    const section = page.slice(page.indexOf('requests, worked through'), page.indexOf('## When Cartwright is the wrong answer'));
+    const worked = section.split('\n').filter((l) => l.startsWith('**"')).length;
+    expect(worked).toBe(5);
+    expect(page).toContain('## Five requests, worked through');
+    expect(WHEN_TO_USE).toContain('Five requests worked through');
+    expect(read('components/landing/faq.tsx')).toContain('works the five cases through');
+    expect(read('content/docs/getting-started/cli-options.mdx')).toContain('works five requests through');
+  });
+
   it('the page that houses the axes exists and is in the docs navigation', () => {
     const meta = JSON.parse(readFileSync(join(ROOT, 'content/docs/getting-started/meta.json'), 'utf8')) as { pages: string[] };
     expect(meta.pages).toContain('choose-your-path');

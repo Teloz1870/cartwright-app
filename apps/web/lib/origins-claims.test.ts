@@ -31,6 +31,7 @@ const SURFACES = [
   'content/docs/features/product-variants.mdx',
   'content/docs/why-cartwright.mdx',
   'content/docs/getting-started/choose-your-path.mdx',
+  'lib/use-cases.ts',
 ];
 
 /** Every surface that promises redirects must say they live in Upstash Redis — without it nothing fires (proxy.ts reads the map from Redis only). */
@@ -48,10 +49,19 @@ describe('origin claims stay honest', () => {
     for (const phrase of RETIRED) expect(src, phrase).not.toContain(phrase);
   });
 
-  it.each(SURFACES)('%s says what is not built whenever it names WordPress or WooCommerce', (rel) => {
+  it.each(SURFACES)('%s qualifies every WordPress/WooCommerce mention that promises a move', (rel) => {
+    // Window-level, not file-level: one honest sentence at the top of a file
+    // must not license a new promise at the bottom (Gemini R1, nit 3). Only
+    // promise-shaped windows count — "PHP + WordPress + MySQL" in a
+    // comparison row is a description, not a migration claim.
     const src = read(rel);
-    if (!/WooCommerce|WordPress/.test(src)) return;
-    expect(src).toMatch(/not yet|planned, not built|not built|simple products/i);
+    const PROMISE = /import|migrat|\bmove|bring[s]? [^.]{0,40}across|pull/i;
+    const QUALIFIER = /not yet|planned, not built|not built|does not exist|no (dedicated|WordPress|WooCommerce)|simple products|by hand|Cartwright never runs on|never runs on PHP|WordPress hosting/i;
+    for (const m of src.matchAll(/WooCommerce|WordPress/g)) {
+      const window = src.slice(Math.max(0, m.index! - 700), m.index! + 700);
+      if (!PROMISE.test(window)) continue;
+      expect(window, `${rel} @${m.index}: "${src.slice(m.index!, m.index! + 60)}"`).toMatch(QUALIFIER);
+    }
   });
 
   it.each(REDIRECT_SURFACES)('%s names Upstash Redis wherever it promises admin-managed redirects', (rel) => {
@@ -60,11 +70,39 @@ describe('origin claims stay honest', () => {
     expect(src).toMatch(/Upstash Redis|UPSTASH_REDIS/);
   });
 
-  it('the Shopify use case couples Hoptify to --profile full (an untouched page must not undo the axis)', () => {
+  it('every Hoptify mention in the use cases couples it to --profile full (an untouched page must not undo the axis)', () => {
+    // Per mention, not per block: two occurrences in one block let a single
+    // dropped clause stay green (measured while proving this test).
     const src = read('lib/use-cases.ts');
-    const block = src.slice(src.indexOf("slug: 'migrate-from-shopify'"), src.indexOf("slug: 'migrate-from-shopify'") + 3000);
-    expect(block).toContain('--profile full');
-    expect(block).not.toContain('pull design and catalogue across');
+    const mentions = [...src.matchAll(/Hoptify/g)];
+    expect(mentions.length).toBeGreaterThanOrEqual(2);
+    for (const m of mentions) {
+      const window = src.slice(Math.max(0, m.index! - 300), m.index! + 300);
+      expect(window, `use-cases.ts @${m.index}`).toContain('--profile full');
+    }
+    expect(src).not.toContain('pull design and catalogue across');
+  });
+
+  it.each(SURFACES)('%s never states a promise-shaped migration claim without a negation beside it', (rel) => {
+    // The window rule above accepts a promise that sits next to an honest
+    // sentence (measured while proving it). Promise SHAPES are therefore
+    // blocked outright unless negated within 150 chars — "A one-click
+    // migration. There is no importer yet" passes; "One click imports your
+    // whole catalogue. CSV covers simple products" does not.
+    const src = read(rel);
+    const SHAPES = [
+      /one[- ]click/gi,
+      /(whole|entire|full) (WooCommerce|WordPress|Shopify) (catalogue|catalog|site|shop|store)/gi,
+      /(imports?|pulls?|brings?|moves?|migrates?) (your|the) (entire|whole|full|complete) /gi,
+      /everything (moves|comes|carries) (across|over)/gi,
+    ];
+    const NEGATION = /not yet|there is no|\bno\b|\bnot\b|planned|not built|does not|never|cannot/i;
+    for (const shape of SHAPES) {
+      for (const m of src.matchAll(shape)) {
+        const near = src.slice(Math.max(0, m.index! - 150), m.index! + 150);
+        expect(near, `${rel} @${m.index}: "${m[0]}"`).toMatch(NEGATION);
+      }
+    }
   });
 
   it('the when-to-use block carries "not yet" and the query-permalink limit an AI otherwise promises', () => {
