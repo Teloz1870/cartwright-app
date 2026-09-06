@@ -23,6 +23,11 @@ concurrency:
   group: postpublish-smoke
   cancel-in-progress: false
 
+env:
+  # Scaffolds with --yes exactly like an AI agent would — so without this every
+  # publish counts as a customer scaffold in the adoption metric. Never remove.
+  CARTWRIGHT_TELEMETRY: "0"
+
 jobs:
   smoke:
     # Skip auto-run if the upstream workflow failed (no new publish to test).
