@@ -36,8 +36,24 @@ describe('the site profile is named on every entry surface', () => {
     'content/docs/getting-started/ai-quick-start.mdx',
     'content/docs/getting-started/cli-options.mdx',
     'content/docs/getting-started/quick-start.mdx',
+    // A4 — the home page itself, and the create-next-app comparison (hero and
+    // faq render the constant only — pinned in the next test, not by the literal)
+    'components/landing/install-band.tsx',
+    'components/landing/three-doors.tsx',
+    'lib/comparisons.ts',
   ])('%s names --profile site', (rel) => {
     expect(read(rel)).toContain('--profile site');
+  });
+
+  it('the home page carries the site command as a rendered constant, not retyped prose', () => {
+    for (const rel of ['components/landing/hero.tsx', 'components/landing/install-band.tsx', 'components/landing/faq.tsx']) {
+      expect(read(rel)).toContain('INSTALL_COMMAND_SITE');
+    }
+    // FAQPage JSON-LD parity: the plain twin must carry the command too.
+    expect(read('components/landing/faq.tsx')).toMatch(/plain: `Yes\. \$\{INSTALL_COMMAND_SITE\}/);
+    // The comparison answers "so it's faster?" honestly — finished page, not empty one.
+    expect(read('lib/comparisons.ts')).toContain('Faster to a finished page, not to an empty one');
+    expect(read('lib/comparisons.ts')).toContain("dimension: 'A single page or plain website'");
   });
 
   it('the rendered agent strings carry the site command, not just the source', () => {

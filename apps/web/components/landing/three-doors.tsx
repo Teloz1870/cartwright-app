@@ -82,7 +82,9 @@ export function ThreeDoors() {
         your GitHub, on your infrastructure.{' '}
         <span className="font-semibold text-cw-stone-900 dark:text-cw-stone-50">
           Leave anytime — it&apos;s your repo.
-        </span>
+        </span>{' '}
+        Don&apos;t need operators at all? <code className="font-mono text-xs">--profile site</code> keeps
+        the design packs, SEO and locale routing and leaves the database, admin and agent tools out.
       </p>
     </Station>
   );
