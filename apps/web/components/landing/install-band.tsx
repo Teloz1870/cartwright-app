@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Station } from '@/components/landing/station';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { ButtonLink } from '@/components/ui/button';
@@ -44,7 +45,7 @@ export function InstallBand() {
             <code className="font-mono text-cw-stone-200 break-all">{INSTALL_COMMAND_SITE}</code> — a plain website, no database, no login:{' '}
             {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to build,{' '}
             {SITE_COLD_RUN.boot} to a rendered homepage (measured;{' '}
-            <a href="/docs/getting-started/plain-website" className="underline hover:text-cw-stone-200">provenance on the guide</a>).
+            <Link href="/docs/getting-started/plain-website" className="underline hover:text-cw-stone-200">provenance on the guide</Link>).
           </p>
           {/* Stacked on a phone. Three columns of mono at 390px cannot fit —
               grid items default to `min-width: auto`, so they refuse to shrink
