@@ -5,11 +5,13 @@ import { tmpdir } from "node:os";
 import {
   titleCase,
   patchBrandConfigContent,
+  stripEngineDomains,
   patchBrandConfigForTemplate,
   patchBrandConfigForEnglishFirst,
   patchBrandConfigForMarket,
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
+  patchBrandConfigSameAs,
   patchBrandConfigDesignSlug,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
@@ -100,6 +102,79 @@ describe("scaffold helpers", () => {
     expect(out).not.toContain("lynhurtige AI");
     // legalName / disclaimer "Teloz ApS" → store name
     expect(out).not.toContain("Teloz ApS");
+  });
+});
+
+describe("engine-domain stripping (REGRESSION: the #289 rebrand re-opened this)", () => {
+  // The engine renamed itself teloz.net → cartwright.app. The stripper only
+  // knew teloz.net, so from that commit on every scaffold shipped the ENGINE's
+  // domain as the customer's canonical URL and seeded-admin email.
+  const CONFIG = [
+    `  domain: "cartwright.app",`,
+    `  url: "https://cartwright.app",`,
+    `  /** Pick one in /admin/designs or on cartwright.app. Example: "engineered". */`,
+    `  designSlug: "aurora-site",`,
+    `  emails: {`,
+    `    from: "noreply@cartwright.app",`,
+    `    support: "support@cartwright.app",`,
+    `    admin: "admin@cartwright.app",`,
+    `  },`,
+    `  contact: {`,
+    `    email: "kontakt@cartwright.app" as string,`,
+    `  },`,
+    `  ownerUrl: "https://cartwright.app" as string,`,
+    `  legacy: "https://teloz.net",`,
+  ].join("\n");
+
+  it("strips the engine domain from every identity FIELD", () => {
+    const out = patchBrandConfigContent(CONFIG, "my-shop");
+    expect(out).toContain(`domain: "example.com"`);
+    expect(out).toContain(`url: "https://example.com"`);
+    expect(out).toContain(`from: "noreply@example.com"`);
+    expect(out).toContain(`support: "support@example.com"`);
+    // The seeded admin login — the most damaging of the set.
+    expect(out).toContain(`admin: "admin@example.com"`);
+    expect(out).toContain(`email: "kontakt@example.com" as string,`);
+    expect(out).toContain(`ownerUrl: "https://example.com" as string,`);
+    // The older domain must keep working — this is an ADD, not a swap.
+    expect(out).toContain(`legacy: "https://example.com"`);
+  });
+
+  it("KEEPS documentation mentions in comments (a blunt replace would break them)", () => {
+    const out = patchBrandConfigContent(CONFIG, "my-shop");
+    expect(out).toContain("or on cartwright.app. Example:");
+  });
+
+  it("stripEngineDomains covers array elements, not just `field:` lines", () => {
+    const arr = `    sameAs: [\n      "https://cartwright.app/x",\n    ],`;
+    expect(stripEngineDomains(arr)).toContain(`"https://example.com/x"`);
+  });
+
+  it("is not vacuous: an unpatched config really does carry the engine domain", () => {
+    expect(CONFIG).toContain("cartwright.app");
+    expect(patchBrandConfigContent(CONFIG, "my-shop")).not.toMatch(
+      /(domain|url|from|support|admin|email|ownerUrl):\s*"[^"]*cartwright\.app/,
+    );
+  });
+});
+
+describe("patchAIStylistButtonContent — upstream-fixed detection", () => {
+  it("MUST NOT treat a HALF-migrated file as fixed", () => {
+    // Requiring only ONE tSf() call let a surviving Danish literal ship silently.
+    const half = [
+      'const label = ecommerceEnabled ? brand.ai.assistantLabel : "AI Konsulent";',
+      'const openText = tSf("consultantOpenText");',
+    ].join("\n");
+    const { warnings } = patchAIStylistButtonContent(half);
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  it("is quiet only when BOTH texts are upstream-fixed", () => {
+    const full = [
+      'const label = tSf("consultantLabel");',
+      'const openText = tSf("consultantOpenText");',
+    ].join("\n");
+    expect(patchAIStylistButtonContent(full).warnings).toEqual([]);
   });
 });
 
@@ -350,9 +425,102 @@ describe("patchBrandConfigGithubUrl", () => {
     expect(src).toContain(`ownerUrl: "https://example.com" as string,`);
   });
 
-  it("is a silent no-op when the field already holds a non-Teloz value", () => {
+  // CONTRACT CHANGE (was: "is a silent no-op …"). Preserving a non-Teloz value
+  // is still right — it is probably the customer's. Doing it SILENTLY was not:
+  // "not the Teloz URL" and "the anchor drifted" are the same observation, and
+  // treating them as the former shipped our repo link in every 2.9.1 scaffold
+  // when the engine moved to .../cartwright-template. Nothing is clobbered; a
+  // line is printed. This also matches the sibling markPaths branch, which
+  // already warns-without-clobbering on drift.
+  it("preserves a non-Teloz value but REPORTS it (silence hid the v0.52.0 drift)", () => {
     const input = `    githubUrl: "https://github.com/my-shop" as string,\n`;
     const { src, warnings } = patchBrandConfigGithubUrl(input);
+    expect(src).toBe(input);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("my-shop");
+  });
+
+  it("stays silent once the URL is already neutralised (idempotent re-run)", () => {
+    const input = `    githubUrl: "" as string,\n`;
+    const { src, warnings } = patchBrandConfigGithubUrl(input);
+    expect(src).toBe(input);
+    expect(warnings).toEqual([]);
+  });
+
+  it("REGRESSION: neutralises a Teloz repo path, not just the bare profile", () => {
+    // The literal v0.54.0 value. The old exact-match anchor could not see it.
+    const input = `    githubUrl: "https://github.com/Teloz1870/cartwright-template" as string,\n`;
+    const { src, warnings } = patchBrandConfigGithubUrl(input);
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`githubUrl: "" as string,`);
+    expect(src).not.toContain("github.com/Teloz1870");
+  });
+
+  it("REGRESSION: empties company.sameAs so the scaffold stops asserting it is us", () => {
+    // schema.org sameAs is an identity claim and app/layout.tsx feeds it into
+    // Organization JSON-LD, so shipping ours makes each customer site tell
+    // crawlers their company IS the Cartwright repo.
+    const input = [
+      `    sameAs: [`,
+      `      "https://github.com/Teloz1870/cartwright-template",`,
+      `      "https://www.npmjs.com/package/create-cartwright",`,
+      `    ] as string[],`,
+    ].join("\n");
+    const { src, warnings } = patchBrandConfigSameAs(input);
+    expect(warnings).toEqual([]);
+    expect(src).toContain("sameAs: [] as string[]");
+    expect(src).not.toContain("Teloz1870");
+    expect(src).not.toContain("create-cartwright");
+  });
+
+  it("reports (does not hide) a non-Cartwright profile it clears", () => {
+    const input = `    sameAs: ["https://github.com/acme/shop"] as string[],`;
+    const { src, warnings } = patchBrandConfigSameAs(input);
+    expect(src).toContain("sameAs: [] as string[]");
+    expect(warnings.join(" ")).toContain("acme/shop");
+  });
+
+  it("MUST-FIX: is not fooled by a `sameAs: []` example in the comment above it", () => {
+    // The engine's docblock sits directly above the array and already says
+    // "Fjern/udskift ved fork", so an example there is a natural edit. A
+    // comment-blind regex matched the COMMENT's empty array, took the
+    // urls.length===0 early return, and left the real profiles shipping —
+    // silently, with the drift gate still green.
+    const input = [
+      `    /** Officielle authority-profiler. Ingen? Skriv sameAs: [] ved fork. */`,
+      `    sameAs: [`,
+      `      "https://github.com/Teloz1870/cartwright-template",`,
+      `    ] as string[],`,
+    ].join("\n");
+    const { src, warnings } = patchBrandConfigSameAs(input);
+    expect(warnings).toEqual([]);
+    expect(src).not.toContain("Teloz1870");
+    expect(src).toContain("sameAs: [] as string[]");
+    // The comment itself must survive untouched.
+    expect(src).toContain("Ingen? Skriv sameAs: [] ved fork.");
+  });
+
+  it("MUST-FIX: does not mangle a commented example array", () => {
+    const input = [
+      `    /** e.g. sameAs: ["https://x.test"] */`,
+      `    sameAs: ["https://github.com/Teloz1870/cartwright-template"] as string[],`,
+    ].join("\n");
+    const { src } = patchBrandConfigSameAs(input);
+    expect(src).toContain(`e.g. sameAs: ["https://x.test"]`);
+    expect(src).not.toContain("Teloz1870");
+  });
+
+  it("is silent on a pre-v0.46.0 template that has no sameAs at all", () => {
+    // The field only exists from v0.46.0; warning about it on `--ref v0.40.0`
+    // reports a problem that cannot exist there.
+    const { src, warnings } = patchBrandConfigSameAs(`    country: "Denmark" as string,`);
+    expect(src).toBe(`    country: "Denmark" as string,`);
+    expect(warnings).toEqual([]);
+  });
+
+  it("is a silent no-op on an already-empty sameAs", () => {
+    const input = `    sameAs: [] as string[],`;
+    const { src, warnings } = patchBrandConfigSameAs(input);
     expect(src).toBe(input);
     expect(warnings).toEqual([]);
   });
@@ -806,11 +974,31 @@ describe("patchLogoForScaffold", () => {
     expect(warnings.some((w) => w.includes("logo markPaths anchor not found"))).toBe(true);
   });
 
-  it("preserves a complete custom favicon palette without warning", () => {
+  // CONTRACT CHANGE (was: "… without warning"). Same reasoning as the
+  // githubUrl branch: at scaffold time the input is a FRESH engine template,
+  // so an unrecognised palette means the engine drifted, not that a customer
+  // chose red. Preserve it, but say so — the silent version let v0.52.0's
+  // vermilion pair pass unnoticed from v0.52.0 through v0.54.0.
+  it("preserves an unknown favicon palette but REPORTS it", () => {
     const drifted = template.replace("#1e3f5a", "#ff0000");
     const { src, warnings } = patchLogoForScaffold(drifted);
     expect(src).toContain('faviconBg: "#ff0000"');
-    expect(warnings).toEqual([]);
+    expect(warnings.some((w) => w.includes("#ff0000"))).toBe(true);
+  });
+
+  it("stays silent on a palette that is already Cartwright-branded", () => {
+    // v0.52.0+ ships vermilion; re-running must not nag about its own target.
+    for (const [bg, fg] of [
+      ["#c33f16", "#ffffff"],
+      ["#18181b", "#fafafa"],
+    ]) {
+      const already = template.replace("#1e3f5a", bg).replace("#f4efe6", fg);
+      const { warnings } = patchLogoForScaffold(already);
+      expect(
+        warnings.filter((w) => w.includes("favicon")),
+        `${bg}/${fg} should not warn`,
+      ).toEqual([]);
+    }
   });
 
   it("warns when a favicon color property is missing", () => {
