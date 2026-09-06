@@ -20,7 +20,7 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 /** The routes a redesign must never quietly break. */
-const ROUTES = ['/', '/security', '/pricing', '/designs', '/integrations', '/docs/introduction'];
+const ROUTES = ['/', '/security', '/pricing', '/designs', '/integrations', '/docs/introduction', '/docs/getting-started/plain-website'];
 
 /** WCAG 2.1 relative luminance, sRGB, 0.04045 breakpoint. */
 function luminance(rgb: [number, number, number]): number {

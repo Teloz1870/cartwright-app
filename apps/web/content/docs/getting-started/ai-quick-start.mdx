@@ -1,13 +1,22 @@
 ---
 title: AI Agent Quick Start
-description: The measured 99-second path from npx create-cartwright to a designed, verified homepage — written for AI coding agents (and the humans pasting it).
+description: Two measured, terminal-only paths for AI coding agents — a plain website (--profile site) in about a minute, or the 99-second path to a designed, database-backed homepage.
 ---
 
-Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. This page is the proof, written as an executable runbook: every step is **terminal-only** (no browser required), and every step ends with a verification command so an agent knows it landed.
+Cartwright is the build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. This page is the proof, written as an executable runbook: every step is **terminal-only** (no browser required), and every step ends with a verification command so an agent knows it landed.
+
+## Choose the door
+
+| The task looks like | Run | Runbook |
+| --- | --- | --- |
+| a page, a landing page, a personal or company website with content in the repo — no database, no login | `npx create-cartwright@latest my-site --yes --profile site` | **Path A** below |
+| a site someone edits in a browser, a webshop, or a site an agent should operate through tools | `npx create-cartwright@latest my-site` | **Path B** below |
+
+Both are the same engine; the flag decides which modules are materialised into the repo.
 
 If you are an AI coding agent: follow the steps top to bottom. If you are a human: paste this page to your agent, or run the commands yourself.
 
-## The measured timing
+### The measured timing
 
 These numbers come from a single measured **cold run** — a fresh scaffold in a clean directory, an agent following only the documented steps below, no prior knowledge of the project. Cumulative wall-clock time:
 
@@ -21,11 +30,75 @@ These numbers come from a single measured **cold run** — a fresh scaffold in a
 
 Your numbers will vary with hardware and network, but the shape holds: the scaffold is the fast part, and the design step is one API call.
 
-<Callout type="info" title="Version note">
-The current CLI ships `light`, `full`, and database-free `site` profiles. This runbook uses `light` (the default) because its database, admin, and scoped tool APIs are required below; `site` intentionally has none of those surfaces.
-</Callout>
+## Path A — a plain website (`--profile site`)
 
-## The flow
+Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install <EngineFact k="siteColdRunScaffold" /> · `next build` <EngineFact k="siteColdRunBuild" /> · boot to HTTP 200 with a rendered H1 <EngineFact k="siteColdRunBoot" />.
+
+<Steps>
+
+1. **Scaffold — no database, no login, nothing to configure.**
+
+   ```bash
+   npx create-cartwright@latest my-page --yes --profile site --no-github --no-start
+   cd my-page
+   ```
+
+   **Verify:**
+
+   ```bash
+   grep -q '"profile": "site"' .cartwright/profile.json && test ! -e prisma && echo site-ok
+   ```
+
+   *Proves:* no database, no admin, no auth in the repo — the profile is what it says.
+
+2. **Run.**
+
+   ```bash
+   pnpm dev
+   ```
+
+   **Verify** (`/` redirects to `/en`; `-L` follows):
+
+   ```bash
+   curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/
+   # expect: 200
+   ```
+
+   *Proves:* it boots with zero environment variables.
+
+3. **Make it say something.** Edit `website.headline` (and `tagline`, `cta`) in `brand.config.ts`, and pick a look with `designSlug` (slugs in `designs/options.ts`). For a bespoke one-page build set `designSlug: "blank"` and write `designs/blank/homepage.tsx` — its in-file guide explains the props; the header, footer, SEO and locale routing wrap whatever you render.
+
+   **Verify:**
+
+   ```bash
+   curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
+   ```
+
+4. **Add a page** — `app/[locale]/trip/page.tsx` is a normal Next.js route; the `[locale]` layout gives it the site chrome. Prefix internal links with `/${locale}`.
+
+   **Verify:** `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/trip` → `200`.
+
+5. **Build.**
+
+   ```bash
+   pnpm build && pnpm start
+   ```
+
+   *Proves:* plain `next build` is the whole production gate — no `db:setup`, no migration.
+
+6. **Deploy.** Push to GitHub and import the repo in Vercel — **no environment variables**. Set `url` in `brand.config.ts` to the real domain when you have one (it feeds canonical URLs and the OG card).
+
+   ```bash
+   gh repo create my-page --private --source=. --remote=origin --push
+   ```
+
+   **Verify:** `curl -sI https://<app>.vercel.app/ | grep -i location` → `/en`, and `/en` → `200`.
+
+</Steps>
+
+Honest limits of this door: no admin and no runtime editing (content is files), no database/auth/cart/checkout, no MCP or REST tool surface on the site itself, `/` redirects to the default locale, no map/timeline/weather sections (write those components yourself), only `Organization`/`WebSite` JSON-LD out of the box, not a static export (Node.js 22+ host). Need a browser editor, a shop or an agent tool surface later? There is no in-place profile upgrade today — scaffold the default profile and copy `brand.config.ts` and `designs/<yours>/` across. Full page: [Build a plain website](/docs/getting-started/plain-website).
+
+## Path B — the managed site or shop (default profile)
 
 <Steps>
 

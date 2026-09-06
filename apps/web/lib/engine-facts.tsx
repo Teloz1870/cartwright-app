@@ -1,4 +1,5 @@
 import manifest from '@/lib/marketplace-manifest.json';
+import { SITE_COLD_RUN } from '@/lib/home-copy';
 
 /**
  * The single source for every engine-derived number the site states.
@@ -49,6 +50,28 @@ export const ENGINE_FACTS = {
   integrationsShipped: 23,
   /** Announced for Plus, not shipped. Kept separate on purpose. */
   integrationsPlanned: 10,
+
+  /**
+   * The `--profile site` scaffold, as the release scaffold gate measures it on
+   * every engine release (`timings-site.json`, create-cartwright@2.9.2 against
+   * engine v0.55.0). The dependency count is the CLI's curated prune list at
+   * work; it drops further when the materializer adopts the registry-derived
+   * prune set (engine B4). Zero env vars: the only `assertEnv` caller is the
+   * database module, which the site profile removes.
+   */
+  siteRuntimeDeps: SITE_COLD_RUN.runtimeDependencies,
+  siteDevDeps: SITE_COLD_RUN.devDependencies,
+  siteEnvVarsToBoot: 0,
+  /**
+   * Design packs registered in a fresh site scaffold's `designs/index.ts`
+   * (16 core-claimed + the unclaimed showcase pack), `blank` included.
+   * Authority: a real `create-cartwright@2.9.2 --profile site` scaffold.
+   */
+  siteDesignPacks: 17,
+  siteColdRunScaffold: SITE_COLD_RUN.scaffold,
+  siteColdRunBuild: SITE_COLD_RUN.build,
+  siteColdRunBoot: SITE_COLD_RUN.boot,
+  siteColdRunProvenance: SITE_COLD_RUN.provenance,
 
   designs: manifest.designs.length,
   voices: manifest.voices.length,

@@ -3,19 +3,25 @@ title: Introduction
 description: What Cartwright is, what it isn't, and who it's for.
 ---
 
-Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes, for teams that want to own the site instead of renting one. The engine is a Next.js 16 app with Prisma, Stripe checkout, Auth.js, admin CRUD, Vercel Blob uploads, Resend email, Sentry hooks, and an MCP server at `/api/mcp`. See [/integrations](/integrations) for every service it ships pre-wired with — <EngineFact k="integrationsShipped" /> of them, real brand logos, real SDK calls.
+Cartwright is the build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes — for people who want to own the site instead of renting one. One CLI, two doors:
+
+- `npx create-cartwright@latest my-site --profile site` gives you a **plain website**: designed pages, SEO with JSON-LD, locale routing and a contact form, with **no database, no login and nothing to configure** — <EngineFact k="siteRuntimeDeps" /> runtime dependencies, a plain `next build`, <EngineFact k="siteColdRunScaffold" /> to scaffold. See [Build a plain website](/docs/getting-started/plain-website).
+- `npx create-cartwright@latest my-shop` (the default `light` profile) adds the database, the admin, Auth.js, optional Stripe checkout and an MCP + REST tool surface, so a human in a browser or an AI agent in a terminal can **operate** the site after it ships. It is a Next.js 16 app with Prisma, Stripe checkout, Auth.js, admin CRUD, Vercel Blob uploads, Resend email, Sentry hooks, and an MCP server at `/api/mcp` — see [/integrations](/integrations) for every service it ships pre-wired with, <EngineFact k="integrationsShipped" /> of them, real brand logos, real SDK calls.
+
+Both are the same codebase; the profile decides which modules are materialised into your repo.
 
 All of it is public and MIT-licensed: the engine template repo, [`Teloz1870/cartwright-template`](https://github.com/Teloz1870/cartwright-template), the `create-cartwright` CLI that scaffolds it, and this docs site. The intended operating model is simple: scaffold a shop, fork it per brand, deploy it to Vercel, and keep the code.
 
 Cartwright is not a hosted commerce SaaS. There is no control panel running on Cartwright infrastructure and no per-order platform fee. It is also not only a backend engine. The storefront, admin, checkout, data model, integrations, and AI tool layer live in one codebase.
 
-The template is built for teams that can read TypeScript, run Next.js locally, and maintain a production app. You do not need to design a catalog, checkout, admin panel, and AI tool registry from zero. You do need to own deployments, environment variables, database migrations, incident response, and custom business logic.
+For the default profile: the template is built for teams that can read TypeScript, run Next.js locally, and maintain a production app. You do not need to design a catalog, checkout, admin panel, and AI tool registry from zero. You do need to own deployments, environment variables, database migrations, incident response, and custom business logic.
 
 The AI angle is structural, not decorative. Cartwright ships with an MCP endpoint, API keys for external agents, audit logging for tool calls, admin helpers for product/category content, and storefront assistant routes. You decide which tools are exposed and which scopes they require.
 
 The template stays MIT and free, forever. Three optional paid tiers — [Plus, Cloud, and Enterprise](/pricing) — layer hosted services, support, Pro tooling, and managed hosting on top of the same code, with premium MCP integrations (Klaviyo, HubSpot, Slack, Zapier, and six others) on the Plus roadmap. They never gate features inside the template itself. Self-hosted is and will remain the full experience.
 
 <Cards>
+  <Card title="Build a plain website (no database)" href="/docs/getting-started/plain-website" />
   <Card title="Quick Start" href="/docs/getting-started/quick-start" />
   <Card title="In the box" href="/docs/in-the-box" />
   <Card title="Integrations" href="/integrations" />
