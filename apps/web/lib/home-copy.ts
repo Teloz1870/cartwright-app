@@ -53,11 +53,14 @@ export const SITE_DOOR = 'Just a page or a plain website? No database, no login,
  * profile exactly like a customer and records each step with its provenance.
  * Replace the WHOLE object from a newer complete record; never edit one field.
  * `provenance` must carry the date, the CLI version and the engine ref — a
- * unit test enforces that shape.
+ * unit test enforces that shape. The gate's full invocation (in the workflow
+ * file, keyed by the run id) also passes `--db=sqlite --no-ai --no-git
+ * --no-start`; the site profile has no database and ignores `--db`, so the
+ * rendered provenance names only the flags that shape a site scaffold.
  */
 export const SITE_COLD_RUN = {
   provenance:
-    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.2, engine v0.55.0 (94be4c8), --yes --db=sqlite --no-ai --no-git --no-start --profile=site --ref=stable --pm=pnpm — release scaffold gate run 34031492527',
+    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.2, engine v0.55.0 (94be4c8), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34031492527',
   scaffold: '~24 s',
   build: '~25 s',
   boot: '~3 s',

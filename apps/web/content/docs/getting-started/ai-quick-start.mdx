@@ -60,7 +60,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
    ```
 
-   The `<h1>` is your `website.headline` on the shipped packs. The `blank` pack renders `storeName` until you rewrite `designs/blank/homepage.tsx` — that is the point of it.
+   The `<h1>` is your `website.headline` on the shipped packs. The `blank` pack's starter homepage shows the site's name (`storeName` in `brand.config.ts`) as a placeholder heading until you replace `designs/blank/homepage.tsx` with your own markup.
 
 4. **Add a page** — any route under `app/[locale]/` gets the site chrome from the `[locale]` layout. Prefix internal links with `/${locale}`.
 
@@ -88,7 +88,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 6. **Deploy.** **No environment variables are required to build and serve** (the default contact form needs `RESEND_API_KEY` + `RESEND_FROM` to deliver mail; `--with none` scaffolds without it). Set `url` in `brand.config.ts` to the real domain when you have one; on Vercel, `NEXT_PUBLIC_APP_URL` or the deployment URL wins over it for canonicals. Either push to GitHub and import the repo at vercel.com, or deploy from the terminal and keep the URL it prints:
 
    ```bash
-   npx vercel login                             # once; unauthenticated, the next line exits 1 with an empty $URL
+   # unattended runs need a prior `npx vercel login` or VERCEL_TOKEN in the environment; unauthenticated, the next line exits 1 with an empty $URL
    URL=$(npx vercel --yes --prod | tail -n 1)   # the deployment URL is the last line of stdout
    ```
 

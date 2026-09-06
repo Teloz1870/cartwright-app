@@ -38,7 +38,7 @@ Measured cold run: <EngineFact k="siteColdRunScaffold" /> to scaffold and instal
 - **A designed homepage.** <EngineFact k="siteDesignPacks" /> design packs ship in the scaffold, including `blank` — not a design, a starting point you rewrite freely. Pick one with `designSlug` in `brand.config.ts`; the palette, chrome and motion follow.
 - **Found and cited by default.** `Organization` and `WebSite` JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt`, canonical URLs, and an Open Graph image route (`/opengraph-image` for the site, `/og?title=…` for any page) so a shared link carries a card.
 - **The engine's baseline.** Locale routing (`en` by default; add locales in `brand.config.ts`), scroll-driven motion presets you can switch on (`brand.features.motionEffects`, with `prefers-reduced-motion` guards), security headers with a report-only CSP, an accessibility baseline, and a contact form that mails you through Resend (`--with none` for the bare site).
-- **A plain Next.js repo.** `pnpm dev`, `pnpm build`, `pnpm start`. No `postinstall`, no migrations, no seed. Sentry's hooks ship dormant (no DSN, no-op) — nothing calls out at runtime unless you give it a key. The <EngineFact k="siteRuntimeDeps" /> runtime dependencies still include a few the shared prune list has not caught up with (`pg`, the MCP SDK, `jsdom`, `v0-sdk`) — unused by this profile; a CLI follow-up removes them.
+- **A plain Next.js repo.** `pnpm dev`, `pnpm build`, `pnpm start`. No `postinstall`, no migrations, no seed. Sentry's hooks ship dormant (no DSN, no-op) — nothing calls out at runtime unless you give it a key. The <EngineFact k="siteRuntimeDeps" /> runtime dependencies still include a few the shared prune list has not caught up with (`pg`, the MCP SDK, `jsdom`, `v0-sdk`) — dormant: nothing in this profile's runtime imports them.
 
 ## What you do not get, on purpose
 
@@ -76,7 +76,7 @@ Next steps:
   Content lives in brand.config.ts; design via designs/ and the shipped packs.
 ```
 
-They are followed by the CLI's shared epilogue (a CI-workflow note, GitHub/Vercel lines written for the shop profile, and a Quick Start link) — that epilogue becomes profile-aware in the CLI's next release; the five lines above are the ones that apply.
+The CLI then prints its shared epilogue (a CI-workflow note, GitHub/Vercel lines written for the shop profiles, and a Quick Start link); it applies to the shop profiles and can be ignored here — the five lines above are the site's.
 
 Verify it is what it says — no database anywhere in the repo, and it boots without needing an environment variable (the CLI still writes a generic `.env`/`.env.local`; delete both and it still answers 200):
 

@@ -35,6 +35,33 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.56.0',
+    date: 'September 2026',
+    title: 'The plain-website door — a site scaffold is what its README says',
+    description: (
+      <>
+        <code>npx create-cartwright@latest my-site --profile site</code> now produces a plain
+        website that boots and builds with Google&apos;s CDN unreachable, ships no cron entries into
+        routes it does not have, installs no Postgres driver, serves its share cards and favicon,
+        and whose contact form reaches its owner. Five defects an AI scaffolding &ldquo;just a
+        page&rdquo; could not have fixed itself; four were found by review falsifiers on a real
+        2.9.2 scaffold. The docs gained{' '}
+        <Link href="/docs/getting-started/plain-website" className="text-cw-terracotta hover:underline">
+          Build a plain website
+        </Link>{' '}
+        and every entry surface names the door.
+      </>
+    ),
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'No crons for a scaffold without cron routes, no Postgres driver without a database (engine #563) \u2014 vercel.json became a seam owned by the db module; a site scaffold receives vercel.static.json ($schema + framework only) instead of ten cron entries whose routes the materializer deletes. The orphan pg + @types/pg left the engine root.',
+      'Font-safe boot (engine #564) \u2014 the nine Google-font design packs and the root layout\u2019s Geist pair moved into a google-fonts module (managed-site and up). A site scaffold gets a system font stack behind the same --font-geist-* variables and eight self-contained packs; measured with Google blackholed, the first `next dev` compile answers 200 where it used to cache a 500.',
+      'The contact form reaches the owner (engine #565) \u2014 SmartContactForm asked the admin-owned /api/support/triage before /api/inquiries, unconditionally; in a site scaffold that route does not exist and every visitor saw \u201cCould not connect to the server\u201d. The form now reads the profile\u2019s supportTriage capability and goes straight to the human path.',
+      'Share cards and favicon are not dead links (engine #566) \u2014 the site profile\u2019s middleware exempted only /api from the locale rewrite, so /og?title=\u2026 (every page\u2019s og:image) and /icon 307\u2019d into /en/og \u2192 404. It now routes them by the same isAssetExempt the default profile uses.',
+      'Docs: Build a plain website (new), two doors on the Introduction, the AI Agent Quick Start\u2019s Path A, honest scoping on In the box, and measured, provenance-carrying numbers copied from the release scaffold gate \u2014 never typed.',
+    ],
+  },
+  {
     engine: 'v0.50.0\u2013v0.50.1',
     date: 'August 2026',
     title: 'WebMCP-native storefronts',
