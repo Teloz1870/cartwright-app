@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { WHEN_TO_USE, NOT_A_FIT, SITE_FITS } from './when-to-use';
+import { WHEN_TO_USE, NOT_A_FIT, SITE_FITS, DEFAULT_FITS } from './when-to-use';
 import { HOME_MARKDOWN } from './home-markdown';
 import { INSTALL_COMMAND_SITE } from './home-copy';
 import { routeExists } from './route-exists';
@@ -51,6 +51,19 @@ describe('the site profile is named on every entry surface', () => {
       expect(read(rel)).not.toContain('would go unused');
       expect(read(rel)).not.toContain('only entry point that provisions the database');
     }
+  });
+
+  it('the funnel says WHERE the owner edits their own pages — a replay chose site because it believed the admin only manages a catalogue', () => {
+    // Measured 2026-09-06 (replay v3-1, prompt: "no shop yet, but I want to
+    // edit the pages myself later"): the model read the docs, chose
+    // `--profile site`, and explained why — "its admin manages products,
+    // orders, categories, shipping and a blog, NOT your home/services/about
+    // pages". That is false: `/admin/sider` edits exactly those. The default
+    // profile lost the customer to a claim we made about ourselves.
+    const defaults = DEFAULT_FITS.join('\n');
+    expect(defaults).toMatch(/\/admin\/sider/);
+    expect(defaults).toMatch(/edit it themselves|edit the site themselves/);
+    expect(WHEN_TO_USE).toContain('/admin/sider');
   });
 
   it('still disqualifies — and names which profile lacks what', () => {

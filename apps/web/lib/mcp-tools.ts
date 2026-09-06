@@ -216,7 +216,7 @@ export const MCP_TOOLS = {
             default: true,
             flag: '(none — the default)',
             summary:
-              'Managed site or shop: everything in site plus a database, an admin, Auth.js, optional Stripe checkout and a scoped REST + MCP tool surface.',
+              'Managed site or shop: everything in site plus a database, an admin, Auth.js, optional Stripe checkout and a scoped REST + MCP tool surface. The admin edits the site\'s own pages at /admin/sider — home, services, about, contact — as well as the catalogue; that is the profile to choose when the owner will maintain the text themselves without touching files.',
             fits: DEFAULT_FITS,
             runbook: `${SITE_URL}/docs/getting-started/ai-quick-start`,
           },

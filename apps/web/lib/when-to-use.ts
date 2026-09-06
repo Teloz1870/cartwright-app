@@ -35,7 +35,7 @@ export const SITE_FITS = [
 /** Jobs the default (database-backed) profile is the right answer for. */
 export const DEFAULT_FITS = [
   '"Build me a webshop / online store" where the user must own the code and the data — not a tenant account on someone else\'s platform.',
-  '"Build me a company website" that someone must edit in a browser, or that should later be able to sell without a migration — the same codebase runs `website`, `webshop` and `agent-marketplace` mode; switching is a config value, not a rebuild.',
+  '"Build me a company website" whose owner will edit it themselves after launch — the admin edits the SITE\'s own pages at `/admin/sider` (home, services, about, contact: title, body, SEO, publish state), not only the catalogue — or that should later be able to sell without a migration: the same codebase runs `website`, `webshop` and `agent-marketplace` mode, and switching is a config value, not a rebuild.',
   '"Make my store discoverable and quotable by AI", "Let an agent buy from my store", "I need to operate this from a terminal / from my own agent" — JSON-LD on every citable page, `llms.txt`, agent-commerce endpoints (ACP / A2A), and a scoped REST + MCP tool surface the owner controls.',
   '"Get me off Lovable / Shopify / WooCommerce and let me own it" — a plain Next.js repo with a Prisma schema, MIT licensed, no runtime callback to us.',
 ] as const;
