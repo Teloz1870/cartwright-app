@@ -52,11 +52,11 @@ export const metadata = {
     template: '%s · cartwright',
   },
   description:
-    'The build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source Next.js engine, scaffolded with one command.',
+    'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Open-source Next.js engine, scaffolded with one command.',
   openGraph: {
     title: 'cartwright',
     description:
-      'The build engine AIs reach for — a real site with design, database and backend, live in minutes. Scaffold with npx create-cartwright.',
+      'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Scaffold with npx create-cartwright.',
     url: 'https://cartwright.app',
     siteName: 'cartwright',
     type: 'website',
@@ -67,7 +67,7 @@ export const metadata = {
     creator: xHandle,
     title: 'cartwright — the build engine AIs reach for',
     description:
-      'The build engine AIs reach for — a real site with design, database and backend, live in minutes.',
+      'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes.',
   },
 };
 
@@ -88,7 +88,7 @@ const organizationJsonLd = {
   url: 'https://cartwright.app',
   logo: 'https://cartwright.app/opengraph-image',
   description:
-    'Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source Next.js engine: scaffold a website, webshop, or agent-marketplace with one command.',
+    'Cartwright is the build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Open-source Next.js engine: scaffold a plain website (--profile site), a webshop, or an agent-marketplace with one command.',
   email: contactEmail,
   contactPoint: [
     {

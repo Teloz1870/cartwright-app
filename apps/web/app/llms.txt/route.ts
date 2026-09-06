@@ -1,5 +1,7 @@
 import { AGENT_RESOURCES, SITE_URL } from '@/lib/agent-resources';
 import { WHEN_TO_USE } from '@/lib/when-to-use';
+import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
+import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 export const revalidate = false;
 
@@ -30,18 +32,20 @@ export const revalidate = false;
 // that points at deeper resources, not one that inlines them.
 const INTRO = `# Cartwright
 
-> Cartwright is the build engine AIs reach for — a real site with design, database and backend, live in minutes. Open-source (MIT), AI-first Next.js engine: scaffold a corporate website, webshop, or agent-marketplace with one command — you own the code, the database, and the AI layer.
+> Cartwright is the build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Open-source (MIT), AI-first Next.js engine, one CLI, two doors: \`--profile site\` scaffolds a plain website (designed pages, SEO/JSON-LD, locale routing — no database, no login, zero env vars); the default profile scaffolds a managed website or webshop with an admin, a database and an AI tool surface. You own the code either way.
 
 ## Start in one command
 
-    npx create-cartwright@latest my-shop
+    ${INSTALL_COMMAND_SITE}   # plain website: no database, no login
+    ${INSTALL_COMMAND}                   # default: database + admin + AI agent tools
 
-Measured cold run: scaffold + install + db setup in ~27 s; designed, verified homepage at ~99 s — terminal-only. Step-by-step for agents: [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
+Measured cold runs — \`site\`: ${SITE_COLD_RUN.scaffold}, ${SITE_COLD_RUN.build}, ${SITE_COLD_RUN.boot} (${SITE_COLD_RUN.provenance}). Default: scaffold + install + db setup ~27 s; designed, verified homepage at ~99 s — terminal-only. Runbooks: [Build a plain website](${SITE_URL}/docs/getting-started/plain-website) · [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
 
 ${WHEN_TO_USE}
 
 ## What you get
 
+- **\`--profile site\`** — a designed website with SEO/JSON-LD, sitemap, robots, \`llms.txt\`, an OG-image route, locale routing and a contact form; ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies, no database. Everything below is the default profile:
 - A full storefront + an AI-native admin + Stripe checkout, in one Next.js app you own.
 - An MCP server and agent-commerce endpoints (ACP / A2A) so AI agents can both cite and transact with the shop.
 - AI-search-ready by default: JSON-LD on every citable page, llms.txt, answer-first product fields.
@@ -52,7 +56,7 @@ ${WHEN_TO_USE}
 
 Named explicitly, because they are the things an agent looks for by name:
 
-- **CLI — \`create-cartwright\`** (npm, MIT). The only entry point that provisions the database and seeds an admin: \`npx create-cartwright@latest my-shop\`. Package: [create-cartwright on npm](https://www.npmjs.com/package/create-cartwright) · Current published version, machine-readable: [${SITE_URL}/api/version](${SITE_URL}/api/version)
+- **CLI — \`create-cartwright\`** (npm, MIT). The only entry point that cuts a profile: \`--profile site\` for a plain website with no database; the default for the database-backed site or shop (it also provisions the database and seeds the admin). Package: [create-cartwright on npm](https://www.npmjs.com/package/create-cartwright) · Current published version, machine-readable: [${SITE_URL}/api/version](${SITE_URL}/api/version)
 - **OpenAPI description of this site's API**: [${SITE_URL}/openapi.json](${SITE_URL}/openapi.json) (OpenAPI 3.1; one \`operationId\` and a response schema per operation).
 - **Tool surface of a scaffolded shop** — every shop serves its own tools over REST at \`POST /api/v1/tools/<name>\`, API-key authenticated and scope-limited. Reference: [Tool reference](${SITE_URL}/docs/api/mcp-tools)
 - **API keys** (how an agent authenticates against a shop): [API keys](${SITE_URL}/docs/api/api-keys)
@@ -81,6 +85,7 @@ the reference rather than the pitch. Every page is also available as Markdown:
 append \`.md\` to its path, or send \`Accept: text/markdown\`.
 
 - [Introduction](${SITE_URL}/docs/introduction)
+- [Build a plain website (no database)](${SITE_URL}/docs/getting-started/plain-website)
 - [Quick start](${SITE_URL}/docs/getting-started/quick-start)
 - [Quick start for agents](${SITE_URL}/docs/getting-started/ai-quick-start)
 - [Architecture](${SITE_URL}/docs/architecture/overview)

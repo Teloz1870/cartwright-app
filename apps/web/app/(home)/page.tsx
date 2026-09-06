@@ -39,7 +39,7 @@ function buildJsonLd(engineVersion: string) {
         url: 'https://cartwright.app',
         name: 'cartwright',
         description:
-          'The build engine AIs reach for — a real site with design, database and backend, live in minutes. An open-source Next.js engine with an AI-native admin, MCP server, and Stripe checkout.',
+          'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. An open-source Next.js engine: a plain website (--profile site) or a shop with an AI-native admin, MCP server and Stripe checkout.',
       },
       {
         '@type': 'SoftwareApplication',
@@ -48,7 +48,7 @@ function buildJsonLd(engineVersion: string) {
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Node.js 22+',
         description:
-          'The build engine AIs reach for: an open-source, AI-first Next.js engine. Scaffold a real site — design, database and backend — with one command.',
+          'The build engine AIs reach for: an open-source, AI-first Next.js engine. Scaffold a real website with one command — with or without a database.',
         offers: {
           '@type': 'Offer',
           price: '0',

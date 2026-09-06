@@ -35,7 +35,7 @@ export const INSTALL_COMMAND = 'npx create-cartwright@latest my-shop';
  * engine quoting this sentence alone still says what Cartwright is.
  */
 export const HOME_LEDE =
-  'Cartwright is an AI-native commerce engine built for trusted operation. The model proposes, the shop shows you exactly what would change, and nothing is written until you release it.';
+  'Cartwright is an open-source Next.js engine that builds a real website in one command — a plain site with no database, or a shop with an AI-native admin built for trusted operation: the model proposes, the shop shows you exactly what would change, and nothing is written until you release it.';
 
 /**
  * The second door. Always with the explicit flag, so it stays correct whether

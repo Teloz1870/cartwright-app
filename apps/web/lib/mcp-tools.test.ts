@@ -156,3 +156,31 @@ describe('describe_engine', () => {
     expect(out.scale.confirmationGatedWriteTools).toBe(ENGINE_FACTS.confirmGatedCount);
   });
 });
+
+describe('describe_engine names both doors', () => {
+  it('lists the profiles with the site profile first, with its install command, limits and runbook', async () => {
+    const { MCP_TOOLS } = await import('./mcp-tools');
+    const { routeExists } = await import('./route-exists');
+    const out = JSON.parse((await MCP_TOOLS.describe_engine.handler()).content[0].text) as {
+      install: { site: string; default: string };
+      profiles: { name: string; flag: string; limits?: string[]; runbook: string }[];
+      goodFit: string[];
+      notAFit: string[];
+    };
+    expect(out.profiles.map((p) => p.name)).toEqual(['site', 'light', 'full']);
+    expect(out.install.site).toContain('--profile site');
+    const site = out.profiles[0];
+    expect(site.limits?.length ?? 0).toBeGreaterThanOrEqual(5);
+    for (const p of out.profiles) expect(routeExists(new URL(p.runbook).pathname), p.runbook).toBe(true);
+    expect(out.goodFit.join('\n')).toContain('--profile site');
+    expect(out.notAFit.join('\n')).not.toContain('would go unused');
+  });
+
+  it('the MCP server instructions and card name the site profile', () => {
+    const fs = require('node:fs') as typeof import('node:fs');
+    const path = require('node:path') as typeof import('node:path');
+    const root = path.join(__dirname, '..');
+    expect(fs.readFileSync(path.join(root, 'app/api/mcp/route.ts'), 'utf8')).toContain('--profile site');
+    expect(fs.readFileSync(path.join(root, 'app/.well-known/mcp.json/route.ts'), 'utf8')).toContain('--profile site');
+  });
+});

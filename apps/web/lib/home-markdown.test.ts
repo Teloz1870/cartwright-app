@@ -49,6 +49,7 @@ describe('GET /llms.mdx/home', () => {
     // hero.tsx's source, which made every restyle of the hero a failing
     // Markdown test — accurate about the trigger, wrong about the cause.
     expect(await GET().text()).toContain(INSTALL_COMMAND);
+    expect(await GET().text()).toContain('--profile site');
     expect(hero).toContain('INSTALL_COMMAND');
   });
 
