@@ -1,0 +1,141 @@
+---
+title: Build a plain website — no database
+description: The site profile — a designed, SEO-wired Next.js website with no database, no login and nothing to configure. Scaffold, edit files, build, deploy.
+---
+
+## The one-line version
+
+```bash
+npx create-cartwright@latest my-site --profile site
+```
+
+That is a real website — designed pages, SEO with JSON-LD, sitemap, robots, `llms.txt`, an Open Graph image route, locale routing, motion presets, security headers, an accessibility baseline and a contact form — in a plain Next.js repo with **<EngineFact k="siteRuntimeDeps" /> runtime dependencies** and **<EngineFact k="siteEnvVarsToBoot" /> required environment variables**. It builds with `next build` and deploys to Vercel unchanged. It is not a CMS, not a static export, and ships no database, admin, auth or agent tools — those are the default profile, one flag away, same engine:
+
+```bash
+npx create-cartwright@latest my-shop            # default: database + admin + AI agent tools
+```
+
+Measured cold run: <EngineFact k="siteColdRunScaffold" /> to scaffold and install, <EngineFact k="siteColdRunBuild" /> to build, <EngineFact k="siteColdRunBoot" /> to a rendered homepage (<EngineFact k="siteColdRunProvenance" />).
+
+## Is this the right door?
+
+**Choose `--profile site` when the request looks like:**
+
+- *"Build me a page"* — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page (a timeline or a map is a component you write, as anywhere), `next build`, deploy; the design, SEO and locale routing are already there.
+- *"Build me a personal site / portfolio / company website"* whose content can live in the repo (`brand.config.ts` and the design pack's files) rather than in a CMS.
+- *"Build me a small site an AI can rebuild from a prompt"* — the `blank` design pack is a homepage, header and footer you own entirely, with the site's SEO and locale routing still wrapped around them.
+
+**Choose the default profile (`light`) when:**
+
+- someone must edit pages **in a browser** after launch — that is the admin, and the admin needs the database;
+- the site should later **sell** — the same codebase runs `website`, `webshop` and `agent-marketplace` mode, but the shop lives in the database-backed profiles;
+- an agent should be able to **operate** the site — the REST + MCP tool surface, API keys and audit log are database-backed.
+
+**Choose neither (say so rather than forcing it):** a web app — a dashboard, an internal tool, a novel app — is `create-next-app`. A docs site or blog of hundreds of Markdown pages wants a Markdown content pipeline, which Cartwright is not (the runtime blog with RSS and `BlogPosting` JSON-LD is a default-profile plugin). And for a one-off page you will never grow, `create-next-app` is as fast — see [so, is it faster?](#so-is-it-faster).
+
+## What you get
+
+- **A designed homepage.** <EngineFact k="siteDesignPacks" /> design packs ship in the scaffold, including `blank` — not a design, a starting point you rewrite freely. Pick one with `designSlug` in `brand.config.ts`; the palette, chrome and motion follow.
+- **Found and cited by default.** `Organization` and `WebSite` JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt`, canonical URLs, and an Open Graph image route (`/opengraph-image` for the site, `/og?title=…` for any page) so a shared link carries a card.
+- **The engine's baseline.** Locale routing (`en` by default; add locales in `brand.config.ts`), scroll-driven motion presets you can switch on (`brand.features.motionEffects`, with `prefers-reduced-motion` guards), security headers with a report-only CSP, an accessibility baseline, and a contact form that mails you through Resend (`--with none` for the bare site).
+- **A plain Next.js repo.** `pnpm dev`, `pnpm build`, `pnpm start`. No `postinstall`, no migrations, no seed. Sentry's hooks ship dormant (no DSN, no-op) — nothing calls out at runtime unless you give it a key. Three of the <EngineFact k="siteRuntimeDeps" /> runtime dependencies are dormant — the MCP SDK, `jsdom` and `v0-sdk` are installed, but nothing in this profile's runtime imports them.
+
+## What you do not get, on purpose
+
+These are profile boundaries, not switched-off features. If a requirement crosses one, scaffold the default profile instead of reassembling the removed runtime by hand.
+
+- **No admin and no runtime editing.** Content lives in files: `brand.config.ts`, the design pack, `messages/*.json`. Browser editing is the default profile's admin.
+- **No database, auth, cart or checkout.** No `/admin`, no accounts, no orders.
+- **No agent tool surface on the site itself.** No MCP server, no REST tool registry, no API keys. Discovery is capability-aware: the scaffold advertises only what it runs.
+- **`/` redirects to your default locale** (`/en` in a new scaffold). There is no root page today.
+- **No map, timeline, weather or checklist sections.** The section vocabulary is marketing-shaped; components like these you write yourself — in the `blank` pack they are ordinary React.
+- **Only site-level structured data renders by itself.** `Organization`/`WebSite` JSON-LD are emitted out of the box; builders for `FAQPage`, `HowTo` and `ItemList` exist in `lib/builder/section-jsonld.ts` and the generic `<JsonLd>` renderer takes any type — `Event`, `Place` or `TouristTrip` you compose yourself.
+- **Not a static export.** It is a Node.js 22+ app (the OG route, the sitemap and the contact endpoint need a server) — Vercel, or any Node host. Not GitHub Pages.
+
+## Scaffold
+
+Interactive:
+
+```bash
+npx create-cartwright@latest my-site --profile site
+```
+
+Unattended (what an AI agent or a script runs):
+
+```bash
+npx create-cartwright@latest my-site --yes --profile site --no-github --no-start
+```
+
+With pnpm detected, the CLI's profile-specific next steps read:
+
+```text
+✓ Site profile — a plain website: no database, no admin, no commerce
+Next steps:
+  cd my-site
+  pnpm dev                # http://localhost:3000/en — no database, no login, just your site
+  Content lives in brand.config.ts; design via designs/ and the shipped packs.
+```
+
+The CLI then prints its shared epilogue (a CI-workflow note, GitHub/Vercel lines written for the shop profiles, and a Quick Start link); it applies to the shop profiles and can be ignored here — the five lines above are the site's.
+
+Verify it is what it says — no database anywhere in the repo, and it boots without needing an environment variable (the CLI still writes a generic `.env`/`.env.local`; delete both and it still answers 200):
+
+```bash
+cd my-site
+grep -q '"profile": "site"' .cartwright/profile.json && test ! -e prisma && echo site-ok
+pnpm dev &                     # assumes :3000 is free
+sleep 5                        # let the dev server start listening
+curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/     # 200 (follows / → /en)
+```
+
+## Make it yours
+
+- **Words.** `brand.config.ts` → `storeName`, `website.headline`, `website.tagline`, `website.cta`, `website.ctaHref`, and `url` — your real domain. On Vercel, `NEXT_PUBLIC_APP_URL` (or the deployment's own URL) wins over it for canonicals, the Organization JSON-LD and the OG image URL; the homepage's `WebSite` JSON-LD reads `url` directly — set it to the real domain so the two agree.
+- **Look.** `designSlug` in `brand.config.ts` — slugs in `designs/options.ts`. For a bespoke one-page build set `designSlug: "blank"` and write `designs/blank/homepage.tsx`; its in-file guide explains the props. The `blank` pack brings its own bare header and footer (`designs/blank/chrome.tsx` — rewrite them too); SEO and locale routing stay wrapped around whatever you render.
+- **Pages.** Add `app/[locale]/trip/page.tsx` — a normal Next.js route; the `[locale]` layout gives it the site chrome. Prefix internal links with `/${locale}`.
+- **Images.** Drop them in `public/` and reference them by path.
+- **Languages.** `locales` and `defaultLocale` in `brand.config.ts`; `messages/<locale>.json` holds the shared UI strings.
+
+Verify a change landed:
+
+```bash
+curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
+```
+
+## Build and deploy
+
+```bash
+pnpm build     # plain `next build` — no db:setup, no migration step
+pnpm start     # production server on :3000
+```
+
+Push to GitHub and import the repo at [vercel.com](https://vercel.com), or run `npx vercel` from the terminal — **no environment variables are required to build and serve the site**. The one thing that needs a key is the contact form: set `RESEND_API_KEY` and `RESEND_FROM` before it can deliver mail in production (without them, submissions fail with a friendly error on Vercel; in local development they land in `.mail-previews/`). Don't want a form at all? Scaffold with `--with none`. The step-by-step version: [From code to live](/docs/getting-started/from-code-to-live).
+
+```bash
+gh repo create my-site --private --source=. --remote=origin --push
+```
+
+## Measured
+
+| Step | Time |
+| --- | --- |
+| Scaffold + install | <EngineFact k="siteColdRunScaffold" /> |
+| `next build` | <EngineFact k="siteColdRunBuild" /> |
+| Boot to HTTP 200 with a rendered H1 | <EngineFact k="siteColdRunBoot" /> |
+
+<EngineFact k="siteColdRunProvenance" /> — from the [release scaffold gate](https://github.com/Teloz1870/cartwright-app/actions/workflows/release-scaffold-gate.yml), which scaffolds every profile exactly like a customer on every engine release and records the numbers with their provenance. They are copied from that record, never typed.
+
+## So, is it faster?
+
+Faster to a *finished* page, not to an *empty* one. `create-next-app` hands you a blank route in seconds; `--profile site` hands you a designed, SEO-wired site in a comparable time (the measured record is above — there is no measured create-next-app number here, so this is not a race claim). The time you save is the day that comes *after* `create-next-app` — layout, metadata, OG image, sitemap, locale routing, accessibility, security headers. What you do not save: a map, a timeline or a weather widget are components you write in either case. For a one-off page you will never grow, `create-next-app` is fine — and this page says so.
+
+## When you outgrow it
+
+There is no in-place profile upgrade today. Scaffold the default profile (`npx create-cartwright@latest my-site`) and carry over `brand.config.ts` and your `designs/<yours>/` folder — the design system, sections and routing are the same engine, so a pack written for `site` renders unchanged with the admin, database and tool surface behind it.
+
+<Cards>
+  <Card title="Quick Start (default profile)" href="/docs/getting-started/quick-start" />
+  <Card title="AI Agent Quick Start" href="/docs/getting-started/ai-quick-start" />
+  <Card title="CLI options" href="/docs/getting-started/cli-options" />
+  <Card title="From code to live" href="/docs/getting-started/from-code-to-live" />
+</Cards>

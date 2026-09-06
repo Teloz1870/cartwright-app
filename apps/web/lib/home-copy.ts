@@ -38,6 +38,37 @@ export const HOME_LEDE =
   'Cartwright is an AI-native commerce engine built for trusted operation. The model proposes, the shop shows you exactly what would change, and nothing is written until you release it.';
 
 /**
+ * The second door. Always with the explicit flag, so it stays correct whether
+ * or not the CLI default ever flips.
+ */
+export const INSTALL_COMMAND_SITE = 'npx create-cartwright@latest my-site --profile site';
+
+/** The one-line invitation that sits beside the site command wherever it appears. */
+export const SITE_DOOR = 'Just a page or a plain website? No database, no login, nothing to configure:';
+
+/**
+ * The site profile's measured cold run — copied, never typed, from the
+ * release scaffold gate's `timings-site.json` artifact (cartwright-app
+ * `.github/workflows/release-scaffold-gate.yml`), which scaffolds every
+ * profile exactly like a customer and records each step with its provenance.
+ * Replace the WHOLE object from a newer complete record; never edit one field.
+ * `provenance` must carry the date, the CLI version and the engine ref — a
+ * unit test enforces that shape. The gate's full invocation (in the workflow
+ * file, keyed by the run id) also passes `--db=sqlite --no-ai --no-git
+ * --no-start`; the site profile has no database and ignores `--db`, so the
+ * rendered provenance names only the flags that shape a site scaffold.
+ */
+export const SITE_COLD_RUN = {
+  provenance:
+    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.3, engine v0.56.1 (614ff3e), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34040202701',
+  scaffold: '~22 s',
+  build: '~27 s',
+  boot: '~2 s',
+  runtimeDependencies: 20,
+  devDependencies: 16,
+} as const;
+
+/**
  * Measured, not estimated — and always rendered with the tilde and the
  * provenance. `llms.txt` and the AI quick-start doc quote the same two figures
  * as a *measured cold run*; bare numbers under a heading reading "Every claim

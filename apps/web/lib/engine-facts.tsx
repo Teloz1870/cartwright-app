@@ -1,4 +1,5 @@
 import manifest from '@/lib/marketplace-manifest.json';
+import { SITE_COLD_RUN } from '@/lib/home-copy';
 
 /**
  * The single source for every engine-derived number the site states.
@@ -49,6 +50,32 @@ export const ENGINE_FACTS = {
   integrationsShipped: 23,
   /** Announced for Plus, not shipped. Kept separate on purpose. */
   integrationsPlanned: 10,
+
+  /**
+   * The `--profile site` scaffold, as the release scaffold gate measures it on
+   * every engine release (`timings-site.json`, the published create-cartwright against
+   * the current stable tag — both named in SITE_COLD_RUN.provenance). The dependency count is the CLI's curated prune list at
+   * work; it drops further when the materializer adopts the registry-derived
+   * prune set (engine B4). Zero env vars: the only `assertEnv` caller is the
+   * database module, which the site profile removes.
+   */
+  siteRuntimeDeps: SITE_COLD_RUN.runtimeDependencies,
+  siteDevDeps: SITE_COLD_RUN.devDependencies,
+  siteEnvVarsToBoot: 0,
+  /**
+   * Design packs registered in a fresh site scaffold's `designs/index.ts`:
+   * aurora-site, saas-dark, studio, corporate-baseline, stack, jungle,
+   * agentic-showcase and blank. The nine Google-font packs moved to the
+   * `google-fonts` module (engine PR #564, first shipped in v0.56.0) so a site
+   * scaffold boots and builds with Google's CDN unreachable. Authority: the
+   * engine's `scaffold/manifest.json` core claims, verified against a real
+   * materialization of that commit (17 on create-cartwright@2.9.2; 8 from 2.9.3 → v0.56.1).
+   */
+  siteDesignPacks: 8,
+  siteColdRunScaffold: SITE_COLD_RUN.scaffold,
+  siteColdRunBuild: SITE_COLD_RUN.build,
+  siteColdRunBoot: SITE_COLD_RUN.boot,
+  siteColdRunProvenance: SITE_COLD_RUN.provenance,
 
   designs: manifest.designs.length,
   voices: manifest.voices.length,
