@@ -21,7 +21,7 @@ describe('the front door is named on every first surface', () => {
     expect(FRONT_DOOR).toMatch(/shipped design packs/);
     expect(FRONT_DOOR).toMatch(/blank canvas/);
     expect(FRONT_DOOR).toMatch(/your own pack/);
-    expect(FRONT_DOOR).not.toMatch(/\b(best|first choice|recommended|prefer)\b/i);
+    expect(FRONT_DOOR).not.toMatch(/\b(best|first choice|recommended|prefer|easiest|primary|better|simplest|default choice|start with the blank|blank canvas first)\b/i);
     // Profile-honest: what every profile keeps comes before the database-backed extras.
     expect(FRONT_DOOR.indexOf('locale routing')).toBeLessThan(FRONT_DOOR.indexOf('default profile'));
   });
@@ -34,9 +34,18 @@ describe('the front door is named on every first surface', () => {
     expect(HOME_MARKDOWN).toContain(FRONT_DOOR);
   });
 
+  it('the rendered llms.txt carries it (the route, not just its source)', async () => {
+    const { GET } = await import('../app/llms.txt/route');
+    const body = await (await GET()).text();
+    expect(body).toContain(FRONT_DOOR);
+    expect(body.length).toBeLessThan(30_000);
+  });
+
   it('the plain-website runbook carries it literally (MDX cannot interpolate a constant)', () => {
-    expect(read('content/docs/getting-started/plain-website.mdx')).toContain('You own the front');
-    expect(read('content/docs/getting-started/plain-website.mdx')).toContain('write your own pack');
+    const runbook = read('content/docs/getting-started/plain-website.mdx').replace(/[`*]/g, '');
+    // The site-honest first clause, verbatim (no admin/database tail in the site runbook).
+    expect(runbook).toContain(FRONT_DOOR.split(';')[0].replace('You own the front', 'You own the front'));
+    expect(runbook).toContain('SEO, the sitemap, share cards and locale routing keep working around whatever you render');
   });
 
   it('the when-to-use site bullet offers the three freedoms, not a catalogue', () => {

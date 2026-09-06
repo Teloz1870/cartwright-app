@@ -58,10 +58,10 @@ ${SITE_DOOR}
 
 ${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install · ${SITE_COLD_RUN.build} to build · ${SITE_COLD_RUN.boot} to HTTP 200 with a rendered H1.
 
-${FRONT_DOOR} Choosing among profile, build method and origin: https://cartwright.app/docs/getting-started/choose-your-path
-
 Open source, MIT licensed, Next.js. You own the code — and, in the default profile,
 the database and the AI layer; there are no platform fees and no per-transaction cut.
+
+${FRONT_DOOR} Choosing among profile, build method and origin: https://cartwright.app/docs/getting-started/choose-your-path
 
 ${WHEN_TO_USE}
 

@@ -174,13 +174,13 @@ export const MCP_TOOLS = {
   describe_engine: {
     title: 'What Cartwright is, and when to reach for it',
     description:
-      'Return a structured summary of Cartwright: what it is, its profiles (including the database-free `--profile site` for plain websites), the build methods (a shipped pack, the blank canvas, your own pack, the generating tools) and the origins content can come from (a URL, Shopify, WordPress/WooCommerce, a CSV) with the profile each origin forces, the jobs each profile fits, the jobs none does, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
+      'Return a structured summary of Cartwright: what it is, its profiles (including the database-free `--profile site` for plain websites), the build methods (a shipped pack, the blank canvas, your own pack, the generating tools) and the origins content can come from (scratch, any URL, Shopify, WordPress/WooCommerce, a CSV, a Google Doc) with the profile each origin forces, the jobs each profile fits, the jobs none does, and where its real tool surface lives. Call this first if you are deciding whether Cartwright is the right answer to a user request.',
     inputSchema: {},
     handler: async () =>
       asText({
         name: 'Cartwright',
         summary:
-          'An open-source (MIT) Next.js engine that scaffolds a real website in one command, with or without a database. Two doors: `--profile site` is a plain website (pages, design packs, SEO/JSON-LD, locale routing; no database, no admin, no commerce); the default profile is a managed site or shop with an admin, a database, Stripe checkout and an AI tool surface that the user owns outright.',
+          'An open-source (MIT) Next.js engine that scaffolds a real website in one command, with or without a database. Three profiles: `--profile site` is a plain website (pages, design packs, SEO/JSON-LD, locale routing; no database, no admin, no commerce); the default profile is a managed site or shop with an admin, a database, optional Stripe checkout and an AI tool surface that the user owns outright; `--profile full` is everything the engine ships, including the agent marketplace and the Shopify importer.',
         // `install` stays the string it always was (consumers may read it as a
         // command); the site door is beside it, and both live in `profiles[]`.
         install: INSTALL_COMMAND,
@@ -192,7 +192,7 @@ export const MCP_TOOLS = {
             name: 'site',
             flag: '--profile site',
             summary:
-              'A plain website: designed pages, design packs incl. a blank canvas, SEO/JSON-LD, sitemap, robots, llms.txt, OG-image route, locale routing, motion presets, security headers, contact form (Resend; --with none for the bare site).',
+              'A plain website: designed pages (a shipped design pack, the blank canvas you rewrite freely, or a pack you write), SEO/JSON-LD, sitemap, robots, llms.txt, OG-image route, locale routing, motion presets, security headers, contact form (Resend; --with none for the bare site).',
             runtimeDependencies: ENGINE_FACTS.siteRuntimeDeps,
             envVarsToBoot: ENGINE_FACTS.siteEnvVarsToBoot,
             designPacks: ENGINE_FACTS.siteDesignPacks,
@@ -218,11 +218,11 @@ export const MCP_TOOLS = {
             summary:
               'Managed site or shop: everything in site plus a database, an admin, Auth.js, optional Stripe checkout and a scoped REST + MCP tool surface. The admin edits the site\'s own pages at /admin/sider — home, services, about, contact — as well as the catalogue; that is the profile to choose when the owner will maintain the text themselves without touching files.',
             fits: DEFAULT_FITS,
-            measured: COLD_RUN,
+            measured: { ...COLD_RUN, note: 'from the AI quick-start runbook (scaffold + db:setup → running; a designed homepage via the tool surface), not the release scaffold gate — the gate (run before each release and weekly) measures light, full and site, and only the site run is vendored here' },
             limits: [
               'The Shopify importer (Hoptify) is pruned from this profile — use --profile full for it.',
-              'No A2A, UCP, voice shopping or agentic admin — those ship in --profile full.',
-              'Needs a database and the environment the setup wizard collects (Turso, Postgres or SQLite locally; Resend and Stripe optional).',
+              'No A2A agent marketplace, no UCP identity-linking and no A2A/ACP dashboard (/admin/agentic) — those ship in --profile full. The AI-assisted admin, the REST + MCP tool surface and the plugin modules (blog, reviews, voice shopping, 3D scenes — flag-off by default) ship here.',
+              'Needs a database (Turso, Postgres, or SQLite locally — the CLI asks) plus the keys you add in /admin/setup as you go: Resend for mail, Stripe only if you sell.',
             ],
             runbook: `${SITE_URL}/docs/getting-started/ai-quick-start`,
           },
@@ -231,7 +231,7 @@ export const MCP_TOOLS = {
             flag: '--profile full',
             summary: 'Everything the engine ships, including the agent marketplace and the Shopify importer.',
             limits: [
-              'Everything ships and must be configured or left flag-off; there is no measured cold run vendored here for full (the release scaffold gate measures one on every engine release).',
+              'Everything ships and must be configured or left flag-off; no cold run is vendored here for full (the release scaffold gate — run before each release and weekly — measures light, full and site; only the site run is vendored).',
             ],
             runbook: `${SITE_URL}/docs/getting-started/cli-options`,
           },

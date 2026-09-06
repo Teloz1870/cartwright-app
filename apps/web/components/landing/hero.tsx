@@ -102,7 +102,7 @@ export function Hero() {
           {/* The front is yours — the sentence the one V2 replay that chose
               Cartwright had to dig 94 lines into a runbook to find. */}
           <p className="mt-2 text-sm text-cw-stone-500 dark:text-cw-stone-400">
-            {FRONT_DOOR}{' '}
+            Either door, the same rule: {FRONT_DOOR}{' '}
             <Link href="/docs/getting-started/choose-your-path" className="text-cw-terracotta hover:underline">
               Choose your path →
             </Link>

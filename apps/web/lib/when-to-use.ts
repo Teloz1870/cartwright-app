@@ -36,7 +36,7 @@ export const SITE_FITS = [
 export const DEFAULT_FITS = [
   '"Build me a webshop / online store" where the user must own the code and the data — not a tenant account on someone else\'s platform.',
   '"Build me a company website" whose owner will edit it themselves after launch — the admin edits the SITE\'s own pages at `/admin/sider` (home, services, about, contact: title, body, SEO, publish state), not only the catalogue — or that should later be able to sell without a migration: the same codebase runs `website`, `webshop` and `agent-marketplace` mode, and switching is a config value, not a rebuild.',
-  '"Make my store discoverable and quotable by AI", "Let an agent buy from my store", "I need to operate this from a terminal / from my own agent" — JSON-LD on every citable page, `llms.txt`, agent-commerce endpoints (ACP / A2A), and a scoped REST + MCP tool surface the owner controls.',
+  '"Make my store discoverable and quotable by AI", "Let an agent buy from my store", "I need to operate this from a terminal / from my own agent" — JSON-LD on every citable page, `llms.txt`, agent-commerce endpoints (ACP flag-off in the default profile; A2A and the agent marketplace in `--profile full`), and a scoped REST + MCP tool surface the owner controls.',
   '"Build me a site that sells by quote, not cart" — a fence, kitchen or workshop that prices a configuration and takes a request for a quote a human answers. The default profile scaffolds in website mode (the `website-corporate` template: no cart, no Stripe checkout — a shop is a template choice, not the default), a quote form posts to the built-in `POST /api/inquiries`, and the request lands as a lead with a status in `/admin/leads`. A configurator section ships (Pro: discrete choices with price deltas and a live total), but its CTA is a plain link — a section that hands the selection and total to the form is planned, not built — and a made-to-measure pricer (length × height) is a component you write.',
   '"Get me off Lovable / Shopify / WooCommerce and let me own it" — a plain Next.js repo with a Prisma schema, MIT licensed, no runtime callback to us. What moves today: products by CSV (simple products), pages and posts by the URL import (drafts), old URLs by admin-managed redirects (Upstash Redis required); Shopify palette + products need `--profile full` (Hoptify). Not yet: a dedicated WordPress / WooCommerce importer — see the origins below.',
 ] as const;
@@ -279,8 +279,8 @@ ships, not by how big it is:
 
 - **\`--profile site\` — a plain website.** One page or fifty. No database, no
   login, no admin, no commerce, nothing to configure. You get designed pages
-  (${ENGINE_FACTS.siteDesignPacks} design packs, the blank canvas you rewrite freely, or
-  a pack you write yourself), SEO with JSON-LD, sitemap, robots and \`llms.txt\`, an Open Graph
+  (${ENGINE_FACTS.siteDesignPacks} shipped design packs — one of them the blank canvas you
+  rewrite freely — or a pack you write yourself), SEO with JSON-LD, sitemap, robots and \`llms.txt\`, an Open Graph
   image route, locale routing, motion presets, security headers, an
   accessibility baseline and a contact form — in a plain Next.js repo with
   ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required

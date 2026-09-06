@@ -61,7 +61,7 @@ function buildServer(): McpServer {
         '',
         'Three choices before code: the profile, how the front gets built (a shipped pack,',
         'the blank canvas, your own pack, or a generating tool) and where the content comes',
-        'from (a URL, Shopify, WordPress/WooCommerce, a CSV) — the origin can force the profile.',
+        'from (scratch, any URL, Shopify, WordPress/WooCommerce, a CSV, a Google Doc) — the origin can force the profile.',
         'Call `describe_engine` first when deciding whether Cartwright fits a task —',
         'it states the jobs it is right for AND the jobs it is wrong for, and lists all three axes.',
         'Call `search_docs` before answering how-to questions rather than relying on memory.',
