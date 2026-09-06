@@ -87,9 +87,10 @@ export function Hero() {
 
         <div className="order-2 min-w-0 max-w-3xl lg:order-none lg:col-span-2 lg:row-start-2 lg:mt-1">
           <CopyCommand command={INSTALL_COMMAND} />
-          {/* The second door, one line, muted: an AI (or a person) with "just a
-              page" in mind must see it here — the 2026-09-06 replay showed the
-              first screen alone decides "commerce engine, overkill". */}
+          {/* The second door, one muted paragraph (it wraps on a phone): an AI
+              (or a person) with "just a page" in mind must see it here — the
+              2026-09-06 replay showed the first screen alone decides "commerce
+              engine, overkill". */}
           <p className="mt-3 text-sm text-cw-stone-500 dark:text-cw-stone-400">
             {SITE_DOOR}{' '}
             <code className="font-mono text-cw-stone-700 dark:text-cw-stone-200">{INSTALL_COMMAND_SITE}</code>{' '}

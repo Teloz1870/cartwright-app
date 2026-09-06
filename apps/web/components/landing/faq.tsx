@@ -21,13 +21,13 @@ const items = [
         environment variables. It builds with <code>next build</code> and deploys to Vercel unchanged.
         No admin, database, auth or agent tools; those are the default profile, one flag away, same
         engine. Measured: {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to
-        build, {SITE_COLD_RUN.boot} to a rendered homepage.{' '}
+        build, {SITE_COLD_RUN.boot} to a rendered homepage (provenance on the guide).{' '}
         <Link href="/docs/getting-started/plain-website" className="text-cw-terracotta">
           Build a plain website →
         </Link>
       </>
     ),
-    plain: `Yes. ${INSTALL_COMMAND_SITE} scaffolds a plain website: designed pages (${ENGINE_FACTS.siteDesignPacks} design packs, blank among them), JSON-LD, sitemap, llms.txt, an Open Graph image route, locale routing and a contact form — in a plain Next.js repo with ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required environment variables. It builds with next build and deploys to Vercel unchanged. No admin, database, auth or agent tools; those are the default profile, one flag away, same engine. Measured: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (${SITE_COLD_RUN.provenance}). Guide: cartwright.app/docs/getting-started/plain-website`,
+    plain: `Yes. ${INSTALL_COMMAND_SITE} scaffolds a plain website: designed pages (${ENGINE_FACTS.siteDesignPacks} design packs, blank among them), JSON-LD, sitemap, llms.txt, an Open Graph image route, locale routing and a contact form — in a plain Next.js repo with ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required environment variables. It builds with next build and deploys to Vercel unchanged. No admin, database, auth or agent tools; those are the default profile, one flag away, same engine. Measured: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (provenance on the guide). Build a plain website → cartwright.app/docs/getting-started/plain-website`,
   },
   {
     q: 'Is cartwright open source?',

@@ -5,7 +5,7 @@ import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home
 
 export function InstallBand() {
   return (
-    <Station index="07" label="Start" id="s07" live title="One line. A website in a minute, a shop in five.">
+    <Station index="07" label="Start" id="s07" live title="One line. A shop in five minutes — a website in one.">
       {/* `min-w-0` on both columns: a grid item defaults to `min-width: auto`
           and refuses to shrink below its content's min-content width, so the
           mono install command — wider in Martian Mono than in the Geist Mono it
@@ -37,9 +37,11 @@ export function InstallBand() {
         </div>
         <div className="min-w-0 space-y-3">
           <CopyCommand command={INSTALL_COMMAND} />
-          <CopyCommand command={INSTALL_COMMAND_SITE} />
+          {/* The site command is inline, wrapping text — not a second CopyCommand:
+              that component clamps to one line and would cut `--profile site`
+              off at 390px (51 mono characters do not fit the phone column). */}
           <p className="text-xs text-cw-stone-400">
-            <code className="font-mono">--profile site</code>: a plain website — no database, no login —{' '}
+            <code className="font-mono text-cw-stone-200 break-all">{INSTALL_COMMAND_SITE}</code> — a plain website, no database, no login:{' '}
             {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to build,{' '}
             {SITE_COLD_RUN.boot} to a rendered homepage (measured, provenance on the docs page).
           </p>
