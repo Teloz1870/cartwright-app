@@ -69,7 +69,7 @@ export const ENGINE_FACTS = {
    * `google-fonts` module (engine PR #564, first shipped in v0.56.0) so a site
    * scaffold boots and builds with Google's CDN unreachable. Authority: the
    * engine's `scaffold/manifest.json` core claims, verified against a real
-   * materialization of that commit (17 on create-cartwright@2.9.2).
+   * materialization of that commit (17 on create-cartwright@2.9.2; 8 from 2.9.3 → v0.56.1).
    */
   siteDesignPacks: 8,
   siteColdRunScaffold: SITE_COLD_RUN.scaffold,

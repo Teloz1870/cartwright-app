@@ -60,12 +60,12 @@ export const SITE_DOOR = 'Just a page or a plain website? No database, no login,
  */
 export const SITE_COLD_RUN = {
   provenance:
-    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.2, engine v0.55.0 (94be4c8), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34031492527',
-  scaffold: '~24 s',
-  build: '~25 s',
-  boot: '~3 s',
-  runtimeDependencies: 21,
-  devDependencies: 17,
+    'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.3, engine v0.56.1 (614ff3e), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34040202701',
+  scaffold: '~22 s',
+  build: '~27 s',
+  boot: '~2 s',
+  runtimeDependencies: 20,
+  devDependencies: 16,
 } as const;
 
 /**
