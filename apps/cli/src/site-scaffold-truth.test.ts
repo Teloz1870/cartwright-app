@@ -112,7 +112,7 @@ describe("the template's own identity never ships as the customer's", () => {
     expect(out).toContain("admin@example.com");
   });
 
-  it("handles single quotes, and never rewrites an address inside prose", () => {
+  it("handles single quotes, and leaves comment prose about us alone", () => {
     const single = patchBrandConfigContent(
       `export const brand = {
   domain: 'cartwright.app',
@@ -130,8 +130,22 @@ describe("the template's own identity never ships as the customer's", () => {
     );
   });
 
-  it("keeps the Built-with-Cartwright link and prose pointing at us", () => {
-    expect(out).toContain('ownerUrl: "https://cartwright.app"');
+  it("strips ownerUrl too — it is the CUSTOMER's owner link, not our badge", () => {
+    // Corrected after review: `footer.ownerUrl` is the "Owned and operated by"
+    // destination whose link TEXT is `company.legalName` — the customer's own
+    // company. brand.config.ts:1084-1089: "fork-shops sætter deres egen
+    // ejer-URL her". Leaving it at cartwright.app would tell every visitor the
+    // customer's site is owned and operated by us.
+    const out = patchBrandConfigContent(
+      `export const brand = {
+  footer: {
+    // Pricing lands on cartwright.app — prose, and it stays.
+    ownerUrl: "https://cartwright.app" as string,
+  },
+};`,
+      "annas-trip",
+    );
+    expect(out).toContain('ownerUrl: "https://example.com"');
     expect(out).toContain("Pricing lands on cartwright.app");
   });
 

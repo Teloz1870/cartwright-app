@@ -219,10 +219,16 @@ export function stripEngineDomains(src: string): string {
       if (isCommentLine(line)) {
         return line;
       }
-      return line.replace(/"([^"]*)"/g, (whole, inner: string) => {
+      // Both quote styles: the engine's own config is double-quoted throughout,
+      // but a fork (or a prettier config) may single-quote, and a strip that
+      // only knows one of them leaks silently — the exact failure mode this
+      // function exists to end.
+      return line.replace(/"([^"]*)"|'([^']*)'/g, (whole, dq: string | undefined, sq: string | undefined) => {
+        const quote = dq === undefined ? "'" : '"';
+        const inner = dq === undefined ? (sq as string) : dq;
         let next = inner;
         for (const domain of ENGINE_DOMAINS) next = next.split(domain).join(PLACEHOLDER_DOMAIN);
-        return next === inner ? whole : `"${next}"`;
+        return next === inner ? whole : `${quote}${next}${quote}`;
       });
     })
     .join("\n");
