@@ -15,6 +15,7 @@ const CLAUSE = 'pick one of the shipped design packs, start from the blank canva
 describe('the front door is in the rendered HTML', () => {
   it('hero renders the sentence once, with the choose-your-path link', () => {
     const html = renderToStaticMarkup(<Hero />);
+    expect(html).toContain('Either door, the same rule:');
     expect(html).toContain(OPENING);
     expect(html).toContain(CLAUSE);
     expect(html).toContain('/docs/getting-started/choose-your-path');

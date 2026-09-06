@@ -221,8 +221,8 @@ export const MCP_TOOLS = {
             measured: { ...COLD_RUN, note: 'from the AI quick-start runbook (scaffold + db:setup → running; a designed homepage via the tool surface), not the release scaffold gate — the gate (run before each release and weekly) measures light, full and site, and only the site run is vendored here' },
             limits: [
               'The Shopify importer (Hoptify) is pruned from this profile — use --profile full for it.',
-              'No A2A agent marketplace, no UCP identity-linking and no A2A/ACP dashboard (/admin/agentic) — those ship in --profile full. The AI-assisted admin, the REST + MCP tool surface and the plugin modules (blog, reviews, voice shopping, 3D scenes — flag-off by default) ship here.',
-              'Needs a database (Turso, Postgres, or SQLite locally — the CLI asks) plus the keys you add in /admin/setup as you go: Resend for mail, Stripe only if you sell.',
+              'No A2A agent marketplace, no UCP identity-linking and no A2A dashboard (/admin/agentic) — those ship in --profile full. The AI-assisted admin, the REST + MCP tool surface, and the flag-off modules (blog, reviews, 3D scenes, voice shopping) ship here.',
+              'Needs a database (Turso, Postgres, or SQLite locally — the CLI asks) plus the keys you add as you go: Resend for mail (offered in /admin/setup), Stripe in /admin/integrations only if you sell.',
             ],
             runbook: `${SITE_URL}/docs/getting-started/ai-quick-start`,
           },

@@ -44,7 +44,7 @@ describe('the front door is named on every first surface', () => {
   it('the plain-website runbook carries it literally (MDX cannot interpolate a constant)', () => {
     const runbook = read('content/docs/getting-started/plain-website.mdx').replace(/[`*]/g, '');
     // The site-honest first clause, verbatim (no admin/database tail in the site runbook).
-    expect(runbook).toContain(FRONT_DOOR.split(';')[0].replace('You own the front', 'You own the front'));
+    expect(runbook).toContain(FRONT_DOOR.split(';')[0]);
     expect(runbook).toContain('SEO, the sitemap, share cards and locale routing keep working around whatever you render');
   });
 
