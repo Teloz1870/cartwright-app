@@ -43,9 +43,9 @@
  *
  * Templates (sets brand.mode + brand.features defaults in brand.config.ts).
  * Every template except agent-marketplace works under light AND full — a webshop
- * is `--profile light --template generic`; `full` adds the agent marketplace, UCP
- * identity-linking, the Shopify (hoptify) importer, the agentic surfaces and the
- * uncurated design packs — nothing a shop needs.
+ * is `--profile light --template generic`; `full` adds the A2A agent marketplace, UCP
+ * identity-linking, the Shopify (hoptify) importer and the uncurated design packs —
+ * nothing a shop needs (MCP, ACP and WebMCP ship in light too).
  * (Measured 2026-09-06: three of three AI replays moving a WooCommerce shop
  * scaffolded `--profile full` after reading the old wording below.)
  * Default: website-corporate under --profile light, generic under --profile full:
