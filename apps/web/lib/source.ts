@@ -1,3 +1,4 @@
+import { renderEngineFacts } from '@/lib/engine-facts';
 import { docs } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
@@ -31,7 +32,10 @@ export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
 export async function getLLMText(page: (typeof source)['$inferPage']) {
   const processed = await page.data.getText('processed');
 
+  // The processed text still carries MDX component tags; the one that hides a
+  // fact from a Markdown reader is <EngineFact/>, so resolve it here — this is
+  // the single path the .md twin and /llms-full.txt share.
   return `# ${page.data.title} (${page.url})
 
-${processed}`;
+${renderEngineFacts(processed)}`;
 }

@@ -93,3 +93,24 @@ export const ENGINE_FACTS = {
 export function EngineFact({ k }: { k: keyof typeof ENGINE_FACTS }) {
   return <>{ENGINE_FACTS[k]}</>;
 }
+
+const ENGINE_FACT_TAG = /<EngineFact\s+k=["']([A-Za-z0-9_]+)["']\s*\/>/g;
+
+/**
+ * Resolve every `<EngineFact k="…" />` in a Markdown/MDX string to its value.
+ *
+ * The Markdown twin of a docs page (`/docs/<path>.md`, `Accept: text/markdown`,
+ * and the `/llms-full.txt` concatenation) is the processed MDX text — React
+ * never runs over it, so the component tags an HTML reader sees as numbers
+ * reached an AI reader as literal `<EngineFact k="siteColdRunScaffold" />`
+ * (measured live 2026-09-06: eight raw tags and zero numbers on the
+ * plain-website runbook — the exact surface the site-profile program exists
+ * for). A typo in `k` throws: these bodies are produced at build time, and a
+ * fact that cannot be cited must fail the build, not ship as a tag.
+ */
+export function renderEngineFacts(markdown: string): string {
+  return markdown.replace(ENGINE_FACT_TAG, (_match, key: string) => {
+    if (!(key in ENGINE_FACTS)) throw new Error(`<EngineFact k="${key}" />: no such fact in ENGINE_FACTS`);
+    return String(ENGINE_FACTS[key as keyof typeof ENGINE_FACTS]);
+  });
+}
