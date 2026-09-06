@@ -81,20 +81,23 @@ jobs:
         with:
           node-version: 22
 
-      - name: Resolve the CLI version under test (provenance only)
+      - name: Pre-flight: does the requested CLI exist?
         id: cli
         run: |
           set -euo pipefail
           # The scaffold step passes $CLI_INPUT to npx untouched (a range or a
-          # dist-tag works there as it always has); this only records WHICH
-          # version that resolves to. --json is a string for one match and an
-          # array for a range — take the newest.
+          # dist-tag works there as it always has). This is only a loud early
+          # failure for a typo, and a fallback for the provenance record: the
+          # version npx actually EXECUTES is read from the CLI's own banner in
+          # scaffold.log below (`npm view` lists a range's matches in
+          # publication order, and npx prefers the `latest` tag when it
+          # satisfies the range — neither is "the newest match").
           VERSION=$(npm view "create-cartwright@${CLI_INPUT}" version --json | node -e '
             const v = JSON.parse(require("fs").readFileSync(0, "utf8"));
             process.stdout.write(Array.isArray(v) ? v[v.length - 1] : String(v));
           ')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "→ create-cartwright@${CLI_INPUT} resolves to $VERSION; template ref: ${REF_INPUT}"
+          echo "→ create-cartwright@${CLI_INPUT} exists (npm view: $VERSION); template ref: ${REF_INPUT}"
 
       - name: Scaffold (full install + db:setup + seed)
         run: |
@@ -108,8 +111,12 @@ jobs:
             --pm=pnpm 2>&1 | tee scaffold.log
           echo "DUR_SCAFFOLD=$(( $(date +%s) - START ))" >> "$GITHUB_ENV"
           test -d "gate-${PROFILE}"
-          # Provenance: the channel the CLI resolved (the engine's own marker
-          # is read at the end, from the scaffold).
+          # Provenance from the run itself: the version banner the CLI prints
+          # (`create-cartwright vX.Y.Z` — the one npx executed) and the channel
+          # it resolved. The engine's own marker is read at the end, from the
+          # scaffold.
+          EXECUTED=$(grep -o 'create-cartwright v[0-9][0-9A-Za-z.+-]*' scaffold.log | head -1 | sed 's/.* v//' || true)
+          echo "CLI_EXECUTED=${EXECUTED}" >> "$GITHUB_ENV"
           CHANNEL=$(grep -o 'Template downloaded ([^)]*)' scaffold.log | head -1 | sed 's/.*(\(.*\))/\1/' || true)
           echo "TEMPLATE_CHANNEL=${CHANNEL:-unknown}" >> "$GITHUB_ENV"
 
@@ -202,7 +209,7 @@ jobs:
           # briefings state.
           ROOT=$(curl -sI http://localhost:3000/ | tr -d '\r')
           CODE=$(printf '%s\n' "$ROOT" | head -1 | awk '{print $2}')
-          LOC=$(printf '%s\n' "$ROOT" | grep -i '^location:' | awk '{print $2}')
+          LOC=$(printf '%s\n' "$ROOT" | grep -i '^location:' | awk '{print $2}' || true)
           case "$CODE" in 301|302|307|308) ;; *) echo "::error::/ answered $CODE, expected a redirect to the locale home"; exit 1;; esac
           printf '%s' "$LOC" | grep -qE '^(https?://[^/]+)?/en/?$' || { echo "::error::/ redirected to '$LOC', expected /en"; exit 1; }
           HOMEPAGE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en)
@@ -244,7 +251,10 @@ jobs:
             const complete = env.JOB_STATUS === "success" && Object.values(steps).every((s) => s !== null);
             let engine = {}; try { engine = JSON.parse(env.MARKER || "{}"); } catch { engine = { unparsable: true }; }
             const out = {
-              profile: env.PROFILE, cli: env.CLI_VERSION || null, cliInput: env.CLI_INPUT, ref: env.REF_INPUT,
+              profile: env.PROFILE,
+              cli: env.CLI_EXECUTED || env.CLI_VERSION || null,
+              cliSource: env.CLI_EXECUTED ? "banner" : env.CLI_VERSION ? "npm-view" : null,
+              cliInput: env.CLI_INPUT, ref: env.REF_INPUT,
               templateChannel: env.TEMPLATE_CHANNEL || "unknown", engine,
               runner: "ubuntu-latest", date: new Date().toISOString().slice(0, 10), runId: env.GITHUB_RUN_ID,
               jobStatus: env.JOB_STATUS, complete, steps,
@@ -257,7 +267,7 @@ jobs:
               `### ${out.profile} — ${complete ? "measured cold run" : `INCOMPLETE record (job ${out.jobStatus}) — do not quote`} (${out.date})`,
               ``, `| step | seconds |`, `|---|---|`,
               row("scaffold + install", s.scaffoldInstall), row("typecheck", s.typecheck), row("unit tests", s.unitTests), row("next build", s.build), row("boot → HTTP 200", s.bootTo200),
-              ``, `Provenance: create-cartwright@${out.cli ?? "?"} (input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
+              ``, `Provenance: create-cartwright@${out.cli ?? "?"} (${out.cliSource === "banner" ? "executed" : "npm view"}; input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
               ``,
             ].join("\n");
             require("fs").appendFileSync(env.GITHUB_STEP_SUMMARY, md);
