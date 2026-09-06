@@ -81,7 +81,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Pre-flight: does the requested CLI exist?
+      - name: "Pre-flight: does the requested CLI exist?"
         id: cli
         run: |
           set -euo pipefail
