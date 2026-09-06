@@ -56,7 +56,7 @@ export const metadata = {
   openGraph: {
     title: 'cartwright',
     description:
-      'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Scaffold with npx create-cartwright.',
+      'The build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. Scaffold with npx create-cartwright (--profile site for a plain website).',
     url: 'https://cartwright.app',
     siteName: 'cartwright',
     type: 'website',

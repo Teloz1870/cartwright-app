@@ -181,8 +181,12 @@ export const MCP_TOOLS = {
         name: 'Cartwright',
         summary:
           'An open-source (MIT) Next.js engine that scaffolds a real website in one command, with or without a database. Two doors: `--profile site` is a plain website (pages, design packs, SEO/JSON-LD, locale routing; no database, no admin, no commerce); the default profile is a managed site or shop with an admin, a database, Stripe checkout and an AI tool surface that the user owns outright.',
-        install: { site: INSTALL_COMMAND_SITE, default: INSTALL_COMMAND },
+        // `install` stays the string it always was (consumers may read it as a
+        // command); the site door is beside it, and both live in `profiles[]`.
+        install: INSTALL_COMMAND,
+        installSite: INSTALL_COMMAND_SITE,
         modes: ['website', 'webshop', 'agent-marketplace'],
+        modesApplyTo: 'the default profile — a site scaffold has no modes to switch',
         profiles: [
           {
             name: 'site',

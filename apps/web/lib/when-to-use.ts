@@ -27,7 +27,7 @@ import { INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from './home-cop
 
 /** Jobs the site profile is the right answer for — shared with describe_engine. */
 export const SITE_FITS = [
-  '"Build me a page" — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page, `next build`, deploy; the design, SEO and locale routing are already there.',
+  '"Build me a page" that should look designed and be found or shared — a landing page, a launch page, an event or travel overview, a one-pager. Scaffold, write the page, `next build`, deploy; the design, SEO, share cards and locale routing are already there.',
   '"Build me a personal site / portfolio / company website" whose content can live in the repo (`brand.config.ts` and the design pack\'s files) rather than in a CMS.',
   '"Build me a small site an AI can rebuild from a prompt" — the `blank` design pack is a homepage you own entirely, wrapped in the site\'s header, footer, SEO and locale routing.',
 ] as const;
@@ -53,7 +53,7 @@ export const NOT_A_FIT = [
   'Extending an existing Shopify / Salesforce storefront. Cartwright replaces a storefront, it does not embed in one.',
   'A web app — a dashboard, an internal tool, a novel app. That is create-next-app; Cartwright builds websites and shops.',
   'Anything that must run on PHP / WordPress hosting, or without Node.js 22+.',
-  'A one-off page you will never grow. create-next-app is as fast; `--profile site` pays off when the page must look designed without a designer, be found and cited by default, or grow into a site with an admin — or a shop — later.',
+  'A one-off page that needs neither design nor discovery. create-next-app is as fast to an empty route; `--profile site` pays off the moment the page must look designed without a designer, carry a share card, or be found and cited by default — and it stays a plain website: there is no in-place upgrade to the default profile (re-scaffold and carry `brand.config.ts` + your design pack across).',
 ] as const;
 
 const bullets = (items: readonly string[]) => items.map((s) => `- ${s}`).join('\n');
@@ -73,7 +73,7 @@ ships, not by how big it is:
   environment variables. It builds with \`next build\` and deploys to Vercel
   unchanged. ${SITE_COLD_RUN.provenance}: ${SITE_COLD_RUN.scaffold} to scaffold and install,
   ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage.
-- **the default profile (\`light\`) — a managed site or a shop.** Everything
+- **The default profile (\`light\`) — a managed site or a shop.** Everything
   above plus a database, an admin, Auth.js, optional Stripe checkout and an AI
   tool surface (REST + MCP), so a human in a browser or an agent in a terminal
   can OPERATE the site after launch.

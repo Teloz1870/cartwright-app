@@ -162,13 +162,15 @@ describe('describe_engine names both doors', () => {
     const { MCP_TOOLS } = await import('./mcp-tools');
     const { routeExists } = await import('./route-exists');
     const out = JSON.parse((await MCP_TOOLS.describe_engine.handler()).content[0].text) as {
-      install: { site: string; default: string };
+      install: string;
+      installSite: string;
       profiles: { name: string; flag: string; limits?: string[]; runbook: string }[];
       goodFit: string[];
       notAFit: string[];
     };
     expect(out.profiles.map((p) => p.name)).toEqual(['site', 'light', 'full']);
-    expect(out.install.site).toContain('--profile site');
+    expect(out.install).toBe('npx create-cartwright@latest my-shop');
+    expect(out.installSite).toContain('--profile site');
     const site = out.profiles[0];
     expect(site.limits?.length ?? 0).toBeGreaterThanOrEqual(5);
     for (const p of out.profiles) expect(routeExists(new URL(p.runbook).pathname), p.runbook).toBe(true);
