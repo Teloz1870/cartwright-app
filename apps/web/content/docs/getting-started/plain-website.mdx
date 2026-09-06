@@ -79,8 +79,10 @@ Next steps:
 Verify it is what it says — no database anywhere in the repo, and it boots with no environment variables:
 
 ```bash
+cd my-site
 grep -q '"profile": "site"' .cartwright/profile.json && test ! -e prisma && echo site-ok
 pnpm dev &
+sleep 5   # let the dev server start listening
 curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/     # 200 (follows / → /en)
 ```
 

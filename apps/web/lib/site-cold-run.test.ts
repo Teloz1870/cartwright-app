@@ -20,7 +20,9 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
 
   it('renders every timing with the tilde — measured, not guaranteed', () => {
     for (const v of [SITE_COLD_RUN.scaffold, SITE_COLD_RUN.build, SITE_COLD_RUN.boot]) {
-      expect(v).toMatch(/^~\d+ s /);
+      // Bare durations: every surface supplies its own label, so a fact can never
+      // read "~24 s scaffold + install to scaffold and install" (Gemini R2).
+      expect(v).toMatch(/^~\d+ s$/);
     }
   });
 

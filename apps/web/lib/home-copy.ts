@@ -58,9 +58,9 @@ export const SITE_DOOR = 'Just a page or a plain website? No database, no login,
 export const SITE_COLD_RUN = {
   provenance:
     'Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@2.9.2, engine v0.55.0 (94be4c8), --profile site --yes --pm=pnpm — release scaffold gate run 34031492527',
-  scaffold: '~24 s scaffold + install',
-  build: '~25 s next build',
-  boot: '~3 s to HTTP 200 with a rendered H1',
+  scaffold: '~24 s',
+  build: '~25 s',
+  boot: '~3 s',
   runtimeDependencies: 21,
   devDependencies: 17,
 } as const;
