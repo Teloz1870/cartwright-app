@@ -180,6 +180,16 @@ export function patchBrandConfigContent(original: string, projectName: string): 
   out = out
     // domain, url and every @teloz.net email → neutral, RFC-2606 placeholder
     .replace(/teloz\.net/g, "example.com")
+    // The engine's own brand.config.ts moved to cartwright.app, which turned
+    // the strip above into a no-op for identity: measured on a real 2.9.4
+    // scaffold, every project shipped `domain: "cartwright.app"`,
+    // `url: "https://cartwright.app"` and noreply@/support@/admin@ addresses
+    // at OUR domain — and in a database-backed profile the seed creates its
+    // admin user from `brand.emails.admin`. Comments and the "Built with
+    // Cartwright" `ownerUrl` keep naming us on purpose; identity fields do not.
+    .replace(/(\bdomain:\s*)"cartwright\.app"/, '$1"example.com"')
+    .replace(/(\burl:\s*)"https:\/\/cartwright\.app"/, '$1"https://example.com"')
+    .replace(/@cartwright\.app/g, "@example.com")
     // legal/company name (legalName + footer disclaimer) → the store name
     .replaceAll("Teloz ApS", storeName)
     // SEO/OG title (consumed by layout, manifest, PDP/PLP, mcp.json)

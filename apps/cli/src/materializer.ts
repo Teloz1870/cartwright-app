@@ -287,6 +287,44 @@ const SITE_PRUNED_SCRIPT_KEYS: readonly string[] = [
   "typecheck:native",
 ];
 
+/**
+ * Drop every script whose command runs a file the profile removed.
+ *
+ * `SITE_PRUNED_SCRIPT_KEYS` is a hand-kept list of KEYS, and it drifted: a real
+ * `create-cartwright@2.9.4 --profile site` scaffold shipped five scripts whose
+ * targets are in `removedPaths` — `admin:create` (→ scripts/admin-reset.ts),
+ * `capture:gallery`, `dev:screenshot`, `capture:locales` and `verify:design`,
+ * the last of which DESIGN.md tells the owner to run. Running any of them says
+ * "Cannot find module". Deriving the answer from the materialised tree closes
+ * the class instead of adding five more names to the list.
+ */
+export function pruneDeadScriptReferences(
+  src: string,
+  fileExists: (relativePath: string) => boolean,
+): { src: string; dropped: string[] } {
+  let pkg: Record<string, unknown>;
+  try {
+    pkg = JSON.parse(src) as Record<string, unknown>;
+  } catch {
+    return { src, dropped: [] };
+  }
+  const scripts = (pkg.scripts ?? {}) as Record<string, string>;
+  const dropped: string[] = [];
+  for (const [key, command] of Object.entries(scripts)) {
+    // Only the engine's own scripts/ directory — never a bin from node_modules.
+    const referenced = command.match(/(?<![\w./-])scripts\/[\w.\-/]+/g) ?? [];
+    if (referenced.length && referenced.every((rel) => !fileExists(rel))) {
+      delete scripts[key];
+      dropped.push(key);
+    }
+  }
+  // Nothing to drop → hand back the original bytes rather than a reserialised
+  // copy: a scaffold should not show a diff in a file this pass did not change.
+  if (!dropped.length) return { src, dropped };
+  pkg.scripts = scripts;
+  return { src: JSON.stringify(pkg, null, 2) + "\n", dropped };
+}
+
 export function rewritePackageJsonForSite(src: string): { src: string; missing: string[] } {
   const missing: string[] = [];
   let pkg: Record<string, unknown>;
@@ -576,6 +614,17 @@ export function applyMaterializer(
         rmSync(abs, { force: true });
         removedPaths.push(p);
       }
+    }
+
+    // Only now is the tree final: drop every script whose file this profile
+    // removed. Runs after the deletions above, and asks the disk rather than a
+    // hand-kept key list — that list had drifted by five scripts, including
+    // `verify:design`, which DESIGN.md tells the owner to run.
+    if (existsSync(pkgPath)) {
+      const dead = pruneDeadScriptReferences(readFileSync(pkgPath, "utf8"), (rel) =>
+        existsSync(join(targetDir, rel)),
+      );
+      if (dead.dropped.length) writeFileSync(pkgPath, dead.src);
     }
   }
 
