@@ -43,8 +43,9 @@
  *
  * Templates (sets brand.mode + brand.features defaults in brand.config.ts).
  * Every template except agent-marketplace works under light AND full — a webshop
- * is `--profile light --template generic`; `full` adds the agent marketplace, the
- * Shopify (hoptify) importer and the agentic surfaces, nothing a shop needs.
+ * is `--profile light --template generic`; `full` adds the agent marketplace, UCP
+ * identity-linking, the Shopify (hoptify) importer, the agentic surfaces and the
+ * uncurated design packs — nothing a shop needs.
  * (Measured 2026-09-06: three of three AI replays moving a WooCommerce shop
  * scaffolded `--profile full` after reading the old wording below.)
  * Default: website-corporate under --profile light, generic under --profile full:
@@ -176,7 +177,7 @@ Usage:
 
 Options:
   --profile <light|full|site>  Scaffold profile (default: light).
-                           light = website mode by default; a WEBSHOP is
+                           light = website mode by default; a webshop is
                                    --profile light --template generic. Curated
                                    design set; only the full-only modules (A2A
                                    agent-marketplace, UCP identity-linking, the
@@ -184,9 +185,10 @@ Options:
                                    in every profile; webshop templates enable it.
                                    Add designs back: cartwright design install <slug>
                            full  = everything the engine ships — needed only for
-                                   agent-marketplace mode, the Shopify (hoptify)
-                                   importer, or to keep all 26 designs. A webshop
-                                   or a WooCommerce move does NOT need full.
+                                   agent-marketplace mode, UCP identity-linking,
+                                   the Shopify (hoptify) importer, or every design
+                                   pack uncurated. A webshop or a WooCommerce move
+                                   does not need full.
                            site  = a plain website: NO database/admin/auth/commerce.
                                    Cut from the engine's module manifest (needs a
                                    template ref >= the B3 release). Contact form

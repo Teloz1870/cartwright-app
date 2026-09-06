@@ -17,9 +17,11 @@ const help = src.slice(src.indexOf("const HELP_TEXT"), src.indexOf("--help, -h")
 
 describe("--help does not imply a webshop needs --profile full", () => {
   it("names the webshop command under light, and what full is actually for", () => {
-    expect(help).toMatch(/a WEBSHOP is\s+--profile light --template generic/);
+    expect(help).toMatch(/a webshop is\s+--profile light --template generic/);
     expect(help).toMatch(/full\s+= everything the engine ships — needed only for/);
-    expect(help).toMatch(/does NOT need full/);
+    expect(help).toMatch(/does not need full/);
+    expect(help).not.toMatch(/all \d+ designs/);
+    expect(help).toMatch(/UCP identity-linking,\s+the Shopify/);
     expect(help).toMatch(/work under light and full alike/);
   });
 
