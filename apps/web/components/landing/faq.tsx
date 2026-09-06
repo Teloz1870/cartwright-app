@@ -3,11 +3,33 @@ import { Station } from '@/components/landing/station';
 import { Accordion } from '@/components/ui/accordion';
 import { contactEmail, social } from '@/lib/shared';
 import JsonLd from '@/components/JsonLd';
+import { ENGINE_FACTS } from '@/lib/engine-facts';
+import { INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
+import { SiteCommand } from '@/components/landing/site-command';
 
 // Each item carries a `plain` string mirroring the visible answer, so the
 // FAQPage JSON-LD matches what users see (Google requires parity). The rendered
 // `a` may be JSX; `plain` is the text answer search/AI engines quote.
 const items = [
+  {
+    q: 'Can I build just a website — no shop, no login, no database?',
+    a: (
+      <>
+        Yes. <SiteCommand /> scaffolds a plain website: designed pages (
+        {ENGINE_FACTS.siteDesignPacks} design packs, <code>blank</code> among them), JSON-LD, sitemap,{' '}
+        <code>llms.txt</code>, an Open Graph image route, locale routing and a contact form — in a
+        plain Next.js repo with {ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required
+        environment variables. It builds with <code>next build</code> and deploys to Vercel unchanged.
+        No admin, database, auth or agent tools; those are the default profile, one flag away, same
+        engine. Measured: {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to
+        build, {SITE_COLD_RUN.boot} to a rendered homepage (provenance on the guide).{' '}
+        <Link href="/docs/getting-started/plain-website" className="text-cw-terracotta">
+          Build a plain website →
+        </Link>
+      </>
+    ),
+    plain: `Yes. ${INSTALL_COMMAND_SITE} scaffolds a plain website: designed pages (${ENGINE_FACTS.siteDesignPacks} design packs, blank among them), JSON-LD, sitemap, llms.txt, an Open Graph image route, locale routing and a contact form — in a plain Next.js repo with ${ENGINE_FACTS.siteRuntimeDeps} runtime dependencies and zero required environment variables. It builds with next build and deploys to Vercel unchanged. No admin, database, auth or agent tools; those are the default profile, one flag away, same engine. Measured: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (provenance on the guide). Build a plain website → cartwright.app/docs/getting-started/plain-website`,
+  },
   {
     q: 'Is cartwright open source?',
     a: (
@@ -153,6 +175,9 @@ const faqJsonLd = {
     acceptedAnswer: { '@type': 'Answer', text: it.plain },
   })),
 };
+
+/** Exported for the parity test: every `plain` must mirror its visible `a`. */
+export const FAQ_ITEMS = items;
 
 export function Faq() {
   return (

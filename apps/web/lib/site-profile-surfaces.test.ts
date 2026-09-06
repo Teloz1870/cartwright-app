@@ -36,8 +36,29 @@ describe('the site profile is named on every entry surface', () => {
     'content/docs/getting-started/ai-quick-start.mdx',
     'content/docs/getting-started/cli-options.mdx',
     'content/docs/getting-started/quick-start.mdx',
+    // A4 — the home page itself, and the create-next-app comparison (hero,
+    // install band and faq render <SiteCommand/> — pinned in the next test)
+    'components/landing/three-doors.tsx',
+    'components/landing/site-command.tsx',
+    'lib/comparisons.ts',
   ])('%s names --profile site', (rel) => {
     expect(read(rel)).toContain('--profile site');
+  });
+
+  it('the home page carries the site command as a rendered constant, not retyped prose', () => {
+    // Rendered usage, not an import line: <SiteCommand/> in JSX, and the door
+    // sentence interpolated in the hero (a falsifier deleted the hero paragraph
+    // and an import-only assertion stayed green).
+    for (const rel of ['components/landing/hero.tsx', 'components/landing/install-band.tsx', 'components/landing/faq.tsx']) {
+      expect(read(rel)).toMatch(/<SiteCommand(\s[^>]*)?\/>/);
+    }
+    expect(read('components/landing/hero.tsx')).toContain('{SITE_DOOR}');
+    expect(read('components/landing/site-command.tsx')).toContain("INSTALL_COMMAND_SITE.split(' ')");
+    // FAQPage JSON-LD parity: the plain twin must carry the command too.
+    expect(read('components/landing/faq.tsx')).toMatch(/plain: `Yes\. \$\{INSTALL_COMMAND_SITE\}/);
+    // The comparison answers "so it's faster?" honestly — finished page, not empty one.
+    expect(read('lib/comparisons.ts')).toContain('Faster to a finished page, not to an empty one');
+    expect(read('lib/comparisons.ts')).toContain("dimension: 'A single page or plain website'");
   });
 
   it('the rendered agent strings carry the site command, not just the source', () => {

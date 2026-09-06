@@ -1,10 +1,13 @@
+import Link from 'next/link';
 import { Station } from '@/components/landing/station';
 import { CopyCommand } from '@/components/landing/copy-command';
 import { ButtonLink } from '@/components/ui/button';
+import { INSTALL_COMMAND, SITE_COLD_RUN } from '@/lib/home-copy';
+import { SiteCommand } from '@/components/landing/site-command';
 
 export function InstallBand() {
   return (
-    <Station index="07" label="Start" id="s07" live title="One line. Real shop in five minutes.">
+    <Station index="07" label="Start" id="s07" live title="One line. A shop in five minutes — a website in one.">
       {/* `min-w-0` on both columns: a grid item defaults to `min-width: auto`
           and refuses to shrink below its content's min-content width, so the
           mono install command — wider in Martian Mono than in the Geist Mono it
@@ -35,7 +38,17 @@ export function InstallBand() {
           </div>
         </div>
         <div className="min-w-0 space-y-3">
-          <CopyCommand command="npx create-cartwright@latest my-shop" />
+          <CopyCommand command={INSTALL_COMMAND} />
+          {/* The site command is inline, wrapping text — not a second CopyCommand:
+              that component clamps to one line and would cut `--profile site`
+              off at 390px (51 mono characters do not fit the phone column).
+              SiteCommand breaks only between tokens. */}
+          <p className="text-xs text-cw-stone-400">
+            <SiteCommand className="text-cw-stone-200" /> — a plain website, no database, no login:{' '}
+            {SITE_COLD_RUN.scaffold} to scaffold and install, {SITE_COLD_RUN.build} to build,{' '}
+            {SITE_COLD_RUN.boot} to a rendered homepage (measured;{' '}
+            <Link href="/docs/getting-started/plain-website" className="underline hover:text-cw-stone-200">provenance on the guide</Link>).
+          </p>
           {/* Stacked on a phone. Three columns of mono at 390px cannot fit —
               grid items default to `min-width: auto`, so they refuse to shrink
               below their content and widen the page instead of wrapping. */}
