@@ -53,7 +53,7 @@ export const ENGINE_FACTS = {
 
   /**
    * The `--profile site` scaffold, as the release scaffold gate measures it on
-   * every engine release (`timings-site.json`, create-cartwright@2.9.2 against
+   * every engine release (`timings-site.json`, the published create-cartwright against
    * engine v0.55.0). The dependency count is the CLI's curated prune list at
    * work; it drops further when the materializer adopts the registry-derived
    * prune set (engine B4). Zero env vars: the only `assertEnv` caller is the
