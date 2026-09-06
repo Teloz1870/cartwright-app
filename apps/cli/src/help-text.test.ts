@@ -20,7 +20,7 @@ describe("--help does not imply a webshop needs --profile full", () => {
     expect(help).toMatch(/a webshop is\s+--profile light --template generic/);
     expect(help).toMatch(/full\s+= everything the engine ships — needed only for/);
     expect(help).toMatch(/does not need full/);
-    expect(help).not.toMatch(/all \d+ designs/);
+    expect(help).not.toMatch(/all \d+ design/); // no count in --help: 30 in the engine, 27 in the CLI list, '26' was stale
     expect(help).toMatch(/UCP identity-linking,\s+the Shopify/);
     expect(help).toMatch(/work under light and full alike/);
   });
