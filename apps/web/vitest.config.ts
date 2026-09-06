@@ -17,7 +17,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['lib/**/*.test.ts'],
+    // `.tsx` too: a test that renders a component to compare it with its
+    // JSON-LD twin has to be JSX, and an include that stops at `.ts` makes such
+    // a test look green while never running (lib/faq-parity.test.tsx).
+    include: ['lib/**/*.test.ts', 'lib/**/*.test.tsx'],
     environment: 'node',
   },
 });
