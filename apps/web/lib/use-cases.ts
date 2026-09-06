@@ -81,7 +81,7 @@ const migrateFromShopify: UseCase = {
   slug: 'migrate-from-shopify',
   title: 'Migrate off Shopify and own your stack',
   description:
-    'Move from renting a hosted SaaS to owning your commerce codebase: import products and design, keep Stripe as the link key, and run a modern Next.js shop with AI built in.',
+    'Move from renting a hosted SaaS to owning your commerce codebase: import products by CSV or from the URLs you list (the Hoptify onboarding, --profile full, lifts the palette too), keep Stripe as the link key, and run a modern Next.js shop with AI built in.',
   answer:
     'Migrating off Shopify with Cartwright means trading a rented SaaS for a codebase you own. You scaffold a Cartwright shop, import your products (CSV, plus the “Hoptify” onboarding under `--profile full` — it is pruned from the default profile — which brings the palette and the products from the URLs you list), point your DNS over, and keep Stripe as the link key for customers. The result is a modern TypeScript/Next.js shop with an AI-native admin and agent-commerce built in — no monthly platform fee and no per-transaction tax.',
   points: [

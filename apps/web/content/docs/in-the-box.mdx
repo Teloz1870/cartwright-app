@@ -81,7 +81,7 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 ## Migration & import → Firecrawl
 
-`FIRECRAWL_API_KEY` powers three things. `lib/scrape/` scrapes product data from a URL into a structured product (`/admin/produkter/scrape`). `lib/design-import/` pulls a colour palette from any site into a live theme (`/admin/design-import`). And **Hoptify** (`/admin/hoptify`) is the tongue-in-cheek "import from Shopify" onboarding — with a key it genuinely brings your palette + products across, fail-soft to a demo otherwise. All three are default-off flags (`designImport`, `hoptify`), so an upgrade adds nothing visible until you turn them on.
+`FIRECRAWL_API_KEY` powers three things. `lib/scrape/` scrapes product data from a URL into a structured product (`/admin/produkter/scrape`). `lib/design-import/` pulls a colour palette from any site into a live theme (`/admin/design-import`). And **Hoptify** (`/admin/hoptify`, `--profile full` only — the module is pruned from the default profile) is the tongue-in-cheek "import from Shopify" onboarding — with a key it lifts your palette and brings products across from the product URLs you list, fail-soft to a demo otherwise. All three are default-off flags (`designImport`, `hoptify`), so an upgrade adds nothing visible until you turn them on.
 
 ## Tax & VAT → Stripe Tax (or built-in)
 
@@ -101,7 +101,7 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 ## Compliance & ops → GDPR/DSAR, backup
 
-`lib/gdpr/` ships data-subject export + soft-erasure, retention crons, and a processor register at `/admin/processors`. A DB backup cron runs on `CRON_SECRET`. The WooCommerce-parity set (`wishlist`, `abandonedCart`, admin redirects, product CSV import/export, translation management) rounds out the migration toolkit. A Gemini logo generator (`logoGenerator`) needs `BLOB_READ_WRITE_TOKEN`.
+`lib/gdpr/` ships data-subject export + soft-erasure, retention crons, and a processor register at `/admin/processors`. A DB backup cron runs on `CRON_SECRET`. The WooCommerce-parity set (`wishlist`, `abandonedCart`, admin redirects (Upstash Redis required), product CSV import/export, translation management) rounds out the migration toolkit — there is no dedicated WooCommerce importer yet; products move by CSV (simple products). A Gemini logo generator (`logoGenerator`) needs `BLOB_READ_WRITE_TOKEN`.
 
 ## How fast can you actually go live?
 

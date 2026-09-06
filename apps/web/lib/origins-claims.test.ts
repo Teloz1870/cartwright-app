@@ -18,6 +18,12 @@ import { routeExists } from './route-exists';
  * surface that names WordPress or WooCommerce must say, in the same file, what
  * is not built; the retired phrases can never return; and an origin may move
  * from planned to shipped only with a docs route that exists.
+ *
+ * Known limits (Gemini R2, nits 5-6), stated rather than hidden: the
+ * promise-shape rule accepts any negation word within 150 chars, so "one-click
+ * … no downtime" would pass — the reader of a review still has to read; and
+ * the page-parity check matches names, not table cells. Both are ratchets
+ * against the drift that was measured, not proofs of honesty.
  */
 const ROOT = join(__dirname, '..');
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
@@ -32,10 +38,33 @@ const SURFACES = [
   'content/docs/why-cartwright.mdx',
   'content/docs/getting-started/choose-your-path.mdx',
   'lib/use-cases.ts',
+  // Widened after Gemini R2 (nit 4): pages that could grow a promise without
+  // ever having sold one. The guards are cheap; the list is the known set of
+  // surfaces that talk about migration or the profiles at all.
+  'content/docs/getting-started/cli-options.mdx',
+  'content/docs/getting-started/plain-website.mdx',
+  'content/docs/in-the-box.mdx',
+  'app/llms.txt/route.ts',
+  'lib/home-markdown.ts',
 ];
 
 /** Every surface that promises redirects must say they live in Upstash Redis — without it nothing fires (proxy.ts reads the map from Redis only). */
-const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx'];
+const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx'];
+
+/** Every surface that names Hoptify must couple it to --profile full within 300 chars. */
+const HOPTIFY_SURFACES = [
+  'lib/comparisons.ts',
+  'lib/use-cases.ts',
+  'lib/when-to-use.ts',
+  'lib/mcp-tools.ts',
+  'components/landing/faq.tsx',
+  'content/docs/faq.mdx',
+  'content/docs/why-cartwright.mdx',
+  'content/docs/in-the-box.mdx',
+  'content/docs/getting-started/choose-your-path.mdx',
+  'app/(home)/onboarding/onboarding-client.tsx',
+  'app/(home)/onboarding/page.tsx',
+];
 
 const RETIRED = [
   'pull design + products across',
@@ -64,23 +93,39 @@ describe('origin claims stay honest', () => {
     }
   });
 
-  it.each(REDIRECT_SURFACES)('%s names Upstash Redis wherever it promises admin-managed redirects', (rel) => {
+  it.each(REDIRECT_SURFACES)('%s names Upstash Redis beside EVERY admin-managed-redirect promise', (rel) => {
+    // Per mention (Gemini R2, nit 3): a new paragraph promising redirects
+    // without Redis must go red even though an earlier one names it.
     const src = read(rel);
-    expect(src).toMatch(/admin-managed redirect/);
-    expect(src).toMatch(/Upstash Redis|UPSTASH_REDIS/);
+    const mentions = [...src.matchAll(/admin[- ]managed redirect|admin redirects/gi)];
+    expect(mentions.length, rel).toBeGreaterThanOrEqual(1);
+    for (const m of mentions) {
+      const near = src.slice(Math.max(0, m.index! - 300), m.index! + 300);
+      expect(near, `${rel} @${m.index}`).toMatch(/Upstash Redis|UPSTASH_REDIS|Redis required/);
+    }
   });
 
-  it('every Hoptify mention in the use cases couples it to --profile full (an untouched page must not undo the axis)', () => {
-    // Per mention, not per block: two occurrences in one block let a single
-    // dropped clause stay green (measured while proving this test).
-    const src = read('lib/use-cases.ts');
-    const mentions = [...src.matchAll(/Hoptify/g)];
-    expect(mentions.length).toBeGreaterThanOrEqual(2);
-    for (const m of mentions) {
-      const window = src.slice(Math.max(0, m.index! - 300), m.index! + 300);
-      expect(window, `use-cases.ts @${m.index}`).toContain('--profile full');
+  it.each(HOPTIFY_SURFACES)('%s couples every Hoptify mention to --profile full (falsifier R2: /compare/shopify had none)', (rel) => {
+    // Per mention, per surface: scoping this to one file left /compare/shopify
+    // selling Hoptify with no profile and no limits.
+    const src = read(rel);
+    for (const m of src.matchAll(/Hoptify/gi)) {
+      // 600 chars: an ORIGINS entry's `today` sits that far from its `minProfile`.
+      const window = src.slice(Math.max(0, m.index! - 600), m.index! + 600);
+      expect(window, `${rel} @${m.index}`).toMatch(/--profile[= ]full|profile full|full profile|only in full|minProfile: 'full'/);
     }
     expect(src).not.toContain('pull design and catalogue across');
+    expect(src).not.toContain('pull your palette and products across');
+  });
+
+  it('the URL origin says imported services have no public page on a customer scaffold', () => {
+    // Engine: app/[locale]/services/* is saas-gated (Teloz-only) and pruned by
+    // the light profile; classify.ts still routes /services|ydelser|… there.
+    const url = ORIGINS.find((o) => o.id === 'url')!;
+    expect(url.notYet).toMatch(/public page for imported services/);
+    expect(url.today).not.toMatch(/pages, services and posts/);
+    expect(read('components/landing/faq.tsx')).toMatch(/no public page today/);
+    expect(read('content/docs/getting-started/choose-your-path.mdx')).toMatch(/public page for imported services/);
   });
 
   it.each(SURFACES)('%s never states a promise-shaped migration claim without a negation beside it', (rel) => {

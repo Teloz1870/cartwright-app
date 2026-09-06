@@ -42,7 +42,7 @@ const shopify: Comparison = {
   faq: [
     { q: 'Is Cartwright a Shopify alternative?', a: 'Yes — for teams that want to own their stack. Cartwright is an open-source Next.js commerce engine with cart, Stripe checkout, an admin, and AI/agent surfaces built in. Shopify remains simpler if you want zero ops.' },
     { q: 'How much does Cartwright cost vs Shopify?', a: 'Cartwright is MIT-licensed and free — you pay only your own infrastructure. Shopify charges a monthly subscription plus transaction fees unless you use Shopify Payments.' },
-    { q: 'Can I migrate from Shopify to Cartwright?', a: 'Yes. Cartwright includes import tooling (a parody-named “Hoptify” onboarding) that can pull your palette and products across, plus product CSV import. You then own the resulting codebase.' },
+    { q: 'Can I migrate from Shopify to Cartwright?', a: 'Partly. Under `--profile full` — the Hoptify module is pruned from the default profile — the parody-named “Hoptify” onboarding lifts your palette and brings products across from the product URLs you list (a Firecrawl key and an AI key required); pages, variants and SKUs are by hand. Product CSV import (simple products) works in every database-backed profile. Orders and customers never move. You then own the resulting codebase.' },
     { q: 'Is Cartwright better for AI shopping and agents?', a: 'For agent-commerce, yes: Cartwright ships an MCP server, agent-to-agent and Agentic Commerce Protocol endpoints, and AI-search-ready structured data by default, so AI assistants can both cite and transact with your shop.' },
   ],
 };
