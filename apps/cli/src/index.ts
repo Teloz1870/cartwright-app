@@ -42,8 +42,13 @@
  *   --ref vX.Y.Z           → pin to a specific historical tag
  *
  * Templates (sets brand.mode + brand.features defaults in brand.config.ts).
+ * Every template except agent-marketplace works under light AND full — a webshop
+ * is `--profile light --template generic`; `full` adds the agent marketplace, the
+ * Shopify (hoptify) importer and the agentic surfaces, nothing a shop needs.
+ * (Measured 2026-09-06: three of three AI replays moving a WooCommerce shop
+ * scaffolded `--profile full` after reading the old wording below.)
  * Default: website-corporate under --profile light, generic under --profile full:
- *   --template generic                  → webshop mode, no A2A
+ *   --template generic                  → webshop mode, no A2A (light or full)
  *   --template website-corporate        → website mode (no shop catalogue)
  *   --template coffee                   → webshop mode, coffee seed data
  *   --template sunglasses               → webshop mode, legacy eyewear fields
@@ -171,13 +176,17 @@ Usage:
 
 Options:
   --profile <light|full|site>  Scaffold profile (default: light).
-                           light = website-mode default, curated design set,
-                                   heavy full-only modules (A2A agent-marketplace,
-                                   UCP identity-linking, hoptify) pruned. WebMCP ships
+                           light = website mode by default; a WEBSHOP is
+                                   --profile light --template generic. Curated
+                                   design set; only the full-only modules (A2A
+                                   agent-marketplace, UCP identity-linking, the
+                                   Shopify/hoptify importer) are pruned. WebMCP ships
                                    in every profile; webshop templates enable it.
                                    Add designs back: cartwright design install <slug>
-                           full  = everything the engine ships — use this for
-                                   agent-marketplace mode or to keep all 26 designs.
+                           full  = everything the engine ships — needed only for
+                                   agent-marketplace mode, the Shopify (hoptify)
+                                   importer, or to keep all 26 designs. A webshop
+                                   or a WooCommerce move does NOT need full.
                            site  = a plain website: NO database/admin/auth/commerce.
                                    Cut from the engine's module manifest (needs a
                                    template ref >= the B3 release). Contact form
@@ -185,7 +194,8 @@ Options:
   --with <module>          site profile: optional modules (default: contact-form;
                            pass --with none for the bare core-only site).
   --template <slug>        generic | website-corporate | coffee | sunglasses |
-                           agent-marketplace (requires --profile full).
+                           agent-marketplace (requires --profile full). The four
+                           others work under light and full alike.
                            Default: website-corporate (light) / generic (full).
   --look <url>             Scaffold wearing a shared look: fetch a
                            cartwright-composition-v1 JSON (e.g. another shop's
