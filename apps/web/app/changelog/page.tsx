@@ -37,14 +37,14 @@ const RELEASES: Release[] = [
   {
     engine: 'v0.57.0',
     date: 'September 2026',
-    title: 'The customer’s repo is the customer’s site — and no known production advisory',
+    title: 'The line between the customer’s site and Cartwright’s own, drawn in code — and no known production advisories',
     description: (
       <>
         A scaffold carries a few pages that belong to Cartwright, not to the site owner:
         our own <code>/cartwright</code> and <code>/changelog</code> answer on her domain, and her{' '}
-        <code>llms.txt</code> advertised them. v0.57.0 ships the engine half of taking them out: an
-        ownership ledger in which every
-        file is either the engine’s or the customer’s, and a test fails on &ldquo;neither&rdquo;. It also
+        <code>llms.txt</code> advertises them. v0.57.0 ships the engine half of taking them out: an
+        ownership ledger that names what is the engine’s and what is the customer’s, and a test
+        that fails on a file that is &ldquo;neither&rdquo;. It also
         adds a zone of guards that ships into every scaffold. <code>pnpm audit --prod</code> reported fourteen advisories on v0.56.2; it reports
         none now.
       </>
@@ -53,8 +53,8 @@ const RELEASES: Release[] = [
     features: [
       'Fourteen advisories closed (engine #583, CW-2026-003) — fast-uri, sharp, qs, hono, mysql2 and deepmerge-ts pinned with pnpm overrides, js-yaml bumped. Shops already running an older engine can copy the overrides block into their own pnpm-workspace.yaml today and set js-yaml to ^4.3.2; a shop still on next 16.2.x moves next to 16.3.3 first (CW-2026-003 has the exact steps).',
       'An ownership ledger for the scaffold (engine #575) — ENGINE_ONLY and SHIPS_EVERYWHERE give the manifest the two words it lacked, and every link into an engine-only page is gated on the profile. This release ships the engine half. create-cartwright 2.9.5 does not read the ledger yet.',
-      'A guard zone inside every scaffold (engine #577) — eight new guards run in the customer’s scaffold, where the defects they catch actually show. They cover dead homepage links, icon, og:image and JSON-LD logo answering 2xx, and a sitemap that resolves and lists every locale.',
-      'The page speaks the reader’s language (engine #580, #582) — twelve hardcoded strings on the product page moved into messages/{da,en}.json. The trust badges now link into the reader’s locale instead of redirecting to the default one.',
+      'A guard zone inside every scaffold (engine #577) — eight new guards ship in the customer’s scaffold, where the defects they catch actually show. Six are static and run in every pnpm test (dead fetches, dead scripts, identity, the engine-route ratchet, the profile marker, the guards’ own portability); two check a running site when GUARD_BASE_URL points at one \u2014 homepage links, icon, og:image and JSON-LD logo answering 2xx, and a sitemap whose every <loc> resolves and lists every served locale’s homepage.',
+      'The product page speaks the reader’s language (engine #580, #582) — twelve hardcoded strings on the product page moved into messages/{da,en}.json. The trust badges now link straight into the reader’s locale, instead of costing every click a redirect that sent a reader without a locale cookie to the default one.',
       'Honest agent surfaces (engine #572, #578, #581) — a site scaffold’s header no longer links routes the profile removed. llms.txt stops calling the sitemap “the complete index”. The WebMCP form tools declare their required fields, following an external WebMCP audit.',
     ],
   },
