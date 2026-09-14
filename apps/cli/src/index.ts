@@ -147,6 +147,7 @@ import { resolveKeyMode } from "./key-step.js";
 import { runInterview } from "./interview.js";
 import { summarizeBuild } from "./approve.js";
 import { injectBriefFiles, injectModernWebDoc } from "./inject.js";
+import { proxyHint } from "./proxy-hint.js";
 import { writeForkCi } from "./fork-ci.js";
 import { installModernWebGuidance } from "./skills.js";
 import { runDesignInstall } from "./design-install.js";
@@ -709,6 +710,8 @@ async function run(): Promise<void> {
   } catch (err) {
     fetchSpinner.stop(pc.red("Template fetch failed."));
     console.error(err);
+    const hint = proxyHint();
+    if (hint) console.error(pc.yellow(hint));
     process.exit(1);
   }
 
