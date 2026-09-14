@@ -26,64 +26,101 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     }
   });
 
-  it('is a receipt for the version customers actually get — at most one release behind', () => {
-    // The shape regexes above match `2.9.3` and `v0.56.1` forever, so the
-    // provenance could name a release that npm stopped serving hours ago while
-    // every gate stayed green (the docs door said 2.9.3 / v0.56.1 while the
-    // registry served 2.9.4 / v0.56.2). Both sides of the published pair live
-    // in this repo, so the currency is checkable offline.
-    //
-    // "The version this repo publishes" cannot mean the one being cut: a
-    // receipt only exists AFTER publish, because the scaffold gate measures the
-    // PUBLISHED pair. Demanding the new version made every bump PR red by
-    // construction — measured 2026-09-14: 2.9.5 shipped while the receipt
-    // still said 2.9.4, and `main` stayed red for a day, blocking every PR.
-    // So, mirroring the engine's readme-site-door test: the receipt must cite
-    // a RELEASED CLI version that is the current one or the one immediately
-    // before it, and an engine ref that is DEFAULT_REF or the newest ref the
-    // CLI shipped before it. Two releases behind is still red.
-    const cliDir = join(__dirname, '..', '..', 'cli');
-    const cliPkg = JSON.parse(readFileSync(join(cliDir, 'package.json'), 'utf8')) as { version: string };
-    const cliChangelog = readFileSync(join(cliDir, 'CHANGELOG.md'), 'utf8');
-    // Released = a `## x.y.z` heading in the CLI changelog. Changesets writes the
-    // heading and the package.json bump in the same release PR, so the newest
-    // heading is the version this repo publishes (or is about to). A receipt
-    // may only cite a released version: a hand-bumped package.json with a
-    // receipt typed to match would otherwise pass — a receipt for a version
-    // that was never measured.
-    const released = [...cliChangelog.matchAll(/^## (\d+\.\d+\.\d+)$/gm)].map((m) => m[1]);
-    expect(released.length, 'apps/cli/CHANGELOG.md lists the released versions').toBeGreaterThan(1);
-    const allowedCli = new Set(released.slice(0, 2));
-    const citedCli = /create-cartwright@(\d+\.\d+\.\d+)/.exec(SITE_COLD_RUN.provenance)?.[1];
-    expect(citedCli, 'provenance names a CLI version').toBeTruthy();
-    expect(
-      allowedCli.has(citedCli!),
-      `provenance cites create-cartwright@${citedCli}; the newest released CLI is ${released[0]} (package.json says ${cliPkg.version}) and the release before it is ${released[1]} — re-measure with the scaffold gate (ref=stable, cli=latest) and paste the new receipt`,
-    ).toBe(true);
+  /**
+   * The published pair, checked offline. The shape regexes above match `2.9.3`
+   * and `v0.56.1` forever, so a receipt could name a release npm stopped
+   * serving while every gate stayed green (the docs door said 2.9.3 / v0.56.1
+   * while the registry served 2.9.4 / v0.56.2).
+   *
+   * A receipt is a measurement of what npm SERVES, so it can only exist after
+   * a publish. Demanding the version being cut made every bump PR red by
+   * construction — measured 2026-09-14: 2.9.5 shipped while the receipt still
+   * said 2.9.4, and `main` stayed red for a day, blocking every PR. So,
+   * mirroring the engine's readme-site-door test, the receipt may lag by ONE
+   * released CLI version (a `## x.y.z` heading in apps/cli/CHANGELOG.md —
+   * changesets writes the heading and the version bump in the same PR), and
+   * its engine ref must be DEFAULT_REF or a ref one of those two releases
+   * actually shipped. Several engine refs can ship inside one CLI release
+   * (three on 2026-09-06), so "one engine bump behind DEFAULT_REF" would go
+   * red on a receipt that is exactly one release behind. The ref a release
+   * shipped is the newest bump-template-ref line from its heading down: older
+   * sections only carry older refs. Two releases behind, an unreleased
+   * version, or a pair no release served → red.
+   */
+  function receiptIsCurrent(input: { changelog: string; defaultRef: string; provenance: string }) {
+    const released = [...input.changelog.matchAll(/^## (\d+\.\d+\.\d+)\s*$/gm)].map((m) => m[1]);
+    const parts = (v: string) => v.replace(/^v/, '').split('.').map(Number);
+    const compare = (a: string, b: string) => {
+      const [x, y] = [parts(a), parts(b)];
+      for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i];
+      return 0;
+    };
+    const shippedRef = (v: string) => {
+      const at = input.changelog.search(new RegExp(`^## ${v.replace(/\./g, '\\.')}\\s*$`, 'm'));
+      if (at < 0) return undefined;
+      return [...input.changelog.slice(at).matchAll(/template ref to (v\d+\.\d+\.\d+)\b/g)]
+        .map((m) => m[1])
+        .sort((a, b) => compare(b, a))[0];
+    };
+    const recent = released.slice(0, 2);
+    const allowedCli = new Set(recent);
+    const allowedRef = new Set([input.defaultRef, ...recent.map(shippedRef).filter((r): r is string => Boolean(r))]);
+    const cli = /create-cartwright@(\d+\.\d+\.\d+)/.exec(input.provenance)?.[1];
+    const ref = /engine (v\d+\.\d+\.\d+)\b/.exec(input.provenance)?.[1];
+    if (!cli || !ref) return { ok: false, reason: 'the provenance names no CLI version or no engine ref' };
+    if (!allowedCli.has(cli)) {
+      return { ok: false, reason: `cites create-cartwright@${cli}; the newest released CLI is ${released[0]} and the one before it is ${released[1]}` };
+    }
+    if (!allowedRef.has(ref)) {
+      return { ok: false, reason: `cites engine ${ref}; DEFAULT_REF is ${input.defaultRef} and the two newest releases shipped ${[...allowedRef].join(', ')}` };
+    }
+    return { ok: true as const };
+  }
 
+  // Fixtures shaped like apps/cli/CHANGELOG.md: changesets headings, and the
+  // bump-template-ref line exactly as bump-template-ref.yml writes it.
+  const log = (...sections: Array<[string, string[]]>) =>
+    sections.map(([v, lines]) => `## ${v}\n\n${lines.map((l) => `- ${l}`).join('\n')}\n`).join('\n');
+  const bump = (to: string, was: string) => `abc1234: Bump default template ref to ${to} (was ${was}).`;
+  const prov = (cli: string, ref: string) =>
+    `Measured cold run, 2026-09-06, GitHub-hosted ubuntu-latest, create-cartwright@${cli}, engine ${ref} (a1bbe1f), --profile=site --ref=stable --yes --pm=pnpm — release scaffold gate run 34045315774`;
+  const today = log(['2.9.5', ['prose only — engine v0.52.0 fixed those strings upstream']], ['2.9.4', [bump('v0.56.2', 'v0.56.1')]], ['2.9.3', [bump('v0.56.1', 'v0.55.0')]]);
+  const afterRelease = log(['2.10.0', [bump('v0.57.0', 'v0.56.2')]], ['2.9.5', ['prose only']], ['2.9.4', [bump('v0.56.2', 'v0.56.1')]]);
+  const twoBumpsInOneRelease = log(['2.10.0', [bump('v0.57.0', 'v0.56.2'), bump('v0.57.1', 'v0.57.0')]], ['2.9.5', ['prose only']], ['2.9.4', [bump('v0.56.2', 'v0.56.1')]]);
+  const sixthOfSeptember = log(['2.9.3', [bump('v0.56.1', 'v0.55.0')]], ['2.9.2', [bump('v0.55.0', 'v0.54.0')]]);
+
+  it.each([
+    ['the current pair', today, 'v0.56.2', prov('2.9.5', 'v0.56.2'), true],
+    ['one CLI release behind (today: 2.9.4 while 2.9.5 is out)', today, 'v0.56.2', prov('2.9.4', 'v0.56.2'), true],
+    ['the bump PR: DEFAULT_REF moves, changelog and receipt unchanged', today, 'v0.57.0', prov('2.9.4', 'v0.56.2'), true],
+    ['the release PR with a receipt two releases behind', afterRelease, 'v0.57.0', prov('2.9.4', 'v0.56.2'), false],
+    ['the release PR with a receipt one release behind', afterRelease, 'v0.57.0', prov('2.9.5', 'v0.56.2'), true],
+    ['after the publish, re-measured', afterRelease, 'v0.57.0', prov('2.10.0', 'v0.57.0'), true],
+    ['the next bump PR, receipt current', afterRelease, 'v0.58.0', prov('2.10.0', 'v0.57.0'), true],
+    ['the next bump PR while the receipt is one release behind', afterRelease, 'v0.58.0', prov('2.9.5', 'v0.56.2'), true],
+    ['two engine bumps in one release, receipt one release behind', twoBumpsInOneRelease, 'v0.57.1', prov('2.9.5', 'v0.56.2'), true],
+    ['two engine bumps in one release, receipt cites the ref that release ended on', twoBumpsInOneRelease, 'v0.57.1', prov('2.10.0', 'v0.57.1'), true],
+    ['two engine bumps in one release, receipt cites a ref no release served as stable', twoBumpsInOneRelease, 'v0.57.1', prov('2.10.0', 'v0.57.0'), false],
+    ['2026-09-06 replayed: three engine releases, one CLI release behind', sixthOfSeptember, 'v0.56.2', prov('2.9.2', 'v0.55.0'), true],
+    ['two CLI releases behind', today, 'v0.56.2', prov('2.9.3', 'v0.56.1'), false],
+    ['an unreleased CLI version (a hand-bumped package.json with a typed receipt)', today, 'v0.56.2', prov('9.9.9', 'v0.56.2'), false],
+    ['an engine ref no release shipped', today, 'v0.56.2', prov('2.9.5', 'v0.99.0'), false],
+    ['a pair no release served (2.9.4 shipped v0.56.2, not v0.56.1)', today, 'v0.56.2', prov('2.9.4', 'v0.56.1'), false],
+    ['a provenance without an engine ref', today, 'v0.56.2', 'Measured cold run, create-cartwright@2.9.5, run 123456', false],
+  ])('the currency rule — %s', (_name, changelog, defaultRef, provenance, expected) => {
+    expect(receiptIsCurrent({ changelog, defaultRef, provenance }).ok).toBe(expected);
+  });
+
+  it('is a receipt for the version customers actually get — at most one release behind', () => {
+    const cliDir = join(__dirname, '..', '..', 'cli');
+    const changelog = readFileSync(join(cliDir, 'CHANGELOG.md'), 'utf8');
     const refs = readFileSync(join(cliDir, 'src', 'refs.ts'), 'utf8');
     const defaultRef = /DEFAULT_REF\s*=\s*["'`](v\d+\.\d+\.\d+)["'`]/.exec(refs)?.[1];
     expect(defaultRef, 'could not read DEFAULT_REF from apps/cli/src/refs.ts').toBeTruthy();
-    const parts = (v: string) => v.replace(/^v/, '').split('.').map(Number);
-    const isOlder = (a: string, b: string) => {
-      const [x, y] = [parts(a), parts(b)];
-      for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
-      return false;
-    };
-    // Every engine ref the CLI has shipped is named in its changelog by the
-    // bump-template-ref changeset ("Bump default template ref to vX.Y.Z"); the
-    // newest of those below DEFAULT_REF is the previous default. Scoped to that
-    // phrase so an unrelated "v…" mention in a changelog entry cannot pose as
-    // a shipped ref.
-    const previousRef = [...new Set([...cliChangelog.matchAll(/template ref to (v\d+\.\d+\.\d+)\b/g)].map((m) => m[1]))]
-      .filter((r) => isOlder(r, defaultRef!))
-      .sort((a, b) => (isOlder(a, b) ? 1 : -1))[0];
-    const allowedRef = new Set([defaultRef!, ...(previousRef ? [previousRef] : [])]);
-    const citedRef = /engine (v\d+\.\d+\.\d+) /.exec(SITE_COLD_RUN.provenance)?.[1];
-    expect(citedRef, 'provenance names an engine ref').toBeTruthy();
+    const verdict = receiptIsCurrent({ changelog, defaultRef: defaultRef!, provenance: SITE_COLD_RUN.provenance });
     expect(
-      allowedRef.has(citedRef!),
-      `provenance cites engine ${citedRef}; the CLI's DEFAULT_REF is ${defaultRef} and the ref it shipped before that is ${previousRef ?? 'unknown'}`,
+      verdict.ok,
+      `the receipt ${verdict.ok ? '' : verdict.reason} — re-measure with the scaffold gate (ref=stable, cli=latest) and paste the new receipt`,
     ).toBe(true);
   });
 
