@@ -55,24 +55,34 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
       for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i];
       return 0;
     };
+    // The ref a release shipped: the first section at or below its heading
+    // that carries a bump line (document order — changesets prepends, so the
+    // nearest section is the latest bump, and a later downgrade is not hidden
+    // by an older, higher number further down); within that one section a
+    // release ends on its highest bump.
+    const sections = input.changelog.split(/^(?=## \d+\.\d+\.\d+\s*$)/m);
     const shippedRef = (v: string) => {
-      const at = input.changelog.search(new RegExp(`^## ${v.replace(/\./g, '\\.')}\\s*$`, 'm'));
-      if (at < 0) return undefined;
-      return [...input.changelog.slice(at).matchAll(/template ref to (v\d+\.\d+\.\d+)\b/g)]
-        .map((m) => m[1])
-        .sort((a, b) => compare(b, a))[0];
+      const from = sections.findIndex((s) => new RegExp(`^## ${v.replace(/\./g, '\\.')}\\s*$`, 'm').test(s));
+      if (from < 0) return undefined;
+      for (const s of sections.slice(from)) {
+        const bumps = [...s.matchAll(/template ref to (v\d+\.\d+\.\d+)\b/g)].map((m) => m[1]);
+        if (bumps.length) return bumps.sort((a, b) => compare(b, a))[0];
+      }
+      return undefined;
     };
-    const recent = released.slice(0, 2);
-    const allowedCli = new Set(recent);
-    const allowedRef = new Set([input.defaultRef, ...recent.map(shippedRef).filter((r): r is string => Boolean(r))]);
+    // A receipt is a PAIR the gate measured with ref=stable: a released CLI and
+    // the ref that release shipped. The two halves are not judged separately,
+    // so "2.9.5 with v0.57.0" — a pair npm never served — is red even when
+    // each half is current on its own.
+    const pairs = released.slice(0, 2).map((r) => [r, shippedRef(r)] as const);
     const cli = /create-cartwright@(\d+\.\d+\.\d+)/.exec(input.provenance)?.[1];
     const ref = /engine (v\d+\.\d+\.\d+)\b/.exec(input.provenance)?.[1];
     if (!cli || !ref) return { ok: false, reason: 'the provenance names no CLI version or no engine ref' };
-    if (!allowedCli.has(cli)) {
-      return { ok: false, reason: `cites create-cartwright@${cli}; the newest released CLI is ${released[0]} and the one before it is ${released[1]}` };
+    if (!pairs.some(([r]) => r === cli)) {
+      return { ok: false, reason: `cites create-cartwright@${cli}; the newest released CLI is ${released[0]} and the one before it is ${released[1] ?? 'none'}` };
     }
-    if (!allowedRef.has(ref)) {
-      return { ok: false, reason: `cites engine ${ref}; DEFAULT_REF is ${input.defaultRef} and the two newest releases shipped ${[...allowedRef].join(', ')}` };
+    if (!pairs.some(([r, shipped]) => r === cli && shipped === ref)) {
+      return { ok: false, reason: `cites create-cartwright@${cli} with engine ${ref}, but that release shipped ${pairs.find(([r]) => r === cli)?.[1] ?? 'no recorded ref'} (DEFAULT_REF is ${input.defaultRef})` };
     }
     return { ok: true as const };
   }
@@ -88,8 +98,14 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
   const afterRelease = log(['2.10.0', [bump('v0.57.0', 'v0.56.2')]], ['2.9.5', ['prose only']], ['2.9.4', [bump('v0.56.2', 'v0.56.1')]]);
   const twoBumpsInOneRelease = log(['2.10.0', [bump('v0.57.0', 'v0.56.2'), bump('v0.57.1', 'v0.57.0')]], ['2.9.5', ['prose only']], ['2.9.4', [bump('v0.56.2', 'v0.56.1')]]);
   const sixthOfSeptember = log(['2.9.3', [bump('v0.56.1', 'v0.55.0')]], ['2.9.2', [bump('v0.55.0', 'v0.54.0')]]);
+  const downgrade = log(['2.10.1', [bump('v0.56.2', 'v0.57.0')]], ['2.10.0', [bump('v0.57.0', 'v0.56.2')]], ['2.9.5', ['prose only']]);
 
   it.each([
+    ['a phantom pair: the previous CLI with the new engine ref', afterRelease, 'v0.57.0', prov('2.9.5', 'v0.57.0'), false],
+    ['a phantom pair: the new CLI with the previous engine ref', afterRelease, 'v0.57.0', prov('2.10.0', 'v0.56.2'), false],
+    ['a downgrade release: the receipt follows what it shipped, not the highest number', downgrade, 'v0.56.2', prov('2.10.1', 'v0.56.2'), true],
+    ['a downgrade release: the ref it reverted from is no longer served by it', downgrade, 'v0.56.2', prov('2.10.1', 'v0.57.0'), false],
+    ['a downgrade release: the release before it still pairs with its own ref', downgrade, 'v0.56.2', prov('2.10.0', 'v0.57.0'), true],
     ['the current pair', today, 'v0.56.2', prov('2.9.5', 'v0.56.2'), true],
     ['one CLI release behind (today: 2.9.4 while 2.9.5 is out)', today, 'v0.56.2', prov('2.9.4', 'v0.56.2'), true],
     ['the bump PR: DEFAULT_REF moves, changelog and receipt unchanged', today, 'v0.57.0', prov('2.9.4', 'v0.56.2'), true],
@@ -101,7 +117,7 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     ['two engine bumps in one release, receipt one release behind', twoBumpsInOneRelease, 'v0.57.1', prov('2.9.5', 'v0.56.2'), true],
     ['two engine bumps in one release, receipt cites the ref that release ended on', twoBumpsInOneRelease, 'v0.57.1', prov('2.10.0', 'v0.57.1'), true],
     ['two engine bumps in one release, receipt cites a ref no release served as stable', twoBumpsInOneRelease, 'v0.57.1', prov('2.10.0', 'v0.57.0'), false],
-    ['2026-09-06 replayed: three engine releases, one CLI release behind', sixthOfSeptember, 'v0.56.2', prov('2.9.2', 'v0.55.0'), true],
+    ['2026-09-06 replayed: engine v0.56.2 tagged, its bump PR open, receipt one CLI release behind', sixthOfSeptember, 'v0.56.2', prov('2.9.2', 'v0.55.0'), true],
     ['two CLI releases behind', today, 'v0.56.2', prov('2.9.3', 'v0.56.1'), false],
     ['an unreleased CLI version (a hand-bumped package.json with a typed receipt)', today, 'v0.56.2', prov('9.9.9', 'v0.56.2'), false],
     ['an engine ref no release shipped', today, 'v0.56.2', prov('2.9.5', 'v0.99.0'), false],
