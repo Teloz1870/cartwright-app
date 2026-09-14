@@ -53,6 +53,8 @@ describe("fetchCanUseEnvProxy — the versions Node's docs list for NODE_USE_ENV
   it.each([
     ["24.0.0", true],
     ["24.13.0", true],
+    ["v24.13.0", true],
+    ["v22.20.0", false],
     ["26.1.0", true],
     ["22.21.0", true],
     ["22.20.9", false],

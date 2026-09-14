@@ -17,7 +17,8 @@ type Probe = {
 
 /** Node's fetch can read the proxy variables from 24.0.0 and 22.21.0 (docs: NODE_USE_ENV_PROXY). */
 export function fetchCanUseEnvProxy(nodeVersion: string): boolean {
-  const [major = 0, minor = 0] = nodeVersion.split(".").map(Number);
+  // `process.versions.node` has no "v"; `process.version` does — accept both.
+  const [major = 0, minor = 0] = nodeVersion.replace(/^v/, "").split(".").map(Number);
   return major >= 24 || (major === 22 && minor >= 21);
 }
 
