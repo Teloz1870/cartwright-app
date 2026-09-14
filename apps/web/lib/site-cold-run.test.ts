@@ -26,24 +26,57 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     }
   });
 
-  it('is a receipt for the version customers actually get — not an older one', () => {
-    // The shape regexes below match `2.9.3` and `v0.56.1` forever, so the
+  it('is a receipt for the version customers actually get — at most one release behind', () => {
+    // The shape regexes above match `2.9.3` and `v0.56.1` forever, so the
     // provenance could name a release that npm stopped serving hours ago while
     // every gate stayed green (the docs door said 2.9.3 / v0.56.1 while the
     // registry served 2.9.4 / v0.56.2). Both sides of the published pair live
     // in this repo, so the currency is checkable offline.
-    const cliPkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'cli', 'package.json'), 'utf8')) as { version: string };
-    const refs = readFileSync(join(__dirname, '..', '..', 'cli', 'src', 'refs.ts'), 'utf8');
+    //
+    // "The version this repo publishes" cannot mean the one being cut: a
+    // receipt only exists AFTER publish, because the scaffold gate measures the
+    // PUBLISHED pair. Demanding the new version made every bump PR red by
+    // construction — measured 2026-09-14: 2.9.5 shipped while the receipt
+    // still said 2.9.4, and `main` stayed red for a day, blocking every PR.
+    // So, mirroring the engine's readme-site-door test: the receipt must cite
+    // a RELEASED CLI version that is the current one or the one immediately
+    // before it, and an engine ref that is DEFAULT_REF or the newest ref the
+    // CLI shipped before it. Two releases behind is still red.
+    const cliDir = join(__dirname, '..', '..', 'cli');
+    const cliPkg = JSON.parse(readFileSync(join(cliDir, 'package.json'), 'utf8')) as { version: string };
+    const cliChangelog = readFileSync(join(cliDir, 'CHANGELOG.md'), 'utf8');
+    const released = [...cliChangelog.matchAll(/^## (\d+\.\d+\.\d+)$/gm)].map((m) => m[1]);
+    expect(released.length, 'apps/cli/CHANGELOG.md lists the released versions').toBeGreaterThan(1);
+    const allowedCli = new Set([cliPkg.version, ...released.slice(0, 2)]);
+    const citedCli = /create-cartwright@(\d+\.\d+\.\d+)/.exec(SITE_COLD_RUN.provenance)?.[1];
+    expect(citedCli, 'provenance names a CLI version').toBeTruthy();
+    expect(
+      allowedCli.has(citedCli!),
+      `provenance cites create-cartwright@${citedCli}; this repo publishes ${cliPkg.version} and the release before it is ${released[1]} — re-measure with the scaffold gate (ref=stable, cli=latest) and paste the new receipt`,
+    ).toBe(true);
+
+    const refs = readFileSync(join(cliDir, 'src', 'refs.ts'), 'utf8');
     const defaultRef = /DEFAULT_REF\s*=\s*["'`](v\d+\.\d+\.\d+)["'`]/.exec(refs)?.[1];
     expect(defaultRef, 'could not read DEFAULT_REF from apps/cli/src/refs.ts').toBeTruthy();
+    const parts = (v: string) => v.replace(/^v/, '').split('.').map(Number);
+    const isOlder = (a: string, b: string) => {
+      const [x, y] = [parts(a), parts(b)];
+      for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
+      return false;
+    };
+    // Every engine ref the CLI has shipped is named in its changelog (the
+    // bump-template-ref changesets); the newest one below DEFAULT_REF is the
+    // previous default.
+    const previousRef = [...new Set([...cliChangelog.matchAll(/\bv\d+\.\d+\.\d+\b/g)].map((m) => m[0]))]
+      .filter((r) => isOlder(r, defaultRef!))
+      .sort((a, b) => (isOlder(a, b) ? 1 : -1))[0];
+    const allowedRef = new Set([defaultRef!, ...(previousRef ? [previousRef] : [])]);
+    const citedRef = /engine (v\d+\.\d+\.\d+) /.exec(SITE_COLD_RUN.provenance)?.[1];
+    expect(citedRef, 'provenance names an engine ref').toBeTruthy();
     expect(
-      SITE_COLD_RUN.provenance,
-      `provenance cites a CLI other than the one this repo publishes (${cliPkg.version})`,
-    ).toContain(`create-cartwright@${cliPkg.version}`);
-    expect(
-      SITE_COLD_RUN.provenance,
-      `provenance cites an engine other than the CLI's DEFAULT_REF (${defaultRef})`,
-    ).toContain(`engine ${defaultRef} `);
+      allowedRef.has(citedRef!),
+      `provenance cites engine ${citedRef}; the CLI's DEFAULT_REF is ${defaultRef} and the ref it shipped before that is ${previousRef ?? 'unknown'}`,
+    ).toBe(true);
   });
 
   it('feeds the engine facts the docs cite', () => {
