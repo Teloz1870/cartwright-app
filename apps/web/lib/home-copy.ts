@@ -77,10 +77,10 @@ export const FRONT_DOOR =
  */
 export const SITE_COLD_RUN = {
   provenance:
-    'Measured cold run, 2026-09-14, GitHub-hosted ubuntu-latest, create-cartwright@2.9.5, engine v0.56.2 (a1bbe1f), --profile=site --ref=v0.56.2 --yes --pm=pnpm — release scaffold gate run 34816239602',
-  scaffold: '~26 s',
+    'Measured cold run, 2026-09-14, GitHub-hosted ubuntu-latest, create-cartwright@2.9.6, engine v0.57.0 (a9b47d4), --profile=site --ref=v0.57.0 --yes --pm=pnpm — release scaffold gate run 34820928302',
+  scaffold: '~22 s',
   build: '~27 s',
-  boot: '~3 s',
+  boot: '~2 s',
   runtimeDependencies: 20,
   devDependencies: 16,
 } as const;
