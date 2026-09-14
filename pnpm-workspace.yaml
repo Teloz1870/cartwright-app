@@ -28,3 +28,18 @@ onlyBuiltDependencies:
 # which is why every create-cartwright version shipped with an empty readme
 # on npmjs.com despite README.md being inside the tarball.
 embedReadme: true
+
+# Security overrides (RAD0-app, 2026-09-14): transitive advisories reachable from
+# apps/web (fast-uri via @google/genai + MCP SDK; sharp/postcss/browserslist via
+# next's own graph) and dev tooling (nanoid, vite, js-yaml). `tar` is a belt-and-
+# braces pin: giget 3 no longer depends on it, but nothing else may drag 6.x back.
+overrides:
+  fast-uri: ">=3.1.6"
+  sharp: ">=0.35.4"
+  postcss: ">=8.5.18"
+  browserslist: ">=4.28.7"
+  nanoid: ">=3.3.18"
+  "js-yaml@4": ">=4.3.2"
+  "js-yaml@3": ">=3.15.2"
+  vite: ">=8.0.16"
+  tar: ">=7.5.22"
