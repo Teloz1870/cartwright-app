@@ -51,3 +51,7 @@ jobs:
           # changesets/action selvstændigt hvis det skal regenerere .npmrc.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Build provenance (SLSA attestation via GitHub OIDC — `id-token: write`
+          # above). Tashan (2026-09-13) flagged "no build provenance" as the package's
+          # primary weakness; with this, npm shows the artifact traces to this workflow.
+          NPM_CONFIG_PROVENANCE: "true"
