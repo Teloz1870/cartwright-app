@@ -45,14 +45,20 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     const cliDir = join(__dirname, '..', '..', 'cli');
     const cliPkg = JSON.parse(readFileSync(join(cliDir, 'package.json'), 'utf8')) as { version: string };
     const cliChangelog = readFileSync(join(cliDir, 'CHANGELOG.md'), 'utf8');
+    // Released = a `## x.y.z` heading in the CLI changelog. Changesets writes the
+    // heading and the package.json bump in the same release PR, so the newest
+    // heading is the version this repo publishes (or is about to). A receipt
+    // may only cite a released version: a hand-bumped package.json with a
+    // receipt typed to match would otherwise pass — a receipt for a version
+    // that was never measured.
     const released = [...cliChangelog.matchAll(/^## (\d+\.\d+\.\d+)$/gm)].map((m) => m[1]);
     expect(released.length, 'apps/cli/CHANGELOG.md lists the released versions').toBeGreaterThan(1);
-    const allowedCli = new Set([cliPkg.version, ...released.slice(0, 2)]);
+    const allowedCli = new Set(released.slice(0, 2));
     const citedCli = /create-cartwright@(\d+\.\d+\.\d+)/.exec(SITE_COLD_RUN.provenance)?.[1];
     expect(citedCli, 'provenance names a CLI version').toBeTruthy();
     expect(
       allowedCli.has(citedCli!),
-      `provenance cites create-cartwright@${citedCli}; this repo publishes ${cliPkg.version} and the release before it is ${released[1]} — re-measure with the scaffold gate (ref=stable, cli=latest) and paste the new receipt`,
+      `provenance cites create-cartwright@${citedCli}; the newest released CLI is ${released[0]} (package.json says ${cliPkg.version}) and the release before it is ${released[1]} — re-measure with the scaffold gate (ref=stable, cli=latest) and paste the new receipt`,
     ).toBe(true);
 
     const refs = readFileSync(join(cliDir, 'src', 'refs.ts'), 'utf8');
@@ -64,10 +70,12 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
       for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
       return false;
     };
-    // Every engine ref the CLI has shipped is named in its changelog (the
-    // bump-template-ref changesets); the newest one below DEFAULT_REF is the
-    // previous default.
-    const previousRef = [...new Set([...cliChangelog.matchAll(/\bv\d+\.\d+\.\d+\b/g)].map((m) => m[0]))]
+    // Every engine ref the CLI has shipped is named in its changelog by the
+    // bump-template-ref changeset ("Bump default template ref to vX.Y.Z"); the
+    // newest of those below DEFAULT_REF is the previous default. Scoped to that
+    // phrase so an unrelated "v…" mention in a changelog entry cannot pose as
+    // a shipped ref.
+    const previousRef = [...new Set([...cliChangelog.matchAll(/template ref to (v\d+\.\d+\.\d+)\b/g)].map((m) => m[1]))]
       .filter((r) => isOlder(r, defaultRef!))
       .sort((a, b) => (isOlder(a, b) ? 1 : -1))[0];
     const allowedRef = new Set([defaultRef!, ...(previousRef ? [previousRef] : [])]);
