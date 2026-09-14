@@ -42,7 +42,7 @@ const RELEASES: Release[] = [
       <>
         A scaffold carries a few pages that belong to Cartwright, not to the site owner:
         our own <code>/cartwright</code> and <code>/changelog</code> answer on her domain, and her{' '}
-        <code>llms.txt</code> advertises them. v0.57.0 ships the engine half of taking them out: an
+        <code>llms.txt</code> advertises the changelog. v0.57.0 ships the engine half of taking them out: an
         ownership ledger that names what is the engine’s and what is the customer’s, and a test
         that fails on a file that is &ldquo;neither&rdquo;. It also
         adds a zone of guards that ships into every scaffold. <code>pnpm audit --prod</code> reported fourteen advisories on v0.56.2; it reports
