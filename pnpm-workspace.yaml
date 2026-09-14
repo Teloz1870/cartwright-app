@@ -28,3 +28,21 @@ onlyBuiltDependencies:
 # which is why every create-cartwright version shipped with an empty readme
 # on npmjs.com despite README.md being inside the tarball.
 embedReadme: true
+
+# Security overrides (RAD0-app, 2026-09-14): transitive advisories reachable from
+# apps/web (fast-uri via @google/genai + MCP SDK; sharp/postcss/browserslist via
+# next's own graph) and dev tooling (nanoid, vite, js-yaml). Every value is a
+# caret on the patched release, selected per major where a consumer pins one:
+# a `>=` floor resolves to the HIGHEST version, so `js-yaml: ">=3.15.2"` put a
+# `^3` consumer on 4.1.1 (which removed `safeLoad`) and would have put fumadocs
+# on 5.x. The Tuesday currency PR moves majors on purpose; this block only
+# closes advisories.
+overrides:
+  "fast-uri@3": "^3.1.6"
+  sharp: "^0.35.4"
+  postcss: "^8.5.18"
+  browserslist: "^4.28.7"
+  "nanoid@3": "^3.3.18"
+  "js-yaml@4": "^4.3.2"
+  "js-yaml@3": "^3.15.2"
+  vite: "^8.0.16"

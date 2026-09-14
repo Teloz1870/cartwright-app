@@ -25,6 +25,7 @@ import pc from "picocolors";
 // bump-template-ref workflow seds on each template release. Verticals first
 // shipped in v0.33.0 (the registry exists from that tag onward).
 import { REF_ALIASES } from "./refs.js";
+import { proxyHint } from "./proxy-hint.js";
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 
@@ -146,9 +147,11 @@ export async function runVerticalInstall(args: string[]): Promise<void> {
     await downloadTemplate(`${TEMPLATE_REPO}/verticals/${slug}#${ref}`, { dir: dest, force });
   } catch {
     s.stop(pc.red("Fetch failed."));
+    const hint = proxyHint();
     cancel(
       `Couldn't fetch Voice "${slug}" at ${ref}. ` +
-        `Check the slug at https://cartwright.app/verticals (or try --ref next — verticals shipped after v0.32.0).`,
+        `Check the slug at https://cartwright.app/verticals (or try --ref next — verticals shipped after v0.32.0).` +
+        (hint ? ` ${hint}` : ""),
     );
     process.exit(1);
   }

@@ -19,6 +19,7 @@ import pc from "picocolors";
 // DEFAULT_REF + REF_ALIASES live in ./refs.ts — the single file the
 // bump-template-ref workflow seds on each template release.
 import { REF_ALIASES } from "./refs.js";
+import { proxyHint } from "./proxy-hint.js";
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 
@@ -146,9 +147,11 @@ export async function runDesignInstall(args: string[]): Promise<void> {
     await downloadTemplate(`${TEMPLATE_REPO}/designs/${slug}#${ref}`, { dir: dest, force });
   } catch {
     s.stop(pc.red("Fetch failed."));
+    const hint = proxyHint();
     cancel(
       `Couldn't fetch design "${slug}" at ${ref}. ` +
-        `Check the slug at https://cartwright.app/designs (or try --ref next).`,
+        `Check the slug at https://cartwright.app/designs (or try --ref next).` +
+        (hint ? ` ${hint}` : ""),
     );
     process.exit(1);
   }

@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
-    "giget": "^1.2.5",
+    "giget": "^3.3.1",
     "picocolors": "^1.1.0",
     "zod": "^4.4.3"
   },
@@ -49,6 +49,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
+    "vite": "^8.0.16",
     "vitest": "^4.1.7"
   },
   "engines": {
