@@ -35,6 +35,27 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.58.0',
+    date: 'September 2026',
+    title: 'A custom form can say which form it was and what it collected',
+    description: (
+      <>
+        Every lead used to arrive as a name, an email and a message. A fence calculator that posted
+        &ldquo;42 metres, Type 1, anthracite&rdquo; kept the name and the email and dropped the rest behind a{' '}
+        <code>200</code>. v0.58.0 gives a lead <code>source</code> (which form) and <code>data</code> (what the
+        visitor configured), shown in <code>/admin/leads</code>. The release adds two <code>Lead</code> columns, so
+        run <code>pnpm db:push</code> before deploying it. <code>pnpm audit --prod</code> reports no known advisory.
+      </>
+    ),
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Lead source and data (engine #554) — source up to 64 characters, data a JSON object of up to 50 keys and 4 KB, nested at most 32 deep. Over a limit is a 400 that names it (source_too_long, data_too_many_keys, data_too_large, data_too_deep), never a silent cut. The no-database site profile folds both into the mail the owner gets.',
+      'Documented where an AI looks first (engine #554) — the five agent-rules files, the cartwright-guidance skill and the blank design pack now describe the built-in lead capture. An AI building a custom site had concluded it did not exist and started to rebuild it.',
+      'Dependencies at their newest releases inside the current majors (engine #586) — next 16.3.5, react 19.3.0, the AI SDK and fourteen smaller packages, each public for at least three days; stripe stays on 22.5.0. pnpm now refuses a package version younger than three days.',
+      'The design playbook says what an AI must not invent (engine #579) — DESIGN.md gains three taste rules: never invent the owner’s facts, a check for the default AI look, and the palette accent is the UI accent, not a brand colour.',
+    ],
+  },
+  {
     engine: 'v0.57.0',
     date: 'September 2026',
     title: 'The line between the customer’s site and Cartwright’s own, drawn in code — and no known production advisories',
