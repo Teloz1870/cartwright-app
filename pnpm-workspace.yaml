@@ -12,6 +12,23 @@ allowBuilds:
   protobufjs: false
 
 minimumReleaseAgeExclude:
+  # next 16.3.6 fixes GHSA-vcvr-r3jv-pc5j (critical: RCE in the Node.js
+  # `ImageResponse` from `next/og`; our /og route passes query values into it)
+  # and was published 2026-09-22 — too young for pnpm's default release-age
+  # cutoff. These eleven exact versions are the release and the packages it
+  # pins; drop them once 16.3.6 is older than the cutoff.
+  - next@16.3.6
+  - eslint-config-next@16.3.6
+  - "@next/env@16.3.6"
+  - "@next/eslint-plugin-next@16.3.6"
+  - "@next/swc-darwin-arm64@16.3.6"
+  - "@next/swc-darwin-x64@16.3.6"
+  - "@next/swc-linux-arm64-gnu@16.3.6"
+  - "@next/swc-linux-arm64-musl@16.3.6"
+  - "@next/swc-linux-x64-gnu@16.3.6"
+  - "@next/swc-linux-x64-musl@16.3.6"
+  - "@next/swc-win32-arm64-msvc@16.3.6"
+  - "@next/swc-win32-x64-msvc@16.3.6"
   - fumadocs-core@16.8.12
   - fumadocs-mdx@15.0.7
   - fumadocs-ui@16.8.12
