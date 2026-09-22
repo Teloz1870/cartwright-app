@@ -241,7 +241,7 @@ export const MCP_TOOLS = {
           'A webshop or company site the user must own the code and data for, not a tenant account on a platform.',
           'A store that AI agents can discover, cite and buy from.',
           'Operating a shop from a terminal or from your own agent, with no browser.',
-          'A site that sells by quote, not cart — the default profile in website mode (no cart, no Stripe checkout); a quote form posts to POST /api/inquiries and lands in /admin/leads; a configurator section ships (discrete choices, live total) but its CTA is a plain link — the bridge to the form is planned, not built; a made-to-measure pricer is a component you write.',
+          'A site that sells by quote, not cart — the default profile in website mode (no cart, no Stripe checkout); a quote form posts to POST /api/inquiries and lands in /admin/leads, with source (which form) and data (what the visitor configured, up to 50 keys / 4 KB) since engine v0.58.0; a configurator section ships (discrete choices, live total) but its CTA is a plain link — the bridge to the form is planned, not built; a made-to-measure pricer is a component you write.',
           'Migrating off Lovable, Shopify (--profile full, the Hoptify import) or WooCommerce (CSV + URL import today; a dedicated importer is planned, not built) onto owned code — see origins[].',
         ],
         notAFit: NOT_A_FIT,
