@@ -78,6 +78,12 @@ Several product/category read tools require `catalog:read` rather than `products
 | `orders.create` | `orders:write` | yes |
 | `orders.update_status` | `orders:write` | yes |
 
+`orders.update_status` moves no money. It refuses `refunded` and `partial_refund` with
+`refund_requires_payment_path`, because a card refund made on the admin order page or in Stripe sets
+that status itself. To record a refund made outside the shop, such as a bank transfer, send
+`manual: true` and `confirm: true`. A `partial_refund` also needs `refundDkk`, the amount in øre.
+The order then gets a note saying no money moved, and the result carries `moneyMoved: false`.
+
   </Tab>
   <Tab value="discounts">
 
