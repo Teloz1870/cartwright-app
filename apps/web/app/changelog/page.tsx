@@ -50,7 +50,7 @@ const RELEASES: Release[] = [
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
     features: [
       'next 16.3.6 (engine #588, CW-2026-004) — eslint-config-next moves with it. The twelve 16.3.6 packages are younger than the three-day install cutoff, so they are listed one by one in minimumReleaseAgeExclude, with the advisory next to them. A shop on an older engine can fix it today without waiting for an upgrade: the CHANGELOG’s advisory index has the steps.',
-      'An agent can no longer mark an order refunded when no money moved (engine #589) — over REST or MCP, orders.update_status refuses refunded and partial_refund unless the caller records a refund made outside the shop and sends manual: true and confirm: true (plus refundDkk for a partial refund). The order then gets the note “Manual registration — no money moved”. A card refund still goes through Stripe.',
+      'An agent can no longer mark an order refunded when no money moved (engine #589) — over REST or MCP, orders.update_status refuses refunded and partial_refund unless the caller records a refund made outside the shop and sends manual: true and confirm: true (plus refundDkk, in øre, for a partial refund). The order then gets the note “Manual registration — no money moved”. A card refund is still made through Stripe, with the admin order page’s Issue refund button.',
       'Dependencies at their newest releases inside the current majors (engine #588) — the AI SDK, @sentry/nextjs, next-intl, zod and seven smaller packages, each public for at least three days. stripe stays on 22.5.0.',
     ],
   },
