@@ -12,6 +12,7 @@ import {
   patchBrandConfigForFirstRunWelcome,
   patchBrandConfigGithubUrl,
   patchBrandConfigSameAs,
+  patchBrandConfigLegalName,
   patchBrandConfigDesignSlug,
   patchWebsiteCopyForScaffold,
   patchSeedSetupComplete,
@@ -1030,5 +1031,65 @@ describe("patchHeroImagesForScaffold", () => {
     expect(src).toContain("my-hero.jpg");
     expect(warnings.some((w) => w.includes("images.hero"))).toBe(true);
     expect(warnings.some((w) => w.includes("images.lifestyle"))).toBe(false);
+  });
+});
+
+describe("patchBrandConfigLegalName", () => {
+  // The engine's config ships `legalName: "Cartwright"`; the old
+  // `.replaceAll("Teloz ApS", …)` no longer matches it, so every scaffold
+  // published our name as its legal entity (Organization JSON-LD, footer).
+  const engine = [
+    `  company: {`,
+    `    /** Officiel legal-name (ApS/A/S/Ltd osv) — vises på kontakt + footer */`,
+    `    legalName: "Cartwright" as string,`,
+    `    cvr: "" as string,`,
+  ].join("\n");
+
+  it("sets the engine's legalName to the store name", () => {
+    const { src, warnings } = patchBrandConfigLegalName(engine, "Mit Hegn");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`    legalName: "Mit Hegn" as string,`);
+    expect(src).not.toMatch(/legalName:\s*"Cartwright"/);
+    // Only the field changes — the docblock and neighbours are untouched.
+    expect(src.replace(`"Mit Hegn"`, `"Cartwright"`)).toBe(engine);
+  });
+
+  it("is not fooled by a legalName example in a comment line", () => {
+    const input = [`    // e.g. legalName: "Cartwright" → your ApS`, `    legalName: "Cartwright" as string,`].join("\n");
+    const { src, warnings } = patchBrandConfigLegalName(input, "Acme");
+    expect(warnings).toEqual([]);
+    expect(src).toContain(`// e.g. legalName: "Cartwright" → your ApS`);
+    expect(src).toContain(`    legalName: "Acme" as string,`);
+  });
+
+  it("handles single quotes and escapes a quote or backslash in the store name", () => {
+    const { src } = patchBrandConfigLegalName(`    legalName: 'Cartwright' as string,`, `O'Brien \\ Co`);
+    expect(src).toBe(`    legalName: 'O\\'Brien \\\\ Co' as string,`);
+  });
+
+  it("is a silent no-op when already the store name, empty, or absent", () => {
+    for (const input of [
+      `    legalName: "Acme" as string,`,
+      `    legalName: "" as string,`,
+      `    country: "Denmark" as string,`,
+    ]) {
+      const { src, warnings } = patchBrandConfigLegalName(input, "Acme");
+      expect(src).toBe(input);
+      expect(warnings).toEqual([]);
+    }
+  });
+
+  it("keeps AND reports a value that is not the engine default", () => {
+    const input = `    legalName: "Acme Holding ApS" as string,`;
+    const { src, warnings } = patchBrandConfigLegalName(input, "Acme");
+    expect(src).toBe(input);
+    expect(warnings.join(" ")).toContain("Acme Holding ApS");
+  });
+
+  it("warns when the field exists but its value cannot be read", () => {
+    const input = `    legalName: brandName as string,`;
+    const { src, warnings } = patchBrandConfigLegalName(input, "Acme");
+    expect(src).toBe(input);
+    expect(warnings).toHaveLength(1);
   });
 });
