@@ -793,7 +793,9 @@ export function patchBrandConfigSameAs(original: string): PatchResult {
  */
 export function patchBrandConfigLegalName(original: string, storeName: string): PatchResult {
   const masked = maskCommentLines(original);
-  const field = /(\blegalName:\s*)(["'])((?:(?!\2)[^\\\n])*)\2/;
+  // A value may carry escapes (`\'`, `\\`) — the patch itself writes them for a
+  // store name with a quote — so an escaped char is consumed as a pair.
+  const field = /(\blegalName\s*:\s*)(["'])((?:\\.|(?!\2)[^\\\n])*)\2/;
   const match = field.exec(masked);
   if (!match) {
     if (!/\blegalName\s*:/.test(masked)) return { src: original, warnings: [] };
@@ -805,7 +807,14 @@ export function patchBrandConfigLegalName(original: string, storeName: string): 
     };
   }
   const [whole, key, quote, value] = match;
-  if (value === "" || value === storeName) return { src: original, warnings: [] };
+  // Compare in source form: the store name as this patch would have written it.
+  const escaped = storeName
+    .replace(/\\/g, "\\\\")
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .split(quote)
+    .join(`\\${quote}`);
+  if (value === "" || value === escaped) return { src: original, warnings: [] };
   if (value !== "Cartwright") {
     return {
       src: original,
@@ -815,7 +824,6 @@ export function patchBrandConfigLegalName(original: string, storeName: string): 
     };
   }
   // Indices from the masked copy address the same offsets in the original.
-  const escaped = storeName.replace(/\\/g, "\\\\").split(quote).join(`\\${quote}`);
   const start = match.index;
   const src =
     original.slice(0, start) + `${key}${quote}${escaped}${quote}` + original.slice(start + whole.length);

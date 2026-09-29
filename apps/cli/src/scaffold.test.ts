@@ -1067,6 +1067,28 @@ describe("patchBrandConfigLegalName", () => {
     expect(src).toBe(`    legalName: 'O\\'Brien \\\\ Co' as string,`);
   });
 
+  it("is idempotent: a second pass over its own escaped output is silent", () => {
+    const once = patchBrandConfigLegalName(`    legalName: 'Cartwright' as string,`, `O'Brien \\ Co`);
+    const twice = patchBrandConfigLegalName(once.src, `O'Brien \\ Co`);
+    expect(twice.src).toBe(once.src);
+    expect(twice.warnings).toEqual([]);
+  });
+
+  it("reads a value with whitespace before the colon, and an escaped custom value", () => {
+    expect(patchBrandConfigLegalName(`    legalName : "Cartwright" as string,`, "Acme").src).toBe(
+      `    legalName : "Acme" as string,`,
+    );
+    const custom = `    legalName: "Smith \\"Holdings\\" ApS" as string,`;
+    const { src, warnings } = patchBrandConfigLegalName(custom, "Acme");
+    expect(src).toBe(custom);
+    expect(warnings.join(" ")).toContain("not the engine default");
+  });
+
+  it("escapes a line break in the store name so the file stays valid", () => {
+    const { src } = patchBrandConfigLegalName(`    legalName: "Cartwright" as string,`, "A\nB");
+    expect(src).toBe(`    legalName: "A\\nB" as string,`);
+  });
+
   it("is a silent no-op when already the store name, empty, or absent", () => {
     for (const input of [
       `    legalName: "Acme" as string,`,
