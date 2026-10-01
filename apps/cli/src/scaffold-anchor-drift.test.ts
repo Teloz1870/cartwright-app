@@ -5,6 +5,7 @@ import {
   patchAIStylistButtonContent,
   patchBrandConfigContent,
   patchBrandConfigSameAs,
+  patchBrandConfigLegalName,
   patchBrandConfigForEnglishFirst,
   patchBrandConfigGithubUrl,
   patchFooterGithubUrlGate,
@@ -154,6 +155,16 @@ describe(`scaffold anchors vs the real template @ ${DEFAULT_REF}`, () => {
     expectNoWarnings("patchBrandConfigSameAs", result);
     const after = result.src.match(/sameAs:\s*\[([\s\S]*?)\]/)?.[1] ?? "";
     expect(after.trim()).toBe("");
+  });
+
+  it("sets company.legalName to the store name — no scaffold may call itself Cartwright", (ctx) => {
+    const src = templateFile(ctx, "brand.config.ts");
+    expect(src, "template no longer ships a legalName field").toMatch(/\blegalName\s*:\s*["']/);
+
+    const result = patchBrandConfigLegalName(src, "Anchor Test Shop");
+    expectNoWarnings("patchBrandConfigLegalName", result);
+    expect(result.src).toMatch(/\blegalName\s*:\s*["']Anchor Test Shop["']/);
+    expect(result.src).not.toMatch(/\blegalName\s*:\s*["'](Cartwright|Teloz ApS)["']/);
   });
 
   it("leaves no engine domain in any identity field", (ctx) => {

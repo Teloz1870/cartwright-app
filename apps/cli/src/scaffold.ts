@@ -773,6 +773,64 @@ export function patchBrandConfigSameAs(original: string): PatchResult {
 }
 
 /**
+ * Set `company.legalName` to the store name on a scaffold.
+ *
+ * The engine's own config says `legalName: "Cartwright"` (it used to say
+ * "Teloz ApS", which `patchBrandConfigContent`'s `.replaceAll("Teloz ApS", …)`
+ * still covers for older `--ref`s). Nothing rewrote the new value, so every
+ * scaffold published OUR name as its legal entity: in the Organization JSON-LD
+ * `legalName`, the footer owner line and the terms pages. No warning fired,
+ * because no anchor failed — the old one simply matched nothing. The engine's
+ * guard `tests/guards/identity-not-ours.test.ts` lists it in `KNOWN_LEAKS`.
+ *
+ * The store name is the honest placeholder: the customer replaces it with
+ * their registered company name (ApS/Ltd/…) the day they have one.
+ *
+ * Anchored on the exact engine value, on non-comment lines only. Fail-soft:
+ * no field (a template that predates `company`) is a silent no-op, a value
+ * already equal to the store name or empty is a silent no-op, and any OTHER
+ * value is kept AND reported — silence is how this leak shipped.
+ */
+export function patchBrandConfigLegalName(original: string, storeName: string): PatchResult {
+  const masked = maskCommentLines(original);
+  // A value may carry escapes (`\'`, `\\`) — the patch itself writes them for a
+  // store name with a quote — so an escaped char is consumed as a pair.
+  const field = /(\blegalName\s*:\s*)(["'])((?:\\.|(?!\2)[^\\\n])*)\2/;
+  const match = field.exec(masked);
+  if (!match) {
+    if (!/\blegalName\s*:/.test(masked)) return { src: original, warnings: [] };
+    return {
+      src: original,
+      warnings: [
+        "company.legalName found but its value could not be read — skipped (verify the scaffold does not publish Cartwright as its legal name).",
+      ],
+    };
+  }
+  const [whole, key, quote, value] = match;
+  // Compare in source form: the store name as this patch would have written it.
+  const escaped = storeName
+    .replace(/\\/g, "\\\\")
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .split(quote)
+    .join(`\\${quote}`);
+  if (value === "" || value === escaped) return { src: original, warnings: [] };
+  if (value !== "Cartwright") {
+    return {
+      src: original,
+      warnings: [
+        `company.legalName left as "${value}" — not the engine default, so it was treated as intentional. Set your registered company name in brand.config.ts.`,
+      ],
+    };
+  }
+  // Indices from the masked copy address the same offsets in the original.
+  const start = match.index;
+  const src =
+    original.slice(0, start) + `${key}${quote}${escaped}${quote}` + original.slice(start + whole.length);
+  return { src, warnings: [] };
+}
+
+/**
  * Gate the footer's "GitHub Profile" block on `brand.footer.githubUrl` being
  * non-empty. The v0.36.0 template renders the <a> unconditionally, so after
  * patchBrandConfigGithubUrl sets the URL to "" the footer would otherwise show
