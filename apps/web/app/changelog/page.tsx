@@ -35,6 +35,25 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.58.2',
+    date: 'October 2026',
+    title: 'A security release: next 16.3.8 closes a high SSRF advisory in Image Optimization',
+    description: (
+      <>
+        Next.js fixed a high server-side request forgery advisory in Image Optimization (GHSA-cjq9-62q9-8jv4). The
+        engine&apos;s <code>next.config.ts</code> sets <code>images.remotePatterns</code>, so every shop serves{' '}
+        <code>/_next/image</code> unless it removed that block. We shipped the fix outside the usual cadence. No
+        schema change: no <code>pnpm db:push</code> is needed.
+      </>
+    ),
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'next 16.3.8 (engine #593, CW-2026-006) — it also fixes five medium advisories and one low one in the development server. eslint-config-next moves with it. 16.3.8 is younger than the three-day install cutoff, so its twelve exact versions replace the 16.3.6 ones in minimumReleaseAgeExclude. A shop on an older engine can fix it today: the CHANGELOG’s advisory index has the steps.',
+      'Transitive advisories closed (engine #593, CW-2026-005) — pnpm overrides force undici (under jsdom and @vercel/blob), ip-address, fast-uri and brace-expansion onto their patched lines, and dompurify moves to ^3.4.16. None is reachable from a request in a shipped shop as far as we can measure; pnpm audit --prod now reports no known advisory.',
+      'The admin order page says what the agent tool says: a refund status moves no money (engine #591) — setting refunded or partial_refund from the status form still works, but the timeline note reads “Manual registration — no money moved” and the audit entry carries manual: true and moneyMoved: false. A card refund is still made with the Issue refund button.',
+    ],
+  },
+  {
     engine: 'v0.58.1',
     date: 'September 2026',
     title: 'A security release: next 16.3.6 closes a critical next/og advisory',
