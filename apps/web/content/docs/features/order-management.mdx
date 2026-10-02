@@ -5,7 +5,7 @@ description: An HPOS-grade operator cockpit for orders — workspace, returns/RM
 
 Every Cartwright shop already stored orders in proper relational tables (not a posts/meta hack), so the order *data layer* was never the bottleneck — the operator *experience* was. The order-management set turns `/admin/ordrer` from a flat list into a real back office: a scalable Orders workspace, a per-order lifecycle, admin-initiated returns, printable pick lists, and rule-based next-best-action suggestions.
 
-Everything ships behind four **default-off, ecommerce-gated** runtime flags. An upgrade behaves exactly as before until you flip a flag, website-mode shops never mount any of it, and with `orderWorkspace` off the legacy order table is unchanged.
+Everything ships behind five **default-off, ecommerce-gated** runtime flags. An upgrade behaves exactly as before until you flip a flag, website-mode shops never mount any of it, and with `orderWorkspace` off the legacy order table is unchanged.
 
 <Callout type="info">
 "HPOS" is a nod to WooCommerce's High-Performance Order Storage. Cartwright orders were already in dedicated, indexed tables — this release brings the *operator surface* up to that bar: server-side filtering, cursor pagination, bulk actions, and a proper order-notes/timeline model.
@@ -45,9 +45,15 @@ Refund and restock are deliberately decoupled: a **refund** returns money (webho
 
 A deterministic rule engine reads each order's state and surfaces a ranked list of the next sensible action — *ship now (overdue)*, *follow up on delivery*, *review a flagged payment*, *submit dispute evidence*, *process a return* — as chips that deep-link to the relevant control. It's pure and free (no LLM call), so it works in every shop; an optional model-backed "ask AI about this order" layer can sit on top when a provider key is present.
 
+## Owner order e-mail
+
+`brand.features.ownerOrderEmail` — works with or without the workspace.
+
+The shop's admin address (`emails.admin` — from `brand.config.ts`, or the one you entered in the `/admin/setup` wizard) gets one e-mail each time an order becomes paid: the order number, the customer, the lines, the total and a link straight to the order in admin. It fires from every path that can mark an order paid — the Stripe webhook, the reconcile cron, mock checkout and agent (ACP) checkout — and only once per order. Sending it can never fail or delay the payment: if the mail provider is down, the order is still paid and the failure is logged.
+
 ## Enabling it
 
-All four flags are off by default. Flip them per shop in `/admin/features` (they're runtime-toggleable once the shop is in webshop mode), or set them in `brand.config.ts`. Run `pnpm db:push` once to add the additive `OrderNote` / `Return` / `ReturnItem` tables and the nullable billing-address columns — lossless, safe to apply to a live database before deploying.
+All five flags are off by default. Flip them per shop in `/admin/features` (they're runtime-toggleable once the shop is in webshop mode), or set them in `brand.config.ts`. Run `pnpm db:push` once to add the additive `OrderNote` / `Return` / `ReturnItem` tables and the nullable billing-address columns — lossless, safe to apply to a live database before deploying.
 
 <Cards>
   <Card title="Admin panels" href="/docs/features/admin-panels" />
