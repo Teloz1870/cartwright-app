@@ -49,7 +49,7 @@ A deterministic rule engine reads each order's state and surfaces a ranked list 
 
 `brand.features.ownerOrderEmail` — works with or without the workspace.
 
-The shop's admin address (`emails.admin` — from `brand.config.ts`, or the one you entered in the `/admin/setup` wizard) gets one e-mail each time an order becomes paid: the order number, the customer, the lines, the total and a link straight to the order in admin. It fires from every path that can mark an order paid — the Stripe webhook, the reconcile cron, mock checkout and agent (ACP) checkout — and only once per order. Sending it can never fail or delay the payment: if the mail provider is down, the order is still paid and the failure is logged.
+The shop's admin address (`emails.admin` — from `brand.config.ts`, or the one you entered in the `/admin/setup` wizard) gets one e-mail each time an order becomes paid: the order number, the customer, the lines, the total and a link straight to the order in admin. It fires from every checkout path — the Stripe webhook, the reconcile cron, mock checkout and agent (ACP) checkout — once per order, and always after the customer's receipt. An order you mark paid by hand in admin sends none. Sending it can never fail the payment: if the mail provider is down, the order is still paid and the failure is logged.
 
 ## Enabling it
 
