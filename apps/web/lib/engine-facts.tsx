@@ -1,4 +1,5 @@
 import manifest from '@/lib/marketplace-manifest.json';
+import { MANIFEST_ENGINE_FACTS } from '@/lib/marketplace';
 import { SITE_COLD_RUN } from '@/lib/home-copy';
 
 /**
@@ -12,20 +13,27 @@ import { SITE_COLD_RUN } from '@/lib/home-copy';
  * On a product whose whole position is trust, a claim that drifts from its own
  * repo is the most expensive kind of wrong.
  *
- * Marketplace counts are derived, so they cannot drift at all. The rest are
+ * Marketplace counts are derived, so they cannot drift at all. The four engine
+ * counts (tools, scopes, admin tools, confirm-gated) are derived too, since
+ * engine PR PAR1-a: the engine's manifest generator computes them from its
+ * registry and allowlists and a test there pins each to its source, so a
+ * refreshed manifest (`pnpm sync:manifest`) is the whole update. The rest are
  * declared here and asserted against their sources by `e2e/design-system.spec.ts`
  * — update them in this file only, and never restate a number in copy that is
  * not read from here. In MDX, use `<EngineFact k="toolCount" />`.
  */
 export const ENGINE_FACTS = {
-  /** Registered MCP tools. Authority: the engine's `lib/tools/*` registry. */
-  toolCount: 87,
-  /** Scopes an API key can carry. Authority: the engine's `lib/scopes.ts`. */
-  scopeCount: 21,
-  /** Tools the admin assistant may reach. Authority: `ADMIN_TOOL_ALLOWLIST`. */
-  adminToolCount: 37,
-  /** Of those, the ones that stop and require a server-issued confirmation. */
-  confirmGatedCount: 25,
+  /** Registered MCP tools. Authority: the engine's `lib/tools/registry.ts`, via the manifest. */
+  toolCount: MANIFEST_ENGINE_FACTS.toolCount,
+  /** Scopes an API key can carry. Authority: the engine's `lib/scopes.ts`, via the manifest. */
+  scopeCount: MANIFEST_ENGINE_FACTS.scopeCount,
+  /** Tools the admin assistant may reach. Authority: `ADMIN_TOOL_ALLOWLIST`, via the manifest. */
+  adminToolCount: MANIFEST_ENGINE_FACTS.adminToolCount,
+  /**
+   * Of those, the ones that stop and require a server-issued confirmation:
+   * allowlisted AND in the engine's `CONFIRM_REQUIRED` set, via the manifest.
+   */
+  confirmGatedCount: MANIFEST_ENGINE_FACTS.confirmGatedCount,
   /**
    * WebMCP tools a v0.50 storefront can register in the browser page itself:
    * 3 global + 2 catalogue + 1 PDP + 3 cart + 3 declarative forms + 1 crema

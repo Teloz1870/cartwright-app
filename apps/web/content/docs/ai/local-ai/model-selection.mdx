@@ -8,10 +8,10 @@ description: Trade-offs mellem Gemma 4 varianter (plus Gemma 3 legacy) og capabi
 | Use case | Anbefalet model | Size | RAM | Tool-tier |
 |---|---|---|---|---|
 | Production shop, almindelig hardware | **gemma4:e4b** (`e4b-mlx` på Apple Silicon) | 9.6 GB | 16 GB+ | Lav-risk writes (~15 tools) |
-| High-end workstation, maks kvalitet | **gemma4:26b** | 18 GB | 32 GB+ | Alle 37 tools |
+| High-end workstation, maks kvalitet | **gemma4:26b** | 18 GB | 32 GB+ | Alle <EngineFact k="adminToolCount" /> tools |
 | Tiny laptop, 8GB RAM | **gemma4:e2b** (`e2b-mlx` på Apple Silicon) | 7.2 GB | 8 GB+ | Læs-only (~10 tools) |
-| Niche, langsomst men dybeste reasoning | **gemma4:31b** | 20 GB | 32 GB+ | Alle 37 tools |
-| Testing alternativ open-source | **Llama 3.3 70B** | 40 GB | 64 GB | Alle 37 tools |
+| Niche, langsomst men dybeste reasoning | **gemma4:31b** | 20 GB | 32 GB+ | Alle <EngineFact k="adminToolCount" /> tools |
+| Testing alternativ open-source | **Llama 3.3 70B** | 40 GB | 64 GB | Alle <EngineFact k="adminToolCount" /> tools |
 
 ## Capability matrix
 
@@ -19,7 +19,7 @@ Cartwright capper hvilke admin-tools en model får adgang til, baseret på model
 
 - **`read-only`** — kun læse-tools (`*.search`, `*.list`, `*.get`, `analytics.summary`, `audit.list`, `settings.get`). Cirka 10 tools.
 - **`low-risk-writes`** — ovenstående + sikre writes (`pages.upsert`, `categories.upsert`, `discounts.toggle`, `images.search_unsplash`, `products.attach_image`). Cirka 15 tools.
-- **`all`** — alle 37 admin-tools inkl. destruktive writes (`products.delete`, `orders.update_status`, `marketing.create_campaign`, `audit.revert`).
+- **`all`** — alle <EngineFact k="adminToolCount" /> admin-tools inkl. destruktive writes (`products.delete`, `orders.update_status`, `marketing.create_campaign`, `audit.revert`).
 
 Hvorfor cap'es det? Fordi small-models laver tool-call-fejl. En 2-4B-model kan godt sige *"jeg vil kalde `products.delete` på slug 'foo'"*, men når Zod validerer args mod schema, fejler det ofte. Bedre at vise færre tools end at admin spørger AI'en og får "AI prøvede og fejlede" som svar.
 
@@ -51,7 +51,7 @@ ollama pull gemma4:26b
 
 - **Storrelse:** 18 GB download
 - **Latency:** 3-12 sek pr. svar
-- **Alle 37 admin-tools** inkl. destruktive operations.
+- **Alle <EngineFact k="adminToolCount" /> admin-tools** inkl. destruktive operations.
 - **Tool-tier:** `all`
 - **Context:** 256K tokens
 
