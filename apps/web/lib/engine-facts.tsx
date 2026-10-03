@@ -17,7 +17,8 @@ import { SITE_COLD_RUN } from '@/lib/home-copy';
  * counts (tools, scopes, admin tools, confirm-gated) are derived too, since
  * engine PR PAR1-a: the engine's manifest generator computes them from its
  * registry and allowlists and a test there pins each to its source, so a
- * refreshed manifest (`pnpm sync:manifest`) is the whole update. The rest are
+ * refreshed manifest (`pnpm sync:manifest` — which refuses an upstream copy
+ * without the field, so a refresh cannot break the build) is the whole update. The rest are
  * declared here and asserted against their sources by `e2e/design-system.spec.ts`
  * — update them in this file only, and never restate a number in copy that is
  * not read from here. In MDX, use `<EngineFact k="toolCount" />`.
