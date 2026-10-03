@@ -1,6 +1,6 @@
 {
   "$schema": "cartwright-marketplace-manifest-v3",
-  "version": "0.50.0",
+  "version": "0.58.2",
   "designs": [
     {
       "slug": "aurora-site",
@@ -1783,5 +1783,11 @@
       "description": "One shared Google OAuth2 connector serving three workspace features: two-way Google Sheets catalog sync (admin page + cron), Google Docs import to blog posts/pages, and Google Drive media import + scheduled logical DB backups.",
       "flag": "sheetsSync"
     }
-  ]
+  ],
+  "engineFacts": {
+    "toolCount": 88,
+    "scopeCount": 21,
+    "adminToolCount": 39,
+    "confirmGatedCount": 24
+  }
 }

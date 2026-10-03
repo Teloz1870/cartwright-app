@@ -9,15 +9,21 @@
 // - non-200 response  → keep the existing vendored copy, warn, exit 0.
 // - wrong $schema     → keep the existing vendored copy, warn, exit 1
 //                       (an engine schema bump needs a matching lib/marketplace.ts update).
+// - engineFacts missing or malformed (engine < v0.59.0)
+//                     → keep the existing vendored copy, warn, exit 1
+//                       (lib/marketplace.ts refuses such a manifest at build time;
+//                        wait for the next engine tag to reach the mirror's main).
 // - success           → overwrite lib/marketplace-manifest.json (stable 2-space JSON).
+//
+// The acceptance rule is scripts/manifest-acceptance.mjs (tested by lib/sync-manifest.test.ts).
 
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { manifestRejection } from './manifest-acceptance.mjs';
 
 const MANIFEST_URL =
   'https://raw.githubusercontent.com/Teloz1870/cartwright-template/main/marketplace-manifest.json';
-const EXPECTED_SCHEMA = 'cartwright-marketplace-manifest-v3';
 
 const dest = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -53,11 +59,9 @@ try {
   process.exit(1);
 }
 
-if (manifest?.$schema !== EXPECTED_SCHEMA) {
-  console.error(
-    `[sync:manifest] upstream $schema is ${JSON.stringify(manifest?.$schema)}, expected "${EXPECTED_SCHEMA}" — ` +
-      'keeping the existing vendored copy. An engine schema bump needs a matching lib/marketplace.ts update.',
-  );
+const rejection = manifestRejection(manifest);
+if (rejection) {
+  console.error(`[sync:manifest] ${rejection} — keeping the existing vendored copy.`);
   process.exit(1);
 }
 

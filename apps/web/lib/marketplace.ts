@@ -185,6 +185,27 @@ type ManifestDesign = DesignEntry & {
 
 type ManifestScene = { slug: string; label: string; description: string };
 
+/**
+ * The engine numbers this site states (manifest v3, engine PR PAR1-a):
+ * registered MCP tools, scopes an API key can carry, tools the admin
+ * assistant may reach, and how many of those stop for a server-issued
+ * confirmation. Derived by the engine's generator from its own registry and
+ * allowlists, pinned there by a test — so they are read here, never retyped.
+ */
+export type EngineFacts = {
+  toolCount: number;
+  scopeCount: number;
+  adminToolCount: number;
+  confirmGatedCount: number;
+};
+
+export const ENGINE_FACT_KEYS = [
+  'toolCount',
+  'scopeCount',
+  'adminToolCount',
+  'confirmGatedCount',
+] as const satisfies readonly (keyof EngineFacts)[];
+
 type MarketplaceManifest = {
   $schema: string;
   version: string;
@@ -195,6 +216,8 @@ type MarketplaceManifest = {
   elements: ElementEntry[];
   looks: LookEntry[];
   chrome: ChromeEntry[];
+  /** Optional in the type (older v3 manifests lack it); required at load — see loadManifest. */
+  engineFacts?: EngineFacts;
 };
 
 /* ------------------------------------------------------------------ */
@@ -396,10 +419,26 @@ function loadManifest(): MarketplaceManifest {
     }
   }
 
+  // Engine facts: the site's tool/scope/admin/confirm counts come from here.
+  // A manifest without them (engine < v0.59.0) fails the build on purpose —
+  // the alternative is a literal that drifts, the defect this field removes.
+  if (!m.engineFacts || typeof m.engineFacts !== 'object') {
+    fail('"engineFacts" is missing — the site states its tool and scope counts from it (engine v0.59.0+)');
+  }
+  for (const key of ENGINE_FACT_KEYS) {
+    const value = m.engineFacts[key];
+    if (!Number.isInteger(value) || value <= 0) {
+      fail(`engineFacts.${key} is ${JSON.stringify(value)}, expected a positive integer`);
+    }
+  }
+
   return m;
 }
 
 const manifest = loadManifest();
+
+/** The engine's own counts, validated above. Consumed by lib/engine-facts.tsx. */
+export const MANIFEST_ENGINE_FACTS: EngineFacts = manifest.engineFacts!;
 
 /* ------------------------------------------------------------------ */
 /* Derived catalogues                                                  */

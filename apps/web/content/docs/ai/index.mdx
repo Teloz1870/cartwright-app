@@ -3,7 +3,7 @@ title: AI & Providers — oversigt
 description: Cartwright's AI-arkitektur — provider-agnostisk admin copilot, per-intent routing, og hvordan du flipper switch til lokal Gemma uden at miste én eneste sikkerhedsmekanisme.
 ---
 
-Cartwright's admin har en fuld AI-copilot med 37 MCP-tools, confirmation-gates, audit-log og scope-enforcement — alt drevet af `streamText` fra Vercel AI SDK. Det eneste sted hvor modellen blev valgt var hardcoded til Claude.
+Cartwright's admin har en fuld AI-copilot med <EngineFact k="adminToolCount" /> MCP-tools, confirmation-gates, audit-log og scope-enforcement — alt drevet af `streamText` fra Vercel AI SDK. Det eneste sted hvor modellen blev valgt var hardcoded til Claude.
 
 I dag er Cartwright **provider-agnostisk**. Samme tools, samme audit-trail, samme confirmation-gates — med modellen valgt pr. use case.
 
@@ -38,7 +38,7 @@ Det her er det vigtigste princip i hele AI-laget:
 - **Confirmation tokens** — write-tools kræver server-issued bekræftelse, uanset om Claude eller Gemma kalder dem
 - **Scope-enforcement** — `invokeTool()` checker tools mod scope-listen før dispatch, identisk for begge providers
 - **Audit-log** — hvert tool-call skrives med `provider` + `model` + `modality` så DPO kan eftervise præcis hvilken AI der gjorde hvad
-- **Tool-allowlist** — local Gemma er capped til en subset af tools baseret på model-størrelse (4B → 10 read-only tools, 12B → +3 low-risk writes, 27B+ → alle 37)
+- **Tool-allowlist** — local Gemma er capped til en subset af tools baseret på model-størrelse (4B → 10 read-only tools, 12B → +3 low-risk writes, 27B+ → alle <EngineFact k="adminToolCount" />)
 
 <Cards>
   <Card title="Lokal AI med Ollama" href="/docs/ai/local-ai" />

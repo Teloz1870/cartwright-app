@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { social } from '@/lib/shared';
+import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 /**
  * The destination for the hero's "Inspect the safety model".
@@ -25,13 +26,13 @@ const CONTROLS: { stamp: string; state: string; title: string; body: string }[] 
     stamp: 'scope',
     state: 'action',
     title: 'Tools are allowlisted, not open-ended',
-    body: 'The admin assistant can reach 37 named tools and nothing else. API keys carry one or more of 21 scopes, and every invocation is checked against the scope the tool declares — not against the caller’s intent.',
+    body: `The admin assistant can reach ${ENGINE_FACTS.adminToolCount} named tools and nothing else. API keys carry one or more of ${ENGINE_FACTS.scopeCount} scopes, and every invocation is checked against the scope the tool declares — not against the caller’s intent.`,
   },
   {
     stamp: 'confirm',
     state: 'pending',
     title: 'Writes stop and wait for a person',
-    body: 'Twenty-five write tools return a preview instead of executing. Execution requires a confirmation token the server issued and the UI round-tripped. The model cannot set that flag itself — it is stripped from arguments before the first call.',
+    body: `${ENGINE_FACTS.confirmGatedCount} write tools return a preview instead of executing. Execution requires a confirmation token the server issued and the UI round-tripped. The model cannot set that flag itself — it is stripped from arguments before the first call.`,
   },
   {
     stamp: 'read',
