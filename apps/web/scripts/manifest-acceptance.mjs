@@ -29,8 +29,11 @@ export function manifestRejection(manifest) {
   }
   for (const key of ENGINE_FACT_KEYS) {
     const value = facts[key];
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-      return `upstream engineFacts.${key} is ${JSON.stringify(value)}, expected a finite number >= 0`;
+    // The same predicate lib/marketplace.ts applies at load — anything the
+    // loader would refuse must be refused here, or the sync writes a file the
+    // site cannot build from.
+    if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+      return `upstream engineFacts.${key} is ${JSON.stringify(value)}, expected a positive integer`;
     }
   }
   return null;

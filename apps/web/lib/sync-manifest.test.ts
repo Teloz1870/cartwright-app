@@ -25,9 +25,9 @@ describe('sync:manifest acceptance (scripts/manifest-acceptance.mjs)', () => {
     expect(reason).toMatch(/next engine tag/);
   });
 
-  it('rejects engineFacts that is not an object, or a fact that is not a finite number >= 0', () => {
+  it('rejects engineFacts that is not an object, or a fact that is not a positive integer — the loader\'s rule', () => {
     expect(manifestRejection({ ...manifest, engineFacts: 'yes' })).toMatch(/"engineFacts" is missing/);
-    for (const bad of [-1, Infinity, NaN, '88', null, undefined]) {
+    for (const bad of [-1, 0, 1.5, Infinity, NaN, '88', null, undefined]) {
       const m = { ...manifest, engineFacts: { ...manifest.engineFacts, toolCount: bad } };
       expect(isAcceptableManifest(m)).toBe(false);
       expect(manifestRejection(m)).toMatch(/engineFacts\.toolCount/);
