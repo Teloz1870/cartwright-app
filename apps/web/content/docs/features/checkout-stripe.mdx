@@ -13,7 +13,7 @@ The benefit: rotating keys, switching between test and live mode, and onboarding
 
 ## Mock fallback
 
-If no Stripe keys are configured at all, checkout still works. The order is created with status `paid_mock`, no charge happens, and the customer sees a success page that explicitly says this is a dev order. This is the default experience right after `pnpm dev` against a fresh fork — you can validate the full order flow before touching real Stripe.
+If no Stripe keys are configured at all, checkout still works. The order is created with status `paid` and `paymentMethod: "mock"`, no charge happens, and the customer sees a success page that explicitly says this is a dev order. This is the default experience right after `pnpm dev` against a fresh fork — you can validate the full order flow before touching real Stripe.
 
 <Callout type="warn">
 The mock fallback is intentionally permissive in development. Production deploys must have real Stripe keys configured (env or DB) — otherwise every order would be a free order. Cartwright does not block deploy without keys; it is your responsibility to verify.
@@ -56,6 +56,8 @@ Stripe forces a 3-D Secure challenge on this card. Useful for verifying the redi
 - Others are logged via the audit table and ignored.
 
 Idempotency is keyed off `paymentIntent.id` so retried webhooks do not duplicate emails or refund state.
+
+A `payment_intent.succeeded` that arrives for an order no longer awaiting payment — one an admin has already cancelled, or moved on to processing, shipped or completed — is logged for manual review and leaves the order untouched: it is not flipped back to `paid`, and no receipt, owner e-mail or marketing event is re-sent.
 
 ## Reconciliation cron
 
