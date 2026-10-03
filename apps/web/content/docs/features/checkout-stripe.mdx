@@ -48,20 +48,22 @@ Stripe forces a 3-D Secure challenge on this card. Useful for verifying the redi
 
 ## Webhook flow
 
-`app/api/webhook/stripe/route.ts` validates the Stripe signature against `STRIPE_WEBHOOK_SECRET`, then dispatches by event type:
+`app/api/webhook/stripe/route.ts` validates the Stripe signature against the configured webhook secret (DB-first, `STRIPE_WEBHOOK_SECRET` as fallback), then dispatches by event type:
 
-- `payment_intent.succeeded` → finalize order, send receipt email, clear cart cookie.
-- `payment_intent.payment_failed` → mark order as failed, no email.
-- `charge.refunded` → mark order/items refunded, send refund-confirmation email if amount fully refunded.
-- Others are logged via the audit table and ignored.
+- `payment_intent.succeeded` → check the charged amount and currency against the order (a mismatch sets `flagged_review` and stops), mark the order `paid`, send the receipt, the optional owner e-mail and the `orderPlaced` marketing event. The webhook touches no cookie — the cart was already emptied when the order was created.
+- `payment_intent.payment_failed` → logged only. The order stays `pending_payment` so the customer can retry with another card; no e-mail.
+- `payment_intent.canceled` → order set to `cancelled`.
+- `charge.refunded` → order set to `refunded`, or `partial_refund` when the refunded amount is below the charge, with `refundedAt` and an audit row. No e-mail is sent.
+- `charge.dispute.created` → order set to `disputed`, with `disputedAt` and an audit row.
+- Everything else is acknowledged with `200` and ignored — no audit row is written. (Subscription events are handled only when the subscriptions feature is enabled.)
 
-Idempotency is keyed off `paymentIntent.id` so retried webhooks do not duplicate emails or refund state.
+Idempotency is keyed off the Stripe `event.id`, recorded in `ProcessedWebhookEvent`: a retried event is acknowledged with `200` and does nothing. The receipt has a second guard, `confirmationEmailSentAt`, so a success event re-sent under a new id still produces one e-mail.
 
 A `payment_intent.succeeded` that arrives for an order no longer awaiting payment — one an admin has already cancelled, or moved on to processing, shipped or completed — is logged for manual review and leaves the order untouched: it is not flipped back to `paid`, and no receipt, owner e-mail or marketing event is re-sent.
 
 ## Reconciliation cron
 
-`/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders that are in `pending` state, asks Stripe what actually happened, and corrects the order state. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
+`/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders still in `pending_payment` (older than five minutes, with a Stripe PaymentIntent attached), asks Stripe what actually happened, and corrects the order state — `paid` with the receipt sent, `cancelled` with stock restored, or `flagged_review` on an amount mismatch. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
 
 The cron is protected by `CRON_SECRET` — generated with `openssl rand -hex 32` and set in env. Vercel Cron sends the secret automatically when invoking your route.
 
