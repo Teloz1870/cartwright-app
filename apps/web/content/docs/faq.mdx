@@ -29,7 +29,7 @@ Two paths, depending on how much you want to automate.
 
 ## Can I migrate from WordPress or WooCommerce?
 
-Partly, today — and there is no dedicated WordPress/WooCommerce importer yet (planned, not built). What moves: products by CSV import (simple products; variants, SKU and weight not yet), pages and posts through the URL import as drafts (`siteImport` flag, Firecrawl key; the default profile), and old URLs through admin-managed redirects — exact paths, one at a time, Upstash Redis required; `/?p=123` query permalinks are not matched yet. Orders and customers never move, and custom plugins are rebuilt, not migrated. Nothing on this path needs `--profile full`. Cartwright never runs on WordPress hosting — it replaces the site and imports from it. [Choose your path](/docs/getting-started/choose-your-path) works it through.
+Partly, today — and there is no dedicated WordPress/WooCommerce importer yet (planned, not built). What moves: products by CSV import (simple products; variants, SKU and weight not yet), pages and posts through the URL import as drafts (`siteImport` flag, Firecrawl key; the default profile), and old URLs through admin-managed redirects — exact paths, one at a time or many at once from a CSV (`from,to,status`) with a dry run first, Upstash Redis required; `/?p=123` query permalinks are not matched yet. Orders and customers never move, and custom plugins are rebuilt, not migrated. Nothing on this path needs `--profile full`. Cartwright never runs on WordPress hosting — it replaces the site and imports from it. [Choose your path](/docs/getting-started/choose-your-path) works it through.
 
 ## What's the difference between self-hosted, Plus, and Cloud?
 
