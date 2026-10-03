@@ -1,5 +1,12 @@
 # create-cartwright
 
+## 2.9.10
+
+### Patch Changes
+
+- c478b6d: A new scaffold no longer publishes "Cartwright" as its legal company name: `company.legalName` is set to the store name, so the Organization JSON-LD, the footer owner line and the terms pages name the customer's business until they enter their registered company name.
+- 19e8aa3: Bump default template ref to v0.59.0 (was v0.58.2).
+
 ## 2.9.9
 
 ### Patch Changes
