@@ -35,6 +35,34 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.59.0',
+    date: 'October 2026',
+    title: 'The migration path gets its tools: redirects from a CSV with a dry run, links that keep the locale, an e-mail per paid order',
+    description: (
+      <>
+        Redirects can be imported from a CSV with a dry run first, the design packs&apos; links and the product feeds
+        keep the reader&apos;s locale instead of bouncing through a redirect, and the owner can get an e-mail for
+        every paid order. A product page&apos;s JSON-LD names every variant, IndexNow pings sit behind a flag, the
+        marketplace manifest carries <code>engineFacts</code>, a deleted product&apos;s page answers 404, and{' '}
+        <code>stripe</code> is pinned exactly. The release adds columns and tables and rebuilds{' '}
+        <code>OrderItem</code> in place to make <code>productId</code> optional — every row and id is kept — so run{' '}
+        <code>pnpm db:push</code> before deploying it.
+      </>
+    ),
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Import many redirects at once from a CSV — from,to,status — with a dry run first (engine #601): /admin/redirects gets an Import CSV panel (paste, preview per-line errors, import) and agents get the redirects.import tool (settings:write; dryRun: true previews, confirm: true applies). Valid rows are saved in one transaction under one audit entry; duplicates, chains and loops are refused with their line number. The single-create form shares the rules: a relative destination written with the /da or /en prefix is refused (the redirect keeps the reader’s locale, so it would loop), and a destination that differs from its source only by a trailing slash or a query is refused as the same page.',
+      'Links in the design packs keep the reader’s language (engine #597) — product and category cards, CTAs, service cards and newsletter forms in fourteen packs linked /product/… and /contact without a locale, so a reader on /en of a Danish shop was redirected to the Danish page. The product feeds (/feed/google.xml, /api/acp/feed) now link /<default locale>/product/… directly instead of a URL that answers 307, and a test scans every pack for the mistake written as a literal link. Not yet covered: links a pack takes from brand.config.ts and the studio section defaults.',
+      'Owner order e-mail (engine #598; ownerOrderEmail, off by default) — the shop’s admin address gets the order reference, the customer, the lines, the total and a link to the order in admin for every paid order: from the Stripe webhook, the reconcile cron, mock checkout and agent (ACP) checkout alike, once per order, always after the customer’s receipt. A failed owner mail never fails the payment; an order marked paid by hand sends none. The setup wizard’s owner e-mail field is saved now, too.',
+      'Every variant Offer in the Product JSON-LD carries the variant’s name next to its sku, price and availability (engine #606), and the page prints each variant’s name and stock state as plain text in a collapsed “Availability by variant” list under the picker, so an AI crawler that runs no JavaScript reads the same facts as the JSON-LD.',
+      'IndexNow ping on publish (engine #604; indexNow, off by default; needs INDEXNOW_KEY) — Bing, Yandex, Seznam and Naver learn about a product, page or blog post the moment it is created, updated or deleted; Google does not honour IndexNow, so the sitemap stays the main path. Every locale’s URL is sent after the response, fire-and-forget; a rename pings the old URL as well; only a production deployment pings. The key is served at /.well-known/indexnow-key.txt.',
+      'marketplace-manifest.json carries engineFacts (engine #599) — how many tools the engine registers, how many scopes an API key can carry, how many tools the admin assistant may reach and how many of those stop for a confirmation — derived from the engine’s own sources on every pnpm gen:manifest, so this site states the numbers your shop ships instead of retyping them.',
+      'The schema gains the columns the import, order-status and URL work will build on (engine #595) — a category tree (Category.parentId) and extra categories per product (ProductCategory), permalink, externalId/source on products, categories, orders and customers, product status/metaTitle/metaDescription, Order.orderNumber/termsVersion/termsAcceptedAt, an OrderItem.sku snapshot, and two empty tables, OrderStatus and NumberSequence. Nothing reads them yet. OrderItem.productId is now optional, so an order line can outlive its product; gdpr.export_user works again for a customer who has sent an inquiry (its schema lacked the v0.58.0 source and data fields).',
+      'The money path gets honest (engine #602, #596) — the Stripe webhook and the reconcile cron can no longer both mark one order paid and both send its receipt; a payment that succeeds for an order no longer awaiting payment is logged for manual review instead of flipping it back to paid; and the order page’s status form goes through the order state machine like every other status change — allowed moves only, an order note, an audit entry — in English like the admin around it. Revenue on the dashboard and in analytics.summary reads one shared rule; the numbers are unchanged.',
+      'Also fixed — stripe is pinned to exactly 22.5.0, with a unit test keeping the pin and the apiVersion in lib/stripe.ts in step (engine #605); the account pages, /changelog and the blog render one <main> landmark (engine #603); a deleted product’s page answers 404 instead of still rendering; and the site no longer points at three addresses of its own that did not answer — /manifest leaves the sitemap, /favicon.ico redirects 308 to the generated /icon, and /<locale>/om-os redirects to /<locale>/about (engine #600).',
+    ],
+  },
+  {
     engine: 'v0.58.2',
     date: 'October 2026',
     title: 'A security release: next 16.3.8 closes a high SSRF advisory in Image Optimization',
