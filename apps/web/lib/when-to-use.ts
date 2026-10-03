@@ -54,7 +54,7 @@ export const NOT_A_FIT = [
   'Extending an existing Shopify / Salesforce storefront. Cartwright replaces a storefront, it does not embed in one.',
   'A web app — a dashboard, an internal tool, a novel app. That is create-next-app; Cartwright builds websites and shops.',
   'Anything that must run on PHP / WordPress hosting, or without Node.js 22+.',
-  'A one-click WordPress / WooCommerce migration. There is no WordPress importer yet: today products move by CSV (simple products — no variants), pages and posts by the URL import (as drafts), and old URLs by admin-managed redirects (Upstash Redis required) — exact paths, one at a time; query-string permalinks such as `/?p=123` are not matched yet. Orders and customers never move. Cartwright never runs on WordPress hosting — it replaces the site and imports from it.',
+  'A one-click WordPress / WooCommerce migration. There is no WordPress importer yet: today products move by CSV (simple products — no variants), pages and posts by the URL import (as drafts), and old URLs by admin-managed redirects (Upstash Redis required) — exact paths, one at a time or many at once from a CSV (`from,to,status`) with a dry run first; query-string permalinks such as `/?p=123` are not matched yet. Orders and customers never move. Cartwright never runs on WordPress hosting — it replaces the site and imports from it.',
   'A one-off page that needs neither design nor discovery. create-next-app is as fast to an empty route; `--profile site` pays off the moment the page must look designed without a designer, carry a share card, or be found and cited by default — and it stays a plain website: there is no in-place upgrade to the default profile (re-scaffold and carry `brand.config.ts` + your design pack across).',
 ] as const;
 
@@ -222,7 +222,7 @@ export const ORIGINS: readonly Origin[] = [
     why: 'products, pages and redirects are database rows; nothing on this path needs `--profile full`',
     needs: 'a WooCommerce product CSV export, the URL import\'s keys for pages and posts, and Upstash Redis (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) for the redirect table — without it no redirect fires',
     status: 'planned',
-    today: 'products by CSV (simple products — see "From a product CSV"), pages and posts by the URL import (as drafts), old URLs by admin-managed redirects (Upstash Redis required) — exact paths, one at a time',
+    today: 'products by CSV (simple products — see "From a product CSV"), pages and posts by the URL import (as drafts), old URLs by admin-managed redirects (Upstash Redis required) — exact paths, one at a time or many at once from a CSV (`from,to,status`) with a dry run first',
     notYet: 'a dedicated WordPress / WooCommerce importer: variants, categories, media, SEO fields and the permalink map (`/product/<slug>/`, `/product-category/<slug>/`, `/?p=123`). Query-string permalinks such as `/?p=123` are not matched by the redirect table today. Orders and customers never move; custom plugins are rebuilt, not migrated',
     notRuntime: 'Cartwright never runs on PHP or WordPress hosting — it replaces the site and imports from it',
     docs: '/docs/getting-started/choose-your-path',
