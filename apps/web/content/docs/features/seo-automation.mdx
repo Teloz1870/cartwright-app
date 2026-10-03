@@ -17,6 +17,8 @@ Both files read from Prisma at request time (or build time, depending on cache c
 
 The components layer ships `components/JsonLd.tsx` for product- and category-level structured data. Whether each page actually emits JSON-LD depends on the route — verify in your fork by viewing source on a product page.
 
+A product page (`app/[locale]/product/[slug]/page.tsx`) emits a `Product` whose `offers` is an `AggregateOffer` when the product has variants, with one `Offer` per variant carrying the variant's `name` (the attribute values the picker shows — "Whole beans, 250 g"), `sku`, `price`, `availability`, `priceValidUntil`, shipping and return policy — so an agent can tell sibling offers apart by more than their sku. The same names and stock states are also printed as plain text in a collapsed "Availability by variant" list under the picker, so a crawler that runs no JavaScript reads the same facts as the JSON-LD. Prices are in the shop's base currency only.
+
 <Callout type="info">
 Audit your fork's structured-data output before launch. `components/JsonLd.tsx` exists but is not injected on every relevant page in upstream cartwright. Adding a `<JsonLd ... />` to `app/produkt/[slug]/page.tsx` is a one-line change with measurable SEO impact.
 </Callout>
