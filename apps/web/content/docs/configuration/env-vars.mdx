@@ -33,6 +33,7 @@ These variables are read at runtime as a fallback when the corresponding key is 
 | `STRIPE_PUBLISHABLE_KEY` | Stripe client-side key embedded in the Stripe Elements component. | `pk_live_...` |
 | `STRIPE_WEBHOOK_SECRET` | Validates incoming webhook events from Stripe at `/api/webhook/stripe`. | `whsec_...` |
 | `RESEND_API_KEY` | Resend email delivery. Without this, transactional mail is logged to console (dev mode behavior). | `re_...` |
+| `INDEXNOW_KEY` | IndexNow key for the `indexNow` flag, which tells IndexNow about a product, page or post the moment it is published, updated or deleted. 8–128 chars of `A-Z a-z 0-9 -`; served at `/.well-known/indexnow-key.txt` while the flag is on. Without it nothing is sent. Only a production deployment pings — never local development, localhost or a preview. | `a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4` |
 | `SENTRY_DSN` | Server-side Sentry DSN for error tracking. Silent without it. | `https://abc@o123.ingest.sentry.io/456` |
 | `NEXT_PUBLIC_SENTRY_DSN` | Client-side Sentry DSN. Bundled into the browser JS. | `https://abc@o123.ingest.sentry.io/456` |
 | `SENTRY_ORG` | Sentry org slug for source-map upload during build. | `my-org` |
