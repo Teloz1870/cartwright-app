@@ -35,6 +35,25 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.59.1',
+    date: 'October 2026',
+    title: 'Search engines and feeds see the shop as it is: the real sku, sold-out products in the sitemap, no drafts',
+    description: (
+      <>
+        A patch for what machines read. A product page&apos;s JSON-LD carries the product&apos;s own sku, a sold-out
+        product stays in the sitemap, drafts leave the sitemap and the product feeds, and the Snapshot &amp; Restore
+        page follows the <code>sitePack</code> switch in <code>/admin/features</code> without a redeploy. No schema
+        change and no new flag: update and deploy.
+      </>
+    ),
+    icon: <Globe className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'The Product JSON-LD on a product page carries the product’s own sku when one is set, instead of the shop’s internal database id (engine #608). A product without a sku, or with an empty one, keeps the id, so nothing moves for a shop that never set one; a feed, an ERP or a catalogue migrated from WooCommerce can now match the page to the product it already knows.',
+      'A sold-out product stays in the sitemap (engine #608). Until now the sitemap dropped every product with no stock, so a product that sold out vanished from it and came back on restock while its page kept answering. The sitemap, the Google Merchant feed and the agent catalogue feed now list every active product, with availability stated on the page and in the feed, and a product saved as a draft appears in none of them. The two feeds always kept sold-out products; what changes for them is that drafts are left out.',
+      'The Snapshot & Restore page (/admin/sitepacks) follows the sitePack switch in /admin/features at runtime instead of the value baked in at deploy time (engine #608): while the switch is off the page answers 404, like its menu entry, and the sitepack.export / sitepack.import tools follow the same switch, so turning it on in the admin makes them work instead of answering “SitePack is disabled”.',
+    ],
+  },
+  {
     engine: 'v0.59.0',
     date: 'October 2026',
     title: 'The migration path gets its tools: redirects from a CSV with a dry run, links that keep the locale, an e-mail per paid order',
