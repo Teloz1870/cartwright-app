@@ -48,7 +48,7 @@ Når du har installeret Ollama er der intet du nogensinde behøver gøre i termi
 
 ## Hvad hvis det fejler?
 
-**"Model 'foo' er ikke i allow-listen"** — model-navnet matchede ikke allow-list'en. Tjek staveformer (`gemma4:e4b`, ikke `gemma-4-e4b`) eller pull manuelt via terminal og opdater listen i [`lib/ai/client.ts`](https://github.com/cartwright/cartwright/blob/main/test-template/app/api/admin/ai/ollama-pull/route.ts).
+**"Model 'foo' er ikke i allow-listen"** — model-navnet matchede ikke allow-list'en. Tjek staveformer (`gemma4:e4b`, ikke `gemma-4-e4b`) eller pull manuelt via terminal og opdater `ALLOWED_PULL_MODELS` i [`app/api/admin/ai/ollama-pull/route.ts`](https://github.com/Teloz1870/cartwright-template/blob/main/app/api/admin/ai/ollama-pull/route.ts).
 
 **"Ollama returnerede 404"** — Ollama-endpointet er forkert. Tjek `/admin/integrations` "AI provider"-sektionen og sørg for at endpoint-URL'en peger på en kørende Ollama-instans.
 

@@ -89,7 +89,7 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 ## Shipping & fulfillment → flat rate + dropship routing
 
-Checkout charges a flat rate: `policies.shippingDefaultDkk` per order, free from `policies.shippingFreeThresholdDkk`. Zones with weight-based rates and delivery-time estimates can be set up in `/admin/shipping` (`shippingZones`), but they are stored, not charged — checkout does not use them yet. Dropship-supplier routing works today: link products to suppliers in `/admin/leverandorer` (`Supplier` + `FulfillmentOrder` models, manual + email modes), then route an order's lines to them from the order page.
+Checkout charges a flat rate: `policies.shippingDefaultDkk` per order, free from `policies.shippingFreeThresholdDkk`. Zones with weight-based rates and delivery-time estimates can be set up in `/admin/shipping` (`shippingZones`), but they are stored, not charged — checkout does not use them yet. Dropship-supplier routing works today: link products to suppliers in `/admin/leverandorer` (`Supplier` + `FulfillmentOrder` models, manual + email modes), then route an order's lines to them from the order page's Fulfillment card, which appears once `fulfillmentPdf` is on (it builds on `orderWorkspace`; both toggle in `/admin/features`, see [order management](/docs/features/order-management)).
 
 ## Content → Blog + Resolvable Genome
 

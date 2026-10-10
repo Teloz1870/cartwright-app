@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_REF } from "./refs";
+import { MODERN_WEB_MD } from "./inject";
 import {
   ENGINE_DOMAINS,
   patchAIStylistButtonContent,
@@ -209,6 +210,23 @@ describe(`scaffold anchors vs the real template @ ${DEFAULT_REF}`, () => {
     expectNoWarnings("patchAIStylistButtonContent", result);
     expect(result.src).not.toContain('"AI Konsulent"');
     expect(result.src).not.toContain('"Spørg AI Konsulenten"');
+  });
+
+  it("names in MODERN_WEB.md only brand.features flags the template has", (ctx) => {
+    const src = templateFile(ctx, "brand.config.ts");
+    // The doc names a flag two ways: `brand.features.reviews` in a table, and
+    // `reviews: true` in the "Turning features on" list.
+    const named = new Set(
+      [...MODERN_WEB_MD.matchAll(/brand\.features\.(\w+)|`(\w+): true`/g)].map(
+        (m) => m[1] ?? m[2],
+      ),
+    );
+    // Vacuity guard: an extraction that finds nothing would pass trivially.
+    expect(named.size, "MODERN_WEB.md names no flags at all").toBeGreaterThan(3);
+    const missing = [...named].filter(
+      (flag) => !new RegExp(`^\\s*${flag}\\s*:`, "m").test(src),
+    );
+    expect(missing, `flags MODERN_WEB.md names that ${DEFAULT_REF} does not have`).toEqual([]);
   });
 
   it("is not vacuous: a drifted anchor is caught, not silently tolerated", () => {

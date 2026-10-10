@@ -97,7 +97,7 @@ export function injectModernWebDoc(targetDir: string): void {
   writeFileSync(join(targetDir, "MODERN_WEB.md"), MODERN_WEB_MD);
 }
 
-const MODERN_WEB_MD = `# Cartwright Modern Web Baseline
+export const MODERN_WEB_MD = `# Cartwright Modern Web Baseline
 
 Your Cartwright store ships with these modern web platform features wired up out of the box. Each one is built into Cartwright's default code — you don't need to write the boilerplate. Some are on by default; some are opt-in via \`brand.features.*\` in your \`brand.config.ts\`.
 
@@ -134,7 +134,6 @@ Schema.org markup is what AI search engines (Google AI Overviews, Perplexity, Ch
 
 | Feature | Status | Where |
 |---|---|---|
-| Self-hosted Web Vitals (INP/LCP/CLS/FCP/TTFB) | gated by \`brand.features.webVitals\` | \`/api/vitals\` + \`/admin/performance\` |
 | \`fetchpriority="high"\` on LCP candidates | ✅ via next/image \`priority\` prop | PDP hero, PLP first cards |
 | \`loading="lazy"\` below the fold | ✅ next/image default + manual on raw imgs | every \`<Image>\` below-fold |
 | \`decoding="async"\` on raw imgs | ✅ on case studies + tech badges | various |
@@ -149,7 +148,6 @@ Schema.org markup is what AI search engines (Google AI Overviews, Perplexity, Ch
 | Container queries on ProductCard | gated by \`brand.features.containerQueries\` | \`@sm:\` Tailwind v4 variants |
 | Native \`<dialog>\` + Popover API for modals | gated by \`brand.features.popoverApi\` | \`components/WelcomeGuide.tsx\` |
 | Runtime feature detection (\`<dialog>\`, popover, view transitions) | ✅ always available | \`lib/features.ts\` |
-| CSS \`interpolate-size\` on native \`<details>\` | ✅ Phase 1a | accordion + FAQ sections |
 
 ---
 
@@ -163,14 +161,14 @@ Schema.org markup is what AI search engines (Google AI Overviews, Perplexity, Ch
 
 ---
 
-## Authentication (Phase 5b)
+## Authentication
+
+Not in a \`--profile site\` scaffold, which has no login.
 
 | Feature | Status | Where |
 |---|---|---|
-| Passkey UI scaffolding | gated by \`brand.features.passkeys\` | \`/account/security\`, \`/api/auth/passkey/*\` |
-| Magic-link fallback | ✅ always on | NextAuth + Resend |
-
-> WebAuthn ceremony wiring is in progress. Check the \`cartwright-guidance\` skill for current status.
+| Email + password sign-in | ✅ on | \`/account/login\` → Password tab (NextAuth credentials) |
+| Magic-link sign-in | offered once a Resend key is set (\`RESEND_API_KEY\`) | NextAuth email provider + Resend |
 
 ---
 
@@ -193,7 +191,6 @@ Open \`brand.config.ts\`, find the \`features\` object, and flip the flag from \
 
 Typical first steps for a fresh shop:
 - \`webshop: true\` — unlock cart, checkout, account routes (set automatically by \`--template coffee\` / \`--template sunglasses\` / \`--template generic\`)
-- \`webVitals: true\` (after \`consentBanner: true\`) — start collecting CWV data on real customer traffic
 - \`reviews: true\` — turn on the moderation flow and \`AggregateRating\` JSON-LD
 - \`containerQueries: true\`, \`popoverApi: true\`, \`viewTransitions: true\` — opt in to the Phase B baseline
 
