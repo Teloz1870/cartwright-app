@@ -50,7 +50,7 @@ const GRADUATE = [
   },
   {
     title: 'You are running a real shop',
-    body: 'Orders, Stripe checkout, VAT and Stripe Tax, shipping zones, GDPR tooling, multi-currency — a commerce engine you configure with flags, not features you re-prompt into existence.',
+    body: 'Orders, Stripe checkout, VAT and Stripe Tax, flat-rate shipping, GDPR tooling, multi-currency — a commerce engine you configure with flags, not features you re-prompt into existence.',
   },
   {
     title: 'You want to stop paying per AI message',
