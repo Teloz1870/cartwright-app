@@ -85,6 +85,16 @@ that status itself. To record a refund made outside the shop, such as a bank tra
 whole number below the order total.
 The order then gets a note saying no money moved, and the result carries `moneyMoved: false`.
 
+Cancelling with `orders.update_status` (`status: "cancelled"`) does two more things. An order still
+`pending_payment` gets its items back in stock, exactly once, and the result carries `restocked: true`;
+if the order stopped awaiting payment between the read and the write, the call fails with "no longer
+awaiting payment" and leaves the order unchanged. An order with a Stripe payment also has its PaymentIntent
+cancelled if it is still unpaid, and the result's `paymentIntent` says what happened: `outcome` is
+`canceled`, `already_canceled`, `succeeded` or `failed`, with the timeline `note`. A `succeeded` payment
+is left alone and is refunded on the admin order page. Engines up to v0.60.0 return no stock here and
+carry no `restocked`; engines up to v0.59.1 leave the payment open and carry no `paymentIntent`. The
+whole rule: [Checkout (Stripe)](/docs/features/checkout-stripe#cancelling-an-order-that-was-never-paid).
+
   </Tab>
   <Tab value="discounts">
 

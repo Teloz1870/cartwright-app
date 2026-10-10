@@ -52,7 +52,7 @@ Stripe forces a 3-D Secure challenge on this card. Useful for verifying the redi
 
 - `payment_intent.succeeded` → check the charged amount and currency against the order (a mismatch sets `flagged_review` and stops), mark the order `paid`, send the receipt, the optional owner e-mail and the `orderPlaced` marketing event. The webhook touches no cookie — the cart was already emptied when the order was created.
 - `payment_intent.payment_failed` → logged only. The order stays `pending_payment` so the customer can retry with another card; no e-mail.
-- `payment_intent.canceled` → order set to `cancelled`.
+- `payment_intent.canceled` → if the order is still `pending_payment`, it is set to `cancelled` and its items go back in stock in the same transaction ([below](#cancelling-an-order-that-was-never-paid)). An order that has moved on — already cancelled, paid, needing review, shipped or refunded — is left as it is: a cancelled intent says nothing about money already captured. Engines up to v0.60.0 set any order to `cancelled` here and returned no stock.
 - `charge.refunded` → order set to `refunded`, or `partial_refund` when the refunded amount is below the charge, with `refundedAt` and an audit row. No e-mail is sent.
 - `charge.dispute.created` → order set to `disputed`, with `disputedAt` and an audit row.
 - Everything else is acknowledged with `200` and ignored — no audit row is written. (Subscription events are handled only when the subscriptions feature is enabled.)
@@ -63,9 +63,28 @@ A `payment_intent.succeeded` that arrives for an order no longer awaiting paymen
 
 ## Reconciliation cron
 
-`/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders still in `pending_payment` (older than five minutes, with a Stripe PaymentIntent attached), asks Stripe what actually happened, and corrects the order state — `paid` with the receipt sent, `cancelled` with stock restored, or `flagged_review` on an amount mismatch. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
+`/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders still in `pending_payment` (older than five minutes, with a Stripe PaymentIntent attached), asks Stripe what actually happened, and corrects the order state — `paid` with the receipt sent, `cancelled` with its stock back (the rule [below](#cancelling-an-order-that-was-never-paid)), or `flagged_review` on an amount mismatch. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
 
 The cron is protected by `CRON_SECRET` — generated with `openssl rand -hex 32` and set in env. Vercel Cron sends the secret automatically when invoking your route.
+
+## Cancelling an order that was never paid
+
+Checkout takes the stock when it creates the order, so an order cancelled while it is still `pending_payment` gives that stock back — exactly once, whichever of these gets there first:
+
+- an operator cancel: the admin status form, the bulk status action or the `orders.update_status` tool;
+- the `payment_intent.canceled` webhook;
+- the reconciliation cron, when Stripe reports the intent cancelled and the webhook was missed;
+- checkout's own rollback, when the PaymentIntent could not be created after the order was written.
+
+All four of these unpaid cancels go through one helper, `lib/orders/cancel-unpaid.ts`. The status write is conditional on `pending_payment`, and the restock runs in the same transaction only when that write landed, so the second path to arrive finds the order cancelled and leaves the order and its stock unchanged (an operator's refused cancel can still leave a failed entry in the audit log). A variant line's quantity goes back to the variant, the inverse of checkout's decrement. The admin status form and the bulk action write the status change to the order timeline with "items returned to stock". `orders.update_status` writes no such note: its result carries `restocked: true` instead.
+
+An operator cancel reads the order's status when it runs, not when you opened the order, and acts on what it finds then. If the customer paid in the meantime, it is an ordinary cancel of a paid order and goes through, with no stock back (next paragraph). If the webhook or the cron cancelled the order first, it is refused as an illegal transition (`cancelled → cancelled`) and the order stays as it is. "No longer awaiting payment" is narrower: it is the refusal for a change that lands in the instant between the cancel's own read and its write, and it too leaves the order unchanged. The bulk action lists an order refused either way as skipped, with the reason.
+
+An order cancelled after it was paid (paid, processing, needing review, disputed) gets no stock back here: a refund moves money, not stock, and a [return](/docs/features/order-management) is how paid stock comes back.
+
+Cancelling an order with a Stripe payment also cancels its PaymentIntent, right after the status is written, so a customer still on the payment page can no longer pay for it. A payment the customer already made is never cancelled — the timeline note says to refund it on the admin order page, since cancelling an order returns no money. If Stripe cannot be reached the order is cancelled anyway, and the note says to cancel the payment in the Stripe Dashboard. Each attempt is audited as `orders.cancel_payment_intent`, and the tool's result reports it as `paymentIntent`. That cancelled intent is what fires `payment_intent.canceled`, which then finds the order already cancelled and restocked and leaves it alone.
+
+Engines up to v0.60.0 give stock back only from checkout's rollback and the reconciliation cron: an operator cancel or the webhook changed the status, and the items stayed out of stock. The PaymentIntent cancel arrived in v0.60.0; engines up to v0.59.1 leave the payment open.
 
 ## Elements appearance
 
