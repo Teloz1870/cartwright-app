@@ -36,7 +36,7 @@ A print-friendly packing-slip / pick-list route renders as `@media print` HTML �
 Create a return against an order's lines with a reason, then move it through `requested → approved → received → refunded` (or `rejected`). Receiving a return restocks the items **idempotently** — a `restocked` flag inside the transaction guarantees stock increments exactly once even on a double-click or retry. Refunds reuse the same Stripe path as the workspace.
 
 <Callout type="warn">
-Refund and restock are deliberately decoupled: a **refund** returns money (webhook-finalized), a **return** returns money *and* stock. This avoids the un-keyable "did the webhook already restock?" race. The one cancel that returns stock is of an order still awaiting payment — no money to return — and it restocks exactly once, whichever of the operator, the Stripe webhook or the reconcile cron cancels it first ([Checkout (Stripe)](/docs/features/checkout-stripe#cancelling-an-order-that-was-never-paid); engines up to v0.60.0 restocked only from the cron and checkout's rollback).
+Refund and restock are deliberately decoupled: a **refund** returns money (webhook-finalized), a **return** returns money *and* stock. This avoids the un-keyable "did the webhook already restock?" race. The one cancel that returns stock is of an order still awaiting payment — no money to return — and it restocks exactly once, whichever of the operator, the Stripe webhook, the reconcile cron or checkout's own rollback cancels it first ([Checkout (Stripe)](/docs/features/checkout-stripe#cancelling-an-order-that-was-never-paid); engines up to v0.60.0 restocked only from the cron and checkout's rollback).
 </Callout>
 
 ## AI next-best-action
