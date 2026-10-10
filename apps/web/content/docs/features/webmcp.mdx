@@ -30,6 +30,16 @@ It's gated behind `brand.features.webMcp` (runtime tier) and requires webshop mo
 
 A **test-enforced safety moat** holds the whole browser surface to the cart/catalogue tool families — aggregated across every registration surface including design packs. *No order-placing tool exists in the browser*; checkout stays the human's. Every cart mutation returns the fresh cart so the agent verifies instead of assumes.
 
+Every registered tool (all but the three forms) also states Chrome's three `registerTool` annotations explicitly, so the browser can tell a tool that changes the cart from one that only reads:
+
+| Annotation | Tools |
+|---|---|
+| `consequentialHint: true` — changes the customer's cart, so the browser may ask the human first | `add_current_product_to_cart` · `update_cart_item_quantity` · `remove_cart_item` |
+| `readOnlyHint: true` — reads the catalogue or the cart, changes nothing | `search_products` · `get_cart` · `list_visible_products` · crema's `calculate_brew_ratio` |
+| Neither — changes only the page the human is on | `navigate` · `filter_products` · `go_to_checkout` |
+
+`untrustedContentHint` is `false` on every tool, because none returns customer-written text such as reviews. An engine test mounts every surface and fails if a tool leaves a hint out or if a tool outside the cart-changing set is marked consequential. Engines up to v0.59.1 set only `readOnlyHint`, on the four read tools.
+
 ## What each profile ships
 
 | Profile | WebMCP |
