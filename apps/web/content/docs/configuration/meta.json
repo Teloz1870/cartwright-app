@@ -3,6 +3,7 @@
   "pages": [
     "env-vars",
     "brand-config",
+    "urls",
     "feature-flags",
     "secrets-management"
   ]
