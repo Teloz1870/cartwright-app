@@ -107,9 +107,9 @@ ollama pull llama3.3:70b
 
 ## Hvad sker der med en ukendt model?
 
-Hvis du pull'er en model der ikke er i Cartwright's hardcoded `MODEL_CAPABILITIES`-matrix, defaulter den til **`read-only`** tier — den sikre default.
+Hvis du pull'er en model der ikke er i Cartwright's hardcoded `MODEL_CAPABILITIES`-matrix, defaulter den til **`read-only`** tier med et context window på 8k tokens — den sikre default. AI-formularen i `/admin/integrations` siger det under model-feltet ("Not a known model: tools run read-only and the context window is limited to 8k tokens."), så chatten ikke stille går read-only uden at du kan se hvorfor.
 
-Vil du have din model anerkendt? PR til [`lib/ai/client.ts`](https://github.com/cartwright/cartwright/blob/main/test-template/lib/ai/client.ts):
+Vil du have din model anerkendt? Tilføj en række i [`lib/ai/model-capabilities.ts`](https://github.com/Teloz1870/cartwright-template/blob/next/lib/ai/model-capabilities.ts), når modellen er testet. `lib/ai/client.ts` re-eksporterer tabellen; i ældre engine-versioner ligger den direkte i `client.ts`:
 
 ```ts
 export const MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {

@@ -159,7 +159,7 @@ const v0: Comparison = {
   ],
   faq: [
     { q: 'Can I use v0 and Cartwright together?', a: 'Yes, and it is a good workflow: explore a section or page in v0, then have your agent translate the result into a Cartwright design pack or governed section. Cartwright’s pages are standard React Server Components, so v0 output ports naturally.' },
-    { q: 'Does v0 build webshops?', a: 'v0 excels at generating storefront UI, but cart/checkout/orders/tax are integrations you assemble. Cartwright ships the commerce engine — Stripe checkout, orders, VAT, shipping zones — as tested, flag-gated code.' },
+    { q: 'Does v0 build webshops?', a: 'v0 excels at generating storefront UI, but cart/checkout/orders/tax are integrations you assemble. Cartwright ships the commerce engine — Stripe checkout, orders, VAT, flat-rate shipping — as tested, flag-gated code.' },
     { q: 'Which is better for AI-search visibility?', a: 'Cartwright server-renders every page with JSON-LD and ships llms.txt and agent endpoints by default. v0 output can be made SEO-friendly, but it is your job to add the structured-data layer.' },
   ],
 };
@@ -175,7 +175,7 @@ const bolt: Comparison = {
   rows: [
     { dimension: 'Zero-install start', cartwright: 'Needs Node + a terminal + an AI agent (a developer environment).', them: 'Unmatched — a full dev environment in the browser tab, nothing installed.' },
     { dimension: 'What you own afterwards', cartwright: 'A normal Next.js repo with a tested engine inside — yours from commit one.', them: 'Export/GitHub sync exists; the build workflow and environment live on the platform.' },
-    { dimension: 'Commerce depth', cartwright: 'Cart, Stripe checkout + webhooks, orders, VAT/Stripe Tax, shipping zones, GDPR, multi-currency — engine code, not generated on the fly.', them: 'AI-generated per project; payments and order flows are yours to assemble and harden.' },
+    { dimension: 'Commerce depth', cartwright: 'Cart, Stripe checkout + webhooks, orders, VAT/Stripe Tax, flat-rate shipping, GDPR, multi-currency — engine code, not generated on the fly.', them: 'AI-generated per project; payments and order flows are yours to assemble and harden.' },
     { dimension: 'AI model & metering', cartwright: 'Bring your own agent and API key; the engine meters nothing.', them: 'Built-in agent, token/credit-metered subscription.' },
     { dimension: 'Production posture', cartwright: 'Deploys as a standard Next.js app (Vercel etc.) with a real migration/versioning story.', them: 'Deploys exist, but hardening an AI-generated codebase for production is on you.' },
   ],
@@ -196,7 +196,7 @@ const saleor: Comparison = {
     'Both are open-source commerce platforms with agentic ambitions, at different weight classes. Saleor is an enterprise-grade headless backend — a Python/GraphQL commerce API you run (or buy as Saleor Cloud) behind a storefront you build, strong on multi-channel, multi-warehouse and B2B complexity. Cartwright is a single Next.js app that IS the storefront, admin and backend in one repo, sized for the independent shop or agency site that wants AI/agent surfaces working on day one. Choose Saleor for enterprise catalogs, multi-channel orchestration and a dedicated engineering team; choose Cartwright when one owned repo with commerce, design system and MCP/ACP/A2A endpoints already wired is the whole point.',
   rows: [
     { dimension: 'Architecture', cartwright: 'One Next.js app: storefront + admin + API + DB in a single repo.', them: 'Headless GraphQL core (Python/Django) + separate storefront + apps; more services, more flexibility.' },
-    { dimension: 'Enterprise features', cartwright: 'Sized for SMB: variants, discounts, shipping zones, VAT, multi-currency.', them: 'Genuinely deeper: multi-channel, multi-warehouse, B2B price lists, permission systems.' },
+    { dimension: 'Enterprise features', cartwright: 'Sized for SMB: variants, discounts, flat-rate shipping, VAT, multi-currency.', them: 'Genuinely deeper: multi-channel, multi-warehouse, B2B price lists, permission systems.' },
     { dimension: 'Time to a live shop', cartwright: 'One command; a designed, seeded shop in minutes.', them: 'Core is quick to start; a production storefront + infra is a real project.' },
     { dimension: 'AI / agents', cartwright: 'MCP server, ACP feed + checkout endpoints, A2A negotiation — shipped and flag-gated in the box.', them: 'Agentic-commerce positioning (ACP/AP2) at the platform level; surfaces land via apps/integrations.' },
     { dimension: 'Team fit', cartwright: 'A solo builder or agency with an AI coding agent.', them: 'A product/engineering team comfortable operating services.' },
@@ -221,7 +221,7 @@ const wix: Comparison = {
     { dimension: 'Editing model', cartwright: 'Prompt an AI agent (or use the admin’s no-code Vibe/Magic Builder) — changes land as code/data in your repo and DB.', them: 'Mature drag-and-drop visual editor — the best-known zero-code editing experience.' },
     { dimension: 'Ownership', cartwright: 'MIT source in your repo; export nothing because you already hold everything.', them: 'Hosted; sites are not portable off the platform.' },
     { dimension: 'Cost over time', cartwright: 'Engine free; pay infra (often near-zero on free tiers) + your AI usage.', them: 'Monthly plan per site; commerce features on higher tiers.' },
-    { dimension: 'Commerce', cartwright: 'Stripe checkout, orders, VAT, shipping zones, discounts, multi-currency — in the engine.', them: 'Solid built-in commerce on business plans; transaction terms vary by plan/region.' },
+    { dimension: 'Commerce', cartwright: 'Stripe checkout, orders, VAT, flat-rate shipping, discounts, multi-currency — in the engine.', them: 'Solid built-in commerce on business plans; transaction terms vary by plan/region.' },
     { dimension: 'AI & agent readiness', cartwright: 'AI-native: agent rules, MCP/ACP/A2A surfaces, JSON-LD everywhere, llms.txt.', them: 'AI site-generation and content tools exist; there is no owned agent surface for outside AI to transact with.' },
     { dimension: 'Who it is for', cartwright: 'Builders with an AI coding agent; agencies shipping owned sites.', them: 'Non-technical owners who want a site today with zero tooling.' },
   ],
@@ -278,7 +278,7 @@ export const LOVABLE: Comparison = {
     {
       dimension: 'Commerce out of the box',
       cartwright:
-        'A real engine: products, cart, Stripe checkout, orders, VAT/Stripe Tax, shipping zones, GDPR tooling, multi-currency — flags, not prompts.',
+        'A real engine: products, cart, Stripe checkout, orders, VAT/Stripe Tax, flat-rate shipping, GDPR tooling, multi-currency — flags, not prompts.',
       them: 'Payments can be added via integrations, but there is no dedicated commerce engine underneath the generated app.',
     },
     {

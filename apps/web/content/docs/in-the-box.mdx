@@ -87,9 +87,9 @@ The MCP server at `/api/mcp` exposes a typed tool registry to external agents �
 
 `stripeTax` toggles between managed multi-country VAT via Stripe Tax (EU OSS, VAT-ID validation, invoicing) and the built-in single-rate (`policies.vatRatePct`, `pricesIncludeVat`). VAT is computed correctly at checkout either way; configured in `/admin/integrations`.
 
-## Shipping & fulfillment → built-in
+## Shipping & fulfillment → flat rate + dropship routing
 
-`shippingZones` turns on zone/weight-based rates with delivery-time estimates and optional dropship-supplier routing (`Supplier` + `FulfillmentOrder` models, manual + email modes). Off = a single flat rate. Managed in `/admin/shipping`.
+Checkout charges a flat rate: `policies.shippingDefaultDkk` per order, free from `policies.shippingFreeThresholdDkk`. Zones with weight-based rates and delivery-time estimates can be set up in `/admin/shipping` (`shippingZones`), but they are stored, not charged — checkout does not use them yet. Dropship-supplier routing works today: link products to suppliers in `/admin/leverandorer` (`Supplier` + `FulfillmentOrder` models, manual + email modes), then route an order's lines to them from the order page.
 
 ## Content → Blog + Resolvable Genome
 
