@@ -78,18 +78,15 @@ The build refuses `"never"` on a shop with more than one locale (`next.config.ts
 
 Not yet: the storefront still writes these links by hand with the prefix — found with ``git grep -n '`/${locale}' -- components app designs plugins``, the admin left out. Each reaches its page through the one 308 — and, with `trailingSlash`, takes the same 308 for the slash — until it adopts the helper:
 
-- `components/chrome-parts/` — every link in `CenteredHeader`, `MinimalHeader`, `MegaFooter` and
-  `SlimFooter`.
 - The headers and footers of the design packs that bring their own (`designs/<pack>/chrome.tsx`:
   aerospace, agentic-showcase, apex, blank, brutalist, drive, editorial-ink, ember, engineered,
   fable, flux, halo, jungle, meridian, nocturne, stillwater, studio). Such a pack's chrome
   replaces the engine footer, so on Solbrillen (`apex`) the footer's links are the pack's, not the
-  converted ones. Also the packs' own 404 pages (aerospace, drive, flux, halo).
+  converted ones.
 - The fixed-route links on pack homepages — `/produkter`, `/contact`, `/about`, `/services`,
   `/info/…` and the like — in agentic-showcase, apex, atelier, aurora-shop, corporate-baseline, crema, ember,
   fable, hoptify, northern-coffee, saas-dark, stack, stillwater, webshop-bold, webshop-classic,
-  webshop-editorial and webshop-minimal; and the product-page crumb in `crema/webshop/PdpLayout`
-  and `halo/PdpLayout`. (Their product and category links go through the helper.)
+  webshop-editorial and webshop-minimal; and the product-page crumb in `crema/webshop/PdpLayout`. (Their product and category links go through the helper.)
 - The catalogue: its filter links (`components/CatalogFilters.tsx`), the empty grid's "Browse all
   products" (`components/ProductGrid.tsx`) and the catalogue WebMCP tool's navigation
   (`components/webmcp/PlpWebMcpTools.tsx`).
@@ -97,11 +94,9 @@ Not yet: the storefront still writes these links by hand with the prefix — fou
   `components/LoginForm.tsx` (forgot password).
 - `app/[locale]/services/page.tsx` (the link to each service) and `app/[locale]/order/[id]/page.tsx`
   ("Continue shopping").
-- `plugins/blog/pages/BlogIndexPage.tsx` (the post links), `plugins/reviews/pages/` (the
-  order-review page's link and sign-in redirect, the review page's home link) and
-  `plugins/wishlist/` (the wishlist page's link and sign-in redirect, the button's sign-in
-  redirect).
-- The links in e-mails (the review request, for one, always points at `/da/review/…`).
+- Links in other e-mails and payment returns: the password-reset mail (`lib/auth/password-reset.ts`)
+  and the Stripe return URLs (`lib/subscriptions.ts`, `app/api/commerce/agent-checkout/route.ts`)
+  carry no locale, so they reach their page through the locale redirect.
 
 ## What changes, and when
 
@@ -109,7 +104,7 @@ With the block absent, nothing changes: every link is the same string it was.
 
 The engine's own product and category links go through the helper — the product page's canonical and breadcrumbs, the category page, the product card, the footer's category list, the cart, the sitemap, the catalogue feed, `/pricing.md`, the search API, IndexNow and the review pages. So do the product and category links on the shipped design packs' homepages and product cards; the one link left out is the coffee pack's brew-recommendation tool, whose links follow the page's own path.
 
-A fixed route with no entity behind it (`/contact`, `/info/terms`, `/produkter`, the locale home) goes through `localeHref(path, locale)`: the footer's links and its trust badges (which also render on the product, category and checkout pages and three webshop homepages), the cookie banner's policy link, the announcement bar's audit-feed link, the visible breadcrumbs and their BreadcrumbList steps, and the recovery links on both 404s (`app/[locale]/not-found.tsx` and the catch-all `app/[locale]/[...missing]/route.ts`, in HTML and markdown). The remaining hand-written links are listed under `localePrefix` above.
+A fixed route with no entity behind it (`/contact`, `/info/terms`, `/produkter`, the locale home) goes through `localeHref(path, locale)`: the footer's links and its trust badges (which also render on the product, category and checkout pages and three webshop homepages), the cookie banner's policy link, the announcement bar's audit-feed link, the visible breadcrumbs and their BreadcrumbList steps, and the recovery links on both 404s (`app/[locale]/not-found.tsx` and the catch-all `app/[locale]/[...missing]/route.ts`, in HTML and markdown), the shared chrome parts (`components/chrome-parts/`), the 404 pages of the aerospace, drive, flux and halo packs, halo's product-page crumb, the blog index (its cards and its JSON-LD), and the wishlist and review pages. The review-request and abandoned-cart e-mails link in `brand.defaultLocale` the same way, so the review request no longer points at `/da/review/…` on a shop whose base language is not Danish. (The chrome parts, pack 404s, blog index, wishlist, review pages and e-mails are on the engine's `next` branch and ship in the next release; on v0.61.0 they are still written by hand.) The remaining hand-written links are listed under `localePrefix` above.
 
 In v0.61.0, `trailingSlash` and `localePrefix` steer routing as well (see above). A stored permalink is not yet *served* at its address: setting `permalinks` changes the links but not the addresses the shop answers, so leave it unset on a live shop. `permalinks` has no effect on the engine's own links yet: every call site hands the helper the slug alone, so a product is linked at one address everywhere. The stored permalink will reach all those links in the release that also serves it.
 
