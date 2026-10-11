@@ -35,6 +35,35 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.61.0',
+    date: 'October 2026',
+    title: 'A shop can run in a Node container, single-language URLs work without a prefix, and unpaid cancels return stock exactly once',
+    description: (
+      <>
+        The engine ships a <code>Dockerfile</code> and an opt-in standalone server for self-hosting. On a
+        single-language shop, <code>urls.localePrefix: "never"</code> now steers routing as well as links.
+        The engine&apos;s footer, trust badges, cookie banner, breadcrumbs and 404s link straight to the
+        address the shop serves. Cancelling an unpaid order returns its stock exactly once, and an operator
+        status change can no longer overwrite a cancel or payment that lands between its read and write.
+        No schema change: no <code>pnpm db:push</code> is needed. See{' '}
+        <Link href="/docs/configuration/urls" className="text-cw-terracotta hover:underline">
+          URL options
+        </Link>
+        .
+      </>
+    ),
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'A shop can run as a Node container on any host (HOST2-1) — the Dockerfile uses Node 22, pnpm through corepack and a non-root runtime with a health check. CARTWRIGHT_OUTPUT=standalone pnpm build writes .next/standalone/server.js; credentials, local databases, backups and mail previews stay out, and the build removes every .env* file from the standalone output so the server reads its runtime environment. Without the variable a Vercel build is unchanged; any other value stops the build. docs/self-hosting.md covers build arguments, runtime variables, Turso and SQLite on a volume. Cron jobs still need scheduling off Vercel, and file storage still uses Vercel Blob; a cron runner and S3 adapter are later work. An image of a site scaffold and the SQLite volume setup have not been run end to end.',
+      'urls.localePrefix: "never" steers routing on a single-language shop (URL1) — / and /contact answer directly, and /da/contact redirects permanently (308) to /contact. The engine’s aliases and merchant redirects land in one hop, also with trailingSlash, and canonicals, og:url, both sitemaps, llms.txt page links and JSON-LD addresses drop the prefix. /api, /admin, /oauth, /icon, /og and files are untouched. A single language alone never drops the prefix, and the build refuses "never" with more than one locale. Locale matching now reads brand.locales instead of da|en, and the cart’s WebMCP go_to_checkout no longer reads /cart as a locale. Browsers keep the 308, so switching back to "always" later can leave a redirect loop until that cache is cleared.',
+      'The engine’s footer, trust badges, cookie banner, announcement bar, breadcrumbs and both 404s use localeHref (URL2-c) — their links already have the address the shop serves with trailingSlash or localePrefix "never", without an extra redirect. This covers the footer in both profiles, trust badges wherever they render, the cookie policy and announcement audit-feed links, visible breadcrumbs and their JSON-LD steps, and recovery links in HTML and markdown. With both options unset the strings stay the same. Headers and footers a design pack brings itself, and the other hand-written links listed in the URL docs, still take the redirect.',
+      'Cancelling an order that was never paid puts its items back in stock exactly once — whichever arrives first: the admin status form, the bulk action, orders.update_status, Stripe’s cancellation notification, the nightly check or checkout’s rollback. A variant’s stock goes back to that variant. The form, bulk action and tool write “items returned to stock” on the timeline, and the tool also reports restocked: true. Stripe’s cancellation notification leaves a paid, flagged, shipped or refunded order alone. Cancelling an order after it was paid returns no stock here; a return does that.',
+      'An operator status change cannot overwrite a change that lands between its read and write (RACE-MARKPAID) — the admin status form, bulk action and orders.update_status write only if the order is still in the status they read. Otherwise nothing is written and the change is refused with “it changed while it was being updated — reload the order and try again”. The mismatch flag from Stripe’s notification or the nightly check is conditional too; refunds and disputes still always land because they record money that moved. orders.update_status also writes the timeline note the admin form writes, and an admin cancel that returned stock records restocked: true in its audit entry.',
+      'The agent rules files stop naming CSS the engine does not use (SKILL-INTERPOLATE) — the guidance skill drops its claim that details animates with interpolate-size and honours reduced motion there, and the Cursor, Windsurf and Gemini rules no longer offer interpolate-size or calc-size() as the engine’s animation tools. @starting-style stays because the mobile menu uses it. The skill also says shipping zones are stored but every order pays the flat rate.',
+      'Upgrading — no schema change, no new flag and no dependency change. The URL options stay off unless set; trailingSlash and localePrefix now steer routing, but a stored permalink is still not served at its address, so keep permalinks false on a live shop. The CRON_SECRET change announced in v0.60.0 — refusing production cron calls when the secret is unset — is not in this release; it is still planned for the next one. Set CRON_SECRET now if you have not.',
+    ],
+  },
+  {
     engine: 'v0.60.0',
     date: 'October 2026',
     title: 'Two high advisories close, links come from one helper with three URL options, and the engine stops claiming what it does not do',
