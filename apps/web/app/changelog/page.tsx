@@ -41,7 +41,7 @@ const RELEASES: Release[] = [
     description: (
       <>
         The engine ships a <code>Dockerfile</code> and an opt-in standalone server for self-hosting. On a
-        single-language shop, <code>urls.localePrefix: "never"</code> now steers routing as well as links.
+        single-language shop, <code>urls.localePrefix: &quot;never&quot;</code> now steers routing as well as links.
         The engine&apos;s footer, trust badges, cookie banner, breadcrumbs and 404s link straight to the
         address the shop serves. Cancelling an unpaid order returns its stock exactly once, and an operator
         status change can no longer overwrite a cancel or payment that lands between its read and write.
