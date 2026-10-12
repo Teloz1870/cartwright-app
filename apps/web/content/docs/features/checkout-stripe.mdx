@@ -65,7 +65,7 @@ A `payment_intent.succeeded` that arrives for an order no longer awaiting paymen
 
 `/api/cron/reconcile-stripe` runs nightly (Vercel Cron). It walks orders still in `pending_payment` (older than five minutes, with a Stripe PaymentIntent attached), asks Stripe what actually happened, and corrects the order state — `paid` with the receipt sent, `cancelled` with its stock back (the rule [below](#cancelling-an-order-that-was-never-paid)), or `flagged_review` on an amount mismatch. This catches webhook delivery failures and edge cases where the Payment Element succeeded but the network dropped before the success page rendered.
 
-The cron is protected by `CRON_SECRET` — generated with `openssl rand -hex 32` and set in env. Vercel Cron sends the secret automatically when invoking your route.
+The cron is protected by `CRON_SECRET` — generated with `openssl rand -hex 32` and set in env. Vercel Cron sends the secret automatically when invoking your route. Set it before you take payments: from the next engine release, a production deploy without `CRON_SECRET` refuses the call (503), so reconciliation never runs.
 
 ## Cancelling an order that was never paid
 
