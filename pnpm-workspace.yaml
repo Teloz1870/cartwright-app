@@ -12,25 +12,26 @@ allowBuilds:
   protobufjs: false
 
 minimumReleaseAgeExclude:
-  # next 16.3.8 fixes GHSA-cjq9-62q9-8jv4 (high: SSRF in Image Optimization;
-  # this site sets no `images.remotePatterns`, so it is not shown reachable —
-  # measured 2026-10-01: /_next/image?url=http://169.254.169.254/ answers 400)
-  # plus five medium advisories, and was published 2026-09-30T16:07Z — too
-  # young for pnpm's default release-age cutoff. These twelve exact versions
-  # are the release and the packages it pins; drop them once 16.3.8 is older
-  # than the cutoff.
-  - next@16.3.8
-  - eslint-config-next@16.3.8
-  - "@next/env@16.3.8"
-  - "@next/eslint-plugin-next@16.3.8"
-  - "@next/swc-darwin-arm64@16.3.8"
-  - "@next/swc-darwin-x64@16.3.8"
-  - "@next/swc-linux-arm64-gnu@16.3.8"
-  - "@next/swc-linux-arm64-musl@16.3.8"
-  - "@next/swc-linux-x64-gnu@16.3.8"
-  - "@next/swc-linux-x64-musl@16.3.8"
-  - "@next/swc-win32-arm64-msvc@16.3.8"
-  - "@next/swc-win32-x64-msvc@16.3.8"
+  # next 16.4.1 (published 2026-10-14T17:43Z) fixes GHSA-673q-mjm6-r5xr
+  # (critical: RCE in `use cache` functions returning typed arrays),
+  # GHSA-2464-fhr4-w9xw (critical: RCE in Image Optimization with SVG files)
+  # and GHSA-p3m5-59mp-jv5r (high: App Router DoS via Server Actions). This site
+  # has no `use cache`, no `dangerouslyAllowSVG` and no `"use server"` file, so
+  # none is shown reachable — upgraded regardless (the engine's CW-2026-009).
+  # Too young for pnpm's release-age cutoff; these twelve exact versions are the
+  # release and the packages it pins; drop them once 16.4.1 is older than it.
+  - next@16.4.1
+  - eslint-config-next@16.4.1
+  - "@next/env@16.4.1"
+  - "@next/eslint-plugin-next@16.4.1"
+  - "@next/swc-darwin-arm64@16.4.1"
+  - "@next/swc-darwin-x64@16.4.1"
+  - "@next/swc-linux-arm64-gnu@16.4.1"
+  - "@next/swc-linux-arm64-musl@16.4.1"
+  - "@next/swc-linux-x64-gnu@16.4.1"
+  - "@next/swc-linux-x64-musl@16.4.1"
+  - "@next/swc-win32-arm64-msvc@16.4.1"
+  - "@next/swc-win32-x64-msvc@16.4.1"
   - fumadocs-core@16.8.12
   - fumadocs-mdx@15.0.7
   - fumadocs-ui@16.8.12
