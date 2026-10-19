@@ -37,7 +37,7 @@ const RELEASES: Release[] = [
   {
     engine: 'v0.62.0',
     date: 'October 2026',
-    title: 'A critical Next.js fix for new shops, cron jobs that refuse callers without their secret, and redirects that work without Redis',
+    title: 'A critical Next.js fix for every shop, cron jobs that refuse callers without their secret, and redirects that work without Redis',
     description: (
       <>
         <code>next</code> 16.4.1 closes two critical and one high upstream advisory (CW-2026-009): upgrade, or
@@ -45,7 +45,7 @@ const RELEASES: Release[] = [
         cron calls (CW-2026-008) — <strong>set <code>CRON_SECRET</code> before you deploy this release</strong>, or
         every scheduled job stops. Admin-managed redirects are served from the database when Upstash Redis is not
         configured. With <code>urls.permalinks</code> on, a stored permalink reaches the engine&apos;s product and
-        category links. No schema change: no <code>pnpm db:push</code> is needed. See{' '}
+        category links, but is not yet served at its address, so keep it off on a live shop. No schema change: no <code>pnpm db:push</code> is needed. See{' '}
         <Link href="/docs/configuration/urls" className="text-cw-terracotta hover:underline">
           URL options
         </Link>
@@ -57,8 +57,8 @@ const RELEASES: Release[] = [
       'next 16.4.1 closes two critical and one high upstream advisory (CW-2026-009) — remote code execution in use cache functions that return typed arrays, remote code execution in Image Optimization with SVG files, and a denial of service in the App Router through Server Actions. The engine writes no use cache function and does not set images.dangerouslyAllowSVG, so the two critical ones are not known to be reachable in an unchanged shop; the App Router enables Server Actions by default, so treat the denial of service as reaching every shop. Fix it without waiting: pnpm add -E next@16.4.1 && pnpm add -D -E eslint-config-next@16.4.1.',
       'A production deploy without CRON_SECRET refuses its cron calls (CW-2026-008, CRON-AUTH-b) — every route under /api/cron answers 503 with "CRON_SECRET not configured on this deploy" in production (a Vercel production or preview build, next start, a container), and the job does not run. next dev and tests still let the call through; with the secret set, a wrong or missing bearer is a 401 as before. All eleven cron routes go through one helper, and the admin bar and setup guide say the jobs are refused. Upgrading: generate a secret with openssl rand -hex 32, set it as CRON_SECRET in production and redeploy.',
       'Admin-managed redirects work without Upstash Redis (RED1) — the proxy reads the redirect map from Redis when it is configured and otherwise from the Redirect table, cached for 60 seconds per server instance, so a redirect saved in /admin/redirects or imported by CSV takes effect within about a minute on the default scaffold.',
-      'A stored permalink reaches every product and category link once urls.permalinks is on (URL5-a) — canonicals, language alternates, BreadcrumbList, the sitemap, the catalogue feed, the search API, product cards, the design packs, footer, cart, review pages and the product list’s WebMCP url. The header and mobile-menu navigation and a few other links are still on the pattern, and a permalink is not yet served at its address, so keep permalinks off on a live shop.',
-      'The review-request mail links to the shop’s own language, and the last hand-built storefront links go through the URL helper (URL2-d) — shared chrome parts, the Flux, Halo, Aerospace and Drive 404 pages, the blog index and its JSON-LD, wishlist and review pages. With brand.urls unset every link is the same string as before.',
+      'A stored permalink reaches the engine’s own product and category links once urls.permalinks is on (URL5-a) — canonicals, language alternates, BreadcrumbList, the sitemap, the catalogue feed, the search API, product cards, the design packs, footer, cart, review pages and the product list’s WebMCP url. The header and mobile-menu navigation and a few other links are still on the pattern, and a permalink is not yet served at its address, so keep permalinks off on a live shop.',
+      'The review-request mail links to the shop’s own language, and the last shared hand-built storefront links go through the URL helper (URL2-d) — shared chrome parts, the Flux, Halo, Aerospace and Drive 404 pages, the blog index and its JSON-LD, wishlist and review pages. With brand.urls unset every link is the same string as before.',
       'Dependencies moved to their newest releases inside the current majors, each public for at least three days; the next 16.4.1 cooldown exception is dropped again now that it is older than three days.',
     ],
   },
