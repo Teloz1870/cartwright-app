@@ -63,7 +63,7 @@ Cost-control sampling is configured by default (`tracesSampleRate: 0.1` in produ
 
 Upstash Redis backs `lib/rate-limit.ts:createRateLimiter()`. Per-IP and per-API-key throttling is already applied to storefront chat, agent endpoints, admin write actions, and the negotiation surface. The limits are configurable per route; the defaults are tuned for typical shops with one or two attached buyer agents.
 
-For shops that don't want managed Redis, the limiter falls back to a process-local LRU cache — single-instance correctness, multi-instance approximate. The Upstash env vars being absent is fine for the limiter; it just downgrades silently. It is **not** fine for admin-managed redirects: the redirect table lives in Redis, so without `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` nothing at `/admin/redirects` fires.
+For shops that don't want managed Redis, the limiter falls back to a process-local LRU cache — single-instance correctness, multi-instance approximate. The Upstash env vars being absent is fine for the limiter; it just downgrades silently. Admin-managed redirects do not need it either: since engine v0.62.0 they are served from the database (cached for 60 seconds per server instance), and from Redis when it is configured.
 
 ## i18n → i18nexus
 
@@ -103,7 +103,7 @@ Checkout charges a flat rate: `policies.shippingDefaultDkk` per order, free from
 
 ## Compliance & ops → GDPR/DSAR, backup
 
-`lib/gdpr/` ships data-subject export + soft-erasure, retention crons, and a processor register at `/admin/processors`. A DB backup cron runs on `CRON_SECRET`. The WooCommerce-parity set (`wishlist`, `abandonedCart`, admin redirects (Upstash Redis required), product CSV import/export, translation management) rounds out the migration toolkit — there is no dedicated WooCommerce importer yet; products move by CSV (simple products). A Gemini logo generator (`logoGenerator`) needs `BLOB_READ_WRITE_TOKEN`.
+`lib/gdpr/` ships data-subject export + soft-erasure, retention crons, and a processor register at `/admin/processors`. A DB backup cron runs on `CRON_SECRET`. The WooCommerce-parity set (`wishlist`, `abandonedCart`, admin redirects (served from the database, no Redis needed), product CSV import/export, translation management) rounds out the migration toolkit — there is no dedicated WooCommerce importer yet; products move by CSV (simple products). A Gemini logo generator (`logoGenerator`) needs `BLOB_READ_WRITE_TOKEN`.
 
 ## How fast can you actually go live?
 
