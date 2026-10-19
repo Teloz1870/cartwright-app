@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.9.14
+
+### Patch Changes
+
+- fbdcab8: Bump default template ref to v0.62.0 (was v0.61.0).
+
 ## 2.9.13
 
 ### Patch Changes
