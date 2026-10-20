@@ -48,7 +48,7 @@ const SURFACES = [
   'lib/home-markdown.ts',
 ];
 
-/** Every surface that promises redirects must say they live in Upstash Redis — without it nothing fires (proxy.ts reads the map from Redis only). */
+/** Every surface that promises redirects. Since engine v0.62.0 (RED1) the proxy serves them from the database when Redis is absent, so none may say Redis is required. */
 const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx'];
 
 /** Every surface that names Hoptify must couple it to --profile full within 600 chars. */
@@ -97,15 +97,16 @@ describe('origin claims stay honest', () => {
     }
   });
 
-  it.each(REDIRECT_SURFACES)('%s names Upstash Redis beside EVERY admin-managed-redirect promise', (rel) => {
-    // Per mention (Gemini R2, nit 3): a new paragraph promising redirects
-    // without Redis must go red even though an earlier one names it.
+  it.each(REDIRECT_SURFACES)('%s never says an admin-managed redirect needs Upstash Redis (engine v0.62.0, RED1)', (rel) => {
+    // Per mention: the engine serves the redirect map from the database when
+    // Redis is not configured (lib/redirects/load.ts), so "Redis required" is
+    // now a false limit that would push a shop owner to buy what they do not need.
     const src = read(rel);
     const mentions = [...src.matchAll(/admin[- ]managed redirect|admin redirects/gi)];
     expect(mentions.length, rel).toBeGreaterThanOrEqual(1);
     for (const m of mentions) {
       const near = src.slice(Math.max(0, m.index! - 300), m.index! + 300);
-      expect(near, `${rel} @${m.index}`).toMatch(/Upstash Redis|UPSTASH_REDIS|Redis required/);
+      expect(near, `${rel} @${m.index}`).not.toMatch(/Redis required|need Upstash Redis|no redirect fires|nothing redirects|nothing at `\/admin\/redirects` fires/);
     }
   });
 
