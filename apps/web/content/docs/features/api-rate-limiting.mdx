@@ -5,7 +5,7 @@ description: Protect your storefront API and MCP endpoints from abuse using Upst
 
 Cartwright includes built-in rate limiting for all `/api` routes (including the storefront AI assistant chat and MCP tool endpoints) to prevent abuse and manage costs.
 
-The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) and runs in the Next.js Edge Middleware.
+The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) and runs in `proxy.ts`, which Next.js 16 runs on the Node.js runtime.
 
 ## Setup
 
@@ -24,24 +24,26 @@ The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) 
 The `proxy.ts` file (Next.js 16's name for middleware) intercepts all requests to `/api/*`. If the Upstash environment variables are present, it initializes the rate limiter.
 
 - **Limit:** 20 requests per 10 seconds per IP address.
-- **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the rate limiter is bypassed so the app doesn't crash.
+- **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the global limiter is bypassed so the app doesn't crash (the form limits below still apply).
 - **Headers:** When rate-limited, the API returns a `429 Too Many Requests` status with `RateLimit-Policy`, `RateLimit` and `RateLimit-Limit` / `-Remaining` / `-Reset` headers indicating when the limit resets.
 
 ## Customizing the Limits
 
-If you need different limits for different endpoints, you can modify `proxy.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`.
+If you need different limits for different `/api` endpoints, you can modify `proxy.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`. The form limits below are not in `proxy.ts`: they live in `lib/rate-limit.ts`.
 
 ## Limits that work without Upstash
 
-The public forms carry their own limits, held in memory on each server instance, so they apply even when the Upstash variables are missing:
+The public forms carry their own limits, held in memory on each server instance, so they apply even when the Upstash variables are missing. Each is a bucket that starts full and refills slowly:
 
 | Form | Limit |
 |---|---|
-| Contact form (`/api/inquiries`) | 5 in a burst, then 1 per minute per IP |
-| Customer sign-up (`/account/signup`), from the release after v0.62.0 | 5 in a burst, then 1 every 5 minutes per IP |
-| Magic-link sign-in | 3 per email address, then 1 every 20 minutes |
-| Password reset | 3 per email address, then 1 every 20 minutes; 10 per IP, then 1 every 6 minutes |
+| Contact form (`/api/inquiries`) | 5 in a burst per IP, then 1 per minute |
+| Customer sign-up (`/account/signup`), from the release after v0.62.0 | 5 in a burst per client IP, then 1 every 5 minutes |
+| Magic-link sign-in | 3 in a burst per email address, then 1 every 20 minutes |
+| Password reset | 3 in a burst per email address, then 1 every 20 minutes; and 10 in a burst per IP, then 1 every 6 minutes |
 
-From the same release, sign-up has two more guards that cost a person nothing: a hidden field that only a bot fills (it gets the normal success answer and no account is created), and a three-second minimum between the form appearing and being sent. A sign-up for an address that already has an account gets exactly the answer a new one gets, so the form never tells a stranger who your customers are.
+The sign-up limit counts per client IP as the engine's trusted resolver sees it: on Vercel, or self-hosted with `CARTWRIGHT_TRUST_PROXY_IP_HEADERS` set behind a proxy that overwrites the forwarding header. Without either, the shop cannot tell its visitors apart, so the sign-up limit stays off rather than throttle every customer through one shared bucket. A typo or a refused submit does not use up an attempt.
 
-Because these limits live in memory, they reset on a redeploy and are counted per instance. For one limit shared across instances, set the Upstash variables above.
+From the same release, sign-up also has a hidden field that only a bot fills (the bot gets the normal success answer and no account is created), and refuses a form sent less than three seconds after it appeared, with a message — the person sends it again. A sign-up for an address that already has an account gets the same answer as a new one, so the form's answer no longer says who your customers are.
+
+Because these limits live in memory, they reset on a redeploy and are counted per instance. Setting the Upstash variables does not change that: it turns on the global `/api` limiter above, while the form limits stay in each instance's memory.
