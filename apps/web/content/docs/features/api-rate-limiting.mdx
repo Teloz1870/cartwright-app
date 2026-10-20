@@ -21,12 +21,27 @@ The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) 
 
 ## How it works
 
-The `middleware.ts` file intercepts all requests to `/api/*`. If the Upstash environment variables are present, it initializes the rate limiter.
+The `proxy.ts` file (Next.js 16's name for middleware) intercepts all requests to `/api/*`. If the Upstash environment variables are present, it initializes the rate limiter.
 
-- **Limit:** 30 requests per 10 seconds per IP address.
+- **Limit:** 20 requests per 10 seconds per IP address.
 - **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the rate limiter is bypassed so the app doesn't crash.
-- **Headers:** When rate-limited, the API returns a `429 Too Many Requests` status with standard `X-RateLimit-*` headers indicating when the limit resets.
+- **Headers:** When rate-limited, the API returns a `429 Too Many Requests` status with `RateLimit-Policy`, `RateLimit` and `RateLimit-Limit` / `-Remaining` / `-Reset` headers indicating when the limit resets.
 
 ## Customizing the Limits
 
-If you need different limits for different endpoints, you can modify `middleware.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`.
+If you need different limits for different endpoints, you can modify `proxy.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`.
+
+## Limits that work without Upstash
+
+The public forms carry their own limits, held in memory on each server instance, so they apply even when the Upstash variables are missing:
+
+| Form | Limit |
+|---|---|
+| Contact form (`/api/inquiries`) | 5 in a burst, then 1 per minute per IP |
+| Customer sign-up (`/account/signup`), from the release after v0.62.0 | 5 in a burst, then 1 every 5 minutes per IP |
+| Magic-link sign-in | 3 per email address, then 1 every 20 minutes |
+| Password reset | 3 per email address, then 1 every 20 minutes; 10 per IP, then 1 every 6 minutes |
+
+From the same release, sign-up has two more guards that cost a person nothing: a hidden field that only a bot fills (it gets the normal success answer and no account is created), and a three-second minimum between the form appearing and being sent. A sign-up for an address that already has an account gets exactly the answer a new one gets, so the form never tells a stranger who your customers are.
+
+Because these limits live in memory, they reset on a redeploy and are counted per instance. For one limit shared across instances, set the Upstash variables above.
