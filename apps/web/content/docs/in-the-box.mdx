@@ -61,9 +61,9 @@ Cost-control sampling is configured by default (`tracesSampleRate: 0.1` in produ
 
 ## Rate limiting → Upstash
 
-Upstash Redis backs `lib/rate-limit.ts:createRateLimiter()`. Per-IP and per-API-key throttling is already applied to storefront chat, agent endpoints, admin write actions, and the negotiation surface. The limits are configurable per route; the defaults are tuned for typical shops with one or two attached buyer agents.
+Upstash Redis backs two limiters when it is configured: the global `/api` limiter in `proxy.ts` (20 requests per 10 seconds per client) and the public agent API's limit (`lib/public-agent-rate-limit.ts`, 60 per minute on `/api/mcp` and `/api/v1/tools`, which falls back to memory without Upstash). The other per-route limits, made with `lib/rate-limit.ts:createRateLimiter()` — storefront chat, admin write actions and the public forms among them — are held in each server instance's memory whether or not Upstash is set: correct on one instance, approximate across several.
 
-For shops that don't want managed Redis, the limiter falls back to a process-local LRU cache — single-instance correctness, multi-instance approximate. The Upstash env vars being absent is fine for the limiter; it just downgrades silently. Admin-managed redirects do not need it either: since engine v0.62.0 they are served from the database (cached for 60 seconds per server instance), and from Redis when it is configured.
+Without the Upstash env vars the global limiter is simply off and every other limit still applies. Details: [API rate limiting](/docs/features/api-rate-limiting). Admin-managed redirects do not need it either: since engine v0.62.0 they are served from the database (cached for 60 seconds per server instance), and from Redis when it is configured.
 
 ## i18n → i18nexus
 
