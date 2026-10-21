@@ -16,6 +16,7 @@ The customer storefront covers the routes a shopper actually sees. In upstream c
 - **`/ordre/[id]`** — Order confirmation. Linkable for receipts.
 - **`/konto`** — Account hub. Sign in with magic link, view orders, manage addresses.
 - **`/info/[slug]`** — CMS-style static pages rendered from the admin Sider CRUD.
+- **`/info`** — An index of the information pages: about, contact, privacy, terms and cookies, then every other published page, with `CollectionPage` JSON-LD. From the release after v0.62.0; before it the bare `/info` was a 404. Not in a `--profile site` scaffold, which has no CMS.
 
 ## Rendering model
 
