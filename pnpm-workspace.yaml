@@ -58,14 +58,14 @@ embedReadme: true
 # on 5.x. The Tuesday currency PR moves majors on purpose; this block only
 # closes advisories.
 overrides:
-  "fast-uri@3": "^3.1.6"
+  "fast-uri@3": "^3.1.8"
   sharp: "^0.35.5"
   postcss: "^8.5.18"
   browserslist: "^4.28.7"
   "nanoid@3": "^3.3.18"
   "js-yaml@4": "^4.3.2"
   "js-yaml@3": "^3.15.2"
-  vite: "^8.0.16"
+  vite: "^8.3.3"
   # 2026-10-08 (APP-CURRENCY-1, security half): the critical and the three
   # highs in `pnpm audit --prod`. proxy-addr GHSA-jqcg-44mw-7w3h (critical,
   # express under the MCP SDK — this site never runs express); sharp
@@ -75,3 +75,20 @@ overrides:
   # 1.32.0 (1.32.1 was younger than three days on 2026-10-08).
   "proxy-addr@2": "^2.0.8"
   "source-map-js@1": "^1.2.2"
+  # 2026-10-22 (security sweep after the October wave): every advisory
+  # `pnpm audit --prod` still listed, closed on its own major. vite 8.3.3
+  # (above) closes the high GHSA-587h-7wmj-h5pm (launch-editor, Windows dev
+  # server only) and its five moderates; fast-uri 3.1.8 (above) closes
+  # GHSA-hrr3-gc8f-f4qj. dompurify (mermaid's sanitizer, nine advisories),
+  # protobufjs (@google/genai), qs/hono/ip-address (the MCP SDK's express
+  # stack), esbuild (fumadocs-mdx, build time), @babel/core (next's toolchain).
+  # mermaid itself is a direct dependency of apps/web and is raised there.
+  # Left open on purpose: katex GHSA-238p-pmpm-9mq7 (low) — its fix is 0.18,
+  # mermaid 11.16.1 still asks for ^0.16, and a 0.x minor is a breaking jump.
+  "dompurify@3": "^3.4.16"
+  "protobufjs@7": "^7.6.5"
+  "qs@6": "^6.16.0"
+  "hono@4": "^4.13.11"
+  "ip-address@10": "^10.7.1"
+  "esbuild@>=0.28.0 <0.28.1": "^0.28.1"
+  "@babel/core@7": "^7.29.6"

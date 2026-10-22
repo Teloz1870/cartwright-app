@@ -18,9 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # A tag like `@v4` is a pointer its owner can move; whoever moves it runs
+      # code in our CI — here that includes the release job holding NPM_TOKEN.
+      # A full commit SHA cannot be moved. Local actions (`uses: ./…`) are exempt.
+      - name: Actions are pinned to a commit SHA
+        run: |
+          if grep -rnE '^\s*-?\s*uses:\s*[^.[:space:]][^@]*@' .github/workflows | grep -vE '@[0-9a-f]{40}([[:space:]]|$)'; then
+            echo "::error::Pin every action above to a full 40-character commit SHA, with the tag as a comment."
+            exit 1
+          fi
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -58,9 +67,9 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -70,7 +79,7 @@ jobs:
       # macOS would differ from Linux CI on antialiasing alone, and a gate that
       # fails for reasons that are not defects gets switched off.
       - run: pnpm --filter web test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: playwright-report
