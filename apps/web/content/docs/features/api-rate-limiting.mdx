@@ -5,7 +5,7 @@ description: Protect your storefront API and MCP endpoints from abuse using Upst
 
 Cartwright includes built-in rate limiting for all `/api` routes (including the storefront AI assistant chat and MCP tool endpoints) to prevent abuse and manage costs.
 
-The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) and runs in `proxy.ts`, which Next.js 16 runs on the Node.js runtime.
+The global limiter is implemented via [Upstash Redis](https://upstash.com/redis) and runs in `proxy.ts`, which Next.js 16 runs on the Node.js runtime. The public agent API and the public forms carry limits of their own, which apply with or without Upstash — see below.
 
 ## Setup
 
@@ -23,13 +23,27 @@ The rate limiting is implemented via [Upstash Redis](https://upstash.com/redis) 
 
 The `proxy.ts` file (Next.js 16's name for middleware) intercepts all requests to `/api/*`. If the Upstash environment variables are present, it initializes the rate limiter.
 
-- **Limit:** 20 requests per 10 seconds per client IP, as the engine's trusted resolver sees it (see below). Self-hosted without `CARTWRIGHT_TRUST_PROXY_IP_HEADERS`, every visitor counts as the same unknown client, so all `/api` traffic shares one 20-per-10-seconds bucket — set the variable behind a proxy that overwrites the forwarding header, or leave Upstash unset. The OAuth routes use the same limiter in a bucket of their own.
-- **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the global limiter is bypassed so the app doesn't crash (the form limits below still apply).
+- **Limit:** 20 requests per 10 seconds per client IP, as the engine's trusted resolver sees it ([Who counts as one client](#who-counts-as-one-client)). Self-hosted without `CARTWRIGHT_TRUST_PROXY_IP_HEADERS`, every visitor counts as the same unknown client, so all `/api` traffic shares one 20-per-10-seconds bucket — set the variable behind a proxy that overwrites the forwarding header, or leave Upstash unset. The OAuth routes use the same limiter in a bucket of their own.
+- **Fail-open:** If Upstash is unreachable or the environment variables are missing (e.g. in local development), the global limiter is bypassed so the app doesn't crash (the agent API and form limits below still apply).
 - **Headers:** Every limited response carries `RateLimit-Policy`, `RateLimit`, `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. Over the limit, the API answers `429 Too Many Requests` with a `Retry-After` header and an `application/problem+json` body.
+
+## The public agent API
+
+Anonymous calls to `/api/mcp` and to the public tools on `/api/v1/tools` — those sent without an `Authorization` header — have a limit of their own, in `lib/public-agent-rate-limit.ts`: **60 requests per minute per client IP**, as a bucket of 60 that refills at one request per second.
+
+- **With Upstash:** the bucket is kept in Redis, so it holds across every server instance, and MCP and REST calls from one client draw on the same bucket. If an Upstash check fails or times out, the shop uses the in-memory bucket for the next 30 seconds instead of letting requests through unthrottled. The global limiter in `proxy.ts` sees these paths too, so an agent also meets its 20-per-10-seconds window.
+- **Without Upstash:** the same bucket — 60, then one per second — is held in each server instance's memory.
+- **Over the limit:** `429 Too Many Requests` with a `Retry-After` header, an `application/problem+json` body with the code `rate_limit_exceeded`, and `RateLimit-*` headers under the policy name `public-agent`.
+
+Calls that carry an `Authorization` header do not use this bucket: they count against a per-IP authentication-attempt limit instead (`lib/auth-attempt-rate-limit.ts`: 120 in a burst, then 2 per second, in memory).
 
 ## Customizing the Limits
 
-If you need different limits for different `/api` endpoints, you can modify `proxy.ts` at the root of your Cartwright shop to apply specific rules based on `request.nextUrl.pathname`. The form limits below are not in `proxy.ts`: they live in `lib/rate-limit.ts`.
+Each limit lives in its own file:
+
+- **The global `/api` limiter:** `GLOBAL_API_RATE_LIMIT` and `GLOBAL_API_RATE_WINDOW_SECONDS` in `proxy.ts` at the root of your Cartwright shop. If you need different limits for different `/api` endpoints, apply specific rules there based on `req.nextUrl.pathname`.
+- **The public agent API (`/api/mcp`, `/api/v1/tools`):** `lib/public-agent-rate-limit.ts`, not `proxy.ts`. `PUBLIC_AGENT_RATE_LIMIT` is the size of the bucket, in Upstash and in memory alike, and the number the `RateLimit-*` headers report; the refill of one request per second is set beside it (`Ratelimit.tokenBucket(1, "1 s", …)` and `refillRate: 1`). With Upstash set, the global limiter's 20 per 10 seconds still applies to these paths first, so a higher limit there also needs a change in `proxy.ts`.
+- **The form limits below:** `lib/rate-limit.ts`.
 
 ## Limits that work without Upstash
 
@@ -37,15 +51,30 @@ The public forms carry their own limits, held in memory on each server instance,
 
 | Form | Limit |
 |---|---|
-| Contact form (`/api/inquiries`) | 5 in a burst per IP, then 1 per minute |
+| Contact form (`/api/inquiries`) | 5 in a burst per client IP, then 1 per minute |
 | Customer sign-up (`/account/signup`), from the release after v0.62.0 | 5 in a burst per client IP, then 1 every 5 minutes |
 | Magic-link sign-in | 3 in a burst per email address, then 1 every 20 minutes |
-| Password reset | 3 in a burst per email address, then 1 every 20 minutes; and 10 in a burst per IP, then 1 every 6 minutes. A throttled request still answers "sent", so the form never reveals which addresses exist |
+| Password reset | 3 in a burst per email address, then 1 every 20 minutes; and 10 in a burst per client IP, then 1 every 6 minutes. A throttled request still answers "sent", so the form never reveals which addresses exist |
 
 The sign-up limit counts per client IP as the engine's trusted resolver sees it: on Vercel, or self-hosted with `CARTWRIGHT_TRUST_PROXY_IP_HEADERS` set behind a proxy that overwrites the forwarding header. Without either, the shop cannot tell its visitors apart, so the sign-up limit stays off rather than throttle every customer through one shared bucket. A typo or a refused submit does not use up an attempt.
 
-The contact form and the password reset's per-IP limit do not use that resolver yet: they key on the first address in the `X-Forwarded-For` header as the request sent it. On Vercel that header is set by the platform. Self-hosted, a client that sends its own header gets a fresh bucket each time, and a request without one lands in a shared `unknown` bucket — so behind your own proxy, make sure it overwrites `X-Forwarded-For`.
-
 From the same release, sign-up also has a hidden field that only a bot fills (the bot gets the normal success answer and no account is created), and refuses a form sent less than three seconds after it appeared, with a message — the person sends it again. A sign-up for an address that already has an account gets the same answer as a new one, so the form's answer no longer says who your customers are.
 
+From the release after v0.62.0, the contact form (with or without a database) and the password reset's per-IP limit key on the same trusted client address. Up to v0.62.0 they read the first address in the `X-Forwarded-For` header as the request sent it, so a self-hosted client could send a new value with every request and never meet the limit. Unlike sign-up, they keep counting a visitor they cannot identify: such visitors share one bucket. On Vercel nothing changes. Self-hosted without `CARTWRIGHT_TRUST_PROXY_IP_HEADERS`, every visitor is in that shared bucket — five contact messages and then one a minute for the whole shop, and ten password resets and then one every six minutes, so a single client can use up password reset for everyone while each throttled request still answers "sent". Password reset checks the visitor's limit before the address's, so a client already over its limit cannot use up the limits of other people's addresses.
+
+<Callout type="warn">
+**Self-hosted behind a reverse proxy?** Up to v0.62.0 the contact form and the password reset believed the proxy's `X-Forwarded-For` without `CARTWRIGHT_TRUST_PROXY_IP_HEADERS`. If your proxy overwrites that header and the variable is not set, set it to `true` (or `1`) when you take the release after v0.62.0 — otherwise both forms share one limit across all your visitors.
+</Callout>
+
 Because these limits live in memory, they reset on a redeploy and are counted per instance. Setting the Upstash variables does not change that: it turns on the global `/api` limiter above, while the form limits stay in each instance's memory.
+
+## Who counts as one client
+
+The global `/api` limiter, the public agent API and — from the release after v0.62.0 — sign-up, the contact form and the password reset's per-IP limit all key on the same client address, resolved by `lib/trusted-client-ip.ts`:
+
+- **On Vercel** (`VERCEL=1`), it reads `X-Vercel-Forwarded-For`, or `X-Forwarded-For` when that is missing. Vercel overwrites these headers as requests come in, so there is nothing to configure.
+- **Self-hosted**, it reads `X-Forwarded-For` (or `X-Real-IP` when that is missing) only when `CARTWRIGHT_TRUST_PROXY_IP_HEADERS` is `true` or `1`. Surrounding whitespace is trimmed and case is ignored, so `TRUE` counts too; any other value, such as `yes` or `on`, does nothing — the variable then counts as unset.
+- **Set it only behind a reverse proxy that overwrites `X-Forwarded-For`.** The first address in the header is the one used, and only if it is a valid IPv4 or IPv6 address; anything else counts as the unknown client. A proxy that appends to the header leaves whatever the client sent at the front, and a client that reaches the server directly writes the header itself — either way, a client could pick a fresh bucket with every request.
+- **Without the variable** (self-hosted), every visitor is the same unknown client: the global limiter (when Upstash is set), the public agent API, the contact form and the password reset each count the whole shop in one bucket, and the sign-up limit stays off. That is the right setting when clients reach the server directly.
+
+From the release after v0.62.0, a self-hosted server without the variable logs a warning once per process, the first time one of these limits resolves a request that carries an `X-Forwarded-For` header — the sign of a proxy that was never declared. The line starts `[cartwright] Requests carry an X-Forwarded-For header, but CARTWRIGHT_TRUST_PROXY_IP_HEADERS is not "true" or "1"`.
