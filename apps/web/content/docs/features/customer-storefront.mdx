@@ -18,6 +18,16 @@ The customer storefront covers the routes a shopper actually sees. In upstream c
 - **`/info/[slug]`** — CMS-style static pages rendered from the admin Sider CRUD.
 - **`/info`** — An index of the information pages: about, contact, privacy, terms and cookies, then every other published page, with `CollectionPage` JSON-LD. From the release after v0.62.0; before it the bare `/info` was a 404. Not in a `--profile site` scaffold, which has no CMS.
 
+## Nested categories
+
+From the release after v0.62.0, the category page and the product page follow a category's parent (`Category.parentId`). A shop whose categories are not nested renders exactly as before, and its product pages do not even read the category tree.
+
+- **A parent category lists the products of every category below it**, not only the products placed in it directly. The page finds products by their primary category (`Product.categoryId`), so a shop that keeps its products in the innermost categories used to show an empty page for every parent. The product count in the page's hero and its `ItemList` JSON-LD cover the same products.
+- **The breadcrumb walks the parent chain**: Home › All products › each parent, top level first › the category, with the product added at the end on a product page. The visible trail and the `BreadcrumbList` JSON-LD carry the same steps. Each parent's name uses its stored translation for the page's language, as the category's own name does, and its link goes through the same helper as every other category link, so it follows a stored permalink once `urls.permalinks` is on. As before, the visible trail shows only when the `breadcrumbs` runtime flag is on (default off); the JSON-LD is always emitted. The halo and crema packs draw their own short product-page trail, which has no categories in it; their `BreadcrumbList` still gets the full chain.
+- **Depth and loops.** Going up, the walk has to reach a top-level category within 10 steps. A category set as its own parent, a loop (A under B under A) or a chain of more than 10 parents gets no parent steps at all: the page shows the flat trail, Home › All products › the category, so `BreadcrumbList` never claims two contradictory parents. Going down, each subcategory is included once, however the rows loop, and the walk stops 10 levels below the page's category. If reading the tree fails, the trail falls back to the flat one and the category page to its own products.
+- **Setting a parent.** Nothing in the engine sets one yet: the admin category form, the `categories.upsert` tool, the product CSV import and a sitepack export or restore carry no parent, so a tree exists only where something writes `Category.parentId` in the database directly. The case it was built for is a migrated WooCommerce catalogue, whose products sit in the innermost categories; the dedicated WooCommerce importer is planned, not built.
+- **Not following the tree yet.** The catalogue's category filter (`/produkter?kategori=<slug>`), the product counts in `/admin/kategorier` and the `productCount` of the `categories.list` tool still count only the products placed in a category directly.
+
 ## Rendering model
 
 Cartwright uses Next.js App Router. Pages are React Server Components by default; interactive surfaces (cart, checkout, AI chat) are client components nested under server pages.
