@@ -70,7 +70,7 @@ Self-hosted without `CARTWRIGHT_TRUST_PROXY_IP_HEADERS`, every visitor is in tha
 <Callout type="warn">
 **Self-hosted?** The release after v0.62.0 changes these limits for you, with or without a proxy. Behind a reverse proxy that overwrites `X-Forwarded-For`, set `CARTWRIGHT_TRUST_PROXY_IP_HEADERS` to `true` (or `1`) when you take it, and every visitor gets its own limit again.
 
-If clients reach the server directly, do not set the variable: the header is then the client's own, and anyone could forge it. Put a reverse proxy that overwrites the header in front (a TLS setup normally has one), then set it. Until then, every per-client limit counts all your visitors as one client: the contact form and password reset, the public agent API, the auth-attempt limit that API keys meet, and (with Upstash) the global limiter in `proxy.ts` — see [Who counts as one client](#who-counts-as-one-client).
+If clients reach the server directly, do not set the variable: the header is then the client's own, and anyone could forge it. Put a reverse proxy that overwrites the header in front (a TLS setup normally has one), then set it. Until then, these limits count all your visitors as one client: the contact form and password reset, the public agent API, the auth-attempt limit that API keys meet, and (with Upstash) the global limiter in `proxy.ts`. Sign-up's per-client limit switches off instead — see [Who counts as one client](#who-counts-as-one-client).
 </Callout>
 
 Because these limits live in memory, they reset on a redeploy and are counted per instance. Setting the Upstash variables does not change that: it turns on the global limiter in `proxy.ts` above, while the form limits stay in each instance's memory.
