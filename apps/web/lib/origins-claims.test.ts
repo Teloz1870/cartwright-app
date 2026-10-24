@@ -256,6 +256,19 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(step).toMatch(/or one the proxy never sees/);
   });
 
+  it('step 9 gives an old slash address that is already a route its 308 before the 307, not the 307 alone', () => {
+    // WooCommerce's product address is also an engine route (app/[locale]/product/[slug]).
+    // Measured on demo.cartwright.app 2026-10-24 (trailingSlash off, localePrefix "always"):
+    // /product/ethiopia-yirgacheffe/ → 308 /product/ethiopia-yirgacheffe → 307 /en/product/… → 200,
+    // and the same path without the slash → 307 → 200.
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).not.toMatch(/`\/product\/<slug>\/`, answers with the `307` alone/);
+    expect(step).toMatch(/`\/product\/<slug>\/` answers the `308`, then the `307`, then `200`/);
+    expect(step).toMatch(/without the `\/` answers the `307` alone/);
+    // Under "never" the route still takes the 308 first when it ends in `/`.
+    expect(step).toMatch(/localePrefix: "never"[^\n]*ending in `\/`[^\n]*`308` in front/);
+  });
+
   it('does not say the admin redirect preview lists every row (it shows counts and errors)', () => {
     // app/admin/redirects/RedirectsManager.tsx renders the summary and ErrorLines only;
     // the per-row plan is the redirects.import tool's dryRun output.
