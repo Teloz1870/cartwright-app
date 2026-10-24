@@ -562,7 +562,9 @@ describe('the WooCommerce status page matches the engine', () => {
     const importer = lineWith(woo, '**A WooCommerce importer.**');
     expect(importer).toMatch(/on v0\.63\.0 nothing calls it\. From the release after v0\.63\.0 the `migration\.woo_plan` tool does/);
     expect(importer).toMatch(/a dry run, behind the runtime flag `migrationDashboard`, scope `settings:read`, and one of the commerce tools a scaffold without the webshop module leaves out/);
-    expect(importer).toMatch(/a WordPress installed in a subdirectory, such as `https:\/\/example\.com\/shop\/`, is not supported yet/);
+    expect(importer).toMatch(/a WordPress installed in a subdirectory, such as `https:\/\/example\.com\/shop\/`, is not yet supported/);
+    expect(importer).toMatch(/or when it differs from this shop's own setting — every product is blocked/);
+    expect(importer).toMatch(/the first 50 rows that need a look; a row to create is only counted/);
     expect(importer).toMatch(/writes nothing to the catalogue/);
     expect(importer).toMatch(/every row plans as a create, a conflict, an orphan or blocked/);
     expect(importer).toMatch(/The run that writes, images, variants and stock are not built\./);
