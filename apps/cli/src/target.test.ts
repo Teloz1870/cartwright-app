@@ -1,9 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { afterEach, describe, it, expect } from "vitest";
+import { execSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { DEFAULT_PROJECT_NAME, inspectScaffoldTarget, resolveProjectArg } from "./target";
-import { titleCase } from "./scaffold";
+import {
+  DEFAULT_PROJECT_NAME,
+  existingRemote,
+  inspectScaffoldTarget,
+  prepareScaffoldTarget,
+  resolveProjectArg,
+} from "./target";
+import { hasGitRemote, titleCase } from "./scaffold";
 
 /**
  * GRK1 + GRK2 (Grok 4.6 scaffolding from zero, 2026-09-18). Measured on
@@ -126,13 +133,93 @@ describe("inspectScaffoldTarget — `.` and near-empty folders are allowed (GRK1
   });
 });
 
-describe("index.ts wires both helpers in (it runs main() on import, so the source is read)", () => {
-  const src = readFileSync(join(__dirname, "index.ts"), "utf8");
+describe("prepareScaffoldTarget — the one pre-flight the CLI acts on", () => {
+  const home = "/nonexistent-home-for-test";
+  const dirs: string[] = [];
+  function tmp(): string {
+    const d = mkdtempSync(join(tmpdir(), "cw-prepare-"));
+    dirs.push(d);
+    return d;
+  }
+  afterEach(() => {
+    while (dirs.length) rmSync(dirs.pop()!, { recursive: true, force: true });
+  });
+  const git = (cwd: string, cmd: string) => execSync(`git ${cmd}`, { cwd, stdio: "ignore" });
 
-  it("no longer refuses every existing directory, and never names a project after the whole path", () => {
-    expect(src).not.toMatch(/if \(existsSync\(targetDir\)\)/);
-    expect(src).not.toMatch(/defaultName = positionals\[0\]/);
-    expect(src).toMatch(/resolveProjectArg\(positionals\[0\]/);
-    expect(src).toMatch(/inspectScaffoldTarget\(targetDir/);
+  it("`.` in an empty folder is that folder — never ./<slug> — and forces nothing", () => {
+    const dir = tmp();
+    expect(prepareScaffoldTarget(resolveProjectArg(".", dir), "edited-slug", dir, home)).toEqual({
+      ok: true,
+      dir,
+      cdDir: ".",
+      replaces: [],
+      force: false,
+      remoteBefore: undefined,
+    });
+  });
+
+  it("without a positional the folder follows the slug, as before", () => {
+    const cwd = tmp();
+    const r = prepareScaffoldTarget(resolveProjectArg(undefined, cwd), "kaffe", cwd, home);
+    expect(r).toMatchObject({ ok: true, dir: join(cwd, "kaffe"), cdDir: "kaffe", force: false });
+  });
+
+  it("a populated folder is refused and gets no directory to write into", () => {
+    const dir = tmp();
+    writeFileSync(join(dir, "package.json"), "{}");
+    const r = prepareScaffoldTarget(resolveProjectArg(".", dir), "x", dir, home);
+    expect(r.ok).toBe(false);
+    expect(r).not.toHaveProperty("dir");
+  });
+
+  it("a clone records its remote before anything is written, and only then is giget forced", () => {
+    const dir = tmp();
+    git(dir, "init -q");
+    git(dir, "remote add origin https://example.test/shop.git");
+    writeFileSync(join(dir, "README.md"), "# mine");
+    expect(prepareScaffoldTarget(resolveProjectArg(".", dir), "x", dir, home)).toMatchObject({
+      ok: true,
+      dir,
+      replaces: ["README.md"],
+      force: true,
+      remoteBefore: "origin",
+    });
+  });
+
+  it("names the remote that is there, preferring origin", () => {
+    const dir = tmp();
+    git(dir, "init -q");
+    git(dir, "remote add upstream https://example.test/a.git");
+    expect(existingRemote(dir)).toBe("upstream");
+    git(dir, "remote add origin https://example.test/b.git");
+    expect(existingRemote(dir)).toBe("origin");
+  });
+
+  it("a folder inside someone else's repository has no remote of its own", () => {
+    // `git remote` walks up to the parent, but the scaffold's own `git init`
+    // makes a fresh repository here, with no remote at all.
+    const parent = tmp();
+    git(parent, "init -q");
+    git(parent, "remote add origin https://example.test/mono.git");
+    const child = join(parent, "shop");
+    mkdirSync(child);
+    expect(hasGitRemote(child)).toBe(true);
+    expect(existingRemote(child)).toBeUndefined();
+    expect(prepareScaffoldTarget(resolveProjectArg(".", child), "x", child, home)).toMatchObject({
+      ok: true,
+      remoteBefore: undefined,
+    });
+  });
+
+  it("a folder name with a space is quoted in the cd line", () => {
+    const cwd = tmp();
+    expect(prepareScaffoldTarget(resolveProjectArg("My Shop", cwd), "my-shop", cwd, home)).toMatchObject({
+      ok: true,
+      cdDir: '"My Shop"',
+    });
   });
 });
+
+// How index.ts acts on all of this — which folder it writes into, that a
+// refusal writes nothing, what the banner says in a clone — is pinned by
+// running the real entry point in scaffold-target-cli.test.ts.

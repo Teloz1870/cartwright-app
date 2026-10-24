@@ -1,5 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { basename, parse, resolve } from "node:path";
+import { basename, join, parse, relative, resolve } from "node:path";
 
 /**
  * Where a scaffold goes, and what it is called (GRK1 + GRK2).
@@ -41,11 +42,9 @@ function slugify(name: string): string {
  * and the name is derived from it. Without one, the directory follows the
  * name (prompted, or the AI brief's slug), exactly as before.
  */
-export function resolveProjectArg(
-  arg: string | undefined,
-  cwd: string,
-  homeName?: string,
-): { dir?: string; name: string } {
+export type ProjectArg = { dir?: string; name: string };
+
+export function resolveProjectArg(arg: string | undefined, cwd: string, homeName?: string): ProjectArg {
   if (!arg) return { name: DEFAULT_PROJECT_NAME };
   const dir = resolve(cwd, arg);
   const slug = slugify(basename(dir));
@@ -84,4 +83,57 @@ export function inspectScaffoldTarget(dir: string, home: string): TargetCheck {
     };
   }
   return { ok: true, replaces: entries.filter((e) => REPLACED_ENTRIES.has(e)) };
+}
+
+/**
+ * The remote of a repository that already lives AT `dir` — a GitHub clone, or
+ * `git init` + `git remote add` — read before the scaffold writes anything.
+ * Only a `.git` in `dir` itself counts: in a folder nested inside another
+ * repository `git remote` answers for the parent, while the scaffold's own
+ * `git init` then creates a fresh repository with no remote at all.
+ */
+export function existingRemote(dir: string): string | undefined {
+  if (!existsSync(join(dir, ".git"))) return undefined;
+  try {
+    const out = execFileSync("git", ["remote"], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const names = out.split("\n").map((n) => n.trim()).filter(Boolean);
+    return names.includes("origin") ? "origin" : names[0];
+  } catch {
+    return undefined;
+  }
+}
+
+export type PreparedTarget =
+  | { ok: false; reason: string }
+  | {
+      ok: true;
+      dir: string;
+      /** What to type to get there: the relative path, or "." when scaffolding where we stand. */
+      cdDir: string;
+      replaces: string[];
+      /** giget refuses a non-empty folder unless forced, so force exactly what the check let through. */
+      force: boolean;
+      /** The folder's remote before the scaffold, if it had one — its commit is then NOT on GitHub yet. */
+      remoteBefore: string | undefined;
+    };
+
+/**
+ * The whole pre-flight in one call, so the CLI cannot pick a directory, a
+ * force flag or a remote fact that the check did not see: the positional's
+ * path wins over the name, a refused folder has no `dir` to write into, and
+ * the remote is recorded before anything is written.
+ */
+export function prepareScaffoldTarget(target: ProjectArg, slug: string, cwd: string, home: string): PreparedTarget {
+  const dir = target.dir ?? resolve(cwd, slug);
+  const check = inspectScaffoldTarget(dir, home);
+  if (!check.ok) return check;
+  const rel = relative(cwd, dir) || ".";
+  return {
+    ok: true,
+    dir,
+    cdDir: /\s/.test(rel) ? `"${rel}"` : rel,
+    replaces: check.replaces,
+    force: existsSync(dir) && readdirSync(dir).length > 0,
+    remoteBefore: existingRemote(dir),
+  };
 }

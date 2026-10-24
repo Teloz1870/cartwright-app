@@ -74,7 +74,7 @@ import {
 import { downloadTemplate } from "giget";
 import pc from "picocolors";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join } from "node:path";
 import { homedir } from "node:os";
 import { execSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -157,7 +157,8 @@ import { runVerticalInstall } from "./vertical-install.js";
 import { runDoctor } from "./doctor.js";
 import { REF_ALIASES } from "./refs.js";
 import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
-import { inspectScaffoldTarget, resolveProjectArg } from "./target.js";
+import { prepareScaffoldTarget, resolveProjectArg } from "./target.js";
+import { publishSteps } from "./publish-steps.js";
 import {
   type Profile,
   PROFILES,
@@ -711,15 +712,14 @@ async function run(): Promise<void> {
   // ── Pre-flight ──────────────────────────────────────────────────────────
   const finalSlug = storeSlugOverride ?? projectName;
   const finalProjectName = storeNameOverride ?? projectName;
-  const targetDir = target.dir ?? resolve(process.cwd(), finalSlug);
-  const targetCheck = inspectScaffoldTarget(targetDir, homedir());
-  if (!targetCheck.ok) {
-    cancel(targetCheck.reason);
+  const prepared = prepareScaffoldTarget(target, finalSlug, process.cwd(), homedir());
+  if (!prepared.ok) {
+    cancel(prepared.reason);
     process.exit(1);
   }
-  // What to type to get there — "." when scaffolding where we stand.
-  const relDir = relative(process.cwd(), targetDir) || ".";
-  const cdDir = /\s/.test(relDir) ? `"${relDir}"` : relDir;
+  // remoteBefore: a clone's remote is there before the scaffold commit exists,
+  // so it never means "your code is on GitHub" (see ./publish-steps.ts).
+  const { dir: targetDir, cdDir, remoteBefore } = prepared;
 
   // ── Template fetch ──────────────────────────────────────────────────────
   const fetchSpinner = spinner();
@@ -731,12 +731,12 @@ async function run(): Promise<void> {
   try {
     await downloadTemplate(`${TEMPLATE_REPO}#${templateRef}`, {
       dir: targetDir,
-      // inspectScaffoldTarget allowed only an empty folder or .git & co.
-      force: existsSync(targetDir),
+      // true only for a folder the pre-flight let through with .git & co. in it
+      force: prepared.force,
     });
     fetchSpinner.stop(pc.green(`Template downloaded (${refDisplay}).`));
-    if (targetCheck.replaces.length > 0) {
-      note(`Replaced ${targetCheck.replaces.join(" and ")} with the template's own.`, "info");
+    if (prepared.replaces.length > 0) {
+      note(`Replaced ${prepared.replaces.join(" and ")} with the template's own.`, "info");
     }
   } catch (err) {
     fetchSpinner.stop(pc.red("Template fetch failed."));
@@ -932,7 +932,7 @@ async function run(): Promise<void> {
   // put the code on GitHub (the home that Vercel deploys from). Fully optional,
   // fail-soft, and only when we actually have a git repo + an interactive run.
   // A folder cloned from GitHub already has its remote — nothing to create.
-  if (gitInitialized && (forceGithub || offerGithub) && !hasGitRemote(targetDir)) {
+  if (gitInitialized && (forceGithub || offerGithub) && remoteBefore === undefined) {
     const wantsGithub = forceGithub
       ? true
       : await confirm({
@@ -1172,7 +1172,13 @@ async function run(): Promise<void> {
 
   // Reality, not intent: `gh repo create` can half-fail, and --no-git skips the
   // repo entirely while still leaving ci.yml on disk.
-  const projectHasRemote = gitInitialized && hasGitRemote(targetDir);
+  const publish = publishSteps({
+    slug: finalSlug,
+    ciWritten: forkCiWritten,
+    gitInitialized,
+    remoteBefore,
+    remoteNow: gitInitialized && hasGitRemote(targetDir),
+  });
 
   const lines = [
     pc.green("✓") +
@@ -1184,16 +1190,8 @@ async function run(): Promise<void> {
       : profile === "site"
         ? pc.green("✓") + ` Site profile — a plain website: no database, no admin, no commerce`
         : "",
-    // A workflow file only runs once GitHub has the repository. Claiming
-    // "on every push" before a remote exists is the whole failure this line
-    // used to cause: the file LOOKS like coverage, so nobody checks for a green
-    // mark that has never existed. Ask git, then say only what is true.
-    forkCiWritten && projectHasRemote
-      ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml) — runs on every push`
-      : forkCiWritten
-        ? pc.yellow("!") +
-          ` CI workflow written (.github/workflows/ci.yml) — ${pc.bold("inactive")} until this project has a remote`
-        : "",
+    // A workflow file only runs once GitHub has the commit — say only what is true.
+    publish.ci,
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
       ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
@@ -1225,11 +1223,7 @@ async function run(): Promise<void> {
     aiHint,
     "",
     pc.bold("Put it online (GitHub → Vercel):"),
-    projectHasRemote
-      ? pc.dim("  1. Your code is already on GitHub ✓")
-      : pc.dim(
-          `  1. Push this folder to a private GitHub repo — this also turns on the CI above:\n     gh repo create ${finalSlug} --private --source=. --remote=origin --push`,
-        ),
+    publish.step1,
     pc.dim("  2. Import the repo at vercel.com → it builds + gives you a live URL"),
     pc.dim("  3. Every push to GitHub then redeploys your shop automatically"),
     "  " +
