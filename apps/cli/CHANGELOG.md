@@ -1,5 +1,17 @@
 # create-cartwright
 
+## 2.9.15
+
+### Patch Changes
+
+- 009a954: `create-cartwright --version` (and `-v`) now prints `create-cartwright <version>` and exits 0; before, the CLI did not know the flag. A flag it does not know, a flag missing its value, or a stray argument to a subcommand now prints one line, such as `Unknown option '--bogus'. Run create-cartwright --help to see the options.`, and exits 2, where it used to print "Unexpected error:" with a Node stack trace and exit 1. This covers `design install`, `vertical install` and `doctor` as well as the scaffolder.
+- 9c95f3f: Every new scaffold now ships `.github/dependabot.yml`, so once the project is on GitHub, Dependabot opens the update PRs in your own repository. Each week brings at most two npm PRs: Next.js with React (they move together), and every other minor or patch bump. Major versions are left to you, and a security fix that needs one still arrives, because the majors rule is an `update-types` ignore and Dependabot applies those to version updates only. A version is proposed only once it is as old as the scaffold's `minimumReleaseAge` in `pnpm-workspace.yaml` (three days), through Dependabot's `cooldown`: pnpm refuses to install a younger release, so an earlier PR would fail your own CI. The cooldown does not hold back security fixes, but pnpm still does, so a fix younger than three days fails `ci.yml` until it is old enough or listed in `minimumReleaseAgeExclude`. Security fixes come grouped into one PR once _Dependabot security updates_ is on in the repository's settings. A second entry keeps the actions in `.github/workflows/ci.yml` current. The CLI writes the file for every profile and under `--no-git` too, just as it writes `ci.yml`, and leaves an existing `dependabot.yml` or `dependabot.yaml` alone.
+- 7ad8c10: `npx create-cartwright .` works. It used to refuse every directory that already existed, so scaffolding into the current folder failed even when that folder was empty. A folder that is empty, or holds only `.git`, `.gitignore`, `README.md` or `.DS_Store` (what `git init` or a fresh GitHub clone leaves), is now accepted; the template's own `.gitignore` and `README.md` replace those two, and the CLI says so. A folder with anything else in it is still refused, and the message lists what is in the way. Your home directory and the filesystem root are always refused. A folder that already has a git remote, such as a fresh clone, is no longer offered a new GitHub repository, and the closing banner no longer calls it "already on GitHub": the scaffold commit exists only on your machine, so the banner prints `git push -u origin HEAD` and says the CI workflow is inactive until you push. With `--no-git` it prints the commit-and-push command for that remote instead of a `gh repo create --remote=origin` that would clash with it.
+
+  The project name now comes from the last segment of the path you pass, not from the whole path. `npx create-cartwright /tmp/cartwright-new --yes` used to write `storeName: "/tmp/cartwright New"` and a `storeSlug` with slashes into `brand.config.ts`; it now writes `Cartwright New` and `cartwright-new`. The name is made into a slug: spaces and capitals are folded, and æ, ø and å become ae, oe and aa rather than being dropped. A folder called `tmp`, `home` or the same as your user name gets the default `my-cartwright-shop` instead. The "Next steps" lines now print the path to `cd` into, which is the path you passed, or `.`.
+
+- 284a10e: Bump default template ref to v0.63.0 (was v0.62.0).
+
 ## 2.9.14
 
 ### Patch Changes
