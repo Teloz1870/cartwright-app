@@ -216,7 +216,7 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(woo).toMatch(/`drive\.import_folder`[^\n]*\b50\b/);
   });
 
-  it('caps a Drive folder at the 50 files one run reads, the same 50 every time (falsifier R4, MUST-FIX)', () => {
+  it('caps a Drive folder at the 50 files one run reads, the same 50 while its 50 newest stay the same (falsifier R4, MUST-FIX)', () => {
     // drive-import.ts lists the folder once with pageSize MAX_FILES_PER_IMPORT = 50 and no pageToken;
     // google/drive.ts orders by "modifiedTime desc,name". A file already in MediaAsset returns
     // { ok: true, skipped: false } and counts as imported, so a re-run looks like progress.
@@ -227,6 +227,11 @@ describe('the WooCommerce status page matches the engine', () => {
     // carry a nextPageToken, which the import never follows — so 50 is a ceiling, not a count.
     expect(images).not.toMatch(/reads only the folder's first 50 files/);
     expect(images).toMatch(/reads at most the folder's first 50 files — the most recently modified first, with no next page, so at most the same 50 on every run/);
+    // Falsifier R1 on app#412 (NIT): the order is "modifiedTime desc,name", so "the same 50" holds
+    // only while the folder's 50 newest stay the same — a file with a later modifiedTime enters them.
+    expect(images).toMatch(/the same 50 on every run while the folder's 50 most recently modified files stay the same; a file edited later, or added with a later modified time, moves into them/);
+    expect(images).not.toMatch(/a second run on a fuller folder/);
+    expect(images).toMatch(/a second run on an unchanged folder of more than 50 reports the same number and copies nothing new/);
     expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
     expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
@@ -341,11 +346,25 @@ describe('the WooCommerce status page matches the engine', () => {
     // proxy.ts: /admin and /admin/… skip the redirect lookup and hit the admin gate, which answers a
     // request without a session with a 307 to /account/login. Under "always" /administration first
     // takes next-intl's 307 to /en/administration; with no row there, LOCALE_ADMIN_RE (^/(en)/admin,
-    // no boundary) sends it to the same gate. Measured: → 307 /en/administration → 307 /account/login.
+    // no boundary) sends it to the same gate. The gate's Location carries no language and no slash,
+    // so it takes the same redirect as any route asked for that way (falsifier R1 on app#412,
+    // MUST-FIX — engine 1f861db2 proxy.ts + next-intl 4.14.9, curl -sIL walk, locales ["en"]):
+    //   "always", trailingSlash off: /admin → 307 /account/login → 307 /en/account/login → 200;
+    //     /administration/ → 308 /administration → 307 /en/administration → 307 /account/login
+    //     → 307 /en/account/login → 200.
+    //   "always", trailingSlash on: /admin → 307 /account/login → 307 /en/account/login/ → 200;
+    //     /administration/ → 307 /en/administration/ → 307 /account/login → 307 /en/account/login/ → 200.
+    //   "never", trailingSlash on: /admin → 307 /account/login → 308 /account/login/ → 200.
+    //   "never", trailingSlash off: /admin → 307 /account/login → 200.
+    //   "never", either: /administration/ ends on 404, row or not (the lookup and the gate skip it).
     const step = lineWith(woo, '**Check from outside**');
-    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address the admin gate catches/);
-    expect(step).toMatch(/`\/admin` and everything below it take its `307` to `\/account\/login` \(`proxy\.ts`\) at once/);
-    expect(step).toMatch(/a path that only begins with `\/admin`, such as `\/administration\/` with no row, takes next-intl's `307` to `\/en\/administration\/` first and then the same `307`; both end on the login page with a `200`/);
+    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address the admin gate catches, which answers a request without a session with a `307` to `\/account\/login` \(`proxy\.ts`\)/);
+    expect(step).toMatch(/`\/admin` and everything below it reach the gate at once/);
+    // The "always" scope is load-bearing: under "never" /administration/ is a 404 (falsifier R1, NIT).
+    expect(step).toMatch(/and under the default `"always"` a path that only begins with `\/admin`, such as `\/administration\/` with no row, reaches it after next-intl's `307` to `\/en\/administration` \(`\/en\/administration\/` with `trailingSlash` on\); under `"never"` such a path reaches neither the gate nor your row \(above\) and ends on a `404`\./);
+    expect(step).toMatch(/`\/account\/login` carries no language and no final `\/`, so it then takes the same redirect as any route asked for that way — under `"always"` next-intl's `307` to `\/en\/account\/login` \(`\/en\/account\/login\/` with `trailingSlash` on\), under `"never"` the proxy's `308` to `\/account\/login\/` with `trailingSlash` on and no redirect with it off — and the login page answers `200`/);
+    expect(step).toMatch(/the login page answers `200`: the address ends there, not on a page of yours\. Submit the new/);
+    expect(step).not.toMatch(/at once, and[^\n]*both end on the login page/);
   });
 
   it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
@@ -422,9 +441,14 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(checkout).toMatch(/no delivery-method choice/);
     // Falsifier R5 (Gemini NIT3): CheckoutForm.tsx renders StripePaymentPanel (:147), and
     // StripePaymentPanel.tsx renders <PaymentElement /> (:150) — one name for the file, on both pages.
-    const panel = /Payment Element, which (the form|the checkout form \(`components\/CheckoutForm\.tsx`\)) renders through `components\/StripePaymentPanel\.tsx`/;
+    // customer-storefront names the file earlier on the line, so "the form" is enough there; go-live
+    // names it nowhere else, so its sentence has to carry CheckoutForm.tsx (falsifier R1 on app#412, NIT).
     expect(checkout).toMatch(/in the checkout form \(`components\/CheckoutForm\.tsx`\)/);
-    expect(checkout).toMatch(panel);
-    expect(lineWith(read('content/docs/deployment/go-live.mdx'), 'automatic_payment_methods')).toMatch(panel);
+    expect(checkout).toMatch(/Payment Element, which the form renders through `components\/StripePaymentPanel\.tsx`/);
+    const live = lineWith(read('content/docs/deployment/go-live.mdx'), 'automatic_payment_methods');
+    expect(live).toMatch(/Payment Element, which the checkout form \(`components\/CheckoutForm\.tsx`\) renders through `components\/StripePaymentPanel\.tsx`/);
+    // AIStylistPanel.tsx:496 renders StripePaymentPanel for an order the assistant places (createOrder →
+    // createPaymentIntent, the same automatic_payment_methods as the checkout).
+    expect(live).toMatch(/\(so does the AI assistant's panel, `components\/AIStylistPanel\.tsx`, for an order it places with `aiStylist` on\)/);
   });
 });
