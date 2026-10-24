@@ -391,15 +391,15 @@ describe('the WooCommerce status page matches the engine', () => {
     // "never", on: /account/edit-address/ → 307 /account/login → 308 /account/login/ → 200.
     // /admin/foo.php → 404 directly (never reaches the gate).
     const login = lineWith(woo, '**A `200` on the login page**');
-    expect(login).toMatch(/\(`\/account\/login`, with the language and final `\/` your URL options give it\): the address that answered with a `307` to `\/account\/login` was caught by a gate in `proxy\.ts`, not answered by a row — the gate sends a visitor without a session to sign in\./);
+    expect(login).toMatch(/\(`\/account\/login`, with the language and final `\/` your URL options give it\): the address that answered with a `307` to `\/account\/login` was caught by a gate in `proxy\.ts` — or, for a path with a dot under an admin section such as `\/admin\/media\/<file>`, by the admin pages' own sign-in guard \(`app\/admin\/layout\.tsx` → `lib\/admin\.ts`\) — not answered by a row; either sends a visitor without a session to sign in\./);
     expect(login).toMatch(/A gate sees each request as the proxy gets it: with `trailingSlash` off, after Next's `308` has dropped the final `\/`, and under `"always"`, again after next-intl's `307` has added the language\./);
     expect(login).toMatch(/The \*\*admin gate\*\* takes `\/admin`, every path below `\/admin\/` and every path that begins with a configured language and then `\/admin` \(`\/en\/admin…` in a new scaffold\), so under `"always"` also `\/administration\/` with no row\./);
     expect(login).toMatch(/The \*\*account gate\*\* takes `\/account`, every path with `\/account\/` in it and every path that begins with a configured language and then `\/account`, except one containing `\/account\/login` or `\/account\/signup`:/);
     expect(login).toMatch(/in either mode WooCommerce's My Account endpoints where the old account page sat at `\/account\/`, such as `\/account\/edit-address\/` \(WooCommerce's default `\/my-account\/` is caught by neither gate\), and under `"always"` also `\/accounting\/` with no row\./);
-    expect(login).toMatch(/A path with a dot never reaches the proxy, so never a gate\./);
+    expect(login).toMatch(/A path with a dot never reaches the proxy, so never one of its gates\./);
     // The lookup runs before both gates, so a row rescues an account-gate address; /admin and below
     // skip the lookup, and a Danish-segment row never fires (LEGACY_SLUG_RE answers first).
-    expect(login).toMatch(/If the address matters, give it a row — the lookup runs before both gates — except for `\/admin` and everything below it, and the seven Danish segments, whose rows never fire \(above\): redirect those ahead of the proxy\./);
+    expect(login).toMatch(/If the address matters, give it a row — the lookup runs before both gates — except for `\/admin` and everything below it, and the seven Danish segments, whose rows never fire \(above\): redirect those ahead of the proxy, or — for a Danish segment — give its English path a row, which answers one hop later\./);
     // The R5 wording named the admin gate as the only exception and said everything below /admin
     // reaches it — false for /account/… and for dotted paths.
     expect(woo).not.toMatch(/The exception is an address the admin gate catches/);
@@ -505,7 +505,7 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(live).toMatch(/Payment Element, which the checkout form \(`components\/CheckoutForm\.tsx`\) renders through `components\/StripePaymentPanel\.tsx`/);
     // AIStylistPanel.tsx:496 renders StripePaymentPanel for an order the assistant places (createOrder →
     // createPaymentIntent, the same automatic_payment_methods as the checkout).
-    expect(live).toMatch(/\(so does the AI assistant's panel, `components\/AIStylistPanel\.tsx`, for an order it places with `aiStylist` on\)/);
+    expect(live).toMatch(/\(so does the AI assistant's panel, `components\/AIStylistPanel\.tsx`, for an order it places with `aiStylist` on and an AI provider configured\)/);
     // Falsifier R3 on app#412 (NIT): app/api/commerce/agent-checkout/route.ts:57 creates its
     // PaymentIntent with payment_method_types: ["card"], not automatic_payment_methods.
     expect(live).toMatch(/; the agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) is card-only\. No code change and no Cartwright flag is needed\./);
