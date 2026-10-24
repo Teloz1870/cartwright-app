@@ -265,8 +265,36 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(step).not.toMatch(/`\/product\/<slug>\/`, answers with the `307` alone/);
     expect(step).toMatch(/`\/product\/<slug>\/` answers the `308`, then the `307`, then `200`/);
     expect(step).toMatch(/without the `\/` answers the `307` alone/);
-    // Under "never" the route still takes the 308 first when it ends in `/`.
-    expect(step).toMatch(/localePrefix: "never"[^\n]*ending in `\/`[^\n]*`308` in front/);
+    // Under "never" the route still takes the 308 first when it ends in `/` — but only with
+    // trailingSlash off: with it on, next.config.ts sets skipTrailingSlashRedirect (falsifier R3).
+    expect(step).toMatch(/localePrefix: "never"[^\n]*with `trailingSlash` off, an address ending in `\/` has the `308` in front/);
+  });
+
+  it('scopes the query-string limit to the redirect table and gives the owner the next.config.ts `has` query rule', () => {
+    // Only the table is path-only (falsifier R3, MUST-FIX): matchRedirect looks a row up by the
+    // pathname, so a `/?p=123` row is planned valid and never fires, and the source `/` is refused
+    // (redirectInputError). A redirects() rule in next.config.ts can match the query — Next 16.4.2
+    // redirects.md, "Header, Cookie, and Query Matching" — and runs before proxy.ts (proxy.md,
+    // "Execution order"). Measured 2026-10-24 on a Next 16.4.2 app whose proxy redirects `/`:
+    // /?p=123 → 308 /product/blue-chair?p=123, /?p=124 → the proxy's 307.
+    expect(woo).not.toMatch(/cannot be redirected/);
+    const bullet = lineWith(woo, '**The redirect table matches paths only.**');
+    expect(bullet).toMatch(/`\/admin\/redirects` cannot redirect a query-string address/);
+    expect(bullet).toMatch(/dry run counts it valid[^\n]*never fires/);
+    expect(woo).toContain('has: [{ type: "query", key: "p", value: "123" }]');
+    expect(lineWith(woo, '**Write the redirect CSV**')).toMatch(/`\/\?p=123`[^\n]*`type: "query"`/);
+  });
+
+  it('names /en/ as a scaffold\'s language and keeps orders and customers at "do not move"', () => {
+    // apps/cli/src/scaffold.ts patchBrandConfigForEnglishFirst: locales ["en"], defaultLocale "en".
+    // Only the engine repo itself ships "da" first.
+    expect(woo).not.toMatch(/`\/da\/(product\/<slug>\/|…)` as shipped/);
+    expect(lineWith(woo, '**Check from outside**')).toMatch(/`defaultLocale`[^\n]*`\/en\/…` in a shop from `npx create-cartwright`/);
+    const map = read('content/docs/features/customer-storefront.mdx');
+    expect(lineWith(map, 'The customer storefront covers')).toMatch(/`\/en\/product\/<slug>` in a shop from `npx create-cartwright`/);
+    // Engine CHANGELOG v0.59.0 adds externalId/source to orders and customers for a later import.
+    expect(woo).not.toMatch(/Orders and customers never move/);
+    expect(lineWith(woo, '**Orders and customers do not move:**')).toMatch(/v0\.59\.0[^\n]*the import that would fill them is not built/);
   });
 
   it('does not say the admin redirect preview lists every row (it shows counts and errors)', () => {
