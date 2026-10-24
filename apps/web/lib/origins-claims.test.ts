@@ -310,29 +310,38 @@ describe('the WooCommerce status page matches the engine', () => {
     // next dev, engine 1f861db2, row /admin-old → /contact, "always"): trailingSlash off:
     // /admin-old/ → 308 /admin-old → 307 /en/admin-old → 301 /en/contact → 200; on:
     // /admin-old/ → 307 /en/admin-old/ → 301 /en/contact/ → 200 — the 301 is not first.
+    // Engine #693 (PROXY-SEGMENT-BOUNDARIES, branch fix/proxy-segment-boundaries dfd22461): the
+    // lookup skips only isAdminPath (/admin, /admin/…) and the admin gate is ADMIN_SEGMENT_RE
+    // (^(/<locale>)?/admin(/|$)), so from the release after v0.63.0 the exception is gone. The page
+    // keeps it as v0.63.0's and says that.
     const hops = lineWith(woo, '**The hops before it.**');
-    expect(hops).toMatch(/Under `"always"` a row whose source only begins with `\/admin`, such as `\/administration\/` or `\/admin-old\/`, is the exception, with `trailingSlash` on or off: the lookup skips that address's first request \(above\), so the row fires one hop later, on the request that carries the language — next-intl's `307` comes before your `301`, and the `301` goes to the new page already in that language\./);
+    expect(hops).toMatch(/On v0\.63\.0, under `"always"` a row whose source only begins with `\/admin`, such as `\/administration\/` or `\/admin-old\/`, is the exception, with `trailingSlash` on or off: the lookup skips that address's first request \(above\), so the row fires one hop later, on the request that carries the language — next-intl's `307` comes before your `301`, and the `301` goes to the new page already in that language\. From the release after v0\.63\.0 there is no such exception: that row answers like any other\./);
   });
 
   it('names the old addresses the proxy never looks a redirect up for, and what the owner does instead', () => {
-    // proxy.ts: the matcher leaves out every dotted path and anything starting /hero (no
-    // slash after it); the lookup is skipped for startsWith("/api") / ("/admin") and comes
+    // proxy.ts on v0.63.0: the matcher leaves out every dotted path and anything starting /hero
+    // (no slash after it); the lookup is skipped for startsWith("/api") / ("/admin") and comes
     // after the /oauth branch (lib/locale-exempt.ts). Under "never", next.config.ts sends
     // /om-os to /about and canonicalTrustRedirect sends /info/<alias> on before the lookup.
     // planRedirectImport accepts every one of those rows, so the dry run cannot warn.
+    // Engine #693 (PROXY-SEGMENT-BOUNDARIES, dfd22461) makes all three whole segments: the matcher
+    // reads `hero(?![^/])`, the lookup skips isApiPath / isAdminPath (/api, /api/…, /admin,
+    // /admin/…). The page states v0.63.0's prefixes "on v0.63.0" and the segments "from the
+    // release after v0.63.0", so both are pinned.
     const bullet = lineWith(woo, '**Some paths never reach your redirects.**');
     expect(bullet).toMatch(/dry run counts it valid/);
     expect(bullet).toMatch(/dot anywhere[^\n]*`\/wp-content\/uploads\/`[^\n]*`matcher`/);
-    expect(bullet).toMatch(/`\/hero`[^\n]*`\/heroes\/`/);
-    expect(bullet).toMatch(/begins with `\/api` — `\/apiary\/` as well, since that check has no slash after it/);
+    expect(bullet).toMatch(/on v0\.63\.0 a path that begins with `\/hero` — `\/heroes\/`, `\/hero-sale\/` — and from the release after v0\.63\.0 only the `\/hero` folder, `\/hero` and every path below `\/hero\/`/);
+    expect(bullet).toMatch(/`\/api` and everything below `\/api\/` — on v0\.63\.0 any path that begins with `\/api`, `\/apiary\/` as well, since that check has no slash after it/);
     expect(bullet).toMatch(/`\/oauth`/);
     // Falsifier R4 (MUST-FIX): /administration skips the lookup only on its first request. The
     // admin branch takes /admin and /admin/… alone (proxy.ts), so under "always" next-intl's 307
     // adds /en and the row answers; under "never" next-intl rewrites, and it never does.
     expect(bullet).not.toMatch(/`\/apiary\/` and `\/administration\/`/);
-    expect(bullet).toMatch(/localePrefix: "never"[^\n]*any other path that begins with `\/admin`, such as `\/administration\/`/);
+    expect(bullet).toMatch(/localePrefix: "never"[^\n]*on v0\.63\.0, any other path that begins with `\/admin`, such as `\/administration\/`/);
     expect(bullet).toMatch(/With the default `"always"` all three reach your row/);
-    expect(bullet).toMatch(/`\/administration\/` is skipped only on its first request: next-intl's `307` adds the language, and your row answers the request after it/);
+    expect(bullet).toMatch(/on v0\.63\.0 `\/administration\/` is skipped only on its first request: next-intl's `307` adds the language, and your row answers the request after it/);
+    expect(bullet).toMatch(/From the release after v0\.63\.0 these checks read whole path segments \(`proxy\.ts`\), so `\/heroes\/`, `\/hero-sale\/`, `\/apiary\/`, `\/administration\/` and `\/admin-old\/` reach your row on their first request, under `"always"` and `"never"` alike\./);
     expect(bullet).toMatch(/localePrefix: "never"[^\n]*`\/om-os`[^\n]*`next\.config\.ts`[^\n]*`\/info\/om-os`/);
     const instead = lineWith(woo, '**What to do with those instead.**');
     expect(instead).toMatch(/`redirects\(\)`[^\n]*`next\.config\.ts`[^\n]*before the proxy[^\n]*`\/favicon\.ico`/);
@@ -379,7 +388,8 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(ok).toMatch(/`curl -sIL` prints only the headers, so on v0\.62\.0 read the page for those addresses: `curl -sL <url> \| grep -o '<title>\[\^<\]\*'` prints `<title>Product not found` \(`Produkt ikke fundet` on a Danish page\) or `<title>Category not found`, and the page carries `<meta name="robots" content="noindex"\/>`\. Check that it is the page you meant\./);
     // A 404 is not only "no row": a row may point at no page, and some rows never fire — the
     // seven Danish segments (LEGACY_SLUG_RE runs before the lookup), the matcher's dotted paths,
-    // and under "never" /administration/ (lookup and gate both skip it; measured 404 row or not).
+    // and under "never" /administration/ (lookup and gate both skip it; measured 404 row or not) —
+    // on v0.63.0 only: from engine #693 (dfd22461) the lookup reads /admin as a whole segment.
     // A row → /info/typo ends 404 (info has no loading.tsx); a row → a missing product ends 200 on
     // v0.62.0 and 404 from #671.
     // Falsifier R3 (NIT): a Danish-segment path's row never fires, but a row on its English twin
@@ -391,7 +401,7 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(notFound).toMatch(/no page at the last address\. From v0\.63\.0 that includes a product or category that does not exist, and a deleted product: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, and a row pointing at a mistyped product or category end here, where v0\.62\.0 answers `200` \(above\)\./);
     expect(notFound).toMatch(/The address has no row and no page, its row points at a page that does not exist \(a row to a missing `\/info\/<slug>` ends here\), or no row for it fires: a path in one of the seven Danish segments \(a row for its English path does, one hop later\), or one of the paths that never reach your redirects \(above\)/);
     expect(notFound).not.toMatch(/no row can answer it/);
-    expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and under `"never"` a path such as `\/administration\/`/);
+    expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and on v0\.63\.0 under `"never"` a path such as `\/administration\/`/);
     expect(woo).not.toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees/);
   });
 
@@ -402,6 +412,12 @@ describe('the WooCommerce status page matches the engine', () => {
     // isPublicAuthPage (includes "/account/login" or "/account/signup"). Both answer a request without
     // a session with a 307 to /account/login, and both sit AFTER the redirect lookup, which skips
     // only startsWith("/api") / ("/admin"). The matcher's .*\..* keeps dotted paths out of the proxy.
+    // Since v0.63.0 (PASSWORD-RESET-GATE) isPublicAuthPage is PUBLIC_AUTH_PAGE_RE:
+    // ^(/<locale>)?/account/(login|signup|forgot-password|reset-password)/?$ — four whole pages, so
+    // "containing /account/login or /account/signup" was already stale on v0.63.0.
+    // Engine #693 (PROXY-SEGMENT-BOUNDARIES, dfd22461): the gates become ADMIN_SEGMENT_RE and
+    // ACCOUNT_SEGMENT_RE, ^(/<locale>)?/admin(/|$) and ^(/<locale>)?/account(/|$). The page states
+    // what both releases gate: the segments unmarked (true on both), the extra prefixes "on v0.63.0".
     // Measured (real next dev, locales ["en"], no session, no row): "always", trailingSlash off:
     //   /account/edit-address/ → 308 → 307 /account/login → 307 /en/account/login → 200;
     //   /accounting/ → 308 → 307 /en/accounting → 307 /account/login → 307 /en/account/login → 200.
@@ -411,9 +427,12 @@ describe('the WooCommerce status page matches the engine', () => {
     const login = lineWith(woo, '**A `200` on the login page**');
     expect(login).toMatch(/\(`\/account\/login`, with the language and final `\/` your URL options give it\): the address that answered with a `307` to `\/account\/login` was caught by a gate in `proxy\.ts` — or, for a path with a dot under an admin section such as `\/admin\/media\/<file>`, by the admin pages' own sign-in guard \(`app\/admin\/layout\.tsx` → `lib\/admin\.ts`\) — not answered by a row; either sends a visitor without a session to sign in\./);
     expect(login).toMatch(/A gate sees each request as the proxy gets it: with `trailingSlash` off, after Next's `308` has dropped the final `\/`, and under `"always"`, again after next-intl's `307` has added the language\./);
-    expect(login).toMatch(/The \*\*admin gate\*\* takes `\/admin`, every path below `\/admin\/` and every path that begins with a configured language and then `\/admin` \(`\/en\/admin…` in a new scaffold\), so under `"always"` also `\/administration\/` with no row\./);
-    expect(login).toMatch(/The \*\*account gate\*\* takes `\/account`, every path with `\/account\/` in it and every path that begins with a configured language and then `\/account`, except one containing `\/account\/login` or `\/account\/signup`:/);
-    expect(login).toMatch(/in either mode WooCommerce's My Account endpoints where the old account page sat at `\/account\/`, such as `\/account\/edit-address\/` \(WooCommerce's default `\/my-account\/` is caught by neither gate\), and under `"always"` also `\/accounting\/` with no row\./);
+    expect(login).toMatch(/The \*\*admin gate\*\* takes `\/admin` and every path below `\/admin\/`, with or without a configured language in front \(`\/en\/admin\/…` in a new scaffold\); on v0\.63\.0 also every other path that begins with a configured language and then `\/admin`, so under `"always"` also `\/administration\/` with no row\./);
+    expect(login).toMatch(/The \*\*account gate\*\* takes `\/account` and every path below `\/account\/`, with or without a configured language in front, except the four pages a signed-out visitor needs \(`\/account\/login`, `\/account\/signup`, `\/account\/forgot-password` and `\/account\/reset-password`, each spelled exactly, with or without the language and a final `\/`\)\./);
+    expect(login).not.toMatch(/except one containing `\/account\/login` or `\/account\/signup`/);
+    expect(login).toMatch(/So it takes, in either mode, WooCommerce's My Account endpoints where the old account page sat at `\/account\/`, such as `\/account\/edit-address\/` \(WooCommerce's default `\/my-account\/` is caught by neither gate\)\./);
+    expect(login).toMatch(/On v0\.63\.0 it also takes every path with `\/account\/` anywhere in it \(`\/x\/account\/y`\) and every path that begins with a configured language and then `\/account`, so under `"always"` also `\/accounting\/` with no row\./);
+    expect(login).toMatch(/From the release after v0\.63\.0 both gates read whole path segments \(`proxy\.ts`\): `\/administration\/`, `\/admin-old\/`, `\/accounting\/` and `\/x\/account\/y` are storefront paths, answered by a page or by the `404`\./);
     expect(login).toMatch(/A path with a dot never reaches the proxy, so never one of its gates\./);
     // The lookup runs before both gates, so a row rescues an account-gate address; /admin and below
     // skip the lookup, and a Danish-segment row never fires (LEGACY_SLUG_RE answers first).
@@ -530,5 +549,29 @@ describe('the WooCommerce status page matches the engine', () => {
     // reads the product or contacts Stripe, so "is card-only" may not come back in the present tense.
     expect(live).toMatch(/; the old agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) was card-only, and from v0\.63\.0 it takes no payment at all: it answers `410 Gone` \(CW-2026-010\)\. No code change and no Cartwright flag is needed\./);
     expect(live).not.toMatch(/agent-checkout\/route\.ts`\) is card-only/);
+  });
+
+  it('names migration.woo_plan as the next release\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
+    // Engine #694 (feat/w21-live-7a-woo-plan-tool 5fb90761), lib/tools/migration-woo.ts: scope
+    // settings:read, no confirm, openMigrationGate() (migrationDashboard) first; registered through
+    // lib/tools/packs/commerce.ts, so a profile without the webshop module has no such tool. It reads
+    // project.sourceUrl's origin root over GET only, plans with no `owned` projection (every row
+    // create / conflict / orphan / blocked until W21-live-2), writes only settings.wooPlan on the
+    // MigrationProject, and app/admin/migration/page.tsx renders it in the
+    // "WooCommerce import plan (dry run)" card (WOO_PLAN_LIST_CAP = 20). v0.63.0 has none of it.
+    const importer = lineWith(woo, '**A WooCommerce importer.**');
+    expect(importer).toMatch(/on v0\.63\.0 nothing calls it\. From the release after v0\.63\.0 the `migration\.woo_plan` tool does/);
+    expect(importer).toMatch(/a dry run, behind the runtime flag `migrationDashboard`, scope `settings:read`, and one of the commerce tools a scaffold without the webshop module leaves out/);
+    expect(importer).toMatch(/a WordPress installed in a subdirectory, such as `https:\/\/example\.com\/shop\/`, is not yet supported/);
+    expect(importer).toMatch(/or when it differs from this shop's own setting — every product is blocked/);
+    expect(importer).toMatch(/the first 50 rows that need a look; a row to create is only counted/);
+    expect(importer).toMatch(/writes nothing to the catalogue/);
+    expect(importer).toMatch(/every row plans as a create, a conflict, an orphan or blocked/);
+    expect(importer).toMatch(/The run that writes, images, variants and stock are not built\./);
+    expect(importer).not.toMatch(/nothing calls it yet/);
+    const board = lineWith(woo, '**A migration board that runs every check.**');
+    expect(board).toMatch(/From the release after v0\.63\.0 the board also shows the last WooCommerce import plan \(`migration\.woo_plan`, a dry run\) in its own card/);
+    // The header defines the marker the lines above use.
+    expect(woo).toMatch(/A line marked "from the release after v0\.63\.0" is on the engine's `main` branch and not yet in a tagged release or in the npm scaffold/);
   });
 });

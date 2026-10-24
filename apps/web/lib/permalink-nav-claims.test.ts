@@ -98,3 +98,30 @@ describe('the permalink pages say a stored permalink is served from v0.63.0', ()
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * Two links the URL options page states, measured against the engine:
+ *
+ * - IndexNow: every product call site (app/admin/actions.ts, lib/tools/products.ts) hands
+ *   scheduleIndexNowPing a slug only, and lib/indexnow.ts builds the path with
+ *   productHref({ slug, permalink: null }), so the ping is always the pattern address — true on
+ *   v0.63.0, and docs/urls.md says so from engine #692 (ARG2). It may not sit in the list of links
+ *   that follow a stored permalink.
+ * - The matcher's `hero`: on v0.63.0 a prefix (`/heron-hegn/` too), from engine #693
+ *   (PROXY-SEGMENT-BOUNDARIES, dfd22461) the segment `hero(?![^/])` in proxy.ts and
+ *   lib/urls.ts:PROXY_SKIPPED_PREFIXES. Both releases are named.
+ */
+describe('the URL options page names the IndexNow ping and the /hero skip as the engine has them', () => {
+  const urls = readFileSync(join(ROOT, URLS_PAGE), 'utf8');
+
+  it('keeps IndexNow out of the helper list and says it pings the pattern', () => {
+    expect(urls).toMatch(/the catalogue feed, `\/pricing\.md`, the search API and the review pages\./);
+    expect(urls).not.toMatch(/the search API, IndexNow and the review pages/);
+    expect(urls).toMatch(/IndexNow goes through the helper as well, but its call sites \(`app\/admin\/actions\.ts`, `lib\/tools\/products\.ts`\) hand it only the slug, so it always pings the pattern address `\/product\/<slug>`, never a stored permalink\./);
+  });
+
+  it('names the matcher\'s /hero skip for v0.63.0 and for the release after it', () => {
+    expect(urls).toMatch(/on v0\.63\.0 any path that begins with `\/hero`, `\/heron-hegn\/` too; from the release after v0\.63\.0 only the `\/hero` segment, such as `\/hero\/x\/`/);
+    expect(urls).not.toMatch(/\(`\/hero…`\)/);
+  });
+});
