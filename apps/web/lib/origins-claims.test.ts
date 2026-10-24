@@ -210,45 +210,52 @@ describe('the WooCommerce status page matches the engine', () => {
   });
 
   it('names the Sheets sync for SKUs and the Drive folder import for media instead of saying nothing carries them', () => {
-    // plugins/google-workspace/lib/sheets-sync.ts writes `sku`; drive-import.ts copies up to 50 images a run.
+    // plugins/google-workspace/lib/sheets-sync.ts writes `sku`; drive-import.ts downloads at most 50 files a run.
     expect(woo).not.toMatch(/do not move by any engine path|moves one file at a time/);
     expect(woo).toMatch(/`sheetsSync`[^\n]*`sku`/);
     expect(woo).toMatch(/`drive\.import_folder`[^\n]*\b50\b/);
   });
 
-  it('caps a Drive folder at the 50 files one run reads, the same 50 while its 50 newest stay the same (falsifier R4, MUST-FIX)', () => {
-    // drive-import.ts lists the folder once with pageSize MAX_FILES_PER_IMPORT = 50 and no pageToken;
-    // google/drive.ts orders by "modifiedTime desc,name". A file already in MediaAsset returns
-    // { ok: true, skipped: false } and counts as imported, so a re-run looks like progress.
+  it('pages a Drive folder up to 20,000 files from the release after v0.62.0, 50 downloads a run (engine #666, DRIVE-IMPORT-PAGINATION)', () => {
+    // plugins/google-workspace/lib/drive-import.ts at engine f0792092: LIST_PAGE_SIZE = 1000,
+    // MAX_LIST_PAGES = 20, MAX_FILES_WALKED = 20,000 (:28-31); MAX_FILES_PER_IMPORT = 50 counts
+    // downloads, imported or failed (:21-23, :122-123). findImportedDriveFileIds skips a file whose
+    // driveFileId is already in MediaAsset as `skipped` with no download (:103-109). `more` is true
+    // when the run stops at 50 with files left (:124-125); after 20 pages with a nextPageToken it
+    // pushes `drive-folder-too-large: … Split it into folders of at most 20,000 files.` and leaves
+    // `more` false (:134-137). google/drive.ts orders by "modifiedTime desc,name". lib/tools/drive.ts
+    // adds `more: z.boolean()`; admin/drive/actions.ts adds &more=1 / &toolarge=1 to the redirect.
     const images = lineWith(woo, '**Images are stored as the URLs you give**');
-    expect(images).not.toMatch(/up to 50 such images per run/);
-    expect(images).toMatch(/Google Drive folders of at most 50 files each, images only/);
-    // Falsifier R5 (NIT): Drive's pageSize is a maximum — a page may hold fewer files and still
-    // carry a nextPageToken, which the import never follows — so 50 is a ceiling, not a count.
-    expect(images).not.toMatch(/reads only the folder's first 50 files/);
-    expect(images).toMatch(/reads at most the folder's first 50 files — the most recently modified first, with no next page, so at most the same 50 on every run/);
-    // Falsifier R1 on app#412 (NIT): the order is "modifiedTime desc,name", so "the same 50" holds
-    // only while the folder's 50 newest stay the same — a file with a later modifiedTime enters them.
-    expect(images).toMatch(/the same 50 on every run while the folder's 50 most recently modified files stay the same; a file edited later, or added with a later modified time, moves into them/);
-    expect(images).not.toMatch(/a second run on a fuller folder/);
-    // Falsifier R2 on app#412 (NIT): the order pin stopped at "moves into them", so the clause after it
-    // could say "newest" and stay green. A folder past 50 files loses its least recently modified one.
-    expect(images).toMatch(/moves into them, and past 50 files the oldest drops out — and counts/);
-    // Falsifier R2 on app#412 (NIT): drive-import.ts put()s the bytes to Blob BEFORE
-    // findOrCreateBySha256 returns an existing asset with the same sha256, and only a matching
-    // driveFileId skips the download. A file whose bytes the library already holds under another
-    // driveFileId (or none) writes a new, unused Blob object on every run; the library gains nothing.
-    expect(images).not.toMatch(/copies nothing new/);
-    expect(images).toMatch(/a second run on an unchanged folder of more than 50 reports the same number and adds nothing new to the media library \(a copy of an image it already holds from elsewhere is still uploaded to Blob again on each run, unused\)/);
-    expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
-    // Falsifier R3 on app#412 (NIT): drive-import.ts takes IMAGE_MIME = jpeg/png/webp and
-    // MAX_IMAGE_BYTES = 5_000_000, and findOrCreateBySha256 (lib/media/asset.ts) returns an existing
-    // asset for bytes the library already holds — so only a NEW image gets an entry and URL of its own.
-    expect(images).toMatch(/\. Each new JPEG, PNG or WebP up to 5 MB among them goes into the media library \(`\/admin\/media`\) on its own Blob URL/);
+    expect(images).toMatch(/`\/admin\/drive` or the `drive\.import_folder` tool copies each new JPEG, PNG or WebP up to 5 MB in one folder into the media library \(`\/admin\/media`\) on its own Blob URL and passes over every other file/);
+    expect(images).toMatch(/From the release after v0\.62\.0 a run walks the folder newest first by modified time, through Drive's list in pages of up to 1,000 files, and downloads at most 50 files, imported or failed\./);
+    expect(images).toMatch(/A file an earlier run imported counts as skipped and is not downloaded again, so the next run continues where the last one stopped: run it again until it answers `more: false`/);
+    // MAX_LIST_PAGES caps pages, not files: Drive's pageSize is a maximum, so 20,000 is a ceiling.
+    expect(images).toMatch(/walks at most 20 pages, so it reaches at most the folder's 20,000 most recently modified files\./);
+    expect(images).toMatch(/When a run has walked all 20 pages and Drive still has a next page, it ends with `more: false` and a `drive-folder-too-large` error: the files past them are never imported, however often it runs, so split the folder into folders of at most 20,000 files\./);
+    // Not changed by #666 (its CHANGELOG says so): put() runs before findOrCreateBySha256 returns an
+    // existing asset by sha256, which keeps its own driveFileId, so the copy is not skipped next run;
+    // a failed file creates no MediaAsset either. Both count as downloads, so 50 of them, newer than
+    // a file still to import, stop every run before it with more: true.
+    expect(images).toMatch(/A file that failed is tried again on every run, and one whose bytes match an image the library already holds — from another upload, or another file in the folder — is downloaded again on every run, uploaded to Blob again, unused, and counted as imported; both count toward the run's 50\./);
+    expect(images).toMatch(/Once 50 of them are more recently modified than a file still to import, no run reaches that file: each spends its 50 downloads on them and answers `more: true`, so take them out of the folder\./);
     // lib/tools/images.ts: MAX_IMAGE_BYTES = 5_000_000, SNIFF_MIMES jpeg/png/webp (+ mp4 at 10 MB).
     expect(images).toMatch(/`images\.import_from_url` tool \(`lib\/tools\/images\.ts`, over `POST \/api\/v1\/tools\/images\.import_from_url` — \[MCP tools\]\(\/docs\/api\/mcp-tools\); JPEG, PNG or WebP up to 5 MB, needs `BLOB_READ_WRITE_TOKEN`\)/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
-    expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/from Google Drive with `drive\.import_folder`, one folder per run: from the release after v0\.62\.0 run it again until it answers `more: false`, with at most 20,000 files in a folder; on v0\.62\.0 in folders of at most 50 images each/);
+  });
+
+  it('keeps v0.62.0\'s Drive import to the 50 files one run reads (falsifier R4, MUST-FIX), and drops the 50-file story as the whole truth', () => {
+    // v0.62.0 drive-import.ts lists the folder once with pageSize MAX_FILES_PER_IMPORT = 50 and no
+    // pageToken; a file already in MediaAsset returns { ok: true, skipped: false } and counts as imported.
+    const images = lineWith(woo, '**Images are stored as the URLs you give**');
+    expect(images).toMatch(/On v0\.62\.0 a run reads at most the folder's 50 most recently modified files, never asks Drive for the next page, and counts a file it copied on an earlier run as imported again, so use folders of at most 50 files there, images only\./);
+    // Falsifier R5 (NIT) on the old wording: pageSize is a maximum, so 50 is a ceiling, not a count.
+    expect(images).not.toMatch(/reads only the folder's first 50 files/);
+    expect(images).not.toMatch(/up to 50 such images per run/);
+    expect(images).not.toMatch(/copies nothing new/);
+    // The pre-#666 sentence that made 50 the import's only limit, unqualified by a release.
+    expect(images).not.toMatch(/use Google Drive folders of at most 50 files each, images only: a run of/);
+    expect(lineWith(woo, '**Copy the product images**')).not.toMatch(/\(or from Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run\)/);
   });
 
   it('caps a product CSV import at the 1 MB a Server Action takes (falsifier R4, MUST-FIX)', () => {
@@ -359,19 +366,30 @@ describe('the WooCommerce status page matches the engine', () => {
     // both with <meta name="robots" content="noindex"/>; /info/no-such-info-check/ → 404.
     // Product.notFound is "Product not found" (messages/en.json) / "Produkt ikke fundet" (da.json);
     // the category title is the literal "Category not found".
+    // Engine #671 (SOFT-404-PDP-PLP, branch fix/soft-404-pdp-plp 3ca267e8): both page.tsx files run
+    // the redirect and the lookup, then notFound(), BEFORE their own <Suspense> (product page.tsx
+    // :140-154, category page.tsx :151-167), and the loading.tsx files became product-skeleton.tsx /
+    // category-skeleton.tsx, so a missing slug is a real 404 (tests/e2e/shop.spec.ts). v0.62.0 keeps
+    // the streamed 200, so the page says both, each with its release.
     const ok = lineWith(woo, '**A `200` on a page of yours**');
     expect(ok).not.toMatch(/or because it already is a route\. Check/);
-    expect(ok).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route — except at a product or category address, which answers `200` even when nothing is there\./);
-    expect(ok).toMatch(/A product or category page streams \(its `loading\.tsx`, in `app\/\[locale\]\/product\/\[slug\]\/` and `app\/\[locale\]\/category\/\[slug\]\/`\), so its `200` is sent before the page has looked the slug up: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, or a row pointing at a mistyped product or category ends on a `200` page that says nothing was found\./);
-    expect(ok).toMatch(/`curl -sIL` prints only the headers, so for those addresses read the page: `curl -sL <url> \| grep -o '<title>\[\^<\]\*'` prints `<title>Product not found` \(`Produkt ikke fundet` on a Danish page\) or `<title>Category not found`, and the page carries `<meta name="robots" content="noindex"\/>`\. Check that it is the page you meant\./);
+    expect(ok).not.toMatch(/route — except at a product or category address/);
+    expect(ok).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route\. From the release after v0\.62\.0 that holds at a product or category address too: a product or category that does not exist answers `404` \(below\)\./);
+    expect(ok).toMatch(/On v0\.62\.0 a product or category address answers `200` even when nothing is there\. Its page streams \(its `loading\.tsx`, in `app\/\[locale\]\/product\/\[slug\]\/` and `app\/\[locale\]\/category\/\[slug\]\/`\), so its `200` is sent before the page has looked the slug up: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, or a row pointing at a mistyped product or category ends on a `200` page that says nothing was found\./);
+    expect(ok).toMatch(/`curl -sIL` prints only the headers, so on v0\.62\.0 read the page for those addresses: `curl -sL <url> \| grep -o '<title>\[\^<\]\*'` prints `<title>Product not found` \(`Produkt ikke fundet` on a Danish page\) or `<title>Category not found`, and the page carries `<meta name="robots" content="noindex"\/>`\. Check that it is the page you meant\./);
     // A 404 is not only "no row": a row may point at no page, and some rows never fire — the
     // seven Danish segments (LEGACY_SLUG_RE runs before the lookup), the matcher's dotted paths,
     // and under "never" /administration/ (lookup and gate both skip it; measured 404 row or not).
-    // A row → /info/typo ends 404 (info has no loading.tsx); a row → a missing product ends 200.
+    // A row → /info/typo ends 404 (info has no loading.tsx); a row → a missing product ends 200 on
+    // v0.62.0 and 404 from #671.
     // Falsifier R3 (NIT): a Danish-segment path's row never fires, but a row on its English twin
     // does, one hop later — "no row can answer it" read as if nothing could.
     const notFound = lineWith(woo, '**A `404`**');
-    expect(notFound).toMatch(/no page at the last address\. A missing product or category does not end here: its address answers `200` \(above\)\. The address has no row and no page, its row points at a page that does not exist \(a row to a missing `\/info\/<slug>` ends here\), or no row for it fires: a path in one of the seven Danish segments \(a row for its English path does, one hop later\), or one of the paths that never reach your redirects \(above\)/);
+    // From #671 a missing product or category, and a soft-deleted product (`deletedAt: null` in the
+    // lookup), ends on a 404; on v0.62.0 it is the 200 above.
+    expect(notFound).not.toMatch(/A missing product or category does not end here/);
+    expect(notFound).toMatch(/no page at the last address\. From the release after v0\.62\.0 that includes a product or category that does not exist, and a deleted product: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, and a row pointing at a mistyped product or category end here, where v0\.62\.0 answers `200` \(above\)\./);
+    expect(notFound).toMatch(/The address has no row and no page, its row points at a page that does not exist \(a row to a missing `\/info\/<slug>` ends here\), or no row for it fires: a path in one of the seven Danish segments \(a row for its English path does, one hop later\), or one of the paths that never reach your redirects \(above\)/);
     expect(notFound).not.toMatch(/no row can answer it/);
     expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and under `"never"` a path such as `\/administration\/`/);
     expect(woo).not.toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees/);
