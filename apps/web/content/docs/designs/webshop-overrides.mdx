@@ -48,7 +48,7 @@ const myDesign: DesignPack = {
 ```
 
 - **`productCard`** is threaded into the shared `ProductGrid` via its `card?` prop, so the same grid renders your bespoke card everywhere products are listed.
-- **`pdpLayout`** wraps the product-detail tree, so a design can frame the PDP (breadcrumbs, canvas, panels) without forking the commerce logic.
+- **`pdpLayout`** wraps the product-detail tree, so a design can frame the PDP (breadcrumbs, canvas, panels) without forking the commerce logic. From the release after v0.63.0 it receives the product with `name` and `description` already in the page's language — the copy the product page itself renders: the stored translation for that language when there is one, else the base copy, and for the description a `genomeEntityCopy` override when that flag is on. `translations` and `attributes` stay as stored, so a pack localizes attributes itself. On v0.63.0 it receives the stored row, so on any language but the shop's default its `name` and `description` are the base language's.
 
 `halo` ships both — an Apple-minimal product card and a PDP layout — as the reference implementation.
 
