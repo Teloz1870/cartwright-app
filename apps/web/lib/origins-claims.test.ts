@@ -241,6 +241,12 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(images).not.toMatch(/copies nothing new/);
     expect(images).toMatch(/a second run on an unchanged folder of more than 50 reports the same number and adds nothing new to the media library \(a copy of an image it already holds from elsewhere is still uploaded to Blob again on each run, unused\)/);
     expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
+    // Falsifier R3 on app#412 (NIT): drive-import.ts takes IMAGE_MIME = jpeg/png/webp and
+    // MAX_IMAGE_BYTES = 5_000_000, and findOrCreateBySha256 (lib/media/asset.ts) returns an existing
+    // asset for bytes the library already holds — so only a NEW image gets an entry and URL of its own.
+    expect(images).toMatch(/\. Each new JPEG, PNG or WebP up to 5 MB among them goes into the media library \(`\/admin\/media`\) on its own Blob URL/);
+    // lib/tools/images.ts: MAX_IMAGE_BYTES = 5_000_000, SNIFF_MIMES jpeg/png/webp (+ mp4 at 10 MB).
+    expect(images).toMatch(/`images\.import_from_url` tool \(`lib\/tools\/images\.ts`, over `POST \/api\/v1\/tools\/images\.import_from_url` — \[MCP tools\]\(\/docs\/api\/mcp-tools\); JPEG, PNG or WebP up to 5 MB, needs `BLOB_READ_WRITE_TOKEN`\)/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
     expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
   });
@@ -283,6 +289,22 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(hops).toMatch(/The old shop's addresses carry no language, and a redirect keeps the language of the request \(`lib\/redirects\/match\.ts`\), so with the default `localePrefix: "always"` a redirected address answers `301` to the new page without a language, then next-intl's `307` to that page in a language[^\n]*and `200` there/);
     expect(hops).toMatch(/The `307` is temporary because the language depends on who asks\./);
     expect(hops).toMatch(/localePrefix: "never"/);
+    // Falsifier R3 on app#412 (NIT): the `[^\n]*` gap above let the language clause say "not the
+    // defaultLocale", "any language the browser asks for", or lead with a /da/ example. next-intl
+    // (i18n/routing.ts: defaultLocale = brand.defaultLocale) uses it when the request names no
+    // locale it has; a scaffold is locales ["en"] (apps/cli/src/scaffold.ts).
+    expect(hops).toMatch(/then next-intl's `307` to that page in a language — the shop's `defaultLocale` for a request like curl's that asks for none \(`\/en\/…` in a shop from `npx create-cartwright`, which starts English-only\), or a language the browser asks for that the shop has — and `200` there \(`proxy\.ts`\)\./);
+  });
+
+  it('step 9 restores the /admin-prefixed exception to the hop order (falsifier R3 on app#412, MUST-FIX)', () => {
+    // proxy.ts skips the redirect lookup for pathname.startsWith("/admin") with no slash after it,
+    // and the admin gate takes only /admin, /admin/… and /<locale>/admin…. So a row for /admin-old
+    // fires on the SECOND request, after next-intl's 307 has added the language. Measured (real
+    // next dev, engine 1f861db2, row /admin-old → /contact, "always"): trailingSlash off:
+    // /admin-old/ → 308 /admin-old → 307 /en/admin-old → 301 /en/contact → 200; on:
+    // /admin-old/ → 307 /en/admin-old/ → 301 /en/contact/ → 200 — the 301 is not first.
+    const hops = lineWith(woo, '**The hops before it.**');
+    expect(hops).toMatch(/Under `"always"` a row whose source only begins with `\/admin`, such as `\/administration\/` or `\/admin-old\/`, is the exception, with `trailingSlash` on or off: the lookup skips that address's first request \(above\), so the row fires one hop later, on the request that carries the language — next-intl's `307` comes before your `301`, and the `301` goes to the new page already in that language\./);
   });
 
   it('names the old addresses the proxy never looks a redirect up for, and what the owner does instead', () => {
@@ -329,12 +351,28 @@ describe('the WooCommerce status page matches the engine', () => {
     // last status line means — a meaning that holds by construction of proxy.ts — and keeps only
     // the short chains whose conditions it states.
     expect(lineWith(woo, '**Check from outside**')).toMatch(/read every status line\. The last one, and the address it answers for, is what a visitor gets\. Then submit the new `\/sitemap\.xml` to your search console\./);
-    expect(lineWith(woo, '**A `200` on a page of yours**')).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route\. Check that it is the page you meant\./);
+    // Falsifier R3 on app#412 (MUST-FIX): app/[locale]/product/[slug]/loading.tsx and
+    // category/[slug]/loading.tsx make those pages stream, so the 200 is sent before notFound()
+    // (product page.tsx:133, category page.tsx:145) runs. Measured read-only 2026-10-24 on
+    // demo.cartwright.app: /product/no-such-product-check/ → 308 → 307 → 200 "Product not found",
+    // /produkt/… → 308 → 301 → 307 → 200, /category/no-such-cat-check/ → 200 "Category not found",
+    // both with <meta name="robots" content="noindex"/>; /info/no-such-info-check/ → 404.
+    // Product.notFound is "Product not found" (messages/en.json) / "Produkt ikke fundet" (da.json);
+    // the category title is the literal "Category not found".
+    const ok = lineWith(woo, '**A `200` on a page of yours**');
+    expect(ok).not.toMatch(/or because it already is a route\. Check/);
+    expect(ok).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route — except at a product or category address, which answers `200` even when nothing is there\./);
+    expect(ok).toMatch(/A product or category page streams \(its `loading\.tsx`, in `app\/\[locale\]\/product\/\[slug\]\/` and `app\/\[locale\]\/category\/\[slug\]\/`\), so its `200` is sent before the page has looked the slug up: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, or a row pointing at a mistyped product or category ends on a `200` page that says nothing was found\./);
+    expect(ok).toMatch(/`curl -sIL` prints only the headers, so for those addresses read the page: `curl -sL <url> \| grep -o '<title>\[\^<\]\*'` prints `<title>Product not found` \(`Produkt ikke fundet` on a Danish page\) or `<title>Category not found`, and the page carries `<meta name="robots" content="noindex"\/>`\. Check that it is the page you meant\./);
     // A 404 is not only "no row": a row may point at no page, and some rows never fire — the
     // seven Danish segments (LEGACY_SLUG_RE runs before the lookup), the matcher's dotted paths,
     // and under "never" /administration/ (lookup and gate both skip it; measured 404 row or not).
+    // A row → /info/typo ends 404 (info has no loading.tsx); a row → a missing product ends 200.
+    // Falsifier R3 (NIT): a Danish-segment path's row never fires, but a row on its English twin
+    // does, one hop later — "no row can answer it" read as if nothing could.
     const notFound = lineWith(woo, '**A `404`**');
-    expect(notFound).toMatch(/no page at the last address\. The address has no row and no page, its row points at a page that does not exist, or no row can answer it: a path in one of the seven Danish segments, or one of the paths that never reach your redirects \(above\)/);
+    expect(notFound).toMatch(/no page at the last address\. A missing product or category does not end here: its address answers `200` \(above\)\. The address has no row and no page, its row points at a page that does not exist \(a row to a missing `\/info\/<slug>` ends here\), or no row for it fires: a path in one of the seven Danish segments \(a row for its English path does, one hop later\), or one of the paths that never reach your redirects \(above\)/);
+    expect(notFound).not.toMatch(/no row can answer it/);
     expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and under `"never"` a path such as `\/administration\/`/);
     expect(woo).not.toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees/);
   });
@@ -468,5 +506,8 @@ describe('the WooCommerce status page matches the engine', () => {
     // AIStylistPanel.tsx:496 renders StripePaymentPanel for an order the assistant places (createOrder →
     // createPaymentIntent, the same automatic_payment_methods as the checkout).
     expect(live).toMatch(/\(so does the AI assistant's panel, `components\/AIStylistPanel\.tsx`, for an order it places with `aiStylist` on\)/);
+    // Falsifier R3 on app#412 (NIT): app/api/commerce/agent-checkout/route.ts:57 creates its
+    // PaymentIntent with payment_method_types: ["card"], not automatic_payment_methods.
+    expect(live).toMatch(/; the agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) is card-only\. No code change and no Cartwright flag is needed\./);
   });
 });
