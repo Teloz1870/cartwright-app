@@ -38,7 +38,7 @@ Det her er det vigtigste princip i hele AI-laget:
 - **Confirmation tokens** — write-tools kræver server-issued bekræftelse, uanset om Claude eller Gemma kalder dem
 - **Scope-enforcement** — `invokeTool()` checker tools mod scope-listen før dispatch, identisk for begge providers
 - **Audit-log** — hvert tool-call skrives med `provider` + `model` + `modality` så DPO kan eftervise præcis hvilken AI der gjorde hvad
-- **Tool-allowlist** — local Gemma er capped til en subset af tools baseret på model-størrelse (4B → 10 read-only tools, 12B → +6 low-risk writes, 27B+ → alle <EngineFact k="adminToolCount" />; håndhævet i admin-chatten fra engine v0.63.0)
+- **Tool-allowlist** — local Gemma er capped til en subset af tools efter model (Gemma 4: e2b → 10 read-only tools, e4b → +6 low-risk writes, 26B/31B → alle <EngineFact k="adminToolCount" />; Gemma 3: 4B → read-only, 12B → low-risk writes, 27B → alle; håndhævet i admin-chatten fra engine v0.63.0)
 
 <Cards>
   <Card title="Lokal AI med Ollama" href="/docs/ai/local-ai" />
