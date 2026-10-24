@@ -12,7 +12,7 @@ The customer storefront covers the routes a shopper actually sees. Every route l
 - **`/[locale]/category/[slug]`** — Category-scoped product list with hero, description, FAQ block, and optional video.
 - **`/[locale]/product/[slug]`** — Product detail. Images, copy, price, variants, add-to-cart, related products.
 - **`/[locale]/cart`** — Cart. Line items with quantity steppers and a remove button, then subtotal, shipping and total. Shipping is the flat rate from `brand.config.ts` `policies` (free above its threshold), shown as one line; the cart takes no discount code (`app/[locale]/cart/page.tsx`).
-- **`/[locale]/checkout`** — Delivery details (name, email, address, postcode, city) and an optional discount code, then Stripe's Payment Element (`components/CheckoutForm.tsx`). There is no delivery-method choice: every order pays the cart's flat shipping.
+- **`/[locale]/checkout`** — Delivery details (name, email, address, postcode, city) and an optional discount code in the checkout form (`components/CheckoutForm.tsx`), then Stripe's Payment Element, which the form renders through `components/StripePaymentPanel.tsx`. There is no delivery-method choice: every order pays the cart's flat shipping.
 - **`/[locale]/order/[id]`** — Order confirmation. Linkable for receipts.
 - **`/[locale]/account`** — Account hub. Sign in with a password (or a magic link once Resend is set up), view orders, keep a shipping address.
 - **`/[locale]/info/[slug]`** — CMS-style static pages rendered from the admin Sider CRUD.
