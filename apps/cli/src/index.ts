@@ -3,7 +3,7 @@
  * create-cartwright — a real site (design, database, backend) live in minutes.
  *
  * Usage:
- *   npx create-cartwright@latest [name] [--yes]
+ *   npx create-cartwright@latest [dir] [--yes]     (dir: a path, or "." for here)
  *                                [--profile=light|full|site] [--with=<module>]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
@@ -74,7 +74,8 @@ import {
 import { downloadTemplate } from "giget";
 import pc from "picocolors";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
+import { homedir } from "node:os";
 import { execSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
@@ -156,6 +157,7 @@ import { runVerticalInstall } from "./vertical-install.js";
 import { runDoctor } from "./doctor.js";
 import { REF_ALIASES } from "./refs.js";
 import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
+import { inspectScaffoldTarget, resolveProjectArg } from "./target.js";
 import {
   type Profile,
   PROFILES,
@@ -176,7 +178,12 @@ import {
 const HELP_TEXT = `create-cartwright — a real site (design, database, backend) live in minutes.
 
 Usage:
-  npx create-cartwright@latest [name] [options]
+  npx create-cartwright@latest [dir] [options]
+
+  dir is a path — a new folder, or "." for the current one, which must be empty
+  apart from .git, .gitignore, README.md or .DS_Store. The project name is the
+  slug of its last segment. Agents scaffolding where they stand:
+    npx create-cartwright@latest . --yes --no-git
 
 Options:
   --profile <light|full|site>  Scaffold profile (default: light).
@@ -532,7 +539,10 @@ async function run(): Promise<void> {
   );
 
   // ── Project name ────────────────────────────────────────────────────────
-  const defaultName = positionals[0] ?? "my-cartwright-shop";
+  // A positional is a path: it fixes the directory, and the name is the slug
+  // of its last segment (see ./target.ts). Without one, the name is the folder.
+  const target = resolveProjectArg(positionals[0], process.cwd(), basename(homedir()));
+  const defaultName = target.name;
   const projectName = values.yes
     ? defaultName
     : exitOnCancel(
@@ -701,12 +711,15 @@ async function run(): Promise<void> {
   // ── Pre-flight ──────────────────────────────────────────────────────────
   const finalSlug = storeSlugOverride ?? projectName;
   const finalProjectName = storeNameOverride ?? projectName;
-  const targetDir = resolve(process.cwd(), finalSlug);
-  
-  if (existsSync(targetDir)) {
-    cancel(`Directory "${finalSlug}" already exists.`);
+  const targetDir = target.dir ?? resolve(process.cwd(), finalSlug);
+  const targetCheck = inspectScaffoldTarget(targetDir, homedir());
+  if (!targetCheck.ok) {
+    cancel(targetCheck.reason);
     process.exit(1);
   }
+  // What to type to get there — "." when scaffolding where we stand.
+  const relDir = relative(process.cwd(), targetDir) || ".";
+  const cdDir = /\s/.test(relDir) ? `"${relDir}"` : relDir;
 
   // ── Template fetch ──────────────────────────────────────────────────────
   const fetchSpinner = spinner();
@@ -718,9 +731,13 @@ async function run(): Promise<void> {
   try {
     await downloadTemplate(`${TEMPLATE_REPO}#${templateRef}`, {
       dir: targetDir,
-      force: false,
+      // inspectScaffoldTarget allowed only an empty folder or .git & co.
+      force: existsSync(targetDir),
     });
     fetchSpinner.stop(pc.green(`Template downloaded (${refDisplay}).`));
+    if (targetCheck.replaces.length > 0) {
+      note(`Replaced ${targetCheck.replaces.join(" and ")} with the template's own.`, "info");
+    }
   } catch (err) {
     fetchSpinner.stop(pc.red("Template fetch failed."));
     console.error(err);
@@ -914,7 +931,8 @@ async function run(): Promise<void> {
   // Beginners' biggest gap is "scaffolded → now what?". Offer the next hop:
   // put the code on GitHub (the home that Vercel deploys from). Fully optional,
   // fail-soft, and only when we actually have a git repo + an interactive run.
-  if (gitInitialized && (forceGithub || offerGithub)) {
+  // A folder cloned from GitHub already has its remote — nothing to create.
+  if (gitInitialized && (forceGithub || offerGithub) && !hasGitRemote(targetDir)) {
     const wantsGithub = forceGithub
       ? true
       : await confirm({
@@ -1038,7 +1056,7 @@ async function run(): Promise<void> {
     } else {
       installSpinner.stop(
         pc.yellow(
-          `Install failed — run \`${packageManager} install\` in ${projectName} manually.`,
+          `Install failed — run \`${packageManager} install\` in ${cdDir} manually.`,
         ),
       );
     }
@@ -1113,14 +1131,14 @@ async function run(): Promise<void> {
 
   const siteSteps = [
     pc.bold("Next steps:"),
-    `  cd ${finalSlug}`,
+    `  cd ${cdDir}`,
     `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
     pc.dim("  Content lives in brand.config.ts; design via designs/ and the shipped packs."),
     pc.dim("  The guide for this profile: docs/simple-site.md"),
     pc.dim("  (online: https://cartwright.app/docs/getting-started/plain-website)"),
     "",
     pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
     pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
     pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md —"),
     pc.dim("  its first line says which sections this profile does not have."),
@@ -1130,18 +1148,18 @@ async function run(): Promise<void> {
     : dbReady
     ? [
         pc.bold("Next steps:"),
-        `  cd ${finalSlug}`,
+        `  cd ${cdDir}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
         "",
         pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
         pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
         pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
       ]
     : [
         pc.bold("Next steps (required):"),
-        `  cd ${finalSlug}`,
+        `  cd ${cdDir}`,
         `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
@@ -1300,7 +1318,7 @@ async function run(): Promise<void> {
   if (startNow) {
     console.log(
       pc.dim(
-        `\nStarting ${runCmd} dev in ${finalSlug}/ — open http://localhost:3000/en\n`,
+        `\nStarting ${runCmd} dev in ${cdDir}/ — open http://localhost:3000/en\n`,
       ),
     );
     const [cmd, ...args] =
