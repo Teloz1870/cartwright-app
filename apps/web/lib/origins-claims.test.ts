@@ -223,7 +223,10 @@ describe('the WooCommerce status page matches the engine', () => {
     const images = lineWith(woo, '**Images are stored as the URLs you give**');
     expect(images).not.toMatch(/up to 50 such images per run/);
     expect(images).toMatch(/Google Drive folders of at most 50 files each, images only/);
-    expect(images).toMatch(/first 50 files — the most recently modified first, with no next page, so the same 50 on every run/);
+    // Falsifier R5 (NIT): Drive's pageSize is a maximum — a page may hold fewer files and still
+    // carry a nextPageToken, which the import never follows — so 50 is a ceiling, not a count.
+    expect(images).not.toMatch(/reads only the folder's first 50 files/);
+    expect(images).toMatch(/reads at most the folder's first 50 files — the most recently modified first, with no next page, so at most the same 50 on every run/);
     expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
     expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
@@ -324,6 +327,24 @@ describe('the WooCommerce status page matches the engine', () => {
     // trailingSlash off: with it on, next.config.ts sets skipTrailingSlashRedirect (falsifier R3).
     expect(step).toMatch(/localePrefix: "never"[^\n]*with `trailingSlash` off, an address ending in `\/` has the `308` in front/);
     expect(step).toMatch(/`localePrefix: "never"`, a redirected address is `301` then `200`/);
+    // Falsifier R5 (NIT): under "never" with trailingSlash on, a route asked for without the slash
+    // takes the proxy's own 308 first (trailingSlashRedirect, lib/urls.ts; proxy.ts URL2), measured
+    // /product/blue-chair → 308 /product/blue-chair/ → 200. A redirect row matches either form and
+    // its destination carries the slash (lib/redirects/match.ts), so /gammel and /gammel/ → 301 /ny/.
+    expect(step).not.toMatch(/one that is already a route answers `200` directly/);
+    expect(step).toMatch(/one that is already a route answers `200` without a `301`; with `trailingSlash` off/);
+    expect(step).toMatch(/with it on, an address ending in `\/` answers directly, and a route asked for without the `\/` takes the proxy's `308` to the slash form first/);
+    expect(step).toMatch(/a redirected address answers its `301` in either form, since the destination carries the slash/);
+  });
+
+  it('step 9 ends an /admin address on the login page, not a 404 (falsifier R5, NIT)', () => {
+    // proxy.ts: /admin and /admin/… skip the redirect lookup and hit the admin gate, which answers a
+    // request without a session with a 307 to /account/login. Under "always" /administration first
+    // takes next-intl's 307 to /en/administration; with no row there, LOCALE_ADMIN_RE (^/(en)/admin,
+    // no boundary) sends it to the same gate. Measured: → 307 /en/administration → 307 /account/login.
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address under `\/admin`/);
+    expect(step).toMatch(/`\/admin` and everything below it, and under the default `"always"` a path such as `\/administration\/` with no row, take the admin gate's `307` to `\/account\/login` \(`proxy\.ts`\) and end on the login page with a `200`/);
   });
 
   it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
@@ -398,5 +419,11 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(checkout).not.toMatch(/delivery selection/i);
     expect(checkout).toMatch(/optional discount code/);
     expect(checkout).toMatch(/no delivery-method choice/);
+    // Falsifier R5 (Gemini NIT3): CheckoutForm.tsx renders StripePaymentPanel (:147), and
+    // StripePaymentPanel.tsx renders <PaymentElement /> (:150) — one name for the file, on both pages.
+    const panel = /Payment Element, which (the form|the checkout form \(`components\/CheckoutForm\.tsx`\)) renders through `components\/StripePaymentPanel\.tsx`/;
+    expect(checkout).toMatch(/in the checkout form \(`components\/CheckoutForm\.tsx`\)/);
+    expect(checkout).toMatch(panel);
+    expect(lineWith(read('content/docs/deployment/go-live.mdx'), 'automatic_payment_methods')).toMatch(panel);
   });
 });
