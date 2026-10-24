@@ -155,6 +155,7 @@ import { runDesignInstall } from "./design-install.js";
 import { runVerticalInstall } from "./vertical-install.js";
 import { runDoctor } from "./doctor.js";
 import { REF_ALIASES } from "./refs.js";
+import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
 import {
   type Profile,
   PROFILES,
@@ -229,6 +230,7 @@ Options:
                            channel, profile, template, node major, OS, db —
                            never a name, path or identifier.
   --help, -h               Show this help.
+  --version, -v            Print the CLI version.
 
 Subcommands:
   cartwright design install <slug>     Install a marketplace design pack.
@@ -427,6 +429,7 @@ async function run(): Promise<void> {
       with: { type: "string", multiple: true },
       look: { type: "string" },
       help: { type: "boolean", short: "h" },
+      version: { type: "boolean", short: "v" },
       "no-install": { type: "boolean" },
       "no-git": { type: "boolean" },
       "no-github": { type: "boolean" },
@@ -437,6 +440,12 @@ async function run(): Promise<void> {
       "no-telemetry": { type: "boolean" },
     },
   });
+
+  // One line, exit 0, before any banner, prompt or network call (EXT1).
+  if (values.version) {
+    console.log(`create-cartwright ${CLI_VERSION}`);
+    return;
+  }
 
   if (values.help) {
     console.log(HELP_TEXT);
@@ -1301,6 +1310,12 @@ async function run(): Promise<void> {
 }
 
 run().catch((err) => {
+  // An unknown flag, a missing value or a stray positional is the caller's
+  // typo, not a crash: one line and exit 2, never a stack trace (EXT1).
+  if (isArgvError(err)) {
+    console.error(pc.red(argvErrorLine(err)));
+    process.exit(ARGV_ERROR_EXIT);
+  }
   console.error(pc.red("Unexpected error:"), err);
   process.exit(1);
 });
