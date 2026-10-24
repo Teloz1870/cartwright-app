@@ -26,6 +26,8 @@
     "configuration",
     "---Deployment---",
     "deployment",
+    "---Migration---",
+    "migrate",
     "---Recipes---",
     "recipes",
     "---API reference---",

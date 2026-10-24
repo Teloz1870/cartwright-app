@@ -42,7 +42,7 @@ customer:read  ← customer lookup for cart/account context
 `*` exists as a wildcard for admin UI keys. Never grant it to a storefront chat session.
 
 <Callout type="info">
-Several product/category read tools require `catalog:read` rather than `products:read` or `categories:read`. The latter scopes exist for symmetry but are not currently required by any registered tool. When granting a key, prefer `catalog:read` for storefront/agent reads.
+The product read tools (`products.search`, `products.get`) require `catalog:read`, not `products:read` — `products:read` exists for symmetry and no registered tool requires it. `categories.list` requires `categories:read` (`lib/tools/categories.ts`). A key for storefront or agent reads therefore needs both `catalog:read` and `categories:read`; while `mcpPublic` is on, an anonymous caller of the five public read tools is given exactly those two plus `pages:read` (`lib/tools/public.ts`); with it off, `/api/v1/tools` answers 404 to every caller (`lib/tools/public-gate.ts`).
 </Callout>
 
 ## Tool catalogue
@@ -64,7 +64,7 @@ Several product/category read tools require `catalog:read` rather than `products
 
 | Tool | Scope | Audit |
 |---|---|---|
-| `categories.list` | `catalog:read` | skip |
+| `categories.list` | `categories:read` | skip |
 | `categories.upsert` | `categories:write` | yes |
 | `categories.delete` | `categories:write` | yes |
 

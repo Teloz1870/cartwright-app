@@ -46,10 +46,12 @@ const SURFACES = [
   'content/docs/in-the-box.mdx',
   'app/llms.txt/route.ts',
   'lib/home-markdown.ts',
+  // The WooCommerce status page (TREND8-a) names the platform on nearly every line.
+  'content/docs/migrate/woocommerce.mdx',
 ];
 
 /** Every surface that promises redirects. Since engine v0.62.0 (RED1) the proxy serves them from the database when Redis is absent, so none may say Redis is required. */
-const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx'];
+const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx', 'content/docs/migrate/woocommerce.mdx'];
 
 /** Every surface that names Hoptify must couple it to --profile full within 600 chars. */
 const HOPTIFY_SURFACES = [
@@ -189,5 +191,212 @@ describe('origin claims stay honest', () => {
     // happen with a runbook the reader can follow.
     expect(ORIGINS.filter((o) => o.status === 'planned').map((o) => o.id)).toEqual(['woocommerce']);
     for (const o of ORIGINS) expect(routeExists(o.docs), o.id).toBe(true);
+  });
+});
+
+/**
+ * The WooCommerce status page and the storefront route map, against the engine
+ * (falsifier on app #410, measured on engine origin/main 1f861db2). Each pin is
+ * a sentence that was false on that page, so it cannot come back.
+ */
+describe('the WooCommerce status page matches the engine', () => {
+  const woo = read('content/docs/migrate/woocommerce.mdx');
+  const lineWith = (src: string, needle: string) => src.split('\n').find((l) => l.includes(needle)) ?? '';
+
+  it('dates trailingSlash routing to v0.60.0 (engine CHANGELOG v0.60.0), not v0.61.0', () => {
+    const bullet = lineWith(woo, '`trailingSlash: true`');
+    expect(bullet).toMatch(/v0\.60\.0/);
+    expect(bullet).not.toMatch(/v0\.61\.0/);
+  });
+
+  it('names the Sheets sync for SKUs and the Drive folder import for media instead of saying nothing carries them', () => {
+    // plugins/google-workspace/lib/sheets-sync.ts writes `sku`; drive-import.ts copies up to 50 images a run.
+    expect(woo).not.toMatch(/do not move by any engine path|moves one file at a time/);
+    expect(woo).toMatch(/`sheetsSync`[^\n]*`sku`/);
+    expect(woo).toMatch(/`drive\.import_folder`[^\n]*\b50\b/);
+  });
+
+  it('caps a Drive folder at the 50 files one run reads, the same 50 every time (falsifier R4, MUST-FIX)', () => {
+    // drive-import.ts lists the folder once with pageSize MAX_FILES_PER_IMPORT = 50 and no pageToken;
+    // google/drive.ts orders by "modifiedTime desc,name". A file already in MediaAsset returns
+    // { ok: true, skipped: false } and counts as imported, so a re-run looks like progress.
+    const images = lineWith(woo, '**Images are stored as the URLs you give**');
+    expect(images).not.toMatch(/up to 50 such images per run/);
+    expect(images).toMatch(/Google Drive folders of at most 50 files each, images only/);
+    expect(images).toMatch(/first 50 files — the most recently modified first, with no next page, so the same 50 on every run/);
+    expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
+    expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
+  });
+
+  it('caps a product CSV import at the 1 MB a Server Action takes (falsifier R4, MUST-FIX)', () => {
+    // app/admin/produkter/import/actions.ts importProductsAction(csvText) is a Server Action; the
+    // engine's next.config.ts sets no experimental.serverActions.bodySizeLimit, and Next 16.4.2
+    // defaults it to 1 MB (serverActions.md, "bodySizeLimit"). Measured: 1.2 MB → "Body exceeded 1 MB limit."
+    const cap = lineWith(woo, '**Under 1 MB per file.**');
+    expect(cap).toMatch(/Server Action[^\n]*caps a Server Action's request at 1 MB unless `experimental\.serverActions\.bodySizeLimit`[^\n]*the engine's does not/);
+    expect(cap).toMatch(/fails as a whole[^\n]*nothing saved/);
+    expect(cap).toMatch(/split the file into parts well under 1 MB/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/`\/admin\/produkter\/import`, in files under 1 MB/);
+  });
+
+  it('pins the product CSV and redirect import limits as the engine sets them', () => {
+    // lib/products-csv.ts: upsert per row, no dry run, categorySlug looked up in existing categories.
+    // lib/redirects/import.ts REDIRECT_IMPORT_LIMITS = { maxRows: 2000, maxBytes: 256 * 1024 };
+    // lib/redirects/load.ts TTL_MS = 60_000.
+    expect(lineWith(woo, '**One row is one simple product**')).toMatch(/There is no dry run\./);
+    expect(lineWith(woo, '**Row rules:**')).toMatch(/`categorySlug` must name a category that already exists — the import never creates one/);
+    expect(lineWith(woo, '**The rules**')).toMatch(/at most 2,000 rows and 256 KB per file; status `301` \(the default\) or `302`/);
+    expect(lineWith(woo, '**No Redis needed.**')).toMatch(/cached for 60 seconds per server instance/);
+    expect(woo).toMatch(/^Each answers with a `308` \(not the table's `301`\)/m);
+  });
+
+  it('tells the owner a redirect source is matched undecoded, and that a slug with æ/ø/å cannot be kept', () => {
+    // lib/redirects/match.ts looks map[path] up as the request sends it; import.ts and store.ts
+    // only trim and strip the trailing slash. products-csv.ts: slug must match /^[a-z0-9-]+$/.
+    const rules = lineWith(woo, '**The rules**');
+    expect(rules).toMatch(/character for character, without decoding it[^\n]*percent-encoded/);
+    expect(rules).toMatch(/`\/r%c3%b8d-stol` for an `ø`[^\n]*the case of those letters counts[^\n]*add a second row for `\/r%C3%B8d-stol`; a row for `\/rød-stol` itself never matches/);
+    expect(woo).toMatch(/a Cartwright slug holds only `a–z`, `0–9` and `-`, so a slug with `æ`, `ø` or `å` gets a new one and its old address a row/);
+  });
+
+  it('says what step 9 shows under the default localePrefix: the 301, then next-intl\'s 307, then the 200', () => {
+    // An old WordPress path has no locale, so the merchant redirect's destination has none
+    // (lib/redirects/match.ts) and next-intl's middleware adds it with a 307 (proxy.ts).
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).toMatch(/`301`[^\n]*`307`[^\n]*`200`/);
+    expect(step).toMatch(/localePrefix: "never"/);
+  });
+
+  it('names the old addresses the proxy never looks a redirect up for, and what the owner does instead', () => {
+    // proxy.ts: the matcher leaves out every dotted path and anything starting /hero (no
+    // slash after it); the lookup is skipped for startsWith("/api") / ("/admin") and comes
+    // after the /oauth branch (lib/locale-exempt.ts). Under "never", next.config.ts sends
+    // /om-os to /about and canonicalTrustRedirect sends /info/<alias> on before the lookup.
+    // planRedirectImport accepts every one of those rows, so the dry run cannot warn.
+    const bullet = lineWith(woo, '**Some paths never reach your redirects.**');
+    expect(bullet).toMatch(/dry run counts it valid/);
+    expect(bullet).toMatch(/dot anywhere[^\n]*`\/wp-content\/uploads\/`[^\n]*`matcher`/);
+    expect(bullet).toMatch(/`\/hero`[^\n]*`\/heroes\/`/);
+    expect(bullet).toMatch(/begins with `\/api` — `\/apiary\/` as well, since that check has no slash after it/);
+    expect(bullet).toMatch(/`\/oauth`/);
+    // Falsifier R4 (MUST-FIX): /administration skips the lookup only on its first request. The
+    // admin branch takes /admin and /admin/… alone (proxy.ts), so under "always" next-intl's 307
+    // adds /en and the row answers; under "never" next-intl rewrites, and it never does.
+    expect(bullet).not.toMatch(/`\/apiary\/` and `\/administration\/`/);
+    expect(bullet).toMatch(/localePrefix: "never"[^\n]*any other path that begins with `\/admin`, such as `\/administration\/`/);
+    expect(bullet).toMatch(/With the default `"always"` all three reach your row/);
+    expect(bullet).toMatch(/`\/administration\/` is skipped only on its first request: next-intl's `307` adds the language, and your row answers the request after it/);
+    expect(lineWith(woo, '**Check from outside**')).toMatch(/begins with `\/admin` without being `\/admin` or below it, such as `\/administration\/`, has the two the other way round: the `307`, then your `301`/);
+    expect(bullet).toMatch(/localePrefix: "never"[^\n]*`\/om-os`[^\n]*`next\.config\.ts`[^\n]*`\/info\/om-os`/);
+    const instead = lineWith(woo, '**What to do with those instead.**');
+    expect(instead).toMatch(/`redirects\(\)`[^\n]*`next\.config\.ts`[^\n]*before the proxy[^\n]*`\/favicon\.ico`/);
+    expect(instead).toMatch(/host's or CDN's redirect rules/);
+    // Step 6 must not leave the owner believing the dry run vetted them.
+    expect(lineWith(woo, '**Write the redirect CSV**')).toMatch(/the dry run passes them/);
+    // choose-your-path promises "a redirect for every old path you care about".
+    const path = read('content/docs/getting-started/choose-your-path.mdx');
+    expect(lineWith(path, 'an admin-managed redirect for every old path')).toMatch(/never a path with a dot[^\n]*`\/wp-content\/uploads\/`/);
+  });
+
+  it('step 9 counts Next\'s own 308 that an old slash address takes first when trailingSlash is off', () => {
+    // next.config.ts sets skipTrailingSlashRedirect only with urls.trailingSlash on; off, Next
+    // strips the slash with a 308 before the proxy runs (measured: demo.cartwright.app
+    // /product-category/chairs/ → 308 → 307 → 404).
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).toMatch(/`trailingSlash` off[^\n]*`308`[^\n]*`301`[^\n]*`307`/);
+    expect(step).toMatch(/or one the proxy never sees/);
+  });
+
+  it('step 9 gives an old slash address that is already a route its 308 before the 307, not the 307 alone', () => {
+    // WooCommerce's product address is also an engine route (app/[locale]/product/[slug]).
+    // Measured on demo.cartwright.app 2026-10-24 (trailingSlash off, localePrefix "always"):
+    // /product/ethiopia-yirgacheffe/ → 308 /product/ethiopia-yirgacheffe → 307 /en/product/… → 200,
+    // and the same path without the slash → 307 → 200.
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).not.toMatch(/`\/product\/<slug>\/`, answers with the `307` alone/);
+    expect(step).toMatch(/`\/product\/<slug>\/` answers the `308`, then the `307`, then `200`/);
+    expect(step).toMatch(/without the `\/` answers the `307` alone/);
+    // Falsifier R4 (NIT): that 308 is Next's own trailing-slash redirect, so it is there only with
+    // trailingSlash off; with it on and "always", both forms answer next-intl's 307 alone.
+    expect(step).toMatch(/with `trailingSlash` off, the old shop's `\/product\/<slug>\/` answers the `308`[^\n]*; with it on, both answer the `307` alone/);
+    // Under "never" the route still takes the 308 first when it ends in `/` — but only with
+    // trailingSlash off: with it on, next.config.ts sets skipTrailingSlashRedirect (falsifier R3).
+    expect(step).toMatch(/localePrefix: "never"[^\n]*with `trailingSlash` off, an address ending in `\/` has the `308` in front/);
+    expect(step).toMatch(/`localePrefix: "never"`, a redirected address is `301` then `200`/);
+  });
+
+  it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
+    // Under "always" next-intl's 307 adds the slash itself (proxy.ts URL2 comment); only under
+    // "never" does the proxy's trailingSlashRedirect answer a slashless destination with a 308.
+    const para = lineWith(woo, 'Each answers with a `308`');
+    expect(para).toMatch(/under `localePrefix: "never"` a destination without it takes a second `308` to the slash form; under the default `"always"` next-intl's `307` adds the slash either way/);
+    expect(para).not.toMatch(/or the proxy adds a second `308`/);
+  });
+
+  it('keeps the legacy Danish segments to the configured languages, and the scaffold examples on /en/', () => {
+    // proxy.ts LEGACY_SLUG_RE is built from LOCALE_ALTERNATION (brand.locales), so /da/produkt/x on
+    // an en-only scaffold is not a legacy match (measured: 307 /en/da/produkt/x).
+    expect(lineWith(woo, '**Seven Danish segments answer first.**')).toMatch(/with or without a configured language in front/);
+    expect(read('content/docs/features/auth-magiclink.mdx')).toContain('(for example `/en/account/login`)');
+    expect(read('content/docs/recipes/new-industry-template.mdx')).toContain('`/en/category/sunglasses` (your locale and slug)');
+  });
+
+  it('pins the MobilePay box to Stripe\'s published values and categories.list to its own scope', () => {
+    // docs.stripe.com/payments/mobilepay: customers in DK/FI, DKK/EUR/NOK/SEK, 35 DKK a month for
+    // a Danish business. lib/tools/categories.ts: categories.list scope "categories:read".
+    const live = read('content/docs/deployment/go-live.mdx');
+    expect(lineWith(live, '**Who sees it:**')).toMatch(/customers in Denmark and Finland, on an order charged in DKK, EUR, NOK or SEK\./);
+    expect(lineWith(live, '**What it costs:**')).toMatch(/a fixed 35 DKK a month for a business registered in Denmark\./);
+    const mcp = read('content/docs/api/mcp-tools.mdx');
+    expect(mcp).toContain('| `categories.list` | `categories:read` |');
+    expect(mcp).toContain('`categories.list` requires `categories:read` (`lib/tools/categories.ts`)');
+  });
+
+  it('scopes the query-string limit to the redirect table and gives the owner the next.config.ts `has` query rule', () => {
+    // Only the table is path-only (falsifier R3, MUST-FIX): matchRedirect looks a row up by the
+    // pathname, so a `/?p=123` row is planned valid and never fires, and the source `/` is refused
+    // (redirectInputError). A redirects() rule in next.config.ts can match the query — Next 16.4.2
+    // redirects.md, "Header, Cookie, and Query Matching" — and runs before proxy.ts (proxy.md,
+    // "Execution order"). Measured 2026-10-24 on a Next 16.4.2 app whose proxy redirects `/`:
+    // /?p=123 → 308 /product/blue-chair?p=123, /?p=124 → the proxy's 307.
+    expect(woo).not.toMatch(/cannot be redirected/);
+    const bullet = lineWith(woo, '**The redirect table matches paths only.**');
+    expect(bullet).toMatch(/`\/admin\/redirects` cannot redirect a query-string address/);
+    expect(bullet).toMatch(/dry run counts it valid[^\n]*never fires/);
+    expect(woo).toContain('has: [{ type: "query", key: "p", value: "123" }]');
+    expect(lineWith(woo, '**Write the redirect CSV**')).toMatch(/`\/\?p=123`[^\n]*`type: "query"`/);
+  });
+
+  it('names /en/ as a scaffold\'s language and keeps orders and customers at "do not move"', () => {
+    // apps/cli/src/scaffold.ts patchBrandConfigForEnglishFirst: locales ["en"], defaultLocale "en".
+    // Only the engine repo itself ships "da" first.
+    expect(woo).not.toMatch(/`\/da\/(product\/<slug>\/|…)` as shipped/);
+    expect(lineWith(woo, '**Check from outside**')).toMatch(/`defaultLocale`[^\n]*`\/en\/…` in a shop from `npx create-cartwright`/);
+    const map = read('content/docs/features/customer-storefront.mdx');
+    expect(lineWith(map, 'The customer storefront covers')).toMatch(/`\/en\/product\/<slug>` in a shop from `npx create-cartwright`/);
+    // Engine CHANGELOG v0.59.0 adds externalId/source to orders and customers for a later import.
+    expect(woo).not.toMatch(/Orders and customers never move/);
+    expect(lineWith(woo, '**Orders and customers do not move:**')).toMatch(/v0\.59\.0[^\n]*the import that would fill them is not built/);
+  });
+
+  it('does not say the admin redirect preview lists every row (it shows counts and errors)', () => {
+    // app/admin/redirects/RedirectsManager.tsx renders the summary and ErrorLines only;
+    // the per-row plan is the redirects.import tool's dryRun output.
+    expect(woo).not.toMatch(/dry run shows every row/);
+    expect(lineWith(woo, '**Admin-managed redirects**')).toMatch(/does not list the valid rows[^\n]*`dryRun: true` returns[^\n]*every row/);
+  });
+
+  it('describes the cart and checkout the storefront actually renders', () => {
+    // app/[locale]/cart/page.tsx: line items + flat shipping, no discount field or calculator;
+    // components/CheckoutForm.tsx: delivery details + discount code, no delivery-method choice.
+    const map = read('content/docs/features/customer-storefront.mdx');
+    const cart = lineWith(map, '**`/[locale]/cart`**');
+    const checkout = lineWith(map, '**`/[locale]/checkout`**');
+    expect(cart).not.toMatch(/shipping calculator|discount[- ]code (field|input)/i);
+    expect(cart).toMatch(/takes no discount code/);
+    expect(checkout).not.toMatch(/delivery selection/i);
+    expect(checkout).toMatch(/optional discount code/);
+    expect(checkout).toMatch(/no delivery-method choice/);
   });
 });
