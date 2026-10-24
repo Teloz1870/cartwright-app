@@ -1,0 +1,4 @@
+---
+"create-cartwright": minor
+---
+Every new scaffold now ships `.github/dependabot.yml`, so once the project is on GitHub, Dependabot opens the update PRs in your own repository. Each week brings at most two npm PRs: Next.js with React (they move together), and every other minor or patch bump. Major versions are left to you, and a security fix that needs one still arrives, because the majors rule is an `update-types` ignore and Dependabot applies those to version updates only. Security fixes come grouped into one PR once *Dependabot security updates* is on in the repository's settings. A second entry keeps the actions in `.github/workflows/ci.yml` current. The CLI writes the file for every profile and under `--no-git` too, just as it writes `ci.yml`, and leaves an existing `dependabot.yml` or `dependabot.yaml` alone.
