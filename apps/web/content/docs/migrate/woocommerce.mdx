@@ -1,0 +1,79 @@
+---
+title: Moving from WooCommerce
+description: What the engine does today when a WooCommerce shop moves to Cartwright, what is not built, and what you do yourself on the day the domain switches.
+---
+
+This is a status page, not an importer manual: **there is no WooCommerce importer in the engine.** What exists are building blocks — a product CSV import, redirects imported from a CSV with a dry run first, URL options for WordPress-shaped addresses, and nested categories — and you assemble the move from them. Cartwright never runs on PHP or WordPress hosting: it replaces the shop.
+
+Every statement about the engine names the file it comes from. It describes engine v0.62.0; a line marked "from the release after v0.62.0" is on the engine's `main` branch and not yet in a tagged release.
+
+## What the engine does today
+
+### Old addresses keep working through redirects
+
+- **Admin-managed redirects** live in `/admin/redirects`: one old path at a time, or — since v0.59.0 — many at once from a CSV with the columns `from,to,status` (`lib/redirects/import.ts`). The dry run shows every row that would be saved and every error by its line in the file, and writes nothing; the import then saves all valid rows in one transaction. The same import is the `redirects.import` tool (`lib/tools/redirects.ts`): `dryRun: true` previews, `confirm: true` applies, scope `settings:write`.
+- **The rules** (`lib/redirects/import.ts`): at most 2,000 rows and 256 KB per file; status `301` (the default) or `302`. A duplicate source, a chain — a destination that is itself a redirect source, in the file or already saved — and a loop are refused, so point every old address straight at its final page. Write the destination without `/da` or `/en`: the redirect keeps the reader's language.
+- **Seven Danish segments answer first.** Before it looks at your redirects, the proxy sends `/produkt/…`, `/kategori/…`, `/kurv`, `/konto`, `/kontakt`, `/ordre` and `/anmeld`, with or without `/da`, to their English twin with a 301 (`LEGACY_SLUG_MAP` in `proxy.ts`). So `/produkt/<slug>/` lands on `/product/<slug>/` without a redirect row, and a row whose source starts with one of those segments never fires: if the slug changed, the row's source has to be the English path, which makes it a second hop.
+- **No Redis needed.** Since v0.62.0 the proxy reads the redirects from the database when Upstash Redis is not set up (`lib/redirects/load.ts`), cached for 60 seconds per server instance, so a new redirect answers within about a minute.
+- **Paths only.** The proxy matches the path, not the query string (`lib/redirects/match.ts`), and appends the request's query to the destination (`proxy.ts`). A query-string address such as `/?p=123` — WordPress's "Plain" permalink setting — is therefore not matched and cannot be redirected today.
+
+### WordPress-shaped addresses: the `urls` block
+
+Three options in `brand.config.ts`, built in `lib/urls.ts` and documented in the engine's `docs/urls.md` — the full reference is [URL options](/docs/configuration/urls). They shape the new shop's own addresses; nothing here reads the old site, and the importer that would is not built:
+
+- `trailingSlash: true` makes every path end in `/`, the way WordPress addresses do, and answers a request without the slash with a permanent 308 (routing since v0.61.0).
+- `localePrefix: "never"` drops `/da/` from every path, on a shop with exactly one language (since v0.61.0).
+- With both on a single-language shop, `/product/<slug>/` is served as it is — the shape of WooCommerce's default product permalink — so a product imported with its old slug answers at its old address without a redirect row. WooCommerce's default category base, `/product-category/<slug>/`, is not a Cartwright route (categories live at `/category/<slug>/`), so categories need redirect rows. WooCommerce lets each shop choose its bases, so read yours off the old site.
+
+### Permalinks: stored and linked, not yet served
+
+Products and categories have a `permalink` column (`prisma/schema.prisma`, since v0.59.0). With `urls.permalinks: true`, the engine's own links to such an entity use the stored address: from v0.62.0 the product and category pages' canonical and breadcrumbs, the sitemap, the product card, the footer and the cart, among others; the header, the mobile menu and the category page's "Explore more" list from the release after v0.62.0 (`components/Header.tsx`, `components/MobileMenu.tsx`, `app/[locale]/category/[slug]/page.tsx`). Every one of them builds the address in `lib/urls.ts`.
+
+Two parts are not built: no import, admin field or tool writes the column, and the shop does not answer at a stored permalink — the option changes the links, not the addresses the shop serves (`docs/urls.md`). Keep `permalinks: false` on a live shop and keep old addresses with redirects.
+
+### Products: the product CSV import
+
+`/admin/produkter/import` (`lib/products-csv.ts`, since v0.10.0); the matching export is `/admin/produkter/export`.
+
+- **Ten fixed columns:** `slug, name, description, priceKr, stock, brand, featured, categorySlug, images, attributes`. WooCommerce's own export has other columns, so you reshape it into these first; the import reads no other layout.
+- **One row is one simple product**, saved by its slug: a row whose slug already exists updates that product, so the same file can be imported again. A failing row is reported by its row number and the other rows are still saved. There is no dry run.
+- **Row rules:** the slug may hold only `a–z`, `0–9` and `-`; the name needs at least 2 characters and the description at least 10; `priceKr` is in kroner and must be above 0; `categorySlug` must name a category that already exists — the import never creates one; `images` is a JSON array or `|`-separated URLs; `attributes` is a JSON object.
+- **Not carried:** variants, SKU, weight, SEO fields, a permalink, a category's parent.
+- **Images are stored as the URLs you give**, not copied. The product card renders them through `next/image` (`components/ProductCard.tsx`), which loads a remote image only from a host listed in `images.remotePatterns` in `next.config.ts` — Unsplash, Vercel Blob and picsum as shipped. An image left in the old site's `/wp-content/uploads/` is therefore not shown, and after the domain switch that host name points at the new shop. Copy each image into the shop's storage first with the `images.import_from_url` tool (`lib/tools/images.ts`, over `POST /api/v1/tools/images.import_from_url` — [MCP tools](/docs/api/mcp-tools); JPEG, PNG or WebP up to 5 MB, needs `BLOB_READ_WRITE_TOKEN`) and put the URL it returns in the CSV.
+
+### Categories: nested, from the release after v0.62.0
+
+A parent category's page lists the products of every category below it, and the breadcrumb data (`BreadcrumbList`, and the visible trail where the `breadcrumbs` flag is on) walks the parent chain (`lib/category-tree.ts`). That is the shape of a WooCommerce catalogue, whose products sit in the innermost categories.
+
+Nothing in the engine sets a parent yet — the importer that would carry the tree across is not built: the admin category form, the `categories.upsert` tool (`lib/tools/categories.ts`), the product CSV import and a sitepack restore carry no parent, so a tree exists only where something writes `Category.parentId` in the database directly. The catalogue's category filter and the `products.search` tool still match only products placed in a category directly. Details: [Customer storefront → Nested categories](/docs/features/customer-storefront#nested-categories).
+
+### Pages and posts
+
+The URL import, `content.import_site` (`lib/tools/import.ts`, behind the `siteImport` flag and `FIRECRAWL_API_KEY`), crawls a public site and lands its pages and posts as drafts to review — not products, SEO fields or redirects. Its requirements and limits are in [Choose your path → Origin](/docs/getting-started/choose-your-path).
+
+## What is not built
+
+- **A WooCommerce importer.** Nothing in the engine reads a WooCommerce export as it is, or the WooCommerce REST API. Variants, SKUs, weights, category parents and SEO titles do not move by any engine path today, and media moves one file at a time through `images.import_from_url`.
+- **A migration screen in the admin.** No page under `app/admin/` tracks a move from start to switch.
+- **Permalinks filled by an import, and served at their address** (see above).
+- **Orders and customers never move;** WordPress plugins are rebuilt, not migrated.
+
+## What you do at cutover
+
+1. **List every old address** — products, product categories, pages, posts — for example from the old site's XML sitemap, and choose the new address of each.
+2. **Set the URL options before the new shop is public** (`trailingSlash`, `localePrefix` in `brand.config.ts`; leave `permalinks` off). Browsers keep a 308 for good: a shop that goes back from `localePrefix: "never"` sends a visitor whose browser remembers the redirect in a circle until that cache is cleared (`docs/urls.md`).
+3. **Create the categories** in `/admin/kategorier` — the CSV import never creates one.
+4. **Copy the product images** into the shop's storage with `images.import_from_url`, then **reshape the product export** into the ten columns and import it at `/admin/produkter/import`. Fix the rows it reports and import again. Variants are added by hand ([Product variants](/docs/features/product-variants)).
+5. **Rebuild pages and posts** — with the URL import as drafts, or by hand in `/admin/sider` and `/admin/blog`.
+6. **Write the redirect CSV**: one row for every old path whose address changes, straight to its final page, the destination without `/da`. Run the dry run in `/admin/redirects`, fix the lines it names, then import. Write down the `/?p=123` addresses: they cannot be redirected.
+7. **Test checkout before the switch.** WooCommerce payment plugins do not move; the engine's checkout is Stripe (`lib/stripe.ts`) — see [Go Live](/docs/deployment/go-live).
+8. **Switch the domain** and set `NEXT_PUBLIC_APP_URL` ([Custom domain](/docs/deployment/custom-domain)).
+9. **Check from outside**: `curl -sI https://<your-domain>/<old path>` for a few addresses of each kind — expect a `301` with a `location` on the new page, and a `200` there. Submit the new `/sitemap.xml` to your search console.
+10. **Keep an export of the old WordPress database.** Orders and customers do not move, so it stays their only record.
+
+## Other platforms
+
+- **WordPress without WooCommerce** — no WordPress importer: pages and posts by the URL import as drafts, old addresses by the redirect CSV above.
+- **Shopify** — Hoptify, in `--profile full` only (`plugins/hoptify/`): the palette and the products from product URLs you list; no pages or variants, and nothing uses the Shopify Admin API ([Choose your path](/docs/getting-started/choose-your-path)).
+- **Squarespace** — no Squarespace importer: pages and posts by the URL import, simple products by the product CSV, old addresses by the redirect CSV.
+- **Wix** — no Wix importer: pages and posts by the URL import, simple products by the product CSV, old addresses by the redirect CSV.

@@ -7,7 +7,7 @@ Cartwright is a single Next.js App Router commerce app. The storefront, admin, A
 
 ## Runtime topology
 
-The Next.js 16 app hosts three audiences from a single deploy: the customer storefront (`/`, `/produkt/[slug]`, `/kurv`, `/checkout`), the admin panel (`/admin/*` including `setup`, `produkter`, `integrations`, `api-keys`), and the AI-agent surface at `/api/mcp` plus the public manifest at `/api/v1/tools`. All three paths funnel through the same `lib/tools/registry.ts` and `lib/db.ts` Prisma client, so admin actions, storefront chat, and external MCP calls are governed by the same scope checks and audit log.
+The Next.js 16 app hosts three audiences from a single deploy: the customer storefront (`/[locale]`, `/[locale]/product/[slug]`, `/[locale]/cart`, `/[locale]/checkout`), the admin panel (`/admin/*` including `setup`, `produkter`, `integrations`, `api-keys`), and the AI-agent surface at `/api/mcp` plus the public manifest at `/api/v1/tools`. All three paths funnel through the same `lib/tools/registry.ts` and `lib/db.ts` Prisma client, so admin actions, storefront chat, and external MCP calls are governed by the same scope checks and audit log.
 
 External services are all optional with graceful no-op fallbacks. Stripe runs in mock-checkout mode without keys; Resend prints to console in dev; Sentry is silent without DSN; Anthropic and Gemini keys can be set per-shop via `/admin/integrations` and are decrypted at runtime from `IntegrationSettings`. Prisma uses the libSQL adapter to talk to Turso in production and falls back to local SQLite if `TURSO_DATABASE_URL` is unset.
 

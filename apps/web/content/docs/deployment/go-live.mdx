@@ -41,4 +41,16 @@ Once the domain is live, walk the runbook at `/admin/integrations` — it flags 
 - Place a test order end to end with the Stripe test card `4242 4242 4242 4242`.
 - Confirm the receipt email arrives.
 
+<Callout type="info" title="MobilePay: a Stripe setting, not a code change">
+The checkout already offers every payment method switched on in your Stripe account: the engine creates each payment with `automatic_payment_methods: { enabled: true }` (`lib/stripe.ts`) and shows Stripe's Payment Element (`components/StripePaymentPanel.tsx`). No code change and no Cartwright flag is needed.
+
+- **To offer it:** turn MobilePay on in the Stripe Dashboard under Settings → Payment methods. Whether your account can is Stripe's call — it depends on the country the account is registered in and the kind of business — and that settings page shows it.
+- **Who sees it:** customers in Denmark and Finland, on an order charged in DKK, EUR, NOK or SEK. Stripe picks the methods it shows for each payment from its amount and currency.
+- **What it costs:** Stripe's card fee for the transaction, MobilePay's own transaction fee, and a fixed 35 DKK a month for a business registered in Denmark.
+- **Dankort:** Stripe does not support the Dankort network. A Dankort card is processed on the Visa or Mastercard network instead.
+- **Check it once:** with test keys, choose MobilePay at checkout and pay. Stripe opens a test page where you approve or decline; approve, and you land back on the shop's order page. The order turns paid when Stripe's `payment_intent.succeeded` event reaches the webhook (`app/api/webhook/stripe/route.ts`), exactly as a card payment does. In live mode the customer approves in the MobilePay app.
+
+Source: [Stripe — MobilePay payments](https://docs.stripe.com/payments/mobilepay).
+</Callout>
+
 That is a live Cartwright shop — on your own domain, owned end to end.

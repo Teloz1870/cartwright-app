@@ -46,10 +46,12 @@ const SURFACES = [
   'content/docs/in-the-box.mdx',
   'app/llms.txt/route.ts',
   'lib/home-markdown.ts',
+  // The WooCommerce status page (TREND8-a) names the platform on nearly every line.
+  'content/docs/migrate/woocommerce.mdx',
 ];
 
 /** Every surface that promises redirects. Since engine v0.62.0 (RED1) the proxy serves them from the database when Redis is absent, so none may say Redis is required. */
-const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx'];
+const REDIRECT_SURFACES = ['lib/when-to-use.ts', 'lib/comparisons.ts', 'components/landing/faq.tsx', 'content/docs/faq.mdx', 'content/docs/why-cartwright.mdx', 'content/docs/getting-started/choose-your-path.mdx', 'content/docs/in-the-box.mdx', 'content/docs/migrate/woocommerce.mdx'];
 
 /** Every surface that names Hoptify must couple it to --profile full within 600 chars. */
 const HOPTIFY_SURFACES = [
