@@ -85,6 +85,39 @@ describe("the scaffold's .github/dependabot.yml", () => {
     expect(npm).not.toMatch(/^\s+versions:/m);
   });
 
+  // Every scaffold's pnpm-workspace.yaml sets `minimumReleaseAge: 4320` and its
+  // ci.yml runs pnpm 11, which refuses a lockfile entry younger than that, frozen
+  // or not. A version PR proposing a newer release would be red in the
+  // customer's own CI, so Dependabot waits as long (R1 falsifier, app#419).
+  it("waits out the scaffold's pnpm minimumReleaseAge before it proposes a version", () => {
+    const dir = scaffoldDir();
+    writeFileSync(join(dir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\n\nminimumReleaseAge: 4320\n");
+    writeForkCi(dir);
+    const npm = entry(read(dir), "npm");
+
+    expect(npm).toMatch(/\n {4}cooldown:\n {6}default-days: 3\n/);
+    // No include list: the cooldown covers every dependency, as pnpm's rule does.
+    expect(npm).not.toMatch(/^\s+include:/m);
+  });
+
+  it("takes the cooldown from the scaffold's own minimumReleaseAge, rounded up to whole days", () => {
+    const days = (workspace: string | null) => {
+      const dir = scaffoldDir();
+      if (workspace !== null) writeFileSync(join(dir, "pnpm-workspace.yaml"), workspace);
+      writeDependabot(dir);
+      return Number(/cooldown:\n\s+default-days: (\d+)\n/.exec(entry(read(dir), "npm"))?.[1]);
+    };
+
+    expect(days("minimumReleaseAge: 10080\n")).toBe(7);
+    expect(days("minimumReleaseAge: 4321 # three days and a minute\n")).toBe(4);
+    // Dependabot accepts 1 to 90 days.
+    expect(days("minimumReleaseAge: 1000000\n")).toBe(90);
+    // No file, no setting, or 0: three days, the engine's value.
+    expect(days(null)).toBe(3);
+    expect(days("packages: []\n")).toBe(3);
+    expect(days("minimumReleaseAge: 0\n")).toBe(3);
+  });
+
   it("keeps the shipped workflow's actions current, majors included", () => {
     const dir = scaffoldDir();
     writeForkCi(dir);

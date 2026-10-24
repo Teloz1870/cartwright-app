@@ -21,7 +21,7 @@
  * nothing before, and the `--no-git` user (an existing clone, their own commit)
  * is the one who pushes it.
  */
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const WORKFLOW = `name: ci
@@ -61,14 +61,41 @@ jobs:
       - run: pnpm build
 `;
 
-const DEPENDABOT_NPM = `# Written by create-cartwright at scaffold time. GitHub reads it once this
+/**
+ * Days Dependabot waits before it proposes a new npm version: the scaffold's
+ * own pnpm `minimumReleaseAge` (minutes, in pnpm-workspace.yaml), rounded up
+ * to whole days. pnpm 11 refuses a lockfile entry younger than that, frozen or
+ * not, so a version PR for a newer release would be red in the customer's own
+ * ci.yml. The CLI carries no copy of the value; it reads the template's file,
+ * so the two cannot drift. Dependabot measures `default-days` in 86 400-second
+ * days and accepts 1 to 90. No file, no setting or 0 gives three days, the
+ * engine's 4320 minutes.
+ */
+const DEFAULT_COOLDOWN_DAYS = 3;
+
+export function npmCooldownDays(targetDir: string): number {
+  try {
+    const src = readFileSync(join(targetDir, "pnpm-workspace.yaml"), "utf8");
+    const minutes = Number(/^minimumReleaseAge:\s*(\d+)\s*(?:#.*)?$/m.exec(src)?.[1] ?? 0);
+    if (minutes > 0) return Math.min(90, Math.ceil(minutes / 1440));
+  } catch {
+    // No pnpm-workspace.yaml: fall through to the default.
+  }
+  return DEFAULT_COOLDOWN_DAYS;
+}
+
+const dependabotNpm = (cooldownDays: number) => `# Written by create-cartwright at scaffold time. GitHub reads it once this
 # project is a GitHub repository; until then it does nothing.
 #
 # Every week, at most two npm PRs: Next.js with React (they move together),
 # and every other minor/patch bump. Majors are yours to choose, so these
-# updates skip them. Security fixes come grouped in one PR of their own and
-# are NOT held back by that rule: Dependabot applies an update-types ignore
-# to version updates only. Security PRs also need Settings → Code security →
+# updates skip them. A version is proposed once it is ${cooldownDays} days old, the
+# minimumReleaseAge in pnpm-workspace.yaml: pnpm refuses to install anything
+# younger, so the PR's CI would fail. Security fixes come grouped in one PR of
+# their own, held back by neither rule: Dependabot applies both to version
+# updates only. pnpm still applies minimumReleaseAge, so a fix younger than
+# that fails ci.yml until it is old enough or listed in
+# minimumReleaseAgeExclude. Security PRs also need Settings → Code security →
 # Dependabot security updates switched on.
 version: 2
 updates:
@@ -76,6 +103,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: ${cooldownDays}
     open-pull-requests-limit: 2
     ignore:
       - dependency-name: "*"
@@ -117,7 +146,7 @@ export function writeDependabot(targetDir: string): boolean {
     const shipsWorkflow =
       existsSync(workflows) && readdirSync(workflows).some((f) => /\.ya?ml$/.test(f));
     mkdirSync(dir, { recursive: true });
-    writeFileSync(file, DEPENDABOT_NPM + (shipsWorkflow ? DEPENDABOT_ACTIONS : ""));
+    writeFileSync(file, dependabotNpm(npmCooldownDays(targetDir)) + (shipsWorkflow ? DEPENDABOT_ACTIONS : ""));
     return true;
   } catch {
     return false;
