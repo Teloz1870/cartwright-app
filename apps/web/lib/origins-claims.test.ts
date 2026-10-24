@@ -231,7 +231,15 @@ describe('the WooCommerce status page matches the engine', () => {
     // only while the folder's 50 newest stay the same — a file with a later modifiedTime enters them.
     expect(images).toMatch(/the same 50 on every run while the folder's 50 most recently modified files stay the same; a file edited later, or added with a later modified time, moves into them/);
     expect(images).not.toMatch(/a second run on a fuller folder/);
-    expect(images).toMatch(/a second run on an unchanged folder of more than 50 reports the same number and copies nothing new/);
+    // Falsifier R2 on app#412 (NIT): the order pin stopped at "moves into them", so the clause after it
+    // could say "newest" and stay green. A folder past 50 files loses its least recently modified one.
+    expect(images).toMatch(/moves into them, and past 50 files the oldest drops out — and counts/);
+    // Falsifier R2 on app#412 (NIT): drive-import.ts put()s the bytes to Blob BEFORE
+    // findOrCreateBySha256 returns an existing asset with the same sha256, and only a matching
+    // driveFileId skips the download. A file whose bytes the library already holds under another
+    // driveFileId (or none) writes a new, unused Blob object on every run; the library gains nothing.
+    expect(images).not.toMatch(/copies nothing new/);
+    expect(images).toMatch(/a second run on an unchanged folder of more than 50 reports the same number and adds nothing new to the media library \(a copy of an image it already holds from elsewhere is still uploaded to Blob again on each run, unused\)/);
     expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
     expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
@@ -271,9 +279,10 @@ describe('the WooCommerce status page matches the engine', () => {
   it('says what step 9 shows under the default localePrefix: the 301, then next-intl\'s 307, then the 200', () => {
     // An old WordPress path has no locale, so the merchant redirect's destination has none
     // (lib/redirects/match.ts) and next-intl's middleware adds it with a 307 (proxy.ts).
-    const step = lineWith(woo, '**Check from outside**');
-    expect(step).toMatch(/`301`[^\n]*`307`[^\n]*`200`/);
-    expect(step).toMatch(/localePrefix: "never"/);
+    const hops = lineWith(woo, '**The hops before it.**');
+    expect(hops).toMatch(/The old shop's addresses carry no language, and a redirect keeps the language of the request \(`lib\/redirects\/match\.ts`\), so with the default `localePrefix: "always"` a redirected address answers `301` to the new page without a language, then next-intl's `307` to that page in a language[^\n]*and `200` there/);
+    expect(hops).toMatch(/The `307` is temporary because the language depends on who asks\./);
+    expect(hops).toMatch(/localePrefix: "never"/);
   });
 
   it('names the old addresses the proxy never looks a redirect up for, and what the owner does instead', () => {
@@ -295,7 +304,6 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(bullet).toMatch(/localePrefix: "never"[^\n]*any other path that begins with `\/admin`, such as `\/administration\/`/);
     expect(bullet).toMatch(/With the default `"always"` all three reach your row/);
     expect(bullet).toMatch(/`\/administration\/` is skipped only on its first request: next-intl's `307` adds the language, and your row answers the request after it/);
-    expect(lineWith(woo, '**Check from outside**')).toMatch(/begins with `\/admin` without being `\/admin` or below it, such as `\/administration\/`, has the two the other way round: the `307`, then your `301`/);
     expect(bullet).toMatch(/localePrefix: "never"[^\n]*`\/om-os`[^\n]*`next\.config\.ts`[^\n]*`\/info\/om-os`/);
     const instead = lineWith(woo, '**What to do with those instead.**');
     expect(instead).toMatch(/`redirects\(\)`[^\n]*`next\.config\.ts`[^\n]*before the proxy[^\n]*`\/favicon\.ico`/);
@@ -311,60 +319,70 @@ describe('the WooCommerce status page matches the engine', () => {
     // next.config.ts sets skipTrailingSlashRedirect only with urls.trailingSlash on; off, Next
     // strips the slash with a 308 before the proxy runs (measured: demo.cartwright.app
     // /product-category/chairs/ → 308 → 307 → 404).
-    const step = lineWith(woo, '**Check from outside**');
-    expect(step).toMatch(/`trailingSlash` off[^\n]*`308`[^\n]*`301`[^\n]*`307`/);
-    expect(step).toMatch(/or one the proxy never sees/);
+    const hops = lineWith(woo, '**The hops before it.**');
+    expect(hops).toMatch(/With `trailingSlash` off \(the default\), an old address that ends in `\/` first answers Next's own `308` to the same path without it \(`next\.config\.ts` turns that redirect off only together with `trailingSlash`\), and the hops below come after that one\./);
+    expect(hops).toMatch(/`trailingSlash` off[^\n]*`308`[^\n]*`301`[^\n]*`307`/);
   });
 
-  it('step 9 gives an old slash address that is already a route its 308 before the 307, not the 307 alone', () => {
+  it('step 9 reads the END of the chain: three end states, each true whatever the URL options (falsifier R2 on app#412)', () => {
+    // The hop lists of R3–R5 kept growing a new exception per round. Step 9 now says what each
+    // last status line means — a meaning that holds by construction of proxy.ts — and keeps only
+    // the short chains whose conditions it states.
+    expect(lineWith(woo, '**Check from outside**')).toMatch(/read every status line\. The last one, and the address it answers for, is what a visitor gets\. Then submit the new `\/sitemap\.xml` to your search console\./);
+    expect(lineWith(woo, '**A `200` on a page of yours**')).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route\. Check that it is the page you meant\./);
+    // A 404 is not only "no row": a row may point at no page, and some rows never fire — the
+    // seven Danish segments (LEGACY_SLUG_RE runs before the lookup), the matcher's dotted paths,
+    // and under "never" /administration/ (lookup and gate both skip it; measured 404 row or not).
+    const notFound = lineWith(woo, '**A `404`**');
+    expect(notFound).toMatch(/no page at the last address\. The address has no row and no page, its row points at a page that does not exist, or no row can answer it: a path in one of the seven Danish segments, or one of the paths that never reach your redirects \(above\)/);
+    expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and under `"never"` a path such as `\/administration\/`/);
+    expect(woo).not.toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees/);
+  });
+
+  it('step 9 names both gates that end an address on the login page, with what each takes (falsifier R2 on app#412, MUST-FIX)', () => {
+    // proxy.ts, engine 1f861db2. Admin gate: pathname === "/admin" || startsWith("/admin/") ||
+    // LOCALE_ADMIN_RE (^/(en)/admin, no boundary). Account gate: isKontoRoute = pathname ===
+    // "/account" || includes("/account/") || LOCALE_ACCOUNT_RE (^/(en)/account, no boundary), unless
+    // isPublicAuthPage (includes "/account/login" or "/account/signup"). Both answer a request without
+    // a session with a 307 to /account/login, and both sit AFTER the redirect lookup, which skips
+    // only startsWith("/api") / ("/admin"). The matcher's .*\..* keeps dotted paths out of the proxy.
+    // Measured (real next dev, locales ["en"], no session, no row): "always", trailingSlash off:
+    //   /account/edit-address/ → 308 → 307 /account/login → 307 /en/account/login → 200;
+    //   /accounting/ → 308 → 307 /en/accounting → 307 /account/login → 307 /en/account/login → 200.
+    // "always", on: /accounts/ → 307 /en/accounts/ → 307 /account/login → 307 /en/account/login/ → 200.
+    // "never", on: /account/edit-address/ → 307 /account/login → 308 /account/login/ → 200.
+    // /admin/foo.php → 404 directly (never reaches the gate).
+    const login = lineWith(woo, '**A `200` on the login page**');
+    expect(login).toMatch(/\(`\/account\/login`, with the language and final `\/` your URL options give it\): the address that answered with a `307` to `\/account\/login` was caught by a gate in `proxy\.ts`, not answered by a row — the gate sends a visitor without a session to sign in\./);
+    expect(login).toMatch(/A gate sees each request as the proxy gets it: with `trailingSlash` off, after Next's `308` has dropped the final `\/`, and under `"always"`, again after next-intl's `307` has added the language\./);
+    expect(login).toMatch(/The \*\*admin gate\*\* takes `\/admin`, every path below `\/admin\/` and every path that begins with a configured language and then `\/admin` \(`\/en\/admin…` in a new scaffold\), so under `"always"` also `\/administration\/` with no row\./);
+    expect(login).toMatch(/The \*\*account gate\*\* takes `\/account`, every path with `\/account\/` in it and every path that begins with a configured language and then `\/account`, except one containing `\/account\/login` or `\/account\/signup`:/);
+    expect(login).toMatch(/in either mode WooCommerce's My Account endpoints where the old account page sat at `\/account\/`, such as `\/account\/edit-address\/` \(WooCommerce's default `\/my-account\/` is caught by neither gate\), and under `"always"` also `\/accounting\/` with no row\./);
+    expect(login).toMatch(/A path with a dot never reaches the proxy, so never a gate\./);
+    // The lookup runs before both gates, so a row rescues an account-gate address; /admin and below
+    // skip the lookup, and a Danish-segment row never fires (LEGACY_SLUG_RE answers first).
+    expect(login).toMatch(/If the address matters, give it a row — the lookup runs before both gates — except for `\/admin` and everything below it, and the seven Danish segments, whose rows never fire \(above\): redirect those ahead of the proxy\./);
+    // The R5 wording named the admin gate as the only exception and said everything below /admin
+    // reaches it — false for /account/… and for dotted paths.
+    expect(woo).not.toMatch(/The exception is an address the admin gate catches/);
+    expect(woo).not.toMatch(/everything below it reach the gate at once/);
+  });
+
+  it('step 9 keeps the short route and "never" chains with their conditions, and the right cause for the slash forms (falsifier R2 on app#412, NIT)', () => {
     // WooCommerce's product address is also an engine route (app/[locale]/product/[slug]).
     // Measured on demo.cartwright.app 2026-10-24 (trailingSlash off, localePrefix "always"):
     // /product/ethiopia-yirgacheffe/ → 308 /product/ethiopia-yirgacheffe → 307 /en/product/… → 200,
-    // and the same path without the slash → 307 → 200.
-    const step = lineWith(woo, '**Check from outside**');
-    expect(step).not.toMatch(/`\/product\/<slug>\/`, answers with the `307` alone/);
-    expect(step).toMatch(/`\/product\/<slug>\/` answers the `308`, then the `307`, then `200`/);
-    expect(step).toMatch(/without the `\/` answers the `307` alone/);
-    // Falsifier R4 (NIT): that 308 is Next's own trailing-slash redirect, so it is there only with
-    // trailingSlash off; with it on and "always", both forms answer next-intl's 307 alone.
-    expect(step).toMatch(/with `trailingSlash` off, the old shop's `\/product\/<slug>\/` answers the `308`[^\n]*; with it on, both answer the `307` alone/);
-    // Under "never" the route still takes the 308 first when it ends in `/` — but only with
-    // trailingSlash off: with it on, next.config.ts sets skipTrailingSlashRedirect (falsifier R3).
-    expect(step).toMatch(/localePrefix: "never"[^\n]*with `trailingSlash` off, an address ending in `\/` has the `308` in front/);
-    expect(step).toMatch(/`localePrefix: "never"`, a redirected address is `301` then `200`/);
-    // Falsifier R5 (NIT): under "never" with trailingSlash on, a route asked for without the slash
-    // takes the proxy's own 308 first (trailingSlashRedirect, lib/urls.ts; proxy.ts URL2), measured
-    // /product/blue-chair → 308 /product/blue-chair/ → 200. A redirect row matches either form and
-    // its destination carries the slash (lib/redirects/match.ts), so /gammel and /gammel/ → 301 /ny/.
-    expect(step).not.toMatch(/one that is already a route answers `200` directly/);
-    expect(step).toMatch(/one that is already a route answers `200` without a `301`; with `trailingSlash` off/);
-    expect(step).toMatch(/with it on, a route ending in `\/` answers directly, and a route asked for without the `\/` takes the proxy's `308` to the slash form first/);
-    expect(step).toMatch(/a redirected address answers its `301` in either form, since the destination carries the slash/);
-  });
-
-  it('step 9 ends an /admin address on the login page, not a 404 (falsifier R5, NIT)', () => {
-    // proxy.ts: /admin and /admin/… skip the redirect lookup and hit the admin gate, which answers a
-    // request without a session with a 307 to /account/login. Under "always" /administration first
-    // takes next-intl's 307 to /en/administration; with no row there, LOCALE_ADMIN_RE (^/(en)/admin,
-    // no boundary) sends it to the same gate. The gate's Location carries no language and no slash,
-    // so it takes the same redirect as any route asked for that way (falsifier R1 on app#412,
-    // MUST-FIX — engine 1f861db2 proxy.ts + next-intl 4.14.9, curl -sIL walk, locales ["en"]):
-    //   "always", trailingSlash off: /admin → 307 /account/login → 307 /en/account/login → 200;
-    //     /administration/ → 308 /administration → 307 /en/administration → 307 /account/login
-    //     → 307 /en/account/login → 200.
-    //   "always", trailingSlash on: /admin → 307 /account/login → 307 /en/account/login/ → 200;
-    //     /administration/ → 307 /en/administration/ → 307 /account/login → 307 /en/account/login/ → 200.
-    //   "never", trailingSlash on: /admin → 307 /account/login → 308 /account/login/ → 200.
-    //   "never", trailingSlash off: /admin → 307 /account/login → 200.
-    //   "never", either: /administration/ ends on 404, row or not (the lookup and the gate skip it).
-    const step = lineWith(woo, '**Check from outside**');
-    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address the admin gate catches, which answers a request without a session with a `307` to `\/account\/login` \(`proxy\.ts`\)/);
-    expect(step).toMatch(/`\/admin` and everything below it reach the gate at once/);
-    // The "always" scope is load-bearing: under "never" /administration/ is a 404 (falsifier R1, NIT).
-    expect(step).toMatch(/and under the default `"always"` a path that only begins with `\/admin`, such as `\/administration\/` with no row, reaches it after next-intl's `307` to `\/en\/administration` \(`\/en\/administration\/` with `trailingSlash` on\); under `"never"` such a path reaches neither the gate nor your row \(above\) and ends on a `404`\./);
-    expect(step).toMatch(/`\/account\/login` carries no language and no final `\/`, so it then takes the same redirect as any route asked for that way — under `"always"` next-intl's `307` to `\/en\/account\/login` \(`\/en\/account\/login\/` with `trailingSlash` on\), under `"never"` the proxy's `308` to `\/account\/login\/` with `trailingSlash` on and no redirect with it off — and the login page answers `200`/);
-    expect(step).toMatch(/the login page answers `200`: the address ends there, not on a page of yours\. Submit the new/);
-    expect(step).not.toMatch(/at once, and[^\n]*both end on the login page/);
+    // and the same path without the slash → 307 → 200; with trailingSlash on both take the 307 alone.
+    const hops = lineWith(woo, '**The hops before it.**');
+    expect(hops).toMatch(/An old address that is already a route and has no row of its own, such as the old shop's `\/product\/<slug>\/`, takes the same hops without the `301`\./);
+    // Under "never" with trailingSlash on, a route asked for without the slash takes the proxy's own
+    // 308 first (trailingSlashRedirect, lib/urls.ts; proxy.ts URL2): /product/blue-chair → 308 → 200.
+    expect(hops).toMatch(/On a one-language shop with `localePrefix: "never"` there is no language hop: a redirected address is `301` then `200`, and a route answers `200` without a `301` — there, with `trailingSlash` on, a route asked for without the `\/` takes the proxy's `308` to the slash form first\./);
+    // Both slash forms answer the 301 first because matchRedirect reads /x and /x/ as one key
+    // (withoutTrailingSlash) and the lookup runs before next-intl and URL2 — not because the
+    // destination carries the slash (withSlash leaves an absolute or dotted destination alone).
+    expect(hops).toMatch(/With `trailingSlash` on, a redirected address answers its `301` first in either form: the lookup reads `\/x` and `\/x\/` as one address \(`lib\/redirects\/match\.ts`\) and runs before the proxy adds a slash\./);
+    expect(woo).not.toMatch(/since the destination carries the slash/);
   });
 
   it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
@@ -413,7 +431,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // apps/cli/src/scaffold.ts patchBrandConfigForEnglishFirst: locales ["en"], defaultLocale "en".
     // Only the engine repo itself ships "da" first.
     expect(woo).not.toMatch(/`\/da\/(product\/<slug>\/|…)` as shipped/);
-    expect(lineWith(woo, '**Check from outside**')).toMatch(/`defaultLocale`[^\n]*`\/en\/…` in a shop from `npx create-cartwright`/);
+    expect(lineWith(woo, '**The hops before it.**')).toMatch(/`defaultLocale`[^\n]*`\/en\/…` in a shop from `npx create-cartwright`/);
     const map = read('content/docs/features/customer-storefront.mdx');
     expect(lineWith(map, 'The customer storefront covers')).toMatch(/`\/en\/product\/<slug>` in a shop from `npx create-cartwright`/);
     // Engine CHANGELOG v0.59.0 adds externalId/source to orders and customers for a later import.
