@@ -110,7 +110,7 @@ const woocommerce: Comparison = {
     // developer.woocommerce.com/2026/09/16/wc-claude-commerce-agent/ ("not
     // maintained within official capacity"; before/after preview, Approve) and
     // github.com/woocommerce/agentic-tools ("experimental reference implementation").
-    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'MCP in developer preview (as of Oct 2026): product and order abilities through the WordPress Abilities API and the MCP Adapter plugin. Plus an experimental, not officially maintained Claude commerce-agent reference (woocommerce/agentic-tools, Sep 2026) that previews each store change and waits for approval.' },
+    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'MCP in developer preview (Oct 2026) via WordPress Abilities API + MCP Adapter plugin; an experimental, not officially maintained Claude agent asks approval per change.' },
     { dimension: 'Hosting / ops', cartwright: 'Vercel + Turso; no servers to patch.', them: 'WordPress hosting, PHP, DB, plugin/security upkeep.' },
     { dimension: 'Performance', cartwright: 'Modern Core Web Vitals baseline by default.', them: 'Depends heavily on theme + plugin load.' },
     { dimension: 'Best for', cartwright: 'Modern DX + AI commerce, owned.', them: 'WordPress-native teams wanting the plugin ecosystem.' },
