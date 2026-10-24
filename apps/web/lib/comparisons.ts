@@ -104,7 +104,29 @@ const woocommerce: Comparison = {
   rows: [
     { dimension: 'Stack', cartwright: 'TypeScript + Next.js + React, serverless-friendly.', them: 'PHP + WordPress + MySQL.' },
     { dimension: 'Extensibility', cartwright: 'Code it yourself; feature flags + tool registry.', them: 'Enormous plugin marketplace (quality varies).' },
-    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'Via third-party plugins.' },
+    // Sources, all read 2026-10-24. The cell describes current stable 11.2.1
+    // (api.wordpress.org plugin info, released 2026-10-09; on GitHub 11.3 is
+    // only 11.3.0-dev). At tag 11.2.1, composer.json bundles
+    // wordpress/mcp-adapter ^0.3.0 + wordpress/abilities-api ^0.4.0, and
+    // src/Internal/Features/FeaturesController.php has 'mcp_integration'
+    // ("WooCommerce MCP", is_experimental, off by default; present since
+    // 10.3.0, released 2025-10-22); the abilities in
+    // src/Internal/Abilities/Domain cover products and orders.
+    // developer.woocommerce.com/2026/05/12/mcp-abilities-api-10-9/: flag on,
+    // "the bundled WordPress MCP adapter" serves them.
+    // developer.woocommerce.com/2026/10/21/woocommerce-11-3-mcp/: 11.3
+    // (announced, not released) drops the toggle and both bundled packages,
+    // and then needs the MCP Adapter plugin (wordpress.org/plugins/mcp-adapter/,
+    // 0.7.1). developer.woocommerce.com/docs/features/mcp/ ("developer
+    // preview") ALREADY describes 11.3: its "no WooCommerce setting to turn on"
+    // and "does not bundle the MCP adapter" are not true of 11.2.1.
+    // woocommerce.com/products/woocommerce-ai/: by Woo, 0.8.0, "private beta",
+    // U.S. stores only, "plan-and-confirm step". Left out of the cell: the
+    // Claude reference agent (github.com/woocommerce/agentic-tools;
+    // developer.woocommerce.com/2026/09/16/wc-claude-commerce-agent/, "not
+    // maintained within official capacity"), which that post sets beside
+    // WooCommerce AI as the official merchant assistant.
+    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'As of Oct 2026: MCP for products and orders is a built-in experimental toggle (since 10.3); WooCommerce AI, Woo’s plan-and-confirm admin assistant, is in private beta (US).' },
     { dimension: 'Hosting / ops', cartwright: 'Vercel + Turso; no servers to patch.', them: 'WordPress hosting, PHP, DB, plugin/security upkeep.' },
     { dimension: 'Performance', cartwright: 'Modern Core Web Vitals baseline by default.', them: 'Depends heavily on theme + plugin load.' },
     { dimension: 'Best for', cartwright: 'Modern DX + AI commerce, owned.', them: 'WordPress-native teams wanting the plugin ecosystem.' },
