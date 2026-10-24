@@ -5,7 +5,7 @@ description: A portable logical backup (JSON dump of every table) on top of Turs
 
 Cartwright's data lives in **Turso (libSQL)** (database) + **Vercel Blob** (media). Turso has its own physical backups; this adds a **portable logical backup** — a JSON dump of every table — that you control, plus a documented restore path. Source: `lib/backup/dump.ts`, `lib/backup/storage.ts`, `app/api/cron/backup/route.ts`, `scripts/backup-turso.ts`, `scripts/restore-turso.ts`; the engine's runbook is `docs/backup-restore.md`.
 
-This page describes the engine from the release after v0.62.0, which gives backups their own Blob token, `BACKUP_BLOB_READ_WRITE_TOKEN`. What differs on v0.62.0 is listed under [On v0.62.0](#on-v0620).
+This page describes the engine from v0.63.0, which gives backups their own Blob token, `BACKUP_BLOB_READ_WRITE_TOKEN`. What differs on v0.62.0 is listed under [On v0.62.0](#on-v0620).
 
 The code blocks below hold commands only, never a comment. In an interactive zsh, the macOS default shell, `#` starts a comment only when the `interactive_comments` option is set, and it is off by default: a comment pasted after a command becomes that command's arguments.
 
@@ -99,7 +99,7 @@ Preview without writing: `GET /api/cron/backup?dryRun=1` (with `Authorization: B
 
 ### On v0.62.0
 
-The job and `--upload` read `BLOB_READ_WRITE_TOKEN` only, and a backup is a private blob, so that token has to belong to a private store. With no token, or with a public media store's, the job dumps the whole database, then fails and answers `500` without a line in the function log. There is no setup-guide row, the dry run does not name a `storage`, and both CLIs print their errors without cutting the tokens out. The release after v0.62.0 adds `BACKUP_BLOB_READ_WRITE_TOKEN`, the `503` and the log lines above.
+The job and `--upload` read `BLOB_READ_WRITE_TOKEN` only, and a backup is a private blob, so that token has to belong to a private store. With no token, or with a public media store's, the job dumps the whole database, then fails and answers `500` without a line in the function log. There is no setup-guide row, the dry run does not name a `storage`, and both CLIs print their errors without cutting the tokens out. Engine v0.63.0 adds `BACKUP_BLOB_READ_WRITE_TOKEN`, the `503` and the log lines above.
 
 ## Restore
 

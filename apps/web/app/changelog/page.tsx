@@ -35,6 +35,47 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.63.0',
+    date: 'October 2026',
+    title: 'Two security fixes, a migration board for WordPress moves, and stored permalinks that answer at their own address',
+    description: (
+      <>
+        Two moderate security fixes — <strong>upgrade</strong>: the public agent checkout no longer takes a payment
+        without creating an order (CW-2026-010), and a password-reset link no longer leaves its token in the address
+        bar, where GA4 sent it to Google (CW-2026-011). If Stripe is connected, look for paid agent-checkout sessions
+        with no order. Run <code>pnpm install</code> after pulling; <code>pnpm db:push</code> is needed only before you
+        turn on <code>migrationDashboard</code>. Self-hosted behind a reverse proxy that overwrites{' '}
+        <code>X-Forwarded-For</code>, set <code>CARTWRIGHT_TRUST_PROXY_IP_HEADERS=true</code>, or the whole shop shares
+        one contact-form and password-reset limit. Nightly backups need a private Blob store&apos;s token as{' '}
+        <code>BACKUP_BLOB_READ_WRITE_TOKEN</code>. If you saved Claude Sonnet 4.5, switch to{' '}
+        <code>claude-sonnet-5-5</code> before 30 Nov 2026. See{' '}
+        <Link href="/docs/migrate/woocommerce" className="text-cw-terracotta hover:underline">
+          Moving from WooCommerce
+        </Link>{' '}
+        and{' '}
+        <Link href="/docs/configuration/urls" className="text-cw-terracotta hover:underline">
+          URL options
+        </Link>
+        .
+      </>
+    ),
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'The agent checkout no longer takes a payment without an order (CW-2026-010, moderate) — /api/commerce/agent-checkout, public, behind no flag and named as checkoutEndpoint on every /api/products/search row, opened a Stripe payment page and created no order, so a buyer could pay while the shop recorded nothing. It now answers 410 Gone to every request before it reads the product or contacts Stripe, and points to the ACP checkout on a shop with acp.enabled and ACP_PAYMENT_COMPLETION=1, else to the product page. The search rows no longer carry checkoutEndpoint, and the route is removed in the next release. If Stripe is connected, look for paid Checkout Sessions whose metadata has source: agentic_commerce and a productId: each is a payment with no order in the shop.',
+      'A password-reset link no longer leaves its token in the address bar (CW-2026-011, moderate) — with analyticsGa4 on, GA4’s page view sent the whole URL, token included, to Google, and Consent Mode’s cookieless ping carried it even when the visitor refused analytics. The page now answers a ?token= visit with a server-side redirect, a new route moves the token into an httpOnly cookie sent only to the reset page for 30 minutes, and the browser lands on the page with no query. Links already sent keep working. A signed-out customer can now open the forgot-password page and the reset link at all (PASSWORD-RESET-GATE).',
+      'A deleted or draft product can no longer be bought (CART-DELETED-PRODUCT, CART-DRAFT-FILTER) — adding one is refused, a line already in a cart drops out of the cart, the checkout summary and the cart-recovery mail, and checkout refuses it by name before it creates the order or contacts Stripe. A draft also stays off every storefront list, the search API and the shopper-facing agent tools, and its page answers 404 (STOREFRONT-DRAFT-FILTER); nothing in the engine sets a product to draft yet.',
+      'Sign-up, password reset and the login link are harder to script against — sign-up gets a hidden bot field, a three-second minimum, a per-IP limit and the same answer for a known address as for a new one (AUTH-REG1); the forgot-password form answers every address before it looks the account up, so its response time no longer says who is a customer (AUTH-FORGOT-TIMING); a magic link is capped per client as well as per address (MAGICLINK-IP-DEAD); and the contact form and password reset key on the trusted client address (INQ-IP-TRUST). Self-hosted without CARTWRIGHT_TRUST_PROXY_IP_HEADERS, the whole shop now shares one contact-form and password-reset limit. A CRON_SECRET of only whitespace now counts as unset (CRON-AUTH-d).',
+      'The admin chat offers a local or unknown model only the tools its capability tier allows (ADMIN-TIER-ENFORCE) — a read-only model can look things up, a low-risk-writes model can also edit categories and pages, toggle a discount, import a Google Doc and find and attach product images, and everything else needs an all-tier model. A call outside the tier is refused before anything runs, with an audit-log row. The Anthropic models are all in the all tier, so their chat offers the same tools as before.',
+      'A migration board for a move from WordPress or WooCommerce (MIGD-1a, MIGD-1b, MIGD-3) — /admin/migration, behind the new runtime flag migrationDashboard (default off; pnpm db:push first), lists 42 checks, marks the 14 required ones and counts them in “Ready for DNS switch: n/m”. One check runs today, url.parity: the migration.freeze_sitemap tool freezes the old site’s sitemap, migration.run_checks requests each frozen URL on the new site, and migration.attest records the owner’s sign-off. The engine can also read a live WooCommerce shop and plan what importing its catalogue would do, without writing anything (W21-live-1); nothing calls that yet.',
+      'A stored permalink answers at its own address once urls.permalinks is on (URL5-b) — the proxy rewrites it to the product or category page, in the request’s language and with the query kept, so the address a migrated shop already ranks on answers 200 instead of 404; the header, the mobile menu and the category page’s “Explore more” now link it too (URL5-a2). The v0.62.0 advice to keep the option off on a live shop no longer holds, though nothing in the engine stores a permalink yet.',
+      'Nested and extra categories (WP2-r1′, WP2-r1′-b, WP2-r2′) — a parent category lists its subcategories’ products, the breadcrumb and its BreadcrumbList show the whole path, the catalogue’s category filter, products.search and categories.list follow the same tree, and a product filed under extra categories is listed in each of them while its address stays its primary category’s. Nothing in the engine sets a parent or an extra category yet; the planned WooCommerce import will.',
+      'A missing product or category answers a real 404 instead of a 200 “not found” page (SOFT-404-PDP-PLP), /info lists the shop’s information pages instead of answering 404 (TELOZ-INFO404), and /.well-known/ai-catalog.json validates against the ARD schema (ARD-SCHEMA-1).',
+      'The nightly database backup says why it cannot run instead of failing in silence (BACKUP-CRON-500) — it uploads with its own BACKUP_BLOB_READ_WRITE_TOKEN, a private Blob store’s token, before it falls back to BLOB_READ_WRITE_TOKEN, answers 503 “backup storage not configured” before it touches the database when neither is set, and writes one log line for every run that reaches its end. If your backups have been failing, add the token as a Production-only variable and redeploy.',
+      'The product feeds list a product without variants under its own sku when that sku can be an id (FEED-SKU) — a shop that syncs its products from Google Sheets or restored a SitePack sees those ids change from the first feed fetch, and Merchant Center reviews the products again as new items. A saved Claude Sonnet 4.5 now shows that it retires on 30 Nov 2026, with a button that selects claude-sonnet-5-5 (TREND28-a); the saved model is never rewritten for you.',
+      'Dependencies moved to their newest releases inside the current majors, each public for at least three days — next 16.4.2, react 19.3.1, ai 7.0.143 and prisma 7.10.1 among them. The bump itself changes no schema and no code: run pnpm install after pulling.',
+    ],
+  },
+  {
     engine: 'v0.62.0',
     date: 'October 2026',
     title: 'A critical Next.js fix for every shop, cron jobs that refuse callers without their secret, and redirects that work without Redis',

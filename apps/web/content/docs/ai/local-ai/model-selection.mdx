@@ -7,9 +7,9 @@ description: Trade-offs mellem Gemma 4 varianter (plus Gemma 3 legacy) og capabi
 
 | Use case | Anbefalet model | Size | RAM | Tool-tier |
 |---|---|---|---|---|
-| Production shop, almindelig hardware | **gemma4:e4b** (`e4b-mlx` på Apple Silicon) | 9.6 GB | 16 GB+ | Lav-risk writes (~15 tools) |
+| Production shop, almindelig hardware | **gemma4:e4b** (`e4b-mlx` på Apple Silicon) | 9.6 GB | 16 GB+ | Lav-risk writes (16 tools) |
 | High-end workstation, maks kvalitet | **gemma4:26b** | 18 GB | 32 GB+ | Alle <EngineFact k="adminToolCount" /> tools |
-| Tiny laptop, 8GB RAM | **gemma4:e2b** (`e2b-mlx` på Apple Silicon) | 7.2 GB | 8 GB+ | Læs-only (~10 tools) |
+| Tiny laptop, 8GB RAM | **gemma4:e2b** (`e2b-mlx` på Apple Silicon) | 7.2 GB | 8 GB+ | Læs-only (10 tools) |
 | Niche, langsomst men dybeste reasoning | **gemma4:31b** | 20 GB | 32 GB+ | Alle <EngineFact k="adminToolCount" /> tools |
 | Testing alternativ open-source | **Llama 3.3 70B** | 40 GB | 64 GB | Alle <EngineFact k="adminToolCount" /> tools |
 
@@ -17,9 +17,11 @@ description: Trade-offs mellem Gemma 4 varianter (plus Gemma 3 legacy) og capabi
 
 Cartwright capper hvilke admin-tools en model får adgang til, baseret på modellens reelle function-calling-kvalitet:
 
-- **`read-only`** — kun læse-tools (`*.search`, `*.list`, `*.get`, `analytics.summary`, `audit.list`, `settings.get`). Cirka 10 tools.
-- **`low-risk-writes`** — ovenstående + sikre writes (`pages.upsert`, `categories.upsert`, `discounts.toggle`, `images.search_unsplash`, `products.attach_image`). Cirka 15 tools.
+- **`read-only`** — kun læse-tools (`*.search`, `*.list`, `*.get`, `analytics.summary`, `audit.list`, `settings.get`). 10 tools.
+- **`low-risk-writes`** — ovenstående + sikre writes (`pages.upsert`, `categories.upsert`, `discounts.toggle`, `images.search_unsplash`, `products.attach_image`, `docs.import`). 16 tools.
 - **`all`** — alle <EngineFact k="adminToolCount" /> admin-tools inkl. destruktive writes (`products.delete`, `orders.update_status`, `marketing.create_campaign`, `audit.revert`).
+
+Fra engine v0.63.0 håndhæver admin-chatten tieret: en model får kun sit tiers tools tilbudt, og beder den alligevel om et admin-tool uden for tieret, afvises kaldet før noget kører — intet plan-kort, intet handler-kald, men en række i audit-loggen. Før v0.63.0 fik hver model alle admin-tools tilbudt.
 
 Hvorfor cap'es det? Fordi small-models laver tool-call-fejl. En 2-4B-model kan godt sige *"jeg vil kalde `products.delete` på slug 'foo'"*, men når Zod validerer args mod schema, fejler det ofte. Bedre at vise færre tools end at admin spørger AI'en og får "AI prøvede og fejlede" som svar.
 
@@ -40,7 +42,7 @@ ollama pull gemma4:e4b
 - **Storrelse:** 9.6 GB download
 - **Latency:** 0.5-3 sek pr. svar på Apple Silicon med MLX-variant
 - **Sweet spot** for de fleste shops. Læser + low-risk writes.
-- **Tool-tier:** `low-risk-writes` (~15 tools)
+- **Tool-tier:** `low-risk-writes` (16 tools)
 - **Context:** 128K tokens
 
 ### gemma4:26b (max kvalitet)
