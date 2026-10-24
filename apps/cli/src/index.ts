@@ -3,7 +3,7 @@
  * create-cartwright — a real site (design, database, backend) live in minutes.
  *
  * Usage:
- *   npx create-cartwright@latest [name] [--yes]
+ *   npx create-cartwright@latest [dir] [--yes]     (dir: a path, or "." for here)
  *                                [--profile=light|full|site] [--with=<module>]
  *                                [--db=turso|postgres|sqlite] [--ai|--no-ai]
  *                                [--ref=stable|next|<tag-or-branch>]
@@ -74,7 +74,8 @@ import {
 import { downloadTemplate } from "giget";
 import pc from "picocolors";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join } from "node:path";
+import { homedir } from "node:os";
 import { execSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
@@ -156,6 +157,8 @@ import { runVerticalInstall } from "./vertical-install.js";
 import { runDoctor } from "./doctor.js";
 import { REF_ALIASES } from "./refs.js";
 import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
+import { prepareScaffoldTarget, resolveProjectArg } from "./target.js";
+import { publishSteps } from "./publish-steps.js";
 import {
   type Profile,
   PROFILES,
@@ -176,7 +179,12 @@ import {
 const HELP_TEXT = `create-cartwright — a real site (design, database, backend) live in minutes.
 
 Usage:
-  npx create-cartwright@latest [name] [options]
+  npx create-cartwright@latest [dir] [options]
+
+  dir is a path — a new folder, or "." for the current one, which must be empty
+  apart from .git, .gitignore, README.md or .DS_Store. The project name is the
+  slug of its last segment. Agents scaffolding where they stand:
+    npx create-cartwright@latest . --yes --no-git
 
 Options:
   --profile <light|full|site>  Scaffold profile (default: light).
@@ -532,7 +540,10 @@ async function run(): Promise<void> {
   );
 
   // ── Project name ────────────────────────────────────────────────────────
-  const defaultName = positionals[0] ?? "my-cartwright-shop";
+  // A positional is a path: it fixes the directory, and the name is the slug
+  // of its last segment (see ./target.ts). Without one, the name is the folder.
+  const target = resolveProjectArg(positionals[0], process.cwd(), basename(homedir()));
+  const defaultName = target.name;
   const projectName = values.yes
     ? defaultName
     : exitOnCancel(
@@ -701,12 +712,14 @@ async function run(): Promise<void> {
   // ── Pre-flight ──────────────────────────────────────────────────────────
   const finalSlug = storeSlugOverride ?? projectName;
   const finalProjectName = storeNameOverride ?? projectName;
-  const targetDir = resolve(process.cwd(), finalSlug);
-  
-  if (existsSync(targetDir)) {
-    cancel(`Directory "${finalSlug}" already exists.`);
+  const prepared = prepareScaffoldTarget(target, finalSlug, process.cwd(), homedir());
+  if (!prepared.ok) {
+    cancel(prepared.reason);
     process.exit(1);
   }
+  // remoteBefore: a clone's remote is there before the scaffold commit exists,
+  // so it never means "your code is on GitHub" (see ./publish-steps.ts).
+  const { dir: targetDir, cdDir, remoteBefore } = prepared;
 
   // ── Template fetch ──────────────────────────────────────────────────────
   const fetchSpinner = spinner();
@@ -718,9 +731,13 @@ async function run(): Promise<void> {
   try {
     await downloadTemplate(`${TEMPLATE_REPO}#${templateRef}`, {
       dir: targetDir,
-      force: false,
+      // true only for a folder the pre-flight let through with .git & co. in it
+      force: prepared.force,
     });
     fetchSpinner.stop(pc.green(`Template downloaded (${refDisplay}).`));
+    if (prepared.replaces.length > 0) {
+      note(`Replaced ${prepared.replaces.join(" and ")} with the template's own.`, "info");
+    }
   } catch (err) {
     fetchSpinner.stop(pc.red("Template fetch failed."));
     console.error(err);
@@ -914,7 +931,8 @@ async function run(): Promise<void> {
   // Beginners' biggest gap is "scaffolded → now what?". Offer the next hop:
   // put the code on GitHub (the home that Vercel deploys from). Fully optional,
   // fail-soft, and only when we actually have a git repo + an interactive run.
-  if (gitInitialized && (forceGithub || offerGithub)) {
+  // A folder cloned from GitHub already has its remote — nothing to create.
+  if (gitInitialized && (forceGithub || offerGithub) && remoteBefore === undefined) {
     const wantsGithub = forceGithub
       ? true
       : await confirm({
@@ -1038,7 +1056,7 @@ async function run(): Promise<void> {
     } else {
       installSpinner.stop(
         pc.yellow(
-          `Install failed — run \`${packageManager} install\` in ${projectName} manually.`,
+          `Install failed — run \`${packageManager} install\` in ${cdDir} manually.`,
         ),
       );
     }
@@ -1113,14 +1131,14 @@ async function run(): Promise<void> {
 
   const siteSteps = [
     pc.bold("Next steps:"),
-    `  cd ${finalSlug}`,
+    `  cd ${cdDir}`,
     `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
     pc.dim("  Content lives in brand.config.ts; design via designs/ and the shipped packs."),
     pc.dim("  The guide for this profile: docs/simple-site.md"),
     pc.dim("  (online: https://cartwright.app/docs/getting-started/plain-website)"),
     "",
     pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
     pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
     pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md —"),
     pc.dim("  its first line says which sections this profile does not have."),
@@ -1130,18 +1148,18 @@ async function run(): Promise<void> {
     : dbReady
     ? [
         pc.bold("Next steps:"),
-        `  cd ${finalSlug}`,
+        `  cd ${cdDir}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
         "",
         pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${finalSlug}/,`),
+        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
         pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
         pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
       ]
     : [
         pc.bold("Next steps (required):"),
-        `  cd ${finalSlug}`,
+        `  cd ${cdDir}`,
         `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
         `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
         pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
@@ -1154,7 +1172,13 @@ async function run(): Promise<void> {
 
   // Reality, not intent: `gh repo create` can half-fail, and --no-git skips the
   // repo entirely while still leaving ci.yml on disk.
-  const projectHasRemote = gitInitialized && hasGitRemote(targetDir);
+  const publish = publishSteps({
+    slug: finalSlug,
+    ciWritten: forkCiWritten,
+    gitInitialized,
+    remoteBefore,
+    remoteNow: gitInitialized && hasGitRemote(targetDir),
+  });
 
   const lines = [
     pc.green("✓") +
@@ -1166,16 +1190,8 @@ async function run(): Promise<void> {
       : profile === "site"
         ? pc.green("✓") + ` Site profile — a plain website: no database, no admin, no commerce`
         : "",
-    // A workflow file only runs once GitHub has the repository. Claiming
-    // "on every push" before a remote exists is the whole failure this line
-    // used to cause: the file LOOKS like coverage, so nobody checks for a green
-    // mark that has never existed. Ask git, then say only what is true.
-    forkCiWritten && projectHasRemote
-      ? pc.green("✓") + ` CI workflow written (.github/workflows/ci.yml) — runs on every push`
-      : forkCiWritten
-        ? pc.yellow("!") +
-          ` CI workflow written (.github/workflows/ci.yml) — ${pc.bold("inactive")} until this project has a remote`
-        : "",
+    // A workflow file only runs once GitHub has the commit — say only what is true.
+    publish.ci,
     generatedBrief ? pc.green("✓") + ` AI brief injected` : "",
     dbReady
       ? pc.green("✓") + ` Database created + seeded — admin login saved to .admin-credentials`
@@ -1207,11 +1223,7 @@ async function run(): Promise<void> {
     aiHint,
     "",
     pc.bold("Put it online (GitHub → Vercel):"),
-    projectHasRemote
-      ? pc.dim("  1. Your code is already on GitHub ✓")
-      : pc.dim(
-          `  1. Push this folder to a private GitHub repo — this also turns on the CI above:\n     gh repo create ${finalSlug} --private --source=. --remote=origin --push`,
-        ),
+    publish.step1,
     pc.dim("  2. Import the repo at vercel.com → it builds + gives you a live URL"),
     pc.dim("  3. Every push to GitHub then redeploys your shop automatically"),
     "  " +
@@ -1300,7 +1312,7 @@ async function run(): Promise<void> {
   if (startNow) {
     console.log(
       pc.dim(
-        `\nStarting ${runCmd} dev in ${finalSlug}/ — open http://localhost:3000/en\n`,
+        `\nStarting ${runCmd} dev in ${cdDir}/ — open http://localhost:3000/en\n`,
       ),
     );
     const [cmd, ...args] =
