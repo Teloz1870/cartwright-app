@@ -224,6 +224,38 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(step).toMatch(/localePrefix: "never"/);
   });
 
+  it('names the old addresses the proxy never looks a redirect up for, and what the owner does instead', () => {
+    // proxy.ts: the matcher leaves out every dotted path and anything starting /hero (no
+    // slash after it); the lookup is skipped for startsWith("/api") / ("/admin") and comes
+    // after the /oauth branch (lib/locale-exempt.ts). Under "never", next.config.ts sends
+    // /om-os to /about and canonicalTrustRedirect sends /info/<alias> on before the lookup.
+    // planRedirectImport accepts every one of those rows, so the dry run cannot warn.
+    const bullet = lineWith(woo, '**Some paths never reach your redirects.**');
+    expect(bullet).toMatch(/dry run counts it valid/);
+    expect(bullet).toMatch(/dot anywhere[^\n]*`\/wp-content\/uploads\/`[^\n]*`matcher`/);
+    expect(bullet).toMatch(/`\/hero`[^\n]*`\/heroes\/`/);
+    expect(bullet).toMatch(/`\/api` or `\/admin`[^\n]*`\/apiary\/`[^\n]*no slash after it/);
+    expect(bullet).toMatch(/`\/oauth`/);
+    expect(bullet).toMatch(/localePrefix: "never"[^\n]*`\/om-os`[^\n]*`next\.config\.ts`[^\n]*`\/info\/om-os`/);
+    const instead = lineWith(woo, '**What to do with those instead.**');
+    expect(instead).toMatch(/`redirects\(\)`[^\n]*`next\.config\.ts`[^\n]*before the proxy[^\n]*`\/favicon\.ico`/);
+    expect(instead).toMatch(/host's or CDN's redirect rules/);
+    // Step 6 must not leave the owner believing the dry run vetted them.
+    expect(lineWith(woo, '**Write the redirect CSV**')).toMatch(/the dry run passes them/);
+    // choose-your-path promises "a redirect for every old path you care about".
+    const path = read('content/docs/getting-started/choose-your-path.mdx');
+    expect(lineWith(path, 'an admin-managed redirect for every old path')).toMatch(/never a path with a dot[^\n]*`\/wp-content\/uploads\/`/);
+  });
+
+  it('step 9 counts Next\'s own 308 that an old slash address takes first when trailingSlash is off', () => {
+    // next.config.ts sets skipTrailingSlashRedirect only with urls.trailingSlash on; off, Next
+    // strips the slash with a 308 before the proxy runs (measured: demo.cartwright.app
+    // /product-category/chairs/ → 308 → 307 → 404).
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).toMatch(/`trailingSlash` off[^\n]*`308`[^\n]*`301`[^\n]*`307`/);
+    expect(step).toMatch(/or one the proxy never sees/);
+  });
+
   it('does not say the admin redirect preview lists every row (it shows counts and errors)', () => {
     // app/admin/redirects/RedirectsManager.tsx renders the summary and ErrorLines only;
     // the per-row plan is the redirects.import tool's dryRun output.
