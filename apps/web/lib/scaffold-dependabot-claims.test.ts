@@ -37,6 +37,10 @@ describe('the CLI options page on the scaffold dependabot.yml', () => {
     expect(paragraph).toContain('Next.js with React in one');
     expect(forkCi).toMatch(/next-react:\n\s+patterns: \["next", "@next\/\*", "eslint-config-next", "react", "react-dom"/);
     expect(paragraph).toContain('majors left to you');
+    // The actions entry is the exception: its PRs carry majors.
+    expect(paragraph).toContain('majors included');
+    expect(forkCi).toContain('package-ecosystem: "github-actions"');
+    expect(forkCi).toContain('majors included');
     expect(forkCi).toContain('update-types: ["version-update:semver-major"]');
   });
 

@@ -26,7 +26,7 @@ description: All flags accepted by create-cartwright.
 | `--help`, `-h` | — | Print the CLI's authoritative current help. |
 | `--version`, `-v` | — | Print `create-cartwright <version>` and exit. An unknown flag prints one line and exits `2`. |
 
-Every profile also gets `.github/workflows/ci.yml` and `.github/dependabot.yml`, written by the CLI (under `--no-git` too) and inert until GitHub hosts the repository. From then on Dependabot opens update PRs weekly (Next.js with React in one, every other minor or patch bump in another, majors left to you) and groups security fixes into one PR once *Dependabot security updates* is on in the repository's settings.
+Every profile also gets `.github/workflows/ci.yml` and `.github/dependabot.yml`, written by the CLI (under `--no-git` too) and inert until GitHub hosts the repository. From then on Dependabot opens update PRs weekly: for npm, Next.js with React in one and every other minor or patch bump in another, majors left to you; for the actions in `ci.yml`, one more, majors included. It groups security fixes into one PR once *Dependabot security updates* is on in the repository's settings.
 
 ## Which profile?
 
