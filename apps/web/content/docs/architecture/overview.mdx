@@ -14,7 +14,7 @@ External services are all optional with graceful no-op fallbacks. Stripe runs in
 <Mermaid chart={`
 flowchart TD
   subgraph CF["Customer-facing"]
-    Store["Storefront / /produkt /kurv /checkout"]
+    Store["Storefront /[locale] /[locale]/product /[locale]/cart /[locale]/checkout"]
     Chat["AI Stylist FAB /api/assistant/chat"]
   end
 
