@@ -9,12 +9,20 @@ ACP is distinct from [A2A](/docs/features/a2a-endpoints). A2A is the negotiation
 
 ## Feature gate
 
-ACP is gated behind `brand.features.acp` (default `false` on most templates, `true` on `agent-marketplace`). When off, every checkout route under `/api/acp/v1/` returns 404 — your storefront surface stays clean. The feed has a gate of its own: see [Authentication](#authentication).
+Two switches in `brand.config.ts` carry the name `acp`, and they do different jobs:
+
+- **`acp.enabled`** is the one the checkout routes read (`acpDisabledResponse` in `lib/acp/http.ts`). It is `false` on every template. While it is off, every route under `/api/acp/v1/` returns 404, whatever `features.acp` says, so your storefront surface stays clean.
+- **`features.acp`** gates no route. It decides whether the shop advertises ACP: the ACP section of `llms.txt`, the checkout capability in `/.well-known/ucp`, the `native_commerce` attribute in the Google Merchant feed and the purchase line of the public agent skill. `--template agent-marketplace` sets it to `true` and leaves `acp.enabled` `false`, so that shop's `/.well-known/ucp` advertises a checkout whose routes answer 404 until you set `acp.enabled` too.
+
+Set both to sell through ACP. The feed has a gate of its own: see [Authentication](#authentication).
 
 ```ts
 // brand.config.ts
+acp: {
+  enabled: true,        // the switch the checkout routes read
+},
 features: {
-  acp: true,            // turn the ACP surface on
+  acp: true,            // advertise ACP in llms.txt, /.well-known/ucp and the Merchant feed
   a2a: false,           // independent of A2A
   webshop: true,        // a shop can serve humans AND ACP buyers
 }
@@ -129,7 +137,7 @@ When live, `complete` returns the completed session plus an `order` reference; t
 
 ## UCP: native_commerce capability
 
-Google's Unified Commerce Protocol (UCP) lets agents discover which catalogue products are *native-buyable*. When `acp` is on, the Google Merchant feed (`/feed/google.xml`) emits `<g:native_commerce>enabled</g:native_commerce>` per item, and `/.well-known/ucp` advertises a `native_commerce` capability — gated on `acp` **plus** `merchantFeed`. The gating is deliberate: the shop never advertises a capability it can't honour.
+Google's Unified Commerce Protocol (UCP) lets agents discover which catalogue products are *native-buyable*. When `features.acp` is on, the Google Merchant feed (`/feed/google.xml`) emits `<g:native_commerce>enabled</g:native_commerce>` per item, and `/.well-known/ucp` advertises a `native_commerce` capability — gated on `features.acp` **plus** `merchantFeed`. Neither reads `acp.enabled`, so set both switches (see [Feature gate](#feature-gate)), or the shop advertises a checkout its routes refuse.
 
 <Callout type="info">
 The exact `native_commerce` attribute is an emerging March-2026 Google spec — verify the attribute string against Google's current Merchant Center docs before go-live. The structure and gating are correct.
@@ -141,10 +149,10 @@ UCP also defines **`dev.ucp.common.identity_linking`** — how an agentic platfo
 
 ## Authentication
 
-The ACP routes authenticate no caller. No route under `/api/acp/` reads an `Authorization` header or an API key, which is why the examples above send none, and `lib/scopes.ts` has no ACP scope to limit a key to. The Guardian's agentic policy names `products.read` and `checkout.create`, but no ACP route calls the Guardian. What a session route checks is the `acp` gate, the request schemas above and, for `complete`, `ACP_PAYMENT_COMPLETION` plus a Stripe Shared Payment Token. Anyone who can reach the shop can open a session.
+The ACP routes authenticate no caller. No route under `/api/acp/` reads an `Authorization` header or an API key, which is why the examples above send none, and `lib/scopes.ts` has no ACP scope to limit a key to. The Guardian's agentic policy names `products.read` and `checkout.create`, but no ACP route calls the Guardian. What a session route checks is `acp.enabled`, the request schemas above and, for `complete`, `ACP_PAYMENT_COMPLETION` plus a Stripe Shared Payment Token. Anyone who can reach the shop can open a session.
 
 <Callout type="warn">
-The feed is **public** on every shop with `ecommerceEnabled`, whether `acp` is on or off. `app/api/acp/feed/route.ts` has no auth check and no helper to switch one on. If your catalogue contains private inventory or wholesale pricing, add a check to that route yourself.
+The feed is **public** on every shop with `ecommerceEnabled`, whatever `acp.enabled` and `features.acp` say. `app/api/acp/feed/route.ts` has no auth check and no helper to switch one on. If your catalogue contains private inventory or wholesale pricing, add a check to that route yourself.
 </Callout>
 
 ## Relationship to A2A
@@ -159,7 +167,7 @@ ACP is the **purchase** surface. A2A is the **negotiation** surface. The two sit
 | `POST /api/negotiate` | Bargaining | Cartwright A2A v1 |
 | `POST /api/escrow/verify` | Proof submission (Verify-then-Pay) | Cartwright A2A v1 |
 
-A shop with only `features.acp = true` ships a "just-buy-it" surface (fixed prices, no haggling). A shop with both `acp` and `a2a` lets agents discover and negotiate, then buy through ACP checkout at the catalog price. The negotiated price does not carry into a session, and no engine route opens or funds an escrow row, so there is no A2A escrow to settle through yet; see the [AI sale walkthrough](/docs/guides/ai-sale-walkthrough).
+A shop with ACP on (`acp.enabled` and `features.acp` both `true`, see [Feature gate](#feature-gate)) and `features.a2a` off ships a "just-buy-it" surface (fixed prices, no haggling). A shop that also turns `features.a2a` on lets agents discover and negotiate, then buy through ACP checkout at the catalog price. The negotiated price does not carry into a session, and no engine route opens or funds an escrow row, so there is no A2A escrow to settle through yet; see the [AI sale walkthrough](/docs/guides/ai-sale-walkthrough).
 
 <Cards>
   <Card title="UCP identity-linking" href="/docs/features/ucp-identity-linking" />

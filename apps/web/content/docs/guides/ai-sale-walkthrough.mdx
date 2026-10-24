@@ -5,7 +5,7 @@ description: End-to-end walkthrough — a buyer agent discovers your shop, negot
 
 This guide follows a single transaction from "buyer agent has never heard of your shop" to "funds are in your Stripe account". Every step shows the actual HTTP call and the actual response. The point is to make the abstract concrete: when we say "headless merchant", this is the conversation that proves the claim.
 
-The walkthrough assumes a Cartwright shop scaffolded with `--template agent-marketplace` (so `brand.features.a2a` and `brand.features.acp` are both `true`). A pure-A2A shop, a pure-ACP shop, or a hybrid all draw from the same surface — they just answer 404 on the endpoints they opted out of.
+The walkthrough assumes a Cartwright shop scaffolded with `--template agent-marketplace` (so `brand.features.a2a` and `brand.features.acp` are both `true`), with `brand.acp.enabled` and `ecommerceEnabled` then set to `true` by hand. The template leaves both `false`, and without them the feed (Step 3) and the ACP checkout (Step 5) answer 404. A pure-A2A shop, a pure-ACP shop, or a hybrid all draw from the same surface — they just answer 404 on the endpoints they opted out of.
 
 ## Cast of characters
 
@@ -239,9 +239,9 @@ The rows this walkthrough writes are `AgenticJWT` rows, one per Guardian call, `
 Read what's **not** in the walkthrough — that's where the security work is:
 
 - No LLM was asked to decide the price. The [Anchor-Resume engine](/docs/features/anchor-resume-engine) is pure TS; the [P2K scanner](/docs/features/guardian-middleware#p2k-scanner) gates every commit that would try.
-- No A2A call skipped the Guardian: `/api/negotiate` and `/api/escrow/verify` run it before they act. The ACP routes, `complete` included, do not; their gates are the `acp` switch, the schemas and `ACP_PAYMENT_COMPLETION`.
+- No negotiation round and no proof skipped the Guardian: `/api/negotiate` and `/api/escrow/verify` run it before they act, and they are the only routes that do. The Agent Card fetch (`GET /api/agent-card`) is A2A-gated but runs no Guardian: whoever reaches it gets the card, whatever the policy's `agent-card.read` scope or blocked-agent list says. The ACP routes, `complete` included, run none either; their gates are `brand.acp.enabled`, the schemas and `ACP_PAYMENT_COMPLETION`.
 - No escrow was released on an unverified proof, or on any proof yet: only a `pass` moves a row to `released`, and today's verifier passes none (Step 7).
-- No agent acted outside the shop's agentic policy on an A2A call: the Guardian checks `negotiate` and `escrow.release` against it, and it allows nothing until the admin sets it. An API key's own scopes are not checked on these routes, and the ACP routes take no key.
+- No agent negotiated or submitted a proof outside the shop's agentic policy: the Guardian checks `negotiate` and `escrow.release` against it. With no policy set it allows nothing, and no admin screen or tool sets one yet, so the `pass` rows in Step 9 need a policy written straight to `BrandingSettings.agenticPolicyJson`. An API key's own scopes are not checked on these routes, and the ACP routes take no key.
 
 The walkthrough is a happy path. The Guardian + escrow + audit machinery is most of the code; it just happens to stay quiet when the happy path is followed.
 

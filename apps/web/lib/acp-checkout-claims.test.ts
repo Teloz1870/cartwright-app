@@ -317,3 +317,79 @@ describe('the ACP pages claim only the auth, caching, escrow and audit the engin
     expect(body.escrowStatus).not.toBe('released');
   });
 });
+
+/**
+ * The R1 falsifier on app#417 found two more claims the engine contradicts
+ * (measured on engine origin/main af4561f6):
+ * - Every route under app/api/acp/v1 gates on `brand.acp.enabled`
+ *   (lib/acp/http.ts `acpDisabledResponse`) and on nothing else.
+ *   `brand.features.acp` gates no route. Its readers are discovery surfaces:
+ *   app/.well-known/ucp, app/feed/google.xml (`native_commerce`), app/llms.txt
+ *   and lib/agent-skills/public-site.ts. The agent-marketplace scaffold flips
+ *   only `features.acp` (apps/cli/src/scaffold.ts), so `acp.enabled` stays
+ *   false there and its checkout routes answer 404.
+ * - `guardianCheck` runs in exactly two routes: POST /api/negotiate and
+ *   POST /api/escrow/verify. GET /api/agent-card is A2A-gated and calls only
+ *   `a2aDisabledResponse` and `prisma.agentCard.findFirst`, so the policy's
+ *   `agent-card.read` scope and its blocked-agent list never apply to it. No
+ *   admin screen or tool writes `BrandingSettings.agenticPolicyJson`.
+ */
+const SWITCH_AND_GUARDIAN_CONTRADICTED: [RegExp, string][] = [
+  [/\b(?:ACP|routes?) (?:is |are )?gated (?:behind|by|on) `(?:brand\.)?features\.acp`/, 'the ACP checkout routes read brand.acp.enabled, not features.acp'],
+  [/the `acp` (?:switch|gate)/, 'two switches are called acp; name brand.acp.enabled, the one the routes read'],
+  [/No A2A (?:call|request) skipped the Guardian/, 'GET /api/agent-card is A2A-gated and runs no Guardian'],
+  [/outside the shop's agentic policy on an A2A call/, 'GET /api/agent-card ignores the agentic policy'],
+  [/until the admin sets it/, 'no admin screen or tool writes agenticPolicyJson'],
+];
+
+const section = (src: string, heading: string) => {
+  const start = src.indexOf(`\n## ${heading}\n`);
+  if (start < 0) return '';
+  const end = src.indexOf('\n## ', start + 1);
+  return src.slice(start, end < 0 ? undefined : end);
+};
+
+describe('the ACP pages name the switch the checkout routes read and the routes the Guardian runs on', () => {
+  const files = surfaces();
+  const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
+
+  it('names no switch or Guardian coverage the engine contradicts', () => {
+    const offenders: string[] = [];
+    for (const rel of files) {
+      for (const [re, why] of SWITCH_AND_GUARDIAN_CONTRADICTED) {
+        const m = read(rel).match(re);
+        if (m) offenders.push(`${rel}: "${m[0]}" — ${why}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('says the checkout routes read brand.acp.enabled and that features.acp gates no route', () => {
+    const gate = section(read(ACP_PAGES[0]), 'Feature gate');
+    expect(gate).not.toBe('');
+    expect(gate).toMatch(/`acp\.enabled`\*{0,2} is the one the checkout routes read/);
+    expect(gate).toMatch(/`features\.acp`\*{0,2} gates no route/);
+  });
+
+  it('sets acp.enabled to true in every brand.config snippet that turns features.acp on', () => {
+    const offenders: string[] = [];
+    let seen = 0;
+    for (const rel of files) {
+      for (const [, code] of blocks(read(rel), 'ts')) {
+        const features = code.match(/features:\s*\{[^}]*\}/);
+        if (!features || !/\bacp:\s*true\b/.test(features[0])) continue;
+        seen += 1;
+        if (!/\bacp:\s*\{[^}]*\benabled:\s*true\b/.test(code)) offenders.push(`${rel}: ${code.split('\n')[0]}`);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+  });
+
+  it('claims Guardian coverage for negotiate and escrow/verify only, and names the Agent Card fetch as unguarded', () => {
+    const didnt = section(read(ACP_PAGES[1]), "What didn't happen");
+    expect(didnt).not.toBe('');
+    expect(didnt).toMatch(/`\/api\/negotiate` and `\/api\/escrow\/verify` run it before they act, and they are the only routes that do/);
+    expect(didnt).toMatch(/`GET \/api\/agent-card`\)? is A2A-gated but runs no Guardian/);
+  });
+});

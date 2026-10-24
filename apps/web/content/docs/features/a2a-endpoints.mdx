@@ -131,15 +131,18 @@ All three POST endpoints require a Bearer token (`Authorization: Bearer <api-key
 
 ```ts
 // brand.config.ts
+acp: {
+  enabled: true,        // the switch the /api/acp/v1/* checkout routes read
+},
 features: {
   a2a: true,            // turns the 3 endpoints on
-  acp: true,            // enables /api/acp/* (commerce protocol)
+  acp: true,            // advertises ACP (llms.txt, /.well-known/ucp); gates no route
   webshop: false,       // optional: hide buyer-facing GUI for pure-A2A shops
   adminAgenticDashboard: true,
 }
 ```
 
-Or scaffold with `npx create-cartwright my-agent-shop --template agent-marketplace` — the template ships these flags on by default.
+Or scaffold with `npx create-cartwright my-agent-shop --template agent-marketplace` — the template ships these `features` flags as shown, but leaves `acp.enabled` `false`, so set that one yourself; see [ACP](/docs/features/agentic-commerce-protocol#feature-gate).
 
 <Cards>
   <Card title="Guardian middleware" href="/docs/features/guardian-middleware" />
