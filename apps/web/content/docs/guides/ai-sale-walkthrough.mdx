@@ -175,7 +175,7 @@ curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/acs_9b2d4f6a8
 `complete` charges the Stripe Shared Payment Token and creates the `Order` from the session's line items. It answers `501` until the shop sets `ACP_PAYMENT_COMPLETION=1`; see [ACP](/docs/features/agentic-commerce-protocol#update-cancel-complete).
 
 <Callout type="warn">
-Steps 6 to 8, and the escrow rows of Step 9's audit table, follow an escrow row through funding and release. Today's ACP checkout creates no escrow row, and its response carries no escrow block, so those steps do not follow from this session yet.
+Steps 6 to 9 do not follow from this session yet. Steps 6 to 8 follow an escrow row through funding and release, but today's ACP checkout creates no escrow row, and its response carries no escrow block. Step 9's audit table lists ACP feed and checkout events, but the ACP routes write no audit row.
 </Callout>
 
 ## Step 6 — Escrow funding
@@ -261,7 +261,7 @@ Every step in this walkthrough wrote a row. The shop admin opens `/admin/agentic
 | 08:14:08 | `negotiate` round 1 | `a2a:buyer-northbound` | counter → DKK 57.50 |
 | 08:14:14 | `negotiate` round 2 | `a2a:buyer-northbound` | counter → DKK 56.25 |
 | 08:14:19 | `negotiate` round 3 | `a2a:buyer-northbound` | accept → DKK 56.00 |
-| 08:14:21 | `acp.checkout.create` | `a2a:buyer-northbound` | session cs_2NjA... |
+| 08:14:21 | `acp.checkout.create` | `a2a:buyer-northbound` | session acs_9b2d4f6a8c0e4a1b9d3f5a7c9e1b3d5f |
 | 08:14:22 | `acp.checkout.complete` | `a2a:buyer-northbound` | order_2NjA..., escrow esc_2NjA... funded |
 | 11:23:01 | `escrow.release` | `a2a:buyer-northbound` | proofType=delivery, released |
 

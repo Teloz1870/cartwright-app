@@ -64,6 +64,13 @@ const NEVER_IN_ENGINE = [
   '"shipping_address"',
 ];
 
+/**
+ * Audit events no ACP route writes: `git grep 'acp.checkout'` and `'acp.feed'`
+ * on engine origin/main 1f861db find nothing, and lib/acp, app/api/acp and
+ * lib/orders/create-acp.ts write no audit row.
+ */
+const ACP_AUDIT_EVENT = /acp\.(?:checkout|feed)\.[a-z_]+/g;
+
 const ACP_PAGES = ['content/docs/features/agentic-commerce-protocol.mdx', 'content/docs/guides/ai-sale-walkthrough.mdx'];
 
 type Example = { rel: string; path: string; body: Record<string, unknown> };
@@ -152,6 +159,37 @@ describe('ACP checkout examples are requests the engine accepts', () => {
     for (const rel of files) {
       const src = readFileSync(join(ROOT, rel), 'utf8');
       for (const name of NEVER_IN_ENGINE) if (src.includes(name)) offenders.push(`${rel}: ${name}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('shows an ACP audit row only inside a step a warn callout says does not follow yet', () => {
+    const offenders: string[] = [];
+    for (const rel of files) {
+      const src = readFileSync(join(ROOT, rel), 'utf8');
+      const disclaimed = new Set<number>();
+      for (const callout of src.matchAll(/<Callout type="warn">([\s\S]*?)<\/Callout>/g)) {
+        if (!/audit row/.test(callout[1])) continue;
+        for (const r of callout[1].matchAll(/Steps (\d+) to (\d+)/g)) {
+          for (let n = Number(r[1]); n <= Number(r[2]); n++) disclaimed.add(n);
+        }
+      }
+      for (const m of src.matchAll(ACP_AUDIT_EVENT)) {
+        const steps = [...src.slice(0, m.index).matchAll(/^## Step (\d+)/gm)];
+        const step = steps.length ? Number(steps[steps.length - 1][1]) : NaN;
+        if (!disclaimed.has(step)) offenders.push(`${rel}: ${m[0]} (Step ${step}) reads as a row the engine writes`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('shows ACP session ids in the acs_ + 32 hex form acsId() mints', () => {
+    const offenders: string[] = [];
+    for (const rel of ACP_PAGES) {
+      const src = readFileSync(join(ROOT, rel), 'utf8');
+      for (const m of src.matchAll(/\b(a?cs)_([\w.…]*)/g)) {
+        if (m[1] !== 'acs' || !/^[0-9a-f]{32}$/.test(m[2])) offenders.push(`${rel}: ${m[0]}`);
+      }
     }
     expect(offenders).toEqual([]);
   });
