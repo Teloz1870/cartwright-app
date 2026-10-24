@@ -333,7 +333,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // its destination carries the slash (lib/redirects/match.ts), so /gammel and /gammel/ → 301 /ny/.
     expect(step).not.toMatch(/one that is already a route answers `200` directly/);
     expect(step).toMatch(/one that is already a route answers `200` without a `301`; with `trailingSlash` off/);
-    expect(step).toMatch(/with it on, an address ending in `\/` answers directly, and a route asked for without the `\/` takes the proxy's `308` to the slash form first/);
+    expect(step).toMatch(/with it on, a route ending in `\/` answers directly, and a route asked for without the `\/` takes the proxy's `308` to the slash form first/);
     expect(step).toMatch(/a redirected address answers its `301` in either form, since the destination carries the slash/);
   });
 
@@ -343,8 +343,9 @@ describe('the WooCommerce status page matches the engine', () => {
     // takes next-intl's 307 to /en/administration; with no row there, LOCALE_ADMIN_RE (^/(en)/admin,
     // no boundary) sends it to the same gate. Measured: → 307 /en/administration → 307 /account/login.
     const step = lineWith(woo, '**Check from outside**');
-    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address under `\/admin`/);
-    expect(step).toMatch(/`\/admin` and everything below it, and under the default `"always"` a path such as `\/administration\/` with no row, take the admin gate's `307` to `\/account\/login` \(`proxy\.ts`\) and end on the login page with a `200`/);
+    expect(step).toMatch(/A `404` at the end is an address with no row and no page yet, or one the proxy never sees \(above\)\. The exception is an address the admin gate catches/);
+    expect(step).toMatch(/`\/admin` and everything below it take its `307` to `\/account\/login` \(`proxy\.ts`\) at once/);
+    expect(step).toMatch(/a path that only begins with `\/admin`, such as `\/administration\/` with no row, takes next-intl's `307` to `\/en\/administration\/` first and then the same `307`; both end on the login page with a `200`/);
   });
 
   it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
