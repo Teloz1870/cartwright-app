@@ -9,7 +9,7 @@ ACP is distinct from [A2A](/docs/features/a2a-endpoints). A2A is the negotiation
 
 ## Feature gate
 
-ACP is gated behind `brand.features.acp` (default `false` on most templates, `true` on `agent-marketplace`). When off, every `/api/acp/*` route returns 404 — your storefront surface stays clean.
+ACP is gated behind `brand.features.acp` (default `false` on most templates, `true` on `agent-marketplace`). When off, every checkout route under `/api/acp/v1/` returns 404 — your storefront surface stays clean. The feed has a gate of its own: see [Authentication](#authentication).
 
 ```ts
 // brand.config.ts
@@ -35,10 +35,10 @@ Response (one JSON object per line, shortened):
 {"item_id":"lens-pair-polarised","title":"Lens Pair Polarised","url":"https://example-shop.app/en/product/lens-pair-polarised","price":"299.00 DKK","availability":"in_stock","image_url":"https://example-shop.app/img/polarised.jpg","brand":"Atelier"}
 ```
 
-The feed is regenerated on demand — no cron, no stale snapshots. Field shape follows the ACP product-feed spec; Cartwright maps `Product`, `Category`, and `ProductVariant` rows into the canonical fields. There is one line per purchasable item: a product, or each of its variants. Every line also carries a `description`, the `seller_*` fields and the `is_eligible_search` / `is_eligible_checkout` flags, left out above. A line's `item_id` is the id a checkout line item sends back.
+The route builds the feed on each request that reaches it (no cron) and answers with `Cache-Control: public, max-age=900, s-maxage=900`, so an agent or a CDN may serve a copy up to 15 minutes old. Field shape follows the ACP product-feed spec; Cartwright maps `Product`, `Category`, and `ProductVariant` rows into the canonical fields. There is one line per purchasable item: a product, or each of its variants. Every line also carries a `description`, the `seller_*` fields and the `is_eligible_search` / `is_eligible_checkout` flags, left out above. A line's `item_id` is the id a checkout line item sends back.
 
 <Callout type="tip">
-Buyer agents typically pull the feed once per session, then refresh on cache-miss. Use `Cache-Control: max-age=300` if your inventory is volatile — the route honours it.
+The route reads no request header, `Cache-Control` included, so the shop sets the 15 minutes, not the agent. A shop with volatile stock shortens the `cache-control` line in `app/api/acp/feed/route.ts`.
 </Callout>
 
 ## POST /api/acp/v1/checkout_sessions
@@ -47,7 +47,6 @@ Create a checkout session. The buyer agent posts line items + a fulfillment addr
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
-  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{
     "line_items": [
@@ -118,7 +117,6 @@ Sessions are stored in the database. Only `complete` replays: send the same `ide
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/acs_3f0c9b1e7a2d4c5b8e6f1a2b3c4d5e6f/complete \
-  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{ "shared_payment_token": "spt_…", "idempotency_key": "7f3e9a1b-…" }'
 ```
@@ -143,10 +141,10 @@ UCP also defines **`dev.ucp.common.identity_linking`** — how an agentic platfo
 
 ## Authentication
 
-All POST endpoints require a Bearer token. API keys are managed at `/admin/api-keys` and can be scoped to `acp:checkout` only — restricting what the key can do is enforced before the handler runs.
+The ACP routes authenticate no caller. No route under `/api/acp/` reads an `Authorization` header or an API key, which is why the examples above send none, and `lib/scopes.ts` has no ACP scope to limit a key to. The Guardian's agentic policy names `products.read` and `checkout.create`, but no ACP route calls the Guardian. What a session route checks is the `acp` gate, the request schemas above and, for `complete`, `ACP_PAYMENT_COMPLETION` plus a Stripe Shared Payment Token. Anyone who can reach the shop can open a session.
 
 <Callout type="warn">
-The feed endpoint is **public by default** (so crawlers can index it). If your catalogue contains private inventory or wholesale pricing, override the auth check in `app/api/acp/feed/route.ts` — there's a `requireFeedAuth()` helper commented out for that case.
+The feed is **public** on every shop with `ecommerceEnabled`, whether `acp` is on or off. `app/api/acp/feed/route.ts` has no auth check and no helper to switch one on. If your catalogue contains private inventory or wholesale pricing, add a check to that route yourself.
 </Callout>
 
 ## Relationship to A2A
@@ -159,9 +157,9 @@ ACP is the **purchase** surface. A2A is the **negotiation** surface. The two sit
 | `POST /api/acp/v1/checkout_sessions` | Stateless purchase | ACP v1 |
 | `GET /api/agent-card` | Shop discovery (signed JSON) | Cartwright A2A v1 |
 | `POST /api/negotiate` | Bargaining | Cartwright A2A v1 |
-| `POST /api/escrow/verify` | Verify-then-Pay release | Cartwright A2A v1 |
+| `POST /api/escrow/verify` | Proof submission (Verify-then-Pay) | Cartwright A2A v1 |
 
-A shop with only `features.acp = true` ships a "just-buy-it" surface (fixed prices, no haggling). A shop with both `acp` and `a2a` lets agents discover, negotiate, then settle via either ACP checkout or A2A escrow.
+A shop with only `features.acp = true` ships a "just-buy-it" surface (fixed prices, no haggling). A shop with both `acp` and `a2a` lets agents discover and negotiate, then buy through ACP checkout at the catalog price. The negotiated price does not carry into a session, and no engine route opens or funds an escrow row, so there is no A2A escrow to settle through yet; see the [AI sale walkthrough](/docs/guides/ai-sale-walkthrough).
 
 <Cards>
   <Card title="UCP identity-linking" href="/docs/features/ucp-identity-linking" />

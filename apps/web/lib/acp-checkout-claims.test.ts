@@ -211,3 +211,109 @@ describe('ACP checkout examples are requests the engine accepts', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * The same two pages also claimed auth, caching, escrow and audit behaviour
+ * the engine does not have (APP-ACP-DOCS-TRUTH, measured on engine origin/main
+ * 1f861db):
+ * - no route under app/api/acp calls authenticateApiKey or requireApiScope or
+ *   reads an Authorization header, and lib/scopes.ts has no acp: scope;
+ * - `requireFeedAuth` exists nowhere in the engine;
+ * - app/api/acp/feed/route.ts reads no request header and sends the one
+ *   cache-control value below;
+ * - app/api/escrow holds only verify/route.ts; nothing creates or funds an
+ *   EscrowTransaction (the Stripe webhook is app/api/webhook/stripe and never
+ *   touches the table), and its verifier passes no proof: delivery, signature
+ *   and webhook pend, and hash fails because the route passes no expected hash;
+ * - on these paths only guardianCheck writes a row (AgenticJWT), so the Agent
+ *   Card fetch writes none, and no route here checks an API key's scopes.
+ */
+const FEED_CACHE_CONTROL = 'public, max-age=900, s-maxage=900';
+
+/** app/api/escrow/verify/route.ts — escrowVerifyRequestSchema and its 200 body. */
+const VERIFY_KEYS = new Set(['agentId', 'jti', 'signedJwt', 'scopes', 'escrowTxId', 'proofType', 'proofPayload', 'submittedHash']);
+const VERIFY_RESPONSE_KEYS = ['escrowStatus', 'proofId', 'verifierResult', 'verifierMessage'];
+
+/** Phrases the engine contradicts, on any surface. */
+const CONTRADICTED_ANYWHERE: [RegExp, string][] = [
+  [/requireFeedAuth/, 'no such helper anywhere in the engine'],
+  [/\bacp:[a-z_]+/, 'lib/scopes.ts has no acp: scope'],
+  [/\/api\/escrow\/(?!verify\b)[\w{.…]/, 'app/api/escrow has only verify/route.ts'],
+  [/\/api\/agent-onboard\b/, 'no such route'],
+];
+
+/** …and on the two ACP pages. */
+const CONTRADICTED_ON_ACP_PAGES: [RegExp, string][] = [
+  [/max-age=300|the route honours it|no stale snapshots/, `the feed sends ${FEED_CACHE_CONTROL} and reads no request header`],
+  [/pending\s*(?:→|->)\s*funded/, 'no engine code funds an escrow row'],
+  [/\/api\/stripe\/webhook/, 'the webhook is /api/webhook/stripe, and it never touches EscrowTransaction'],
+  [/agent-card\.fetch/, 'app/api/agent-card writes no row'],
+  [/scopes are checked before the handler/, "no route on these pages checks an API key's scopes"],
+];
+
+const blocks = (src: string, lang: string) => [...src.matchAll(new RegExp('```' + lang + '\\n([\\s\\S]*?)\\n```', 'g'))];
+
+describe('the ACP pages claim only the auth, caching, escrow and audit the engine has', () => {
+  const files = surfaces();
+  const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
+
+  it('names no helper, scope, route or behaviour the engine contradicts', () => {
+    const offenders: string[] = [];
+    for (const rel of files) {
+      const rules = ACP_PAGES.includes(rel) ? [...CONTRADICTED_ANYWHERE, ...CONTRADICTED_ON_ACP_PAGES] : CONTRADICTED_ANYWHERE;
+      for (const [re, why] of rules) {
+        const m = read(rel).match(re);
+        if (m) offenders.push(`${rel}: "${m[0]}" — ${why}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('sends no Authorization header to an ACP route, since none reads one', () => {
+    const offenders: string[] = [];
+    let seen = 0;
+    for (const rel of files) {
+      for (const [, code] of blocks(read(rel), 'bash')) {
+        if (!code.includes('/api/acp/')) continue;
+        seen += 1;
+        if (/Authorization:/i.test(code)) offenders.push(`${rel}: ${code.split('\n')[0]}`);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+  });
+
+  it("states the feed's cache-control as the route sends it", () => {
+    expect(read(ACP_PAGES[0])).toContain(`Cache-Control: ${FEED_CACHE_CONTROL}`);
+  });
+
+  it('submits escrow proofs the verify schema takes, a delivery proof with trackingNumber and carrier', () => {
+    const offenders: string[] = [];
+    let seen = 0;
+    for (const rel of files) {
+      for (const m of read(rel).matchAll(/curl -X POST \S*\/api\/escrow\/verify\s(?:(?!curl )[\s\S])*?-d '([^']*)'/g)) {
+        const body = JSON.parse(m[1]) as Record<string, unknown>;
+        if (rel === ACP_PAGES[1]) seen += 1;
+        const extra = extraKeys(body, VERIFY_KEYS);
+        if (extra.length) offenders.push(`${rel}: key(s) the verify schema drops: ${extra.join(', ')}`);
+        const proof = (body.proofPayload ?? {}) as Record<string, unknown>;
+        if (body.proofType === 'delivery' && !(['trackingNumber', 'carrier'] as const).every((k) => typeof proof[k] === 'string' && proof[k] !== '')) {
+          offenders.push(`${rel}: delivery proof without trackingNumber and carrier → verifierResult "fail"`);
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+  });
+
+  it('answers a proof with the body the verify route returns, and releases nothing', () => {
+    const src = read(ACP_PAGES[1]);
+    const at = src.search(/curl -X POST \S*\/api\/escrow\/verify/);
+    expect(at).toBeGreaterThan(-1);
+    const response = blocks(src.slice(at), 'json')[0];
+    expect(response).toBeDefined();
+    const body = JSON.parse(response[1]) as Record<string, unknown>;
+    expect(Object.keys(body)).toEqual(VERIFY_RESPONSE_KEYS);
+    expect(body.escrowStatus).not.toBe('released');
+  });
+});

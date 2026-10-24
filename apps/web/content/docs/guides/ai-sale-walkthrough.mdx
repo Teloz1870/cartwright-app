@@ -1,6 +1,6 @@
 ---
 title: How an AI sale actually happens
-description: End-to-end walkthrough — a buyer agent discovers your shop, negotiates, checks out, funds escrow, submits proof, and triggers release. Nine endpoints, one coherent story.
+description: End-to-end walkthrough — a buyer agent discovers your shop, negotiates and checks out, then where escrow, proof and audit stand in today's engine.
 ---
 
 This guide follows a single transaction from "buyer agent has never heard of your shop" to "funds are in your Stripe account". Every step shows the actual HTTP call and the actual response. The point is to make the abstract concrete: when we say "headless merchant", this is the conversation that proves the claim.
@@ -12,7 +12,7 @@ The walkthrough assumes a Cartwright shop scaffolded with `--template agent-mark
 - **Your shop**: `example-shop.app` — a Cartwright deploy
 - **The buyer agent**: a process somewhere on the internet acting for an end user (or for another business)
 - **Stripe**: the payment processor your shop authorised at setup
-- **The audit ledger**: `AuditLog` + `AgenticJWT` rows that get written along the way
+- **The audit ledger**: the `AgenticJWT` rows the Guardian writes on the A2A calls
 
 ## Step 1 — Discovery
 
@@ -79,7 +79,7 @@ The agent matches the buyer intent against the feed (mahogany, 100 units, under 
 
 ## Step 4 — Negotiation
 
-The agent obtains an API key from the shop (out of band — typically a one-time admin issuance for known buyer agents, or via a public-facing self-serve at `/api/agent-onboard` if the shop opts in). It then opens a negotiation.
+The agent obtains an API key from the shop out of band: the admin issues one at `/admin/api-keys`. `/api/negotiate` checks that the key is valid, not which scopes it carries; what the agent may do is the shop's agentic policy, which the Guardian checks. It then opens a negotiation.
 
 ```bash
 curl -X POST https://example-shop.app/api/negotiate \
@@ -114,11 +114,10 @@ Two more rounds happen; the agent settles at DKK 56 per unit, total DKK 5600 for
 
 ## Step 5 — Checkout
 
-The agent now creates an ACP checkout session. Two limits of today's engine shape this step: a session prices every line at the catalog price, with no field for the price Step 4 agreed, and one line takes 1 to 10 units. So the example orders 10 frames at list price. Each line item names its item with `item_id`, the id the feed listed in Step 3.
+The agent now creates an ACP checkout session. The ACP routes take no API key, so this call and `complete` send none. Two limits of today's engine shape this step: a session prices every line at the catalog price, with no field for the price Step 4 agreed, and one line takes 1 to 10 units. So the example orders 10 frames at list price. Each line item names its item with `item_id`, the id the feed listed in Step 3.
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
-  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{
     "line_items": [
@@ -167,44 +166,19 @@ Pricing was computed server-side by `lib/pricing.ts` from the catalog price, in 
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/acs_9b2d4f6a8c0e4a1b9d3f5a7c9e1b3d5f/complete \
-  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{ "shared_payment_token": "spt_…", "idempotency_key": "ckt-7f3e9a1b-2026-05-25-001" }'
 ```
 
-`complete` charges the Stripe Shared Payment Token and creates the `Order` from the session's line items. It answers `501` until the shop sets `ACP_PAYMENT_COMPLETION=1`; see [ACP](/docs/features/agentic-commerce-protocol#update-cancel-complete).
+`complete` charges the Stripe Shared Payment Token and creates the `Order` from the session's line items. It confirms the PaymentIntent on the spot (`confirm: true`, `off_session: true`, automatic capture) and expects `succeeded`, so the money has moved once it returns, with no hold left for a proof to release. It answers `501` until the shop sets `ACP_PAYMENT_COMPLETION=1`; see [ACP](/docs/features/agentic-commerce-protocol#update-cancel-complete).
 
-<Callout type="warn">
-Steps 6 to 9 do not follow from this session yet. Steps 6 to 8 follow an escrow row through funding and release, but today's ACP checkout creates no escrow row, and its response carries no escrow block. Step 9's audit table lists ACP feed and checkout events, but the ACP routes write no audit row.
-</Callout>
+## Step 6 — Escrow, as the engine stands
 
-## Step 6 — Escrow funding
-
-Stripe processes the charge. The Cartwright webhook handler at `/api/stripe/webhook` receives `payment_intent.succeeded` and transitions `EscrowTransaction.status` from `pending → funded`. The order is now paid; the funds sit in Stripe's holding pattern.
-
-From the agent's perspective:
-
-```bash
-curl https://example-shop.app/api/escrow/esc_2NjA...
-```
-
-```json
-{
-  "id": "esc_2NjA...",
-  "status": "funded",
-  "amountMinor": 725000,
-  "currency": "DKK",
-  "expectedHash": "...",
-  "fundedAt": "2026-05-25T08:14:22.000Z",
-  "releaseRequiresProofType": "delivery"
-}
-```
-
-The shop ships. Carrier (DPD, GLS, PostNord) updates the tracking URL. When delivery is confirmed, the agent moves to release.
+No engine code opens or funds an escrow row. The `EscrowTransaction` table exists (`prisma/schema.prisma`), but nothing creates a row: not the ACP session, not `complete`, and not the Stripe webhook at `/api/webhook/stripe`, which handles payment events for orders and never touches the table. There is no `GET` for an escrow; `POST /api/escrow/verify` is the only escrow route. Step 7 therefore applies only to a row your own code writes, with `status` `funded`.
 
 ## Step 7 — Proof submission
 
-The agent submits a Proof-of-Task-Execution. For a physical-goods order, the canonical proof is the carrier's delivery confirmation webhook — but the agent can also submit a `signature` proof (the agent's signed acknowledgement of receipt) for faster release on trusted-agent routes.
+The agent submits a Proof-of-Task-Execution against that row. A `delivery` proof carries the carrier and its `trackingNumber`.
 
 ```bash
 curl -X POST https://example-shop.app/api/escrow/verify \
@@ -215,66 +189,59 @@ curl -X POST https://example-shop.app/api/escrow/verify \
     "jti": "rel-7f3e9a1b-2026-05-25-001",
     "signedJwt": "eyJ...",
     "scopes": ["escrow.release"],
-    "escrowTxId": "esc_2NjA...",
+    "escrowTxId": "cm9x2k7q40003ijkl",
     "proofType": "delivery",
     "proofPayload": {
       "carrier": "GLS",
-      "tracking": "JJD000123456789",
-      "deliveredAt": "2026-05-27T11:22:00Z",
-      "signatureName": "M. Hansen"
+      "trackingNumber": "JJD000123456789"
     }
   }'
 ```
 
-The handler:
+The handler (`app/api/escrow/verify/route.ts`):
 
-1. Authenticates the Bearer token, checks scope contains `escrow.release`.
-2. Runs the [Guardian middleware](/docs/features/guardian-middleware) — legislation rules pass.
-3. Reads the carrier webhook history for `esc_2NjA...` — matches.
-4. Transitions the state machine: `funded → released`.
-5. Writes an `AgenticJWT` row for the release.
+1. Answers 404 unless `brand.features.a2a` is on, and 422 on a body its schema refuses.
+2. Authenticates the Bearer token (401 without a valid key). The key's scopes are not checked.
+3. Loads the escrow row (404 `escrow_not_found` without one).
+4. Runs the [Guardian middleware](/docs/features/guardian-middleware): the shop's agentic policy must allow `escrow.release` for this agent, the `jti` must be new, the amount must be within the policy's cap and the payment rail on its allowlist (403 otherwise). It writes one `AgenticJWT` row either way. The `scopes` in the body are recorded in that row, not checked.
+5. Refuses a row that is not `funded` or `disputed` (409).
+6. Runs the verifier and writes a `PoTEProof` row, whatever the result. Only a `pass` moves the row to `released`.
+
+Today no proof type passes. `delivery`, `signature` and `webhook` proofs are recorded as `pending`, and a `hash` proof fails, because the route has no expected hash to compare with. So the row stays `funded`:
 
 ```json
 {
-  "decision": "released",
-  "escrowTxId": "esc_2NjA...",
-  "status": "released",
-  "releasedAt": "2026-05-27T11:23:01.000Z",
-  "auditId": "ajwt_2NjA..."
+  "escrowStatus": "funded",
+  "proofId": "cm9x2k7q40004mnop",
+  "verifierResult": "pending",
+  "verifierMessage": "Delivery proof recorded; awaiting carrier webhook confirmation."
 }
 ```
 
 ## Step 8 — Funds disbursement
 
-Stripe's payment-intent capture (which was actually a pre-auth-and-capture cycle gated by the escrow state) now finalises. Funds land in your Stripe balance on the usual payout schedule.
-
-If the proof had **failed** — say the delivery webhook never arrived, or the hash didn't match — the state machine would stay at `funded` and a row would appear in `/admin/agentic`'s disputed-escrow queue. A human reviews and either force-releases or refunds. Nothing moves automatically when proof fails; that's the point.
+There is nothing for escrow to disburse: Step 5's `complete` already captured the charge, and the funds follow your Stripe payout schedule from there. A proof that fails or pends leaves the escrow row as it was; it does not move it to `disputed`. `/admin/agentic` is read-only: it counts escrow rows by status and lists the `disputed` ones, and force-release and force-refund are not built yet.
 
 ## Step 9 — Audit
 
-Every step in this walkthrough wrote a row. The shop admin opens `/admin/agentic` and sees:
+The rows this walkthrough writes are `AgenticJWT` rows, one per Guardian call, `pass` or `fail`, with the request path, the `jti` and the scopes the agent sent. The Agent Card fetch, the feed and the ACP routes write none, in `AgenticJWT` or `AuditLog`. With `adminAgenticDashboard` on, `/admin/agentic` lists the last 24 hours of them, up to 50.
 
-| When | Event | Actor | Detail |
-|---|---|---|---|
-| 08:14:00 | `agent-card.fetch` | `a2a:buyer-northbound` | Card v1, signature verified |
-| 08:14:02 | `acp.feed.read` | `a2a:buyer-northbound` | 847 rows returned |
-| 08:14:08 | `negotiate` round 1 | `a2a:buyer-northbound` | counter → DKK 57.50 |
-| 08:14:14 | `negotiate` round 2 | `a2a:buyer-northbound` | counter → DKK 56.25 |
-| 08:14:19 | `negotiate` round 3 | `a2a:buyer-northbound` | accept → DKK 56.00 |
-| 08:14:21 | `acp.checkout.create` | `a2a:buyer-northbound` | session acs_9b2d4f6a8c0e4a1b9d3f5a7c9e1b3d5f |
-| 08:14:22 | `acp.checkout.complete` | `a2a:buyer-northbound` | order_2NjA..., escrow esc_2NjA... funded |
-| 11:23:01 | `escrow.release` | `a2a:buyer-northbound` | proofType=delivery, released |
-
-Every row is filterable, every row is exportable, every row links to its full snapshot. The [audit log](/docs/features/audit-log-revert) is the receipt.
+| Step | Request | `AgenticJWT` row |
+|---|---|---|
+| 2 | `GET /api/agent-card` | none |
+| 3 | `GET /api/acp/feed` | none |
+| 4 | `POST /api/negotiate`, rounds 1 to 3 | one per round, `pass` |
+| 5 | ACP create and `complete` | none |
+| 7 | `POST /api/escrow/verify` | one, `pass` (the Guardian's verdict; the proof's own result is in the `PoTEProof` row) |
 
 ## What didn't happen
 
 Read what's **not** in the walkthrough — that's where the security work is:
 
 - No LLM was asked to decide the price. The [Anchor-Resume engine](/docs/features/anchor-resume-engine) is pure TS; the [P2K scanner](/docs/features/guardian-middleware#p2k-scanner) gates every commit that would try.
-- No money moved before the Guardian middleware ran. Every endpoint that touches money is wrapped.
-- No release happened on an unverified proof. The state machine is the gate; proof verification is constant-time-compared.
-- No agent could exceed its scope. The Bearer token's scopes are checked before the handler runs.
+- No A2A call skipped the Guardian: `/api/negotiate` and `/api/escrow/verify` run it before they act. The ACP routes, `complete` included, do not; their gates are the `acp` switch, the schemas and `ACP_PAYMENT_COMPLETION`.
+- No escrow was released on an unverified proof, or on any proof yet: only a `pass` moves a row to `released`, and today's verifier passes none (Step 7).
+- No agent acted outside the shop's agentic policy on an A2A call: the Guardian checks `negotiate` and `escrow.release` against it, and it allows nothing until the admin sets it. An API key's own scopes are not checked on these routes, and the ACP routes take no key.
 
 The walkthrough is a happy path. The Guardian + escrow + audit machinery is most of the code; it just happens to stay quiet when the happy path is followed.
 
