@@ -104,7 +104,13 @@ const woocommerce: Comparison = {
   rows: [
     { dimension: 'Stack', cartwright: 'TypeScript + Next.js + React, serverless-friendly.', them: 'PHP + WordPress + MySQL.' },
     { dimension: 'Extensibility', cartwright: 'Code it yourself; feature flags + tool registry.', them: 'Enormous plugin marketplace (quality varies).' },
-    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'Via third-party plugins.' },
+    // Sources, read 2026-10-24: developer.woocommerce.com/docs/features/mcp/
+    // ("currently in developer preview"; Abilities API + MCP Adapter plugin;
+    // product and order abilities), wordpress.org/plugins/mcp-adapter/ (0.7.1),
+    // developer.woocommerce.com/2026/09/16/wc-claude-commerce-agent/ ("not
+    // maintained within official capacity"; before/after preview, Approve) and
+    // github.com/woocommerce/agentic-tools ("experimental reference implementation").
+    { dimension: 'AI / agents', cartwright: 'MCP, ACP/A2A, AI admin, AI-search — built in.', them: 'MCP in developer preview (as of Oct 2026): product and order abilities through the WordPress Abilities API and the MCP Adapter plugin. Plus an experimental, not officially maintained Claude commerce-agent reference (woocommerce/agentic-tools, Sep 2026) that previews each store change and waits for approval.' },
     { dimension: 'Hosting / ops', cartwright: 'Vercel + Turso; no servers to patch.', them: 'WordPress hosting, PHP, DB, plugin/security upkeep.' },
     { dimension: 'Performance', cartwright: 'Modern Core Web Vitals baseline by default.', them: 'Depends heavily on theme + plugin load.' },
     { dimension: 'Best for', cartwright: 'Modern DX + AI commerce, owned.', them: 'WordPress-native teams wanting the plugin ecosystem.' },
