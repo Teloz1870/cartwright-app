@@ -29,6 +29,14 @@ No prompts at all:
 npx create-cartwright@latest my-shop --yes --db=turso --ai
 ```
 
+Already in the folder you want (an editor such as Cursor or Claude Code opened on it)?
+Scaffold right there. The folder may hold only `.git`, `.gitignore`, `README.md` or
+`.DS_Store`, and the project is named after it:
+
+```bash
+npx create-cartwright@latest . --yes --no-git
+```
+
 Scaffolded with `--no-install`? Then run the steps yourself:
 `pnpm install && pnpm db:setup && pnpm dev` (never `prisma migrate deploy` —
 `db:setup` is the robust path and prints the admin login).
