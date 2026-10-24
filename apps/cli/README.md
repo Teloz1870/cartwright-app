@@ -115,6 +115,7 @@ Exit code is `1` only when a check **fails** (warnings — e.g. an older engine 
 | `--template=<slug>` | `website-corporate` (light/site) / `generic` (full) | Mode + seed-data preset; site supports `website-corporate` only |
 | `--look=<url>` | — | Scaffold wearing a shared look (see below) |
 | `--help`, `-h` | — | Print usage |
+| `--version`, `-v` | — | Print the CLI version and exit |
 | `--db=<turso\|postgres\|sqlite>` | (prompt) | Database choice — drives next-steps guidance |
 | `--ai` / `--no-ai` | (prompt) | Enable / disable the AI commerce features hint |
 | `--ref=<stable\|next\|tag\|branch>` | `stable` | Template channel (see below) |
