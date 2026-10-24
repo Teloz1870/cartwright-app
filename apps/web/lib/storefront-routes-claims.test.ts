@@ -148,11 +148,13 @@ describe('the storefront routes are named as the engine serves them', () => {
   it('labels the storefront in the architecture overview with the same engine routes as its prose', () => {
     const page = read('content/docs/architecture/overview.mdx');
     const label = lineWith(page, 'Store["').match(/Store\["([^"]*)"\]/)?.[1] ?? '';
-    expect(label).toBe('Storefront /[locale] /[locale]/product /[locale]/cart /[locale]/checkout');
+    const labelled = [...label.matchAll(/\/\[locale\](\S*)/g)].map((m) => m[1]);
     const prose = lineWith(page, 'the customer storefront (');
     const named = [...prose.matchAll(/`\/\[locale\]([^`]*)`/g)].map((m) => m[1]);
     expect(named).toEqual(['', '/product/[slug]', '/cart', '/checkout']);
-    expect(named.filter((r) => !ENGINE_LOCALE_ROUTES.has(r))).toEqual([]);
+    // The chart names exactly the routes the prose names, and each is an engine page.
+    expect(labelled).toEqual(named);
+    expect(labelled.filter((r) => !ENGINE_LOCALE_ROUTES.has(r))).toEqual([]);
   });
 
   it('gives categories.list the categories:read scope wherever a scope follows its name', () => {
