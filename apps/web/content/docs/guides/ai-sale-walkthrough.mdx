@@ -71,11 +71,11 @@ curl https://example-shop.app/api/acp/feed
 ```
 
 ```jsonl
-{"id":"prod_mahogany","title":"Mahogany frame, classic round","price":{"amount":"65.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","stock":847,"link":"https://example-shop.app/products/mahogany"}
-{"id":"prod_walnut","title":"Walnut frame, wayfarer cut","price":{"amount":"58.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","stock":1240,"link":"https://example-shop.app/products/walnut"}
+{"item_id":"mahogany","title":"Mahogany frame, classic round","url":"https://example-shop.app/en/product/mahogany","price":"65.00 DKK","availability":"in_stock","brand":"Atelier"}
+{"item_id":"walnut","title":"Walnut frame, wayfarer cut","url":"https://example-shop.app/en/product/walnut","price":"58.00 DKK","availability":"in_stock","brand":"Atelier"}
 ```
 
-The agent matches the buyer intent against the feed (mahogany, 100 units, under DKK 65). `prod_mahogany` at DKK 65 list price is at the ceiling; the agent decides to negotiate.
+The agent matches the buyer intent against the feed (mahogany, 100 units, under DKK 65). `mahogany` at DKK 65 list price is at the ceiling; the agent decides to negotiate.
 
 ## Step 4 — Negotiation
 
@@ -114,25 +114,24 @@ Two more rounds happen; the agent settles at DKK 56 per unit, total DKK 5600 for
 
 ## Step 5 — Checkout
 
-The agent now creates an ACP checkout session. Idempotency key is critical here — agent retries on transient failures are expected.
+The agent now creates an ACP checkout session. Two limits of today's engine shape this step: a session prices every line at the catalog price, with no field for the price Step 4 agreed, and one line takes 1 to 10 units. So the example orders 10 frames at list price. Each line item names its item with `item_id`, the id the feed listed in Step 3.
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
   -H "Authorization: Bearer <api-key>" \
-  -H "Idempotency-Key: ckt-7f3e9a1b-2026-05-25-001" \
   -H "Content-Type: application/json" \
   -d '{
     "line_items": [
-      { "product_id": "prod_mahogany", "quantity": 100, "negotiated_unit_amount_minor": 5600 }
+      { "item_id": "mahogany", "quantity": 10 }
     ],
-    "shipping_address": {
+    "buyer": { "email": "orders@northbound.example" },
+    "fulfillment_address": {
       "name": "Northbound Buyer Agent / Atelier B2B",
-      "line1": "Esplanaden 12",
-      "city": "Copenhagen",
+      "address_line1": "Esplanaden 12",
       "postal_code": "1263",
+      "city": "Copenhagen",
       "country": "DK"
-    },
-    "payment_method": { "type": "escrow-poTE" }
+    }
   }'
 ```
 
@@ -140,38 +139,44 @@ Response:
 
 ```json
 {
-  "id": "cs_2NjA...",
-  "object": "checkout_session",
-  "status": "open",
-  "currency": "DKK",
-  "totals": {
-    "subtotal_minor": 560000,
-    "tax_minor": 140000,
-    "shipping_minor": 25000,
-    "total_minor": 725000
-  },
-  "escrow": {
-    "transactionId": "esc_2NjA...",
-    "expectedHash": "<sha256 of the agreed bill of goods>",
-    "rails": "stripe"
-  },
-  "expires_at": "2026-05-25T09:00:00Z"
+  "id": "acs_9b2d4f6a8c0e4a1b9d3f5a7c9e1b3d5f",
+  "status": "ready_for_payment",
+  "currency": "dkk",
+  "line_items": [
+    {
+      "id": "mahogany",
+      "product_id": "cm9x2k7q40002efgh",
+      "variant_id": null,
+      "slug": "mahogany",
+      "sku": null,
+      "name": "Mahogany frame, classic round",
+      "quantity": 10,
+      "unit_amount": 6500,
+      "amount_total": 65000
+    }
+  ],
+  "fulfillment_address": { "name": "Northbound Buyer Agent / Atelier B2B", "address_line1": "Esplanaden 12", "postal_code": "1263", "city": "Copenhagen", "country": "DK" },
+  "fulfillment_option": null,
+  "buyer": { "email": "orders@northbound.example", "name": null, "phone": null },
+  "totals": { "subtotal": 65000, "total_shipping": 0, "total_discount": 0, "amount_total": 65000 },
+  "messages": []
 }
 ```
 
-Pricing was computed server-side by `lib/pricing.ts` — including the negotiated unit price the engine returned. Tax and shipping use the shop's existing rules; the agent doesn't have to know them.
-
-The `escrow.expectedHash` is what the agent will eventually sign to release funds. It's a deterministic hash of the line items + totals + shipping address — the agent stores it.
+Pricing was computed server-side by `lib/pricing.ts` from the catalog price, in minor units: the subtotal, the shop's flat shipping rate (waived from its free-shipping threshold, DKK 499 by default, so 0 here) and any `discount_code`. There is no separate tax line. `product_id` is the shop's internal database id; it appears in responses only and is not an input field.
 
 ```bash
-curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjA.../complete \
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/acs_9b2d4f6a8c0e4a1b9d3f5a7c9e1b3d5f/complete \
   -H "Authorization: Bearer <api-key>" \
-  -H "Idempotency-Key: ckt-7f3e9a1b-2026-05-25-001" \
   -H "Content-Type: application/json" \
-  -d '{ "payment_method_id": "pm_card_visa_corp" }'
+  -d '{ "shared_payment_token": "spt_…", "idempotency_key": "ckt-7f3e9a1b-2026-05-25-001" }'
 ```
 
-`complete` creates an `Order` row, fires the Stripe charge against the agent's card, and triggers the escrow transition.
+`complete` charges the Stripe Shared Payment Token and creates the `Order` from the session's line items. It answers `501` until the shop sets `ACP_PAYMENT_COMPLETION=1`; see [ACP](/docs/features/agentic-commerce-protocol#update-cancel-complete).
+
+<Callout type="warn">
+Steps 6 to 8, and the escrow rows of Step 9's audit table, follow an escrow row through funding and release. Today's ACP checkout creates no escrow row, and its response carries no escrow block, so those steps do not follow from this session yet.
+</Callout>
 
 ## Step 6 — Escrow funding
 

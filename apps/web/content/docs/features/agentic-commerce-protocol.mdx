@@ -28,14 +28,14 @@ A newline-delimited JSON feed of your live catalogue. ChatGPT Instant Checkout r
 curl https://example-shop.app/api/acp/feed
 ```
 
-Response (one JSON object per line):
+Response (one JSON object per line, shortened):
 
 ```jsonl
-{"id":"prod_001","title":"Sunglass Frame Mahogany","price":{"amount":"599.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","image_link":"https://example-shop.app/img/prod_001.jpg","link":"https://example-shop.app/products/sunglass-frame-mahogany"}
-{"id":"prod_002","title":"Lens Pair Polarised","price":{"amount":"299.00","currency":"DKK"},"availability":"in_stock","brand":"Atelier","image_link":"https://example-shop.app/img/prod_002.jpg","link":"https://example-shop.app/products/lens-pair-polarised"}
+{"item_id":"sunglass-frame-mahogany","title":"Sunglass Frame Mahogany","url":"https://example-shop.app/en/product/sunglass-frame-mahogany","price":"599.00 DKK","availability":"in_stock","image_url":"https://example-shop.app/img/mahogany.jpg","brand":"Atelier"}
+{"item_id":"lens-pair-polarised","title":"Lens Pair Polarised","url":"https://example-shop.app/en/product/lens-pair-polarised","price":"299.00 DKK","availability":"in_stock","image_url":"https://example-shop.app/img/polarised.jpg","brand":"Atelier"}
 ```
 
-The feed is regenerated on demand — no cron, no stale snapshots. Field shape follows the ACP product-feed spec; Cartwright maps `Product`, `Category`, and `ProductVariant` rows into the canonical fields.
+The feed is regenerated on demand — no cron, no stale snapshots. Field shape follows the ACP product-feed spec; Cartwright maps `Product`, `Category`, and `ProductVariant` rows into the canonical fields. There is one line per purchasable item: a product, or each of its variants. Every line also carries a `description`, the `seller_*` fields and the `is_eligible_search` / `is_eligible_checkout` flags, left out above. A line's `item_id` is the id a checkout line item sends back.
 
 <Callout type="tip">
 Buyer agents typically pull the feed once per session, then refresh on cache-miss. Use `Cache-Control: max-age=300` if your inventory is volatile — the route honours it.
@@ -43,59 +43,81 @@ Buyer agents typically pull the feed once per session, then refresh on cache-mis
 
 ## POST /api/acp/v1/checkout_sessions
 
-Create a checkout session. The buyer agent posts line items + shipping address; Cartwright responds with totals computed by `lib/pricing.ts` and a session id the agent uses to complete or update.
+Create a checkout session. The buyer agent posts line items + a fulfillment address; Cartwright responds with totals computed by `lib/pricing.ts` and a session id the agent uses to complete or update.
 
 ```bash
 curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions \
   -H "Authorization: Bearer <api-key>" \
-  -H "Idempotency-Key: 7f3e9a1b-4d8c-4e5a-9b2f-1a3c5d7e9f0a" \
   -H "Content-Type: application/json" \
   -d '{
     "line_items": [
-      { "product_id": "prod_001", "quantity": 2 }
+      { "item_id": "sunglass-frame-mahogany", "quantity": 2 }
     ],
-    "shipping_address": {
+    "buyer": { "email": "orders@buyer.example" },
+    "fulfillment_address": {
       "name": "Buyer Agent",
-      "line1": "Rådhuspladsen 1",
-      "city": "Copenhagen",
+      "address_line1": "Rådhuspladsen 1",
       "postal_code": "1550",
+      "city": "Copenhagen",
       "country": "DK"
     }
   }'
 ```
 
-Response:
+A line item names what it buys with `item_id`: the id the catalog feed lists for that item. `id` is accepted as an alias; `slug` (a product slug) and `sku` (a variant sku) name the item directly. `quantity` is 1 to 10 per line, with at most 20 lines. Other keys inside a line item, `product_id` among them, are dropped, so a line item that names its item any other way is refused with `422 acp_line_item_identifier_required`. The body itself is strict: a top-level key other than `line_items`, `buyer`, `fulfillment_address`, `fulfillment_option` and `discount_code` is a `422 validation_error`.
+
+Response (`201`):
 
 ```json
 {
-  "id": "cs_2NjAaP1eZvKYlo2C0",
-  "object": "checkout_session",
-  "status": "open",
-  "currency": "DKK",
+  "id": "acs_3f0c9b1e7a2d4c5b8e6f1a2b3c4d5e6f",
+  "status": "ready_for_payment",
+  "currency": "dkk",
   "line_items": [
-    { "product_id": "prod_001", "quantity": 2, "amount_subtotal_minor": 119800 }
+    {
+      "id": "sunglass-frame-mahogany",
+      "product_id": "cm9x2k7q40001abcd",
+      "variant_id": null,
+      "slug": "sunglass-frame-mahogany",
+      "sku": null,
+      "name": "Sunglass Frame Mahogany",
+      "quantity": 2,
+      "unit_amount": 59900,
+      "amount_total": 119800
+    }
   ],
-  "totals": {
-    "subtotal_minor": 119800,
-    "tax_minor": 29950,
-    "shipping_minor": 4900,
-    "total_minor": 154650
+  "fulfillment_address": {
+    "name": "Buyer Agent",
+    "address_line1": "Rådhuspladsen 1",
+    "postal_code": "1550",
+    "city": "Copenhagen",
+    "country": "DK"
   },
-  "expires_at": "2026-05-25T09:00:00Z"
+  "fulfillment_option": null,
+  "buyer": { "email": "orders@buyer.example", "name": null, "phone": null },
+  "totals": {
+    "subtotal": 119800,
+    "total_shipping": 0,
+    "total_discount": 0,
+    "amount_total": 119800
+  },
+  "messages": []
 }
 ```
 
+Amounts are integers in minor units (øre for DKK), and `currency` is lowercase ISO-4217. Shipping is the shop's flat rate, waived from its free-shipping threshold (DKK 499 by default, so 0 here); there is no separate tax line. Each line's `id` repeats the feed id it was ordered by. `product_id` is the shop's internal database id and appears in responses only. `status` is `ready_for_payment` once the fulfillment address is complete, and `not_ready_for_payment`, with an entry in `messages`, until then. A session expires 30 minutes after it is created, and `complete` also needs a buyer email.
+
 ## Update, cancel, complete
 
-Sessions are stateful (DB-backed) but the protocol is request-idempotent. Send the same `Idempotency-Key` and the same response replays.
+Sessions are stored in the database. Only `complete` replays: send the same `idempotency_key` in its body and the response of the call that completed comes back. `create` reads no idempotency key, so a retried create opens a second session.
 
 - `GET /api/acp/v1/checkout_sessions/{id}` — read current state
-- `POST /api/acp/v1/checkout_sessions/{id}/update` — change line items or shipping
+- `POST /api/acp/v1/checkout_sessions/{id}` — change `buyer`, `fulfillment_address` (a full replacement), `fulfillment_option` or `discount_code`. Line items are fixed when the session is created; to change them, create a new session
 - `POST /api/acp/v1/checkout_sessions/{id}/cancel` — abandon
 - `POST /api/acp/v1/checkout_sessions/{id}/complete` — finalise the session. Gated behind `ACP_PAYMENT_COMPLETION=1` (default off). The full flow is now **wired**: it charges via a Stripe **Shared Payment Token** (off-session PaymentIntent), builds the order from the session line items (not the cart), replays on the idempotency key, and refunds if order creation fails. It stays **inert (501)** until external Stripe SPT access + ChatGPT merchant onboarding are connected — so it can never accidentally move money before you go live
 
 ```bash
-curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/cs_2NjAaP1eZvKYlo2C0/complete \
+curl -X POST https://example-shop.app/api/acp/v1/checkout_sessions/acs_3f0c9b1e7a2d4c5b8e6f1a2b3c4d5e6f/complete \
   -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{ "shared_payment_token": "spt_…", "idempotency_key": "7f3e9a1b-…" }'
