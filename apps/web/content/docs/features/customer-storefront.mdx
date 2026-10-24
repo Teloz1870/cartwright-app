@@ -3,7 +3,7 @@ title: Customer storefront
 description: The customer-facing routes that make up the shop and the rendering model behind them.
 ---
 
-The customer storefront covers the routes a shopper actually sees. Every route lives under the language segment (`app/[locale]/…`), so with the default `urls.localePrefix: "always"` the same product answers at `/da/product/<slug>` and `/en/product/<slug>` ([URL options](/docs/configuration/urls) drops the prefix on a one-language shop). The segments are English, except the catalogue at `/produkter`. The Danish paths of older releases — `/kategori`, `/produkt`, `/kurv`, `/ordre`, `/konto`, `/kontakt`, `/anmeld`, with or without the language in front — are not routes: they answer with a permanent 301 to their English twin (`LEGACY_SLUG_MAP` in `proxy.ts`), so old bookmarks and search results still land.
+The customer storefront covers the routes a shopper actually sees. Every route lives under the language segment (`app/[locale]/…`), so with the default `urls.localePrefix: "always"` the same product answers at `/da/product/<slug>` and `/en/product/<slug>` ([URL options](/docs/configuration/urls) drops the prefix on a one-language shop). The segments are English, except the catalogue at `/produkter` and `/priser`, a pricing page that renders only on a website-mode shop with `industryTemplate: "saas"`. The Danish paths of older releases — `/kategori`, `/produkt`, `/kurv`, `/ordre`, `/konto`, `/kontakt`, `/anmeld`, with or without the language in front — are not routes: they answer with a permanent 301 to their English twin (`LEGACY_SLUG_MAP` in `proxy.ts`), so old bookmarks and search results still land.
 
 ## Route map
 
@@ -11,8 +11,8 @@ The customer storefront covers the routes a shopper actually sees. Every route l
 - **`/[locale]/produkter`** — All products. Filterable list.
 - **`/[locale]/category/[slug]`** — Category-scoped product list with hero, description, FAQ block, and optional video.
 - **`/[locale]/product/[slug]`** — Product detail. Images, copy, price, variants, add-to-cart, related products.
-- **`/[locale]/cart`** — Cart. Editable line items, shipping calculator, discount code field.
-- **`/[locale]/checkout`** — Stripe Payment Element + address form + delivery selection.
+- **`/[locale]/cart`** — Cart. Line items with quantity steppers and a remove button, then subtotal, shipping and total. Shipping is the flat rate from `brand.config.ts` `policies` (free above its threshold), shown as one line; the cart takes no discount code (`app/[locale]/cart/page.tsx`).
+- **`/[locale]/checkout`** — Delivery details (name, email, address, postcode, city) and an optional discount code, then Stripe's Payment Element (`components/CheckoutForm.tsx`). There is no delivery-method choice: every order pays the cart's flat shipping.
 - **`/[locale]/order/[id]`** — Order confirmation. Linkable for receipts.
 - **`/[locale]/account`** — Account hub. Sign in with a password (or a magic link once Resend is set up), view orders, keep a shipping address.
 - **`/[locale]/info/[slug]`** — CMS-style static pages rendered from the admin Sider CRUD.

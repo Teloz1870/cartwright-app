@@ -193,3 +193,54 @@ describe('origin claims stay honest', () => {
     for (const o of ORIGINS) expect(routeExists(o.docs), o.id).toBe(true);
   });
 });
+
+/**
+ * The WooCommerce status page and the storefront route map, against the engine
+ * (falsifier on app #410, measured on engine origin/main 1f861db2). Each pin is
+ * a sentence that was false on that page, so it cannot come back.
+ */
+describe('the WooCommerce status page matches the engine', () => {
+  const woo = read('content/docs/migrate/woocommerce.mdx');
+  const lineWith = (src: string, needle: string) => src.split('\n').find((l) => l.includes(needle)) ?? '';
+
+  it('dates trailingSlash routing to v0.60.0 (engine CHANGELOG v0.60.0), not v0.61.0', () => {
+    const bullet = lineWith(woo, '`trailingSlash: true`');
+    expect(bullet).toMatch(/v0\.60\.0/);
+    expect(bullet).not.toMatch(/v0\.61\.0/);
+  });
+
+  it('names the Sheets sync for SKUs and the Drive folder import for media instead of saying nothing carries them', () => {
+    // plugins/google-workspace/lib/sheets-sync.ts writes `sku`; drive-import.ts copies up to 50 images a run.
+    expect(woo).not.toMatch(/do not move by any engine path|moves one file at a time/);
+    expect(woo).toMatch(/`sheetsSync`[^\n]*`sku`/);
+    expect(woo).toMatch(/`drive\.import_folder`[^\n]*50/);
+  });
+
+  it('says what step 9 shows under the default localePrefix: the 301, then next-intl\'s 307, then the 200', () => {
+    // An old WordPress path has no locale, so the merchant redirect's destination has none
+    // (lib/redirects/match.ts) and next-intl's middleware adds it with a 307 (proxy.ts).
+    const step = lineWith(woo, '**Check from outside**');
+    expect(step).toMatch(/`301`[^\n]*`307`[^\n]*`200`/);
+    expect(step).toMatch(/localePrefix: "never"/);
+  });
+
+  it('does not say the admin redirect preview lists every row (it shows counts and errors)', () => {
+    // app/admin/redirects/RedirectsManager.tsx renders the summary and ErrorLines only;
+    // the per-row plan is the redirects.import tool's dryRun output.
+    expect(woo).not.toMatch(/dry run shows every row/);
+    expect(lineWith(woo, '**Admin-managed redirects**')).toMatch(/does not list the valid rows[^\n]*`dryRun: true` returns[^\n]*every row/);
+  });
+
+  it('describes the cart and checkout the storefront actually renders', () => {
+    // app/[locale]/cart/page.tsx: line items + flat shipping, no discount field or calculator;
+    // components/CheckoutForm.tsx: delivery details + discount code, no delivery-method choice.
+    const map = read('content/docs/features/customer-storefront.mdx');
+    const cart = lineWith(map, '**`/[locale]/cart`**');
+    const checkout = lineWith(map, '**`/[locale]/checkout`**');
+    expect(cart).not.toMatch(/shipping calculator|discount[- ]code (field|input)/i);
+    expect(cart).toMatch(/takes no discount code/);
+    expect(checkout).not.toMatch(/delivery selection/i);
+    expect(checkout).toMatch(/optional discount code/);
+    expect(checkout).toMatch(/no delivery-method choice/);
+  });
+});
