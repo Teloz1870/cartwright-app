@@ -11,7 +11,7 @@ On a **brand-new shop** there's no `RESEND_API_KEY` yet, so the login page hides
 
 ## Magic link flow
 
-1. Customer enters email on `/[locale]/account/login` (for example `/da/account/login`).
+1. Customer enters email on `/[locale]/account/login` (for example `/en/account/login`).
 2. Server generates a single-use token, persists it (typically in a `VerificationToken` table), and sends a link via Resend.
 3. Customer clicks the link → token is consumed → session is established (JWT strategy).
 4. Anonymous cart is merged into the customer record on first authenticated request.

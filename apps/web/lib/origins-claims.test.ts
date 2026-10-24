@@ -213,7 +213,51 @@ describe('the WooCommerce status page matches the engine', () => {
     // plugins/google-workspace/lib/sheets-sync.ts writes `sku`; drive-import.ts copies up to 50 images a run.
     expect(woo).not.toMatch(/do not move by any engine path|moves one file at a time/);
     expect(woo).toMatch(/`sheetsSync`[^\n]*`sku`/);
-    expect(woo).toMatch(/`drive\.import_folder`[^\n]*50/);
+    expect(woo).toMatch(/`drive\.import_folder`[^\n]*\b50\b/);
+  });
+
+  it('caps a Drive folder at the 50 files one run reads, the same 50 every time (falsifier R4, MUST-FIX)', () => {
+    // drive-import.ts lists the folder once with pageSize MAX_FILES_PER_IMPORT = 50 and no pageToken;
+    // google/drive.ts orders by "modifiedTime desc,name". A file already in MediaAsset returns
+    // { ok: true, skipped: false } and counts as imported, so a re-run looks like progress.
+    const images = lineWith(woo, '**Images are stored as the URLs you give**');
+    expect(images).not.toMatch(/up to 50 such images per run/);
+    expect(images).toMatch(/Google Drive folders of at most 50 files each, images only/);
+    expect(images).toMatch(/first 50 files — the most recently modified first, with no next page, so the same 50 on every run/);
+    expect(images).toMatch(/counts a file it copied on an earlier run as imported again/);
+    expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/Drive folders of at most 50 images each with `drive\.import_folder`, one folder per run/);
+  });
+
+  it('caps a product CSV import at the 1 MB a Server Action takes (falsifier R4, MUST-FIX)', () => {
+    // app/admin/produkter/import/actions.ts importProductsAction(csvText) is a Server Action; the
+    // engine's next.config.ts sets no experimental.serverActions.bodySizeLimit, and Next 16.4.2
+    // defaults it to 1 MB (serverActions.md, "bodySizeLimit"). Measured: 1.2 MB → "Body exceeded 1 MB limit."
+    const cap = lineWith(woo, '**Under 1 MB per file.**');
+    expect(cap).toMatch(/Server Action[^\n]*caps a Server Action's request at 1 MB unless `experimental\.serverActions\.bodySizeLimit`[^\n]*the engine's does not/);
+    expect(cap).toMatch(/fails as a whole[^\n]*nothing saved/);
+    expect(cap).toMatch(/split the file into parts well under 1 MB/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/`\/admin\/produkter\/import`, in files under 1 MB/);
+  });
+
+  it('pins the product CSV and redirect import limits as the engine sets them', () => {
+    // lib/products-csv.ts: upsert per row, no dry run, categorySlug looked up in existing categories.
+    // lib/redirects/import.ts REDIRECT_IMPORT_LIMITS = { maxRows: 2000, maxBytes: 256 * 1024 };
+    // lib/redirects/load.ts TTL_MS = 60_000.
+    expect(lineWith(woo, '**One row is one simple product**')).toMatch(/There is no dry run\./);
+    expect(lineWith(woo, '**Row rules:**')).toMatch(/`categorySlug` must name a category that already exists — the import never creates one/);
+    expect(lineWith(woo, '**The rules**')).toMatch(/at most 2,000 rows and 256 KB per file; status `301` \(the default\) or `302`/);
+    expect(lineWith(woo, '**No Redis needed.**')).toMatch(/cached for 60 seconds per server instance/);
+    expect(woo).toMatch(/^Each answers with a `308` \(not the table's `301`\)/m);
+  });
+
+  it('tells the owner a redirect source is matched undecoded, and that a slug with æ/ø/å cannot be kept', () => {
+    // lib/redirects/match.ts looks map[path] up as the request sends it; import.ts and store.ts
+    // only trim and strip the trailing slash. products-csv.ts: slug must match /^[a-z0-9-]+$/.
+    const rules = lineWith(woo, '**The rules**');
+    expect(rules).toMatch(/character for character, without decoding it[^\n]*percent-encoded/);
+    expect(rules).toMatch(/`\/r%c3%b8d-stol` for an `ø`[^\n]*the case of those letters counts[^\n]*add a second row for `\/r%C3%B8d-stol`; a row for `\/rød-stol` itself never matches/);
+    expect(woo).toMatch(/a Cartwright slug holds only `a–z`, `0–9` and `-`, so a slug with `æ`, `ø` or `å` gets a new one and its old address a row/);
   });
 
   it('says what step 9 shows under the default localePrefix: the 301, then next-intl\'s 307, then the 200', () => {
@@ -234,8 +278,16 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(bullet).toMatch(/dry run counts it valid/);
     expect(bullet).toMatch(/dot anywhere[^\n]*`\/wp-content\/uploads\/`[^\n]*`matcher`/);
     expect(bullet).toMatch(/`\/hero`[^\n]*`\/heroes\/`/);
-    expect(bullet).toMatch(/`\/api` or `\/admin`[^\n]*`\/apiary\/`[^\n]*no slash after it/);
+    expect(bullet).toMatch(/begins with `\/api` — `\/apiary\/` as well, since that check has no slash after it/);
     expect(bullet).toMatch(/`\/oauth`/);
+    // Falsifier R4 (MUST-FIX): /administration skips the lookup only on its first request. The
+    // admin branch takes /admin and /admin/… alone (proxy.ts), so under "always" next-intl's 307
+    // adds /en and the row answers; under "never" next-intl rewrites, and it never does.
+    expect(bullet).not.toMatch(/`\/apiary\/` and `\/administration\/`/);
+    expect(bullet).toMatch(/localePrefix: "never"[^\n]*any other path that begins with `\/admin`, such as `\/administration\/`/);
+    expect(bullet).toMatch(/With the default `"always"` all three reach your row/);
+    expect(bullet).toMatch(/`\/administration\/` is skipped only on its first request: next-intl's `307` adds the language, and your row answers the request after it/);
+    expect(lineWith(woo, '**Check from outside**')).toMatch(/begins with `\/admin` without being `\/admin` or below it, such as `\/administration\/`, has the two the other way round: the `307`, then your `301`/);
     expect(bullet).toMatch(/localePrefix: "never"[^\n]*`\/om-os`[^\n]*`next\.config\.ts`[^\n]*`\/info\/om-os`/);
     const instead = lineWith(woo, '**What to do with those instead.**');
     expect(instead).toMatch(/`redirects\(\)`[^\n]*`next\.config\.ts`[^\n]*before the proxy[^\n]*`\/favicon\.ico`/);
@@ -265,9 +317,40 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(step).not.toMatch(/`\/product\/<slug>\/`, answers with the `307` alone/);
     expect(step).toMatch(/`\/product\/<slug>\/` answers the `308`, then the `307`, then `200`/);
     expect(step).toMatch(/without the `\/` answers the `307` alone/);
+    // Falsifier R4 (NIT): that 308 is Next's own trailing-slash redirect, so it is there only with
+    // trailingSlash off; with it on and "always", both forms answer next-intl's 307 alone.
+    expect(step).toMatch(/with `trailingSlash` off, the old shop's `\/product\/<slug>\/` answers the `308`[^\n]*; with it on, both answer the `307` alone/);
     // Under "never" the route still takes the 308 first when it ends in `/` — but only with
     // trailingSlash off: with it on, next.config.ts sets skipTrailingSlashRedirect (falsifier R3).
     expect(step).toMatch(/localePrefix: "never"[^\n]*with `trailingSlash` off, an address ending in `\/` has the `308` in front/);
+    expect(step).toMatch(/`localePrefix: "never"`, a redirected address is `301` then `200`/);
+  });
+
+  it('ties the second 308 after a next.config.ts query rule to localePrefix "never" (falsifier R4, NIT)', () => {
+    // Under "always" next-intl's 307 adds the slash itself (proxy.ts URL2 comment); only under
+    // "never" does the proxy's trailingSlashRedirect answer a slashless destination with a 308.
+    const para = lineWith(woo, 'Each answers with a `308`');
+    expect(para).toMatch(/under `localePrefix: "never"` a destination without it takes a second `308` to the slash form; under the default `"always"` next-intl's `307` adds the slash either way/);
+    expect(para).not.toMatch(/or the proxy adds a second `308`/);
+  });
+
+  it('keeps the legacy Danish segments to the configured languages, and the scaffold examples on /en/', () => {
+    // proxy.ts LEGACY_SLUG_RE is built from LOCALE_ALTERNATION (brand.locales), so /da/produkt/x on
+    // an en-only scaffold is not a legacy match (measured: 307 /en/da/produkt/x).
+    expect(lineWith(woo, '**Seven Danish segments answer first.**')).toMatch(/with or without a configured language in front/);
+    expect(read('content/docs/features/auth-magiclink.mdx')).toContain('(for example `/en/account/login`)');
+    expect(read('content/docs/recipes/new-industry-template.mdx')).toContain('`/en/category/sunglasses` (your locale and slug)');
+  });
+
+  it('pins the MobilePay box to Stripe\'s published values and categories.list to its own scope', () => {
+    // docs.stripe.com/payments/mobilepay: customers in DK/FI, DKK/EUR/NOK/SEK, 35 DKK a month for
+    // a Danish business. lib/tools/categories.ts: categories.list scope "categories:read".
+    const live = read('content/docs/deployment/go-live.mdx');
+    expect(lineWith(live, '**Who sees it:**')).toMatch(/customers in Denmark and Finland, on an order charged in DKK, EUR, NOK or SEK\./);
+    expect(lineWith(live, '**What it costs:**')).toMatch(/a fixed 35 DKK a month for a business registered in Denmark\./);
+    const mcp = read('content/docs/api/mcp-tools.mdx');
+    expect(mcp).toContain('| `categories.list` | `categories:read` |');
+    expect(mcp).toContain('`categories.list` requires `categories:read` (`lib/tools/categories.ts`)');
   });
 
   it('scopes the query-string limit to the redirect table and gives the owner the next.config.ts `has` query rule', () => {
