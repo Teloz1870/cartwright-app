@@ -1,6 +1,6 @@
 {
   "$schema": "cartwright-marketplace-manifest-v3",
-  "version": "0.59.0",
+  "version": "0.63.0",
   "designs": [
     {
       "slug": "aurora-site",
@@ -1785,9 +1785,9 @@
     }
   ],
   "engineFacts": {
-    "toolCount": 89,
+    "toolCount": 94,
     "scopeCount": 21,
-    "adminToolCount": 40,
-    "confirmGatedCount": 25
+    "adminToolCount": 45,
+    "confirmGatedCount": 28
   }
 }

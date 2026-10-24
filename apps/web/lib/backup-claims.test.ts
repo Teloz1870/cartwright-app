@@ -5,7 +5,7 @@ import { join } from 'node:path';
 /**
  * APP-DOCS-BACKUP-SYNC: the backup page follows the engine's runbook.
  *
- * Engine #659 (BACKUP-CRON-500, merged as 3993bf5e, after v0.62.0) gives the
+ * Engine #659 (BACKUP-CRON-500, merged as 3993bf5e, shipped in v0.63.0) gives the
  * nightly database backup its own Blob token. resolveBackupBlobToken tries
  * BACKUP_BLOB_READ_WRITE_TOKEN, then BLOB_READ_WRITE_TOKEN
  * (lib/backup/storage.ts:23-24, :61-69). The upload is `access: "private"`

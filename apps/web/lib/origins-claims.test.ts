@@ -216,7 +216,7 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(woo).toMatch(/`drive\.import_folder`[^\n]*\b50\b/);
   });
 
-  it('pages a Drive folder up to 20,000 files from the release after v0.62.0, 50 downloads a run (engine #666, DRIVE-IMPORT-PAGINATION)', () => {
+  it('pages a Drive folder up to 20,000 files from v0.63.0, 50 downloads a run (engine #666, DRIVE-IMPORT-PAGINATION)', () => {
     // plugins/google-workspace/lib/drive-import.ts at engine f0792092: LIST_PAGE_SIZE = 1000,
     // MAX_LIST_PAGES = 20, MAX_FILES_WALKED = 20,000 (:28-31); MAX_FILES_PER_IMPORT = 50 counts
     // downloads, imported or failed (:21-23, :122-123). findImportedDriveFileIds skips a file whose
@@ -227,7 +227,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // adds `more: z.boolean()`; admin/drive/actions.ts adds &more=1 / &toolarge=1 to the redirect.
     const images = lineWith(woo, '**Images are stored as the URLs you give**');
     expect(images).toMatch(/`\/admin\/drive` or the `drive\.import_folder` tool copies each new JPEG, PNG or WebP up to 5 MB in one folder into the media library \(`\/admin\/media`\) on its own Blob URL and passes over every other file/);
-    expect(images).toMatch(/From the release after v0\.62\.0 a run walks the folder newest first by modified time, through Drive's list in pages of up to 1,000 files, and downloads at most 50 files, imported or failed\./);
+    expect(images).toMatch(/From v0\.63\.0 a run walks the folder newest first by modified time, through Drive's list in pages of up to 1,000 files, and downloads at most 50 files, imported or failed\./);
     expect(images).toMatch(/A file an earlier run imported counts as skipped and is not downloaded again, so the next run continues where the last one stopped: run it again until it answers `more: false`/);
     // MAX_LIST_PAGES caps pages, not files: Drive's pageSize is a maximum, so 20,000 is a ceiling.
     expect(images).toMatch(/walks at most 20 pages, so it reaches at most the folder's 20,000 most recently modified files\./);
@@ -241,7 +241,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // lib/tools/images.ts: MAX_IMAGE_BYTES = 5_000_000, SNIFF_MIMES jpeg/png/webp (+ mp4 at 10 MB).
     expect(images).toMatch(/`images\.import_from_url` tool \(`lib\/tools\/images\.ts`, over `POST \/api\/v1\/tools\/images\.import_from_url` — \[MCP tools\]\(\/docs\/api\/mcp-tools\); JPEG, PNG or WebP up to 5 MB, needs `BLOB_READ_WRITE_TOKEN`\)/);
     expect(images).toMatch(/pass each folder's ID as `folderId` to `drive\.import_folder`/);
-    expect(lineWith(woo, '**Copy the product images**')).toMatch(/from Google Drive with `drive\.import_folder`, one folder per run: from the release after v0\.62\.0 run it again until it answers `more: false`, with at most 20,000 files in a folder; on v0\.62\.0 in folders of at most 50 images each/);
+    expect(lineWith(woo, '**Copy the product images**')).toMatch(/from Google Drive with `drive\.import_folder`, one folder per run: from v0\.63\.0 run it again until it answers `more: false`, with at most 20,000 files in a folder; on v0\.62\.0 in folders of at most 50 images each/);
   });
 
   it('keeps v0.62.0\'s Drive import to the 50 files one run reads (falsifier R4, MUST-FIX), and drops the 50-file story as the whole truth', () => {
@@ -374,7 +374,7 @@ describe('the WooCommerce status page matches the engine', () => {
     const ok = lineWith(woo, '**A `200` on a page of yours**');
     expect(ok).not.toMatch(/or because it already is a route\. Check/);
     expect(ok).not.toMatch(/route — except at a product or category address/);
-    expect(ok).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route\. From the release after v0\.62\.0 that holds at a product or category address too: a product or category that does not exist answers `404` \(below\)\./);
+    expect(ok).toMatch(/\(not the login page\): the address is handled — by your row, by one of the shop's own redirects \(above\), or because it already is a route\. From v0\.63\.0 that holds at a product or category address too: a product or category that does not exist answers `404` \(below\)\./);
     expect(ok).toMatch(/On v0\.62\.0 a product or category address answers `200` even when nothing is there\. Its page streams \(its `loading\.tsx`, in `app\/\[locale\]\/product\/\[slug\]\/` and `app\/\[locale\]\/category\/\[slug\]\/`\), so its `200` is sent before the page has looked the slug up: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, or a row pointing at a mistyped product or category ends on a `200` page that says nothing was found\./);
     expect(ok).toMatch(/`curl -sIL` prints only the headers, so on v0\.62\.0 read the page for those addresses: `curl -sL <url> \| grep -o '<title>\[\^<\]\*'` prints `<title>Product not found` \(`Produkt ikke fundet` on a Danish page\) or `<title>Category not found`, and the page carries `<meta name="robots" content="noindex"\/>`\. Check that it is the page you meant\./);
     // A 404 is not only "no row": a row may point at no page, and some rows never fire — the
@@ -388,7 +388,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // From #671 a missing product or category, and a soft-deleted product (`deletedAt: null` in the
     // lookup), ends on a 404; on v0.62.0 it is the 200 above.
     expect(notFound).not.toMatch(/A missing product or category does not end here/);
-    expect(notFound).toMatch(/no page at the last address\. From the release after v0\.62\.0 that includes a product or category that does not exist, and a deleted product: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, and a row pointing at a mistyped product or category end here, where v0\.62\.0 answers `200` \(above\)\./);
+    expect(notFound).toMatch(/no page at the last address\. From v0\.63\.0 that includes a product or category that does not exist, and a deleted product: the old shop's `\/product\/<slug>\/` whose slug was not kept, the same address under `\/produkt\/`, and a row pointing at a mistyped product or category end here, where v0\.62\.0 answers `200` \(above\)\./);
     expect(notFound).toMatch(/The address has no row and no page, its row points at a page that does not exist \(a row to a missing `\/info\/<slug>` ends here\), or no row for it fires: a path in one of the seven Danish segments \(a row for its English path does, one hop later\), or one of the paths that never reach your redirects \(above\)/);
     expect(notFound).not.toMatch(/no row can answer it/);
     expect(notFound).toMatch(/a path with a dot among them, which the proxy never sees, and under `"never"` a path such as `\/administration\/`/);
@@ -524,8 +524,11 @@ describe('the WooCommerce status page matches the engine', () => {
     // AIStylistPanel.tsx:496 renders StripePaymentPanel for an order the assistant places (createOrder →
     // createPaymentIntent, the same automatic_payment_methods as the checkout).
     expect(live).toMatch(/\(so does the AI assistant's panel, `components\/AIStylistPanel\.tsx`, for an order it places with `aiStylist` on and an AI provider configured\)/);
-    // Falsifier R3 on app#412 (NIT): app/api/commerce/agent-checkout/route.ts:57 creates its
-    // PaymentIntent with payment_method_types: ["card"], not automatic_payment_methods.
-    expect(live).toMatch(/; the agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) is card-only\. No code change and no Cartwright flag is needed\./);
+    // Falsifier R3 on app#412 (NIT): up to v0.62.0 app/api/commerce/agent-checkout/route.ts:57
+    // created its PaymentIntent with payment_method_types: ["card"], not automatic_payment_methods.
+    // Engine v0.63.0 (CW-2026-010, B84) retires the route: every verb answers 410 Gone before it
+    // reads the product or contacts Stripe, so "is card-only" may not come back in the present tense.
+    expect(live).toMatch(/; the old agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) was card-only, and from v0\.63\.0 it takes no payment at all: it answers `410 Gone` \(CW-2026-010\)\. No code change and no Cartwright flag is needed\./);
+    expect(live).not.toMatch(/agent-checkout\/route\.ts`\) is card-only/);
   });
 });

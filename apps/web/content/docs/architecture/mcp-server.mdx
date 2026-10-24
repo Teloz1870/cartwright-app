@@ -27,7 +27,7 @@ inputSchema: { args: z.any().optional() }
 The real input schemas stay in the registry. The MCP handler unwraps `input.args`, calls `invokeTool(tool.name, args, ctx, actor.scopes)`, and returns either formatted JSON text or an MCP error response. That keeps MCP and REST behavior on the same validation and scope path.
 
 <Callout type="info">
-`GET /api/mcp` without an Authorization header is a public introspection surface by design. It returns a human-readable JSON payload with `howToConnect`, `publicCatalog`, `manifest`, and changelog links instead of a bare 401.
+`GET /api/mcp` without an Authorization header is a public introspection surface by design. It returns a human-readable JSON payload with `howToConnect`, `publicCatalog`, `serverCard` (`/.well-known/mcp.json`, the MCP server card) and changelog links instead of a bare 401. Up to v0.62.0 it named a `manifest` field instead, pointing at `/manifest`, which answers 404; v0.63.0 replaced it.
 </Callout>
 
 Authenticated `GET`, `POST`, and `DELETE` all flow through the same `handle()` function. The method difference is transport-level; the security boundary is still the bearer key plus per-tool scope enforcement.
