@@ -35,6 +35,40 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.64.0',
+    date: 'October 2026',
+    title: 'Admin saves that keep what the screen does not show, a password reset that finds capitals, and a WooCommerce import you can plan before anything is written',
+    description: (
+      <>
+        No security advisory in this release, and nothing to run: no dependency, schema or environment variable
+        changes. Six admin saves no longer erase a field — a translation, a page&apos;s vibe HTML or hero image, a
+        service&apos;s translations — but a value an earlier save erased is not brought back; restore it from a backup
+        if you need it. <code>/api/commerce/agent-checkout</code> is removed, as v0.63.0 announced: it now answers{' '}
+        <code>404</code>. Agents use the ACP checkout (<code>/api/acp/v1/checkout_sessions</code>) on a shop that has
+        turned on ACP and its payment step (<code>ACP_PAYMENT_COMPLETION=1</code>). See{' '}
+        <Link href="/docs/migrate/woocommerce" className="text-cw-terracotta hover:underline">
+          Moving from WooCommerce
+        </Link>{' '}
+        and{' '}
+        <Link href="/docs/configuration/urls" className="text-cw-terracotta hover:underline">
+          URL options
+        </Link>
+        .
+      </>
+    ),
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Saving a category, product or page from its edit form no longer erases its translations (CAT-FORM-TRANSLATIONS-WIPE) — the forms at /admin/kategorier/<id>, /admin/produkter/<id> and /admin/sider/<id> opened their English fields empty, and a save wrote those empty fields over the whole translations value: the English text was blanked and every other language deleted — on a page, also the English Vibe Sandbox HTML. The forms now open with the stored English text, and a save changes only the translation fields the form shows. A Vibe Sandbox save merges too; its new HTML replaces the older vibe HTML of every language, as mockup.set does. Translations an earlier save already erased are not brought back.',
+      'Four admin saves no longer erase a field their screen has no input for (ADMIN-SAVE-KEEPS-UNSHOWN-FIELDS) — saving a page in /admin/sider no longer empties its vibeHtml, so saving the homepage there no longer removes its mockup; a Vibe Sandbox save no longer empties the page’s hero image; saving a service in /admin/services no longer empties the translations made for it in /admin/translations; and /admin/translations changes only the fields it shows, where it used to drop a category’s English long description and a page’s English Vibe Sandbox HTML. To remove a page’s vibe HTML, empty its Danish and English HTML in the Vibe Sandbox and save, then write the page’s body again in /admin/sider, since the Sandbox sets it to its “Vibe Page Layout” placeholder — or, for the homepage, run mockup.clear, which keeps the body.',
+      'A password reset finds an account saved with capitals (REG-EMAIL-CASE-b) — v0.63.0 made sign-up and login treat Ada@Example.com and ada@example.com as one account, but a reset still looked the address up lowercased only, so for an account saved with a capital — every account signed up before v0.63.0 with a capital in it — a reset requested in lowercase sent nothing. It now finds the account by the rule login uses, and mails the link to the address the account holds. Where several accounts differ only in case and the rule cannot pick one, nothing is guessed and nothing is sent. A magic link still looks the address up lowercased only; that is the next fix.',
+      'The proxy reads whole path segments (PROXY-SEGMENT-BOUNDARIES) — a path that only began like one of the proxy’s own names was handled as that name. A migrated /heron-hegn/x/, /heroes/ or /hero-sale/ never reached the proxy and answered 404; now its stored permalink, its redirect row and the language redirect apply, and only the /hero folder itself is skipped. /en/administration, /da/admin-old/, /en/accounting and /x/account/y are ordinary storefront paths instead of the sign-in page, /apiary is routed by language like any page, and a redirect row on /apiary or /administration answers the first request. /admin, /account and /api, and everything below them, are gated and routed exactly as before.',
+      'See what a WooCommerce import would do before anything is written (W21-live-7-a) — the new migration.woo_plan tool, behind the runtime flag migrationDashboard with scope settings:read, reads the migration project’s source shop over its public Store API and wp/v2 (GET requests only) and plans its categories and products against this site’s catalogue: the counts per action, and the first 50 of the rows it would hold back as a conflict, an orphan or blocked. /admin/migration shows the last plan in a “WooCommerce import plan (dry run)” card. Prices are never converted: until you pass sourcePricesIncludeVat, every product reads as blocked. A WordPress installed in a subdirectory is not supported yet, a shop that redirects is not followed, and nothing imports the plan yet.',
+      'The retired agent checkout is removed (B84) — v0.63.0 made /api/commerce/agent-checkout answer 410 Gone, because it took a card payment without creating an order, and announced its removal. The file is deleted, so the path gets the /api catch-all’s answer, as any API path the shop does not have: 404 problem+json with code: "endpoint_not_found". An agent that still calls it should use the ACP checkout on a shop that has turned ACP and its payment step on (ACP_PAYMENT_COMPLETION=1), or send the buyer to the product’s url; without the payment step, completing a session answers 501.',
+      'An anonymous /api/mcp tool call may carry at most 1,000 array elements and object members in its arguments (TREND30-a) — a larger call gets an isError: true result, and the tool never runs. No public tool takes an array, so no real anonymous call comes near the limit; calls with an API key are unchanged. This is hardening only: it closes no known hole.',
+      'A design that frames the product page — halo, crema — names the product in the page’s language (ARG2) — its breadcrumb printed the base-language name above a translated page; the pack now gets the name and description the page itself renders. The shop’s default language renders exactly as before, and so does every design without a product-page frame.',
+    ],
+  },
+  {
     engine: 'v0.63.0',
     date: 'October 2026',
     title: 'Two security fixes, a migration board for WordPress moves, and stored permalinks that answer at their own address',

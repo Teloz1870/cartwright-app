@@ -105,10 +105,10 @@ describe('the permalink pages say a stored permalink is served from v0.63.0', ()
  * - IndexNow: every product call site (app/admin/actions.ts, lib/tools/products.ts) hands
  *   scheduleIndexNowPing a slug only, and lib/indexnow.ts builds the path with
  *   productHref({ slug, permalink: null }), so the ping is always the pattern address — true on
- *   v0.63.0, and docs/urls.md says so from engine #692 (ARG2). It may not sit in the list of links
+ *   v0.63.0, and docs/urls.md says so from engine #692 (ARG2, v0.64.0). It may not sit in the list of links
  *   that follow a stored permalink.
- * - The matcher's `hero`: on v0.63.0 a prefix (`/heron-hegn/` too), from engine #693
- *   (PROXY-SEGMENT-BOUNDARIES, dfd22461) the segment `hero(?![^/])` in proxy.ts and
+ * - The matcher's `hero`: on v0.63.0 a prefix (`/heron-hegn/` too), from engine #693 in v0.64.0
+ *   (PROXY-SEGMENT-BOUNDARIES, 07278b9a) the segment `hero(?![^/])` in proxy.ts and
  *   lib/urls.ts:PROXY_SKIPPED_PREFIXES. Both releases are named.
  */
 describe('the URL options page names the IndexNow ping and the /hero skip as the engine has them', () => {
@@ -120,8 +120,9 @@ describe('the URL options page names the IndexNow ping and the /hero skip as the
     expect(urls).toMatch(/IndexNow goes through the helper as well, but its call sites \(`app\/admin\/actions\.ts`, `lib\/tools\/products\.ts`\) hand it only the slug, so it always pings the pattern address `\/product\/<slug>`, never a stored permalink\./);
   });
 
-  it('names the matcher\'s /hero skip for v0.63.0 and for the release after it', () => {
-    expect(urls).toMatch(/on v0\.63\.0 any path that begins with `\/hero`, `\/heron-hegn\/` too; from the release after v0\.63\.0 only the `\/hero` segment, such as `\/hero\/x\/`/);
+  it('names the matcher\'s /hero skip for v0.63.0 and for v0.64.0', () => {
+    expect(urls).toMatch(/on v0\.63\.0 any path that begins with `\/hero`, `\/heron-hegn\/` too; from v0\.64\.0 only the `\/hero` segment, such as `\/hero\/x\/`/);
+    expect(urls).not.toMatch(/release after v0\.63\.0/);
     expect(urls).not.toMatch(/\(`\/hero…`\)/);
   });
 });
