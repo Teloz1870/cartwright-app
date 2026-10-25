@@ -20,6 +20,7 @@ import pc from "picocolors";
 // bump-template-ref workflow seds on each template release.
 import { REF_ALIASES } from "./refs.js";
 import { proxyHint } from "./proxy-hint.js";
+import { describeFontInstall, installFontFolders } from "./design-fonts.js";
 
 const TEMPLATE_REPO = "github:Teloz1870/cartwright-template";
 
@@ -163,6 +164,19 @@ export async function runDesignInstall(args: string[]): Promise<void> {
     process.exit(1);
   }
   s.stop(pc.green(`Downloaded designs/${slug}/`));
+
+  // A pack may import a self-hosted font from @/app/fonts/<family> (FONT1);
+  // fetch those folders from the same ref so the pack compiles here too.
+  const fonts = await installFontFolders({
+    cwd,
+    packDir: dest,
+    slug,
+    fetchFolder: (family, dir) =>
+      downloadTemplate(`${TEMPLATE_REPO}/app/fonts/${family}#${ref}`, { dir }).then(() => undefined),
+  });
+  const fontLines = describeFontInstall(fonts, ref);
+  if (fontLines.ok.length) note(fontLines.ok.join("\n"), pc.green("Fonts"));
+  if (fontLines.warn.length) note(fontLines.warn.join("\n\n"), pc.yellow("Fonts — check"));
 
   const designSrc = readFileSync(fetchedIndex, "utf8");
   const exportName = extractExportName(designSrc);

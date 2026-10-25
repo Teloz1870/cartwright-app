@@ -90,6 +90,13 @@ Pruned designs can be added back to a light project at any time:
 npx cartwright design install <slug>
 ```
 
+A design that imports a self-hosted font from `@/app/fonts/<family>/font` (brutalist,
+editorial-ink and meridian do) also gets each of those `app/fonts/<family>/` folders,
+fetched from the same template ref. A font folder you already have is never
+overwritten; the output says which folders were added, which were already identical
+and which were kept because they differ (or warns when your own folder lacks the
+module the design imports).
+
 ## Health check: `cartwright doctor`
 
 Run a read-only diagnosis from any Cartwright project root:
