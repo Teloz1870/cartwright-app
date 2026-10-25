@@ -199,7 +199,9 @@ describe('the pages date the next release\'s AI model, magic-link and vibe chang
     const magic = lineWith(read('content/docs/features/auth-magiclink.mdx'), 'Auth.js lowercases the address');
     expect(magic).toMatch(/On v0\.64\.0 a link therefore signs in to the account spelled exactly that way, so for an account the shop holds as `Ada@Example\.com` the first link makes a second, password-less account `ada@example\.com`/);
     expect(magic).toMatch(/From the release after v0\.64\.0 a link picks the account the way a password reset does: the one spelled exactly as given \(lowercased\), else the one a password login with that address signs in to, else the only one there is\./);
+    expect(magic).toMatch(/The link names that account's stored spelling and is mailed to the address the account holds, so it signs in to that account and creates none \(`lib\/auth\/magic-link-account\.ts`\)\./);
     expect(magic).toMatch(/Where several accounts differ only in case and the rule cannot pick one, no link is sent, and the page still says to check the inbox\./);
+    expect(magic).toMatch(/An address with no account gets its link as before\./);
     expect(magic).toMatch(/A customer whose earlier link already made the lowercased account keeps signing in there: nothing joins the two\./);
   });
 
