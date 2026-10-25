@@ -15,7 +15,7 @@
  * overwritten (not even with --force: it may hold the owner's own edits); it is
  * reported as identical or as kept.
  */
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { cpSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, posix, relative } from "node:path";
 
@@ -24,6 +24,43 @@ const SCANNED_EXT_RE = /\.(?:[cm]?[jt]sx?|css)$/;
 // `from "x"`, `import "x"`, `import("x")`, `require("x")`, CSS `@import "x"` / `@import url("x")`.
 const SPECIFIER_RE =
   /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*|@import\s+(?:url\(\s*)?)(["'])([^"'\n]+)\1/g;
+// CSS `@import url(x)` with no quotes.
+const BARE_URL_IMPORT_RE = /@import\s+url\(\s*([^"'()\s]+)\s*\)/g;
+
+/**
+ * Blank out comments so a specifier quoted in a doc comment, or a commented-out
+ * import, is not taken for a live one. String and template literals are kept
+ * (the specifiers live in them) and skipped as a unit, so `//` inside a URL
+ * string is not a comment. CSS has only block comments.
+ */
+export function stripComments(src: string, css: boolean): string {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (c === '"' || c === "'" || (c === "`" && !css)) {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c && !(c !== "`" && src[j] === "\n")) j += src[j] === "\\" ? 2 : 1;
+      out += src.slice(i, j + 1);
+      i = j + 1;
+    } else if (c === "/" && next === "*") {
+      const end = src.indexOf("*/", i + 2);
+      const stop = end === -1 ? src.length : end + 2;
+      out += src.slice(i, stop).replace(/[^\n]/g, " ");
+      i = stop;
+    } else if (c === "/" && next === "/" && !css) {
+      const end = src.indexOf("\n", i);
+      const stop = end === -1 ? src.length : end;
+      out += " ".repeat(stop - i);
+      i = stop;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
+}
 
 export type FontImport = { family: string; subpath: string };
 export type FontScan = { fonts: FontImport[]; refused: string[] };
@@ -41,10 +78,20 @@ export function classifyFontSpecifier(
   if (spec.startsWith("@/app/fonts/") || spec === "@/app/fonts") {
     target = spec.slice(2);
   } else if (spec.startsWith("./") || spec.startsWith("../")) {
-    // Relative: resolve against the file's place in the project.
-    const resolved = posix.normalize(posix.join("designs", slug, posix.dirname(fileInPack), spec));
-    if (!resolved.startsWith("app/fonts/") && resolved !== "app/fonts") return null;
-    target = resolved;
+    // Relative: only the leading `./` + `../` run is resolved against the
+    // file's place in the project; everything after it stays raw, so a `..`
+    // or empty segment inside app/fonts is checked below, not normalised away.
+    const parts = spec.split("/");
+    let lead = 0;
+    while (lead < parts.length && (parts[lead] === "." || parts[lead] === "..")) lead++;
+    const base = posix.normalize(posix.join("designs", slug, posix.dirname(fileInPack), ...parts.slice(0, lead)));
+    const joined = [base === "." ? "" : base, ...parts.slice(lead)].filter((s, k) => k > 0 || s !== "").join("/");
+    if (!joined.startsWith("app/fonts/") && joined !== "app/fonts") {
+      // A path that only reaches app/fonts after a later `..` is refused, not ignored.
+      const norm = posix.normalize(joined);
+      return norm.startsWith("app/fonts/") || norm === "app/fonts" ? "refused" : null;
+    }
+    target = joined;
   } else {
     return null;
   }
@@ -62,38 +109,57 @@ export function scanFontImports(files: { path: string; src: string }[], slug: st
   const fonts = new Map<string, FontImport>();
   const refused = new Set<string>();
   for (const { path, src } of files) {
-    for (const m of src.matchAll(SPECIFIER_RE)) {
-      const hit = classifyFontSpecifier(m[2], path, slug);
-      if (hit === "refused") refused.add(m[2]);
+    const css = path.endsWith(".css");
+    const code = stripComments(src, css);
+    const specs = [...code.matchAll(SPECIFIER_RE)].map((m) => m[2]);
+    if (css) specs.push(...[...code.matchAll(BARE_URL_IMPORT_RE)].map((m) => m[1]));
+    for (const spec of specs) {
+      const hit = classifyFontSpecifier(spec, path, slug);
+      if (hit === "refused") refused.add(spec);
       else if (hit) fonts.set(`${hit.family}/${hit.subpath}`, hit);
     }
   }
   return { fonts: [...fonts.values()], refused: [...refused] };
 }
 
-function listFiles(dir: string, base = dir): string[] {
-  const out: string[] = [];
+/**
+ * Every entry below `dir`, never following a symlink (lstat): a link is
+ * listed as an entry of its own, so a dangling one cannot throw here.
+ */
+function listFiles(dir: string, base = dir): { path: string; link: boolean }[] {
+  const out: { path: string; link: boolean }[] = [];
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) out.push(...listFiles(full, base));
-    else out.push(relative(base, full).split("\\").join("/"));
+    const st = lstatSync(full);
+    if (st.isDirectory()) out.push(...listFiles(full, base));
+    else out.push({ path: relative(base, full).split("\\").join("/"), link: st.isSymbolicLink() });
   }
-  return out.sort();
+  return out.sort((x, y) => (x.path < y.path ? -1 : x.path > y.path ? 1 : 0));
 }
 
-/** The scannable source files of a fetched pack. */
+/** The scannable source files of a fetched pack (symlinks are not read). */
 export function readPackSources(packDir: string): { path: string; src: string }[] {
   return listFiles(packDir)
-    .filter((p) => SCANNED_EXT_RE.test(p))
-    .map((p) => ({ path: p, src: readFileSync(join(packDir, p), "utf8") }));
+    .filter((f) => !f.link && SCANNED_EXT_RE.test(f.path))
+    .map((f) => ({ path: f.path, src: readFileSync(join(packDir, f.path), "utf8") }));
 }
 
-/** True when both folders hold the same file names with the same bytes. */
+/** True when both folders hold the same regular files with the same bytes; any symlink makes them differ. */
 export function sameTree(a: string, b: string): boolean {
   const fa = listFiles(a);
   const fb = listFiles(b);
-  if (fa.length !== fb.length || fa.some((f, i) => f !== fb[i])) return false;
-  return fa.every((f) => readFileSync(join(a, f)).equals(readFileSync(join(b, f))));
+  if (fa.length !== fb.length || fa.some((f, i) => f.link || fb[i].link || f.path !== fb[i].path)) return false;
+  return fa.every((f) => readFileSync(join(a, f.path)).equals(readFileSync(join(b, f.path))));
+}
+
+/** Something is at `p` — a dangling symlink included, which existsSync would miss. */
+function occupied(p: string): boolean {
+  try {
+    lstatSync(p);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isFile(p: string): boolean {
@@ -111,7 +177,14 @@ function isDir(p: string): boolean {
   }
 }
 
-const MODULE_EXTS = [".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs", ".css"];
+const MODULE_EXTS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".css"];
+// TS ESM: a `.js`-family specifier names the emitted file, so it maps to its TS source only.
+const JS_SPECIFIER_SOURCES: Record<string, string[]> = {
+  ".js": [".ts", ".tsx"],
+  ".jsx": [".tsx"],
+  ".mjs": [".mts"],
+  ".cjs": [".cts"],
+};
 
 /**
  * The imported module resolves to a FILE inside `dir`: `font` → font.ts, …;
@@ -123,8 +196,10 @@ export function hasModule(dir: string, subpath: string): boolean {
   const base = subpath ? join(dir, subpath) : dir;
   const index = MODULE_EXTS.some((ext) => isFile(join(base, `index${ext}`)));
   if (!subpath) return index;
-  const stems = [base, base.replace(/\.[cm]?jsx?$/, "")];
-  return isFile(base) || index || stems.some((s) => MODULE_EXTS.some((ext) => isFile(`${s}${ext}`)));
+  if (isFile(base) || index) return true;
+  const jsExt = /\.(?:[cm]?js|jsx)$/.exec(base)?.[0];
+  if (jsExt) return JS_SPECIFIER_SOURCES[jsExt].some((ext) => isFile(base.slice(0, -jsExt.length) + ext));
+  return MODULE_EXTS.some((ext) => isFile(`${base}${ext}`));
 }
 
 /** Fetch `app/fonts/<family>` from the template into `dir`. */
@@ -180,7 +255,7 @@ export async function installFontFolders(opts: {
       // The project's own folder is judged first: it is never overwritten, so
       // whether it satisfies the pack decides the outcome, not the fetch.
       const dest = join(opts.cwd, "app", "fonts", family);
-      if (existsSync(dest)) {
+      if (occupied(dest)) {
         if (!subpaths.every((s) => hasModule(dest, s))) result.incomplete.push(family);
         else if (!fetchedOk) result.present.push(family);
         else (sameTree(dest, fetched) ? result.identical : result.kept).push(family);
