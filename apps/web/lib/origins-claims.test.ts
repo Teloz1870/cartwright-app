@@ -553,7 +553,9 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(live).not.toMatch(/agent-checkout\/route\.ts`\) is card-only/);
     // The whole page, not the one line above (falsifier on app #428, NIT): a present-tense 410
     // sentence anywhere on go-live.mdx is as false as one on the automatic_payment_methods line.
-    expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/it answers `410 Gone`/);
+    // Any subject, not just "it" (reviewer NIT, R1): the history above uses the infinitive
+    // "answer `410 Gone`", so only a present-tense "answers `410 Gone`" trips this.
+    expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/answers `410 Gone`/);
   });
 
   it('names migration.woo_plan as v0.64.0\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
