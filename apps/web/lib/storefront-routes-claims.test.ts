@@ -212,8 +212,8 @@ describe('the pages date the next release\'s AI model, magic-link and vibe chang
     // form had vibeHtml).
     const vibe = lineWith(read('content/docs/features/vibe-coding.mdx'), 'one `vibeHtml` per locale');
     expect(vibe).toMatch(/For a page, the result lands in its `translations` field, one `vibeHtml` per locale next to the base `vibeHtml` \(`translations\.de\.vibeHtml`; `app\/api\/admin\/vibe\/translate\/route\.ts`\)\./);
-    expect(vibe).not.toMatch(/the field is a JSON map/);
+    expect(read('content/docs/features/vibe-coding.mdx')).not.toMatch(/the field is a JSON map/);
     expect(vibe).toMatch(/From the release after v0\.64\.0 an empty or whitespace-only entry counts as a miss — a Vibe Sandbox save with an empty English tab stores one — where on v0\.64\.0 `\/en` renders an empty container\./);
-    expect(vibe).toMatch(/Also from the release after v0\.64\.0, a Sandbox save that leaves the page's HTML as it is \(only the meta title or nav order changed\) keeps the translated vibe HTML; on v0\.64\.0 every Sandbox save drops it, so run the translation again after one\. A save that changes the HTML, even only its whitespace, drops it on both\./);
+    expect(vibe).toMatch(/Also from the release after v0\.64\.0, a Sandbox save that leaves the page's HTML as it is \(only the meta title or nav order changed\) keeps the translated vibe HTML; on v0\.64\.0 every Sandbox save drops it, so run the translation again after one\. A save that changes the HTML, even only its spaces, drops it on both; line endings alone \(CRLF against LF\) do not count as a change from the release after v0\.64\.0\./);
   });
 });
