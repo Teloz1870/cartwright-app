@@ -551,7 +551,9 @@ describe('the WooCommerce status page matches the engine', () => {
     // a 404 problem+json with code "endpoint_not_found" (CHANGELOG v0.64.0, Removed), so 410 is history.
     expect(live).toMatch(/; the old agent checkout \(`app\/api\/commerce\/agent-checkout\/route\.ts`\) was card-only; v0\.63\.0 made it take no payment at all and answer `410 Gone` \(CW-2026-010\), and v0\.64\.0 removes it, so the path answers `404` with `code: "endpoint_not_found"`\. No code change and no Cartwright flag is needed\./);
     expect(live).not.toMatch(/agent-checkout\/route\.ts`\) is card-only/);
-    expect(live).not.toMatch(/it answers `410 Gone`/);
+    // The whole page, not the one line above (falsifier on app #428, NIT): a present-tense 410
+    // sentence anywhere on go-live.mdx is as false as one on the automatic_payment_methods line.
+    expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/it answers `410 Gone`/);
   });
 
   it('names migration.woo_plan as v0.64.0\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
