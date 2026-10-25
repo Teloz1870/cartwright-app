@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   classifyFontSpecifier,
   describeFontInstall,
+  findSpecifiers,
   hasModule,
   installFontFolders,
   scanFontImports,
@@ -73,6 +74,10 @@ describe("classifyFontSpecifier", () => {
     expect(rel("../../app/fonts/Bad_Name/../archivo/font")).toBe("refused");
     expect(rel("../../app/fonts/archivo//font")).toBe("refused");
     expect(rel("../../app/../app/fonts/archivo/font")).toBe("refused");
+    // Passes through app/fonts and back out, or names it above the project root: refused, not ignored.
+    expect(rel("../../app/../app/fonts/archivo/../../../x")).toBe("refused");
+    expect(rel("../../../app/fonts/archivo/font")).toBe("refused");
+    expect(rel("../../my-app/fonts-extra/x")).toBeNull();
     expect(classifyFontSpecifier("../../../app/fonts/archivo/font", "sections/hero.tsx", "brutalist")).toEqual({
       family: "archivo",
       subpath: "font",
@@ -96,6 +101,19 @@ describe("hasModule", () => {
     expect(hasModule(d, "subsets")).toBe(true);
     expect(hasModule(d, "")).toBe(true);
     expect(hasModule(join(d, "font.ts"), "")).toBe(false); // not a folder
+  });
+  it("never counts an extensionless file, or a .css file, for a module specifier", () => {
+    const d = join(root, "inter");
+    mkdirSync(join(d, "faces.js"), { recursive: true });
+    writeFileSync(join(d, "font"), "no extension");
+    writeFileSync(join(d, "body.css"), "x");
+    writeFileSync(join(d, "faces.js", "index.css"), "x");
+    writeFileSync(join(d, "index.css"), "x");
+    expect(hasModule(d, "font")).toBe(false);
+    expect(hasModule(d, "body")).toBe(false);
+    expect(hasModule(d, "body.css")).toBe(true);
+    expect(hasModule(d, "faces.js")).toBe(false);
+    expect(hasModule(d, "")).toBe(false);
   });
   it("maps a .js-family specifier to its TS source only, and knows .cts/.cjs", () => {
     const d = join(root, "inter");
@@ -137,6 +155,48 @@ describe("scanFontImports", () => {
     );
     expect(scan.fonts.map((f) => f.family).sort()).toEqual(["archivo", "space-mono"]);
     expect(scan.refused).toEqual([]);
+  });
+});
+
+describe("findSpecifiers", () => {
+  const live = (src: string) => findSpecifiers(src, false);
+  it("does not let a JSX apostrophe open a string", () => {
+    expect(live(`const a = <p>Designer's note</p>; // import { G } from "@/app/fonts/ghost/font"\n`)).toEqual([]);
+    expect(
+      live(`<p>Designer's note</p>; const a = '/*'; import { A } from "@/app/fonts/archivo/font"; const b = '*/';\n`),
+    ).toEqual(["@/app/fonts/archivo/font"]);
+  });
+  it("skips comments inside a template literal's ${…}", () => {
+    expect(live("const cls = `${\n  // import { G } from \"@/app/fonts/ghost/font\"\n  display.className\n}`;\n")).toEqual([]);
+    expect(live("const a = `x${ {k: `y${1}`}.k }z`; import \"@/app/fonts/archivo/font\";\n")).toEqual([
+      "@/app/fonts/archivo/font",
+    ]);
+    expect(live("const tick = `${ \"`\" }`; import \"@/app/fonts/archivo/font\";\n")).toEqual(["@/app/fonts/archivo/font"]);
+  });
+  it("skips regex literals, so a // or a backtick in one changes nothing", () => {
+    expect(live(`const re = /^https?:\\/\\//; import { A } from "@/app/fonts/archivo/font";\n`)).toEqual([
+      "@/app/fonts/archivo/font",
+    ]);
+    expect(live("const c = s.replace(/`/g, \"\");\n// import { G } from \"@/app/fonts/ghost/font\";\n")).toEqual([]);
+    expect(live(`const half = a / 2; import "@/app/fonts/archivo/font";\n`)).toEqual(["@/app/fonts/archivo/font"]);
+  });
+  it("reads only a string right after from/import/require, never one inside another string", () => {
+    expect(live(`const label = "Loaded from "; import { A } from "@/app/fonts/archivo/font";\n`)).toEqual([
+      "@/app/fonts/archivo/font",
+    ]);
+    expect(live(`const demo = 'import "@/app/fonts/../../x"';\n`)).toEqual([]);
+    expect(live(`import x from'@/app/fonts/a/font'; const y = await import("b"); require( 'c' );\n`)).toEqual([
+      "@/app/fonts/a/font",
+      "b",
+      "c",
+    ]);
+  });
+  it("reads CSS @import in every form", () => {
+    expect(findSpecifiers(`@import "a.css";\n@import url('b.css');\n@import url( c.css );\n/* @import "d.css"; */`, true)).toEqual([
+      "a.css",
+      "b.css",
+      "c.css",
+    ]);
   });
 });
 
@@ -251,5 +311,57 @@ describe("installFontFolders", () => {
     expect(r.incomplete).toEqual(["archivo"]);
     expect(r.kept).toEqual(["space-mono"]);
     expect(existsSync(elsewhere)).toBe(false); // nothing written through the link
+  });
+
+  it("never writes through app/ or app/fonts/ that is a symlink, and a file there does not crash", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), BRUTALIST_HOMEPAGE);
+    const external = join(root, "external-fonts");
+    mkdirSync(external);
+    mkdirSync(join(cwd, "app"));
+    symlinkSync(external, join(cwd, "app/fonts"));
+    const r = await installFontFolders({ cwd, packDir: pack, slug: "brutalist", fetchFolder: fakeFetch });
+    expect(r.blocked).toEqual(["archivo", "space-mono"]);
+    expect(r.added).toEqual([]);
+    expect(readdirSync(external)).toEqual([]);
+    expect(describeFontInstall(r, "v0.64.0").warn[0]).toContain("never writes through one");
+
+    unlinkSync(join(cwd, "app/fonts"));
+    writeFileSync(join(cwd, "app/fonts"), "a file");
+    const r2 = await installFontFolders({ cwd, packDir: pack, slug: "brutalist", fetchFolder: fakeFetch });
+    expect(r2.blocked).toEqual(["archivo", "space-mono"]);
+  });
+
+  it("a folder that is itself a symlink is never reported identical", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), `import { A } from "@/app/fonts/archivo/font";\n`);
+    const real = join(root, "real-archivo");
+    await fakeFetch("archivo", real);
+    mkdirSync(join(cwd, "app/fonts"), { recursive: true });
+    symlinkSync(real, join(cwd, "app/fonts/archivo"));
+    const r = await installFontFolders({ cwd, packDir: pack, slug: "brutalist", fetchFolder: fakeFetch });
+    expect(r.identical).toEqual([]);
+    expect(r.kept).toEqual(["archivo"]);
+  });
+
+  it("a fetched folder holding a symlink is not copied", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), `import { A } from "@/app/fonts/archivo/font";\n`);
+    const r = await installFontFolders({
+      cwd,
+      packDir: pack,
+      slug: "brutalist",
+      fetchFolder: async (family, dir) => {
+        await fakeFetch(family, dir);
+        symlinkSync("/etc/hosts", join(dir, "extra.ts"));
+      },
+    });
+    expect(r.failed).toEqual(["archivo"]);
+    expect(existsSync(join(cwd, "app"))).toBe(false);
+  });
+
+  it("an incomplete folder of your own is reported without fetching", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), `import { A } from "@/app/fonts/archivo/font";\n`);
+    mkdirSync(join(cwd, "app/fonts/archivo"), { recursive: true });
+    const r = await installFontFolders({ cwd, packDir: pack, slug: "brutalist", fetchFolder: fakeFetch });
+    expect(r.incomplete).toEqual(["archivo"]);
+    expect(fetched).toEqual([]);
   });
 });
