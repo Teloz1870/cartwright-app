@@ -16,7 +16,7 @@ Every editable surface has a `vibeHtml` text field next to the structured conten
 - `Category.vibeHtml`
 - `Service.vibeHtml`
 
-When `vibeHtml` is non-null, the renderer prefers it over the default component tree. Switch back by clearing the field — the structured content is still there, untouched.
+When `vibeHtml` is non-null, the renderer prefers it over the default component tree. Switch back by clearing the field. For a page, empty its Danish and English HTML in the Vibe Sandbox and save. A Sandbox save also sets the page's Danish and English body to its `Vibe Page Layout` placeholder, so write the body again in `/admin/sider` afterwards; for the homepage, `mockup.clear` clears the field and keeps the body. From engine v0.64.0 saving a page in `/admin/sider` leaves its vibe HTML alone; up to v0.63.0 that save emptied it.
 
 ## The Vibe Sandbox
 
