@@ -13,8 +13,13 @@ const ROOT = join(__dirname, '..');
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 // The paragraph (blank-line separated) holding the needle, its soft line breaks folded to
 // spaces, so a reflowed paragraph that renders the same text still matches (reviewer NIT, R1).
+// Folded BEFORE the needle search, so a needle that a reflow splits across lines is still found
+// (reviewer NIT, R2).
 const paragraphWith = (src: string, needle: string) =>
-  (src.split(/\n\s*\n/).find((p) => p.includes(needle)) ?? '').replace(/\s*\n\s*/g, ' ');
+  src
+    .split(/\r?\n\s*\r?\n/)
+    .map((p) => p.replace(/\s*\r?\n\s*/g, ' '))
+    .find((p) => p.includes(needle)) ?? '';
 
 describe('a design pack\'s pdpLayout gets the product in the page\'s language from v0.64.0 (engine #692, ARG2)', () => {
   const overrides = read('content/docs/designs/webshop-overrides.mdx');
@@ -30,7 +35,7 @@ describe('a design pack\'s pdpLayout gets the product in the page\'s language fr
     expect(pdp).toMatch(/`translations` and `attributes` stay as stored, so a pack localizes attributes itself\./);
     expect(pdp).toMatch(/On v0\.63\.0 it receives the stored row, so on any language but the shop's default its `name` and `description` are the base language's\./);
     // The whole page, not the one paragraph (reviewer NIT, R1).
-    expect(overrides).not.toMatch(/release after v0\.63\.0/);
+    expect(overrides).not.toMatch(/release\s+after\s+v0\.63\.0/);
   });
 });
 
@@ -57,6 +62,6 @@ describe('the vibe-coding page says how a page\'s vibe HTML is cleared, and what
     // formData.get("vibeHtml")?.toString() || null (:357), so every page-form save nulled it.
     expect(clear).toMatch(/From engine v0\.64\.0 saving a page in `\/admin\/sider` leaves its vibe HTML alone; up to v0\.63\.0 that save emptied it\./);
     // The whole page, not the one paragraph (reviewer NIT, R1).
-    expect(vibe).not.toMatch(/release after v0\.63\.0/);
+    expect(vibe).not.toMatch(/release\s+after\s+v0\.63\.0/);
   });
 });

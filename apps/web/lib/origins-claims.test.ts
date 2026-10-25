@@ -555,7 +555,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // sentence anywhere on go-live.mdx is as false as one on the automatic_payment_methods line.
     // Any subject, not just "it" (reviewer NIT, R1): the history above uses the infinitive
     // "answer `410 Gone`", so only a present-tense "answers `410 Gone`" trips this.
-    expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/answers `410 Gone`/);
+    expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/answers\s+`410 Gone`/);
   });
 
   it('names migration.woo_plan as v0.64.0\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
@@ -581,7 +581,7 @@ describe('the WooCommerce status page matches the engine', () => {
     // The header defines the markers the lines above use. Since v0.64.0 shipped, nothing on the
     // page is an unreleased "from the release after" line.
     expect(woo).toMatch(/The page describes engine v0\.64\.0; a line marked "from v0\.64\.0" is new in that release, and "on v0\.63\.0" beside it says what the release before it does instead\. A line marked "from v0\.63\.0" is new in v0\.63\.0, and "on v0\.62\.0" says what v0\.62\.0 does instead\./);
-    expect(woo).not.toMatch(/release after v0\.63\.0/);
+    expect(woo).not.toMatch(/release\s+after\s+v0\.63\.0/);
     expect(woo).not.toMatch(/not yet in a tagged release/);
   });
 });

@@ -122,7 +122,7 @@ describe('the URL options page names the IndexNow ping and the /hero skip as the
 
   it('names the matcher\'s /hero skip for v0.63.0 and for v0.64.0', () => {
     expect(urls).toMatch(/on v0\.63\.0 any path that begins with `\/hero`, `\/heron-hegn\/` too; from v0\.64\.0 only the `\/hero` segment, such as `\/hero\/x\/`/);
-    expect(urls).not.toMatch(/release after v0\.63\.0/);
+    expect(urls).not.toMatch(/release\s+after\s+v0\.63\.0/);
     expect(urls).not.toMatch(/\(`\/hero…`\)/);
   });
 });
