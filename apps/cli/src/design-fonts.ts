@@ -96,12 +96,35 @@ export function sameTree(a: string, b: string): boolean {
   return fa.every((f) => readFileSync(join(a, f)).equals(readFileSync(join(b, f))));
 }
 
-/** The imported module exists in the fetched folder (`font` → font.ts, …). */
-function hasModule(dir: string, subpath: string): boolean {
-  if (!subpath) return readdirSync(dir).length > 0;
-  return ["", ".ts", ".tsx", ".js", ".mjs", ".css", "/index.ts"].some((ext) =>
-    existsSync(join(dir, `${subpath}${ext}`)),
-  );
+function isFile(p: string): boolean {
+  try {
+    return statSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+function isDir(p: string): boolean {
+  try {
+    return statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+const MODULE_EXTS = [".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs", ".css"];
+
+/**
+ * The imported module resolves to a FILE inside `dir`: `font` → font.ts, …;
+ * TS-ESM `font.js` → font.ts; `sub` → sub/index.ts; the bare family (`""`) →
+ * index.ts. A directory alone, or any other file, does not count.
+ */
+export function hasModule(dir: string, subpath: string): boolean {
+  if (!isDir(dir)) return false;
+  const base = subpath ? join(dir, subpath) : dir;
+  const index = MODULE_EXTS.some((ext) => isFile(join(base, `index${ext}`)));
+  if (!subpath) return index;
+  const stems = [base, base.replace(/\.[cm]?jsx?$/, "")];
+  return isFile(base) || index || stems.some((s) => MODULE_EXTS.some((ext) => isFile(`${s}${ext}`)));
 }
 
 /** Fetch `app/fonts/<family>` from the template into `dir`. */
@@ -111,6 +134,10 @@ export type FontInstallResult = {
   added: string[];
   identical: string[];
   kept: string[];
+  /** Already in the project with every imported module; the template's copy could not be fetched to compare. */
+  present: string[];
+  /** Already in the project but missing a module the pack imports (or not a folder); left untouched. */
+  incomplete: string[];
   failed: string[];
   refused: string[];
 };
@@ -126,7 +153,15 @@ export async function installFontFolders(opts: {
   fetchFolder: FetchFontFolder;
 }): Promise<FontInstallResult> {
   const scan = scanFontImports(readPackSources(opts.packDir), opts.slug);
-  const result: FontInstallResult = { added: [], identical: [], kept: [], failed: [], refused: scan.refused };
+  const result: FontInstallResult = {
+    added: [],
+    identical: [],
+    kept: [],
+    present: [],
+    incomplete: [],
+    failed: [],
+    refused: scan.refused,
+  };
   const families = [...new Set(scan.fonts.map((f) => f.family))].sort();
   if (families.length === 0) return result;
 
@@ -135,19 +170,24 @@ export async function installFontFolders(opts: {
     for (const family of families) {
       const fetched = join(tmp, family);
       const subpaths = scan.fonts.filter((f) => f.family === family).map((f) => f.subpath);
+      let fetchedOk = false;
       try {
         await opts.fetchFolder(family, fetched);
+        fetchedOk = subpaths.every((s) => hasModule(fetched, s));
       } catch {
-        result.failed.push(family);
-        continue;
+        fetchedOk = false;
       }
-      if (!existsSync(fetched) || !subpaths.every((s) => hasModule(fetched, s))) {
-        result.failed.push(family);
-        continue;
-      }
+      // The project's own folder is judged first: it is never overwritten, so
+      // whether it satisfies the pack decides the outcome, not the fetch.
       const dest = join(opts.cwd, "app", "fonts", family);
       if (existsSync(dest)) {
-        (sameTree(dest, fetched) ? result.identical : result.kept).push(family);
+        if (!subpaths.every((s) => hasModule(dest, s))) result.incomplete.push(family);
+        else if (!fetchedOk) result.present.push(family);
+        else (sameTree(dest, fetched) ? result.identical : result.kept).push(family);
+        continue;
+      }
+      if (!fetchedOk) {
+        result.failed.push(family);
         continue;
       }
       cpSync(fetched, dest, { recursive: true });
@@ -169,8 +209,17 @@ export function describeFontInstall(
   const dirs = (xs: string[]) => xs.map((f) => `app/fonts/${f}/`).join(", ");
   if (r.added.length) ok.push(`Added font folders: ${dirs(r.added)}`);
   if (r.identical.length) ok.push(`Already present (identical): ${dirs(r.identical)}`);
+  if (r.present.length) {
+    ok.push(`Already present: ${dirs(r.present)} (the template's copy couldn't be fetched to compare)`);
+  }
   if (r.kept.length) {
     warn.push(`Kept your own ${dirs(r.kept)} — it differs from the template's and was not overwritten.`);
+  }
+  if (r.incomplete.length) {
+    warn.push(
+      `Kept your own ${dirs(r.incomplete)}, but it lacks a module the design imports — it won't build until you add it. ` +
+        `The template's copy: https://github.com/Teloz1870/cartwright-template/tree/${ref}/app/fonts.`,
+    );
   }
   if (r.failed.length) {
     warn.push(

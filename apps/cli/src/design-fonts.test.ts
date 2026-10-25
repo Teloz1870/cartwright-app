@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   classifyFontSpecifier,
   describeFontInstall,
+  hasModule,
   installFontFolders,
   scanFontImports,
   type FetchFontFolder,
@@ -64,6 +65,25 @@ describe("classifyFontSpecifier", () => {
     expect(classifyFontSpecifier("@/app/fonts/space-mono/../../../etc/passwd", "a.tsx", "x")).toBe("refused");
     expect(classifyFontSpecifier("@/app/fonts//etc", "a.tsx", "x")).toBe("refused");
     expect(classifyFontSpecifier("@/app/fonts/Bad_Name/font", "a.tsx", "x")).toBe("refused");
+  });
+});
+
+describe("hasModule", () => {
+  it("needs a real module file, not just any file or a bare directory", () => {
+    const d = join(root, "archivo");
+    mkdirSync(join(d, "subsets"), { recursive: true });
+    writeFileSync(join(d, "font.ts"), "x");
+    writeFileSync(join(d, "LICENSE.txt"), "OFL");
+    expect(hasModule(d, "font")).toBe(true);
+    expect(hasModule(d, "font.js")).toBe(true); // TS-ESM specifier → font.ts
+    expect(hasModule(d, "faces.css")).toBe(false);
+    expect(hasModule(d, "")).toBe(false); // bare family needs index.*
+    expect(hasModule(d, "subsets")).toBe(false); // a directory is not a module
+    writeFileSync(join(d, "subsets", "index.ts"), "x");
+    writeFileSync(join(d, "index.ts"), "x");
+    expect(hasModule(d, "subsets")).toBe(true);
+    expect(hasModule(d, "")).toBe(true);
+    expect(hasModule(join(d, "font.ts"), "")).toBe(false); // not a folder
   });
 });
 
@@ -148,5 +168,36 @@ describe("installFontFolders", () => {
     expect(r.failed).toEqual(["archivo", "space-mono"]);
     expect(existsSync(join(cwd, "app"))).toBe(false);
     expect(describeFontInstall(r, "v0.64.0").warn[0]).toContain("tree/v0.64.0/app/fonts");
+  });
+
+  it("a folder you already have that satisfies the pack is not a failure when the fetch fails", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), `import { A } from "@/app/fonts/archivo/font";\n`);
+    await fakeFetch("archivo", join(cwd, "app/fonts/archivo"));
+    const r = await installFontFolders({
+      cwd,
+      packDir: pack,
+      slug: "brutalist",
+      fetchFolder: async () => {
+        throw new Error("offline");
+      },
+    });
+    expect(r.failed).toEqual([]);
+    expect(r.present).toEqual(["archivo"]);
+    const lines = describeFontInstall(r, "v0.64.0");
+    expect(lines.warn).toEqual([]);
+    expect(lines.ok[0]).toContain("Already present: app/fonts/archivo/");
+  });
+
+  it("a folder you already have that lacks the imported module is kept and flagged", async () => {
+    writeFileSync(join(pack, "homepage.tsx"), BRUTALIST_HOMEPAGE);
+    mkdirSync(join(cwd, "app/fonts/archivo"), { recursive: true });
+    writeFileSync(join(cwd, "app/fonts/archivo/LICENSE.txt"), "mine");
+    writeFileSync(join(cwd, "app/fonts/space-mono"), "a file, not a folder");
+    const r = await installFontFolders({ cwd, packDir: pack, slug: "brutalist", fetchFolder: fakeFetch });
+    expect(r.incomplete).toEqual(["archivo", "space-mono"]);
+    expect(r.kept).toEqual([]);
+    expect(readFileSync(join(cwd, "app/fonts/archivo/LICENSE.txt"), "utf8")).toBe("mine");
+    expect(existsSync(join(cwd, "app/fonts/archivo/font.ts"))).toBe(false);
+    expect(describeFontInstall(r, "v0.64.0").warn[0]).toContain("lacks a module the design imports");
   });
 });
