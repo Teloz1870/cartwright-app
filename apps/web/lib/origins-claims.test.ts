@@ -558,6 +558,27 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/answers\s+`410 Gone`/);
   });
 
+  it('dates the next release\'s woo_plan counts, its wp/v2 redirect and the /administration chrome, beside v0.64.0 (engine #699, #700)', () => {
+    // Engine origin/main f78f8859 (after v0.64.0, 8b134686):
+    // #699 W21-SAFE-INT (82b97c5a) — lib/woo/client.ts:63-67 headerInt: a count that is not
+    // Number.isSafeInteger reads as null (unknown), as an absent header does; :130 wpProducts, :141-142:
+    // only a 400-499 other than 429 skips the status/Yoast extras, any other failure (a 3xx under
+    // redirect: "manual" is a WooHttpError with that status and the URL) ends the read and aborts
+    // its siblings. v0.64.0 returned Number(value) rounded, and treated every status < 500 but 429
+    // (a 301 too) as "skip the extras".
+    // #700 CLIENT-ADMIN-PREFIX (f4740616) — lib/path-segments.ts:19-21 isAdminPath is /admin or
+    // /admin/…; components/WelcomeGuide.tsx:95, components/AIStylistButton.tsx:20 and
+    // components/voice/VoiceShopButton.tsx:37 call it. v0.64.0 had pathname?.startsWith("/admin")
+    // in all three, so under localePrefix "never" a storefront /administration hid them; under
+    // "always" usePathname() is /en/administration, never affected.
+    const importer = lineWith(woo, '**A WooCommerce importer.**');
+    expect(importer).toMatch(/From the release after v0\.64\.0 an `X-WP-Total` or `X-WP-TotalPages` count past 2\^53 reads as unknown, as a missing one does, and a redirect on the shop's `wp\/v2` product route ends the read with the redirect's status and address \(`lib\/woo\/client\.ts`\); on v0\.64\.0 such a count is rounded, which leaves a saved plan that neither the tool nor `\/admin\/migration` can read, and the redirect only flags the plan as missing the status and Yoast fields\. A 401, 403 or 404 on that route leaves those fields out on both\./);
+    const login = lineWith(woo, '**A `200` on the login page**');
+    expect(login).toMatch(/On v0\.64\.0, under `"never"`, such a page — `\/administration\/` — still renders without the first-run welcome guide, the AI assistant button and the voice-shopping button \(each where its flag is on\), which hide themselves on any address that begins with `\/admin`; from the release after v0\.64\.0 they read `\/admin` as a whole segment too \(`lib\/path-segments\.ts`\), so the page keeps them\. Under `"always"` its address carries the language \(`\/en\/administration\/`\), and it keeps them on both\./);
+    // The header defines the marker, and never as being in the npm scaffold already.
+    expect(woo).toMatch(/A line marked "from the release after v0\.64\.0" is merged on the engine's `main` branch and ships in the next release, not in today's npm scaffold; beside it, "on v0\.64\.0" says what the current release does instead\./);
+  });
+
   it('names migration.woo_plan as v0.64.0\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
     // Engine #694 (merged as b9d1eb80, shipped in v0.64.0), lib/tools/migration-woo.ts: scope
     // settings:read, no confirm, openMigrationGate() (migrationDashboard) first; registered through
