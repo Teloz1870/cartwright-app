@@ -64,13 +64,23 @@ jobs:
       fail-fast: false
       matrix:
         profile: ${{ fromJSON((inputs.profile != '' && inputs.profile != 'all') && format('["{0}"]', inputs.profile) || '["light","full","site"]') }}
-    name: ${{ matrix.profile }} profile
+        # 22 is the engine's floor (`engines`, `.nvmrc`) and the leg every
+        # number on cartwright.app is quoted from. Node 26 became LTS on
+        # 2026-10-28 and the engine allows it from the release after v0.65.0
+        # (`engines: ">=22 <27"`), so a customer can scaffold on it: one extra
+        # leg on the default profile proves install → test → build → boot
+        # there. Only when the light leg runs, so a single-profile dispatch of
+        # full or site stays one job.
+        node: [22]
+        include: ${{ fromJSON((inputs.profile == '' || inputs.profile == 'all' || inputs.profile == 'light') && '[{"profile":"light","node":26}]' || '[]') }}
+    name: ${{ matrix.profile }} profile${{ matrix.node != 22 && format(' · Node {0}', matrix.node) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       # Dispatch inputs reach the shell only through these variables — never
       # interpolated into a `run:` script (GitHub's script-injection guidance).
       PROFILE: ${{ matrix.profile }}
+      NODE_MAJOR: ${{ matrix.node }}
       CLI_INPUT: ${{ inputs.cli || 'latest' }}
       REF_INPUT: ${{ inputs.ref || 'stable' }}
     steps:
@@ -79,7 +89,7 @@ jobs:
           version: 11
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
 
       - name: "Pre-flight: does the requested CLI exist?"
         id: cli
@@ -255,6 +265,7 @@ jobs:
             let engine = {}; try { engine = JSON.parse(env.MARKER || "{}"); } catch { engine = { unparsable: true }; }
             const out = {
               profile: env.PROFILE,
+              node: process.versions.node,
               cli: env.CLI_EXECUTED || env.CLI_VERSION || null,
               cliSource: env.CLI_EXECUTED ? "banner" : env.CLI_VERSION ? "npm-view" : null,
               cliInput: env.CLI_INPUT, ref: env.REF_INPUT,
@@ -267,7 +278,7 @@ jobs:
             const s = out.steps, e = out.engine;
             const row = (k, v) => `| ${k} | ${v ?? "—"} |`;
             const md = [
-              `### ${out.profile} — ${complete ? "measured cold run" : `INCOMPLETE record (job ${out.jobStatus}) — do not quote`} (${out.date})`,
+              `### ${out.profile} · Node ${out.node} — ${complete ? "measured cold run" : `INCOMPLETE record (job ${out.jobStatus}) — do not quote`} (${out.date})`,
               ``, `| step | seconds |`, `|---|---|`,
               row("scaffold + install", s.scaffoldInstall), row("typecheck", s.typecheck), row("unit tests", s.unitTests), row("next build", s.build), row("boot → HTTP 200", s.bootTo200),
               ``, `Provenance: create-cartwright@${out.cli ?? "?"} (${out.cliSource === "banner" ? "executed" : out.cliSource === "npm-view" ? "npm view" : "unknown"}; input \`${out.cliInput}\`) · template ref \`${out.ref}\` (channel ${out.templateChannel}) · engine ${e.version ?? "?"} ${e.commit ? `(${String(e.commit).slice(0, 7)})` : ""} · ${out.scaffold.dependencies ?? "?"} runtime deps / ${out.scaffold.devDependencies ?? "?"} dev · ${out.scaffold.files ?? "?"} files · run ${out.runId}`,
@@ -280,6 +291,8 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: timings-${{ matrix.profile }}
+          # The Node 26 leg writes the same file name in its own job; only the
+          # artifact name must differ. timings-<profile> stays the Node 22 record.
+          name: timings-${{ matrix.profile }}${{ matrix.node != 22 && format('-node{0}', matrix.node) || '' }}
           path: timings-${{ matrix.profile }}.json
           retention-days: 90
