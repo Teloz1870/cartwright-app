@@ -35,6 +35,51 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.65.1',
+    date: 'October 2026',
+    title: 'A dependency security patch, and Node 26',
+    description: (
+      <>
+        A security patch — <strong>upgrade</strong>: <code>pnpm audit --prod</code> on v0.65.0 lists one critical, nine
+        high, ten moderate and two low findings, all in dependencies (CW-2026-012), and v0.65.1 lists none. The critical
+        one needs a webpack build, and the engine builds with Turbopack; none of the others is known to be reachable
+        from a request in a shipped shop. Node 26, the new LTS, is supported. Run <code>pnpm install</code> after
+        pulling; no schema change and no new environment variable.
+      </>
+    ),
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'Dependency advisories closed (CW-2026-012) — @sentry/nextjs moves to ^10.76.2, and the overrides in pnpm-workspace.yaml raise the floors of undici, body-parser, qs, zod, fast-uri and ip-address, each version public for at least three days. The critical one, GHSA-mchm-gjx6-7h55 in @sentry/nextjs, skipped middleware for every path under the tunnelRoute path; the engine sets tunnelRoute: "/monitoring", but the advisory only affects webpack builds, and pnpm build uses Turbopack. A shop that builds with next build --webpack should upgrade now. To fix your own shop without upgrading: pnpm add @sentry/nextjs@^10.76.2, copy the overrides block into your pnpm-workspace.yaml, run pnpm install and confirm with pnpm audit --prod.',
+      'Node 26 is supported (NODE26-READY) — engines now reads >=22 <27. The unit suite was red on Node 26 because Node ≥ 25 puts its own empty localStorage on the global object, which hid the test browser’s; the shipped test setup now points it at jsdom’s. The engine’s PR check runs the unit suite on Node 26 next to the Node 22 floor, and the release scaffold gate scaffolds, tests, builds and boots a new shop on Node 26. On Vercel, deploys run Node 24 today and move to 26 when Vercel offers it, unless the project pins a Node version.',
+      'An order cancelled before it was paid gives its discount-code use back (DRØM103-a) — checkout counts one use of a code when it creates the order, but cancelling an unpaid order only returned its stock, so every unpaid cancel used up one use of a limited code for good. The cancel now takes the use back in the same transaction, whichever path cancels it; paid orders and past counts are untouched.',
+    ],
+  },
+  {
+    engine: 'v0.65.0',
+    date: 'October 2026',
+    title: 'Magic links that find the right account, text that follows the visitor’s size, and migration checks for counts, content, head tags and DNS',
+    description: (
+      <>
+        No security advisory in this release, and nothing to run: no dependency, schema or environment variable
+        changes. A design pack of your own that reads a self-hosted font at module scope now fails{' '}
+        <code>pnpm lint</code>, with the fix in the message. A customer whose earlier magic link already made a second,
+        lowercased account keeps signing in to that account. See{' '}
+        <Link href="/docs/migrate/woocommerce" className="text-cw-terracotta hover:underline">
+          Moving from WooCommerce
+        </Link>
+        .
+      </>
+    ),
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'A magic link for an account saved with capitals signs in to that account (REG-EMAIL-CASE-c) — the first link for Foo@Example.com made a second, password-less account foo@example.com, and later links signed in there, away from the orders. A link now finds the account by the rule a password reset uses, and makes none. On SQLite and Turso a capital outside ASCII, such as Ö, is still not matched.',
+      'Text that follows the visitor’s own size (TREND34-b1, b3, b4, b5) — in the shared header, product cards and footers, the cart count, product badges and footer links grow with the browser or system text size, as do the AI order flow’s right-of-withdrawal notice, the first-run welcome screen and the small text in the reviews, blog and phone-widget plugins. At the default size nothing moves; the crema design and other px text come later.',
+      'Storefront fixes — a page whose address begins with /admin, such as /administration, keeps its storefront chrome (/admin and /admin/… still hide it); a signed-in visitor is no longer refused a page whose address only contains /account/login or /account/signup; a homepage vibe page no longer renders blank in a language whose vibe tab was saved empty; and a Vibe Sandbox save that leaves the HTML as it is keeps the German and Spanish vibe HTML Translate made.',
+      'The migration board checks more before the DNS switch (MIGD-4a and others) — behind migrationDashboard (default off) it can compare catalogue counts, a moved page’s headline, tables and head tags with the old page (counts and a few fields, not a full comparison; product pages fail the SKU test until a later fix), and read the web DNS and its TTL. It reads a WordPress installed in a subdirectory, and a library function writes the redirect CSV for the old shop’s system pages and feeds; no tool or screen calls it yet.',
+      'Claude Haiku 5.5 can be picked as the AI model (TREND37-a); the default stays Claude Haiku 4.5. pnpm lint has a new rule, cartwright/no-module-scope-local-font-read, and the engine’s PR check now also runs the shipped tests under the market a new scaffold gets.',
+    ],
+  },
+  {
     engine: 'v0.64.0',
     date: 'October 2026',
     title: 'Admin saves that keep what the screen does not show, a password reset that finds capitals, and a WooCommerce import you can plan before anything is written',
