@@ -558,8 +558,8 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(read('content/docs/deployment/go-live.mdx')).not.toMatch(/answers\s+`410 Gone`/);
   });
 
-  it('dates the next release\'s woo_plan counts, its wp/v2 redirect and the /administration chrome, beside v0.64.0 (engine #699, #700)', () => {
-    // Engine origin/main f78f8859 (after v0.64.0, 8b134686):
+  it('dates v0.65.0\'s woo_plan counts, its wp/v2 redirect and the /administration chrome, beside v0.64.0 (engine #699, #700)', () => {
+    // Engine origin/main f78f8859 (after v0.64.0, 8b134686); both commits shipped in v0.65.0 (83700436):
     // #699 W21-SAFE-INT (82b97c5a) — lib/woo/client.ts:63-67 headerInt: a count that is not
     // Number.isSafeInteger reads as null (unknown), as an absent header does; :130 wpProducts, :141-142:
     // only a 400-499 other than 429 skips the status/Yoast extras, any other failure (a 3xx under
@@ -572,11 +572,11 @@ describe('the WooCommerce status page matches the engine', () => {
     // in all three, so under localePrefix "never" a storefront /administration hid them; under
     // "always" usePathname() is /en/administration, never affected.
     const importer = lineWith(woo, '**A WooCommerce importer.**');
-    expect(importer).toMatch(/From the release after v0\.64\.0 an `X-WP-Total` or `X-WP-TotalPages` count past 2\^53 reads as unknown, as a missing one does, and a redirect on the shop's `wp\/v2` product route ends the read with the redirect's status and address \(`lib\/woo\/client\.ts`\); on v0\.64\.0 such a count is rounded, which leaves a saved plan that neither the tool nor `\/admin\/migration` can read, and the redirect only flags the plan as missing the status and Yoast fields\. A 401, 403 or 404 on that route leaves those fields out on both\./);
+    expect(importer).toMatch(/From v0\.65\.0 an `X-WP-Total` or `X-WP-TotalPages` count past 2\^53 reads as unknown, as a missing one does, and a redirect on the shop's `wp\/v2` product route ends the read with the redirect's status and address \(`lib\/woo\/client\.ts`\); on v0\.64\.0 such a count is rounded, which leaves a saved plan that neither the tool nor `\/admin\/migration` can read, and the redirect only flags the plan as missing the status and Yoast fields\. A 401, 403 or 404 on that route leaves those fields out on both\./);
     const login = lineWith(woo, '**A `200` on the login page**');
-    expect(login).toMatch(/On v0\.64\.0, under `"never"`, such a page — `\/administration\/` — still renders without the first-run welcome guide, the AI assistant button and the voice-shopping button \(each where its flag is on\), which hide themselves on any address that begins with `\/admin`; from the release after v0\.64\.0 they read `\/admin` as a whole segment too \(`lib\/path-segments\.ts`\), so the page keeps them\. Under `"always"` its address carries the language \(`\/en\/administration\/`\), and it keeps them on both\./);
-    // The header defines the marker, and never as being in the npm scaffold already.
-    expect(woo).toMatch(/A line marked "from the release after v0\.64\.0" is merged on the engine's `main` branch and ships in the next release, not in today's npm scaffold; beside it, "on v0\.64\.0" says what the current release does instead\./);
+    expect(login).toMatch(/On v0\.64\.0, under `"never"`, such a page — `\/administration\/` — still renders without the first-run welcome guide, the AI assistant button and the voice-shopping button \(each where its flag is on\), which hide themselves on any address that begins with `\/admin`; from v0\.65\.0 they read `\/admin` as a whole segment too \(`lib\/path-segments\.ts`\), so the page keeps them\. Under `"always"` its address carries the language \(`\/en\/administration\/`\), and it keeps them on both\./);
+    // The header defines the marker as a released one (see the header assertion below).
+    expect(woo).toMatch(/A line marked "from v0\.65\.0" is new in v0\.65\.0, and "on v0\.64\.0" beside it says what the release before it does instead\./);
   });
 
   it('names migration.woo_plan as v0.64.0\'s dry run, never as a shipped importer (engine #694, W21-live-7-a)', () => {
@@ -599,10 +599,10 @@ describe('the WooCommerce status page matches the engine', () => {
     expect(importer).not.toMatch(/nothing calls it yet/);
     const board = lineWith(woo, '**A migration board that runs every check.**');
     expect(board).toMatch(/From v0\.64\.0 the board also shows the last WooCommerce import plan \(`migration\.woo_plan`, a dry run\) in its own card/);
-    // The header defines the markers the lines above use. Since v0.64.0 shipped, nothing on the
-    // page is an unreleased "from the release after" line.
-    expect(woo).toMatch(/The page describes engine v0\.64\.0; a line marked "from v0\.64\.0" is new in that release, and "on v0\.63\.0" beside it says what the release before it does instead\. A line marked "from v0\.63\.0" is new in v0\.63\.0, and "on v0\.62\.0" says what v0\.62\.0 does instead\./);
-    expect(woo).not.toMatch(/release\s+after\s+v0\.63\.0/);
+    // The header defines the markers the lines above use. Since v0.65.0 shipped (and v0.65.1, a
+    // dependency patch, after it), nothing on the page is an unreleased "from the release after" line.
+    expect(woo).toMatch(/The page describes engine v0\.65\.1\. A line marked "from v0\.65\.0" is new in v0\.65\.0, and "on v0\.64\.0" beside it says what the release before it does instead\. A line marked "from v0\.64\.0" is new in v0\.64\.0, and "on v0\.63\.0" says what v0\.63\.0 does instead\. A line marked "from v0\.63\.0" is new in v0\.63\.0, and "on v0\.62\.0" says what v0\.62\.0 does instead\./);
+    expect(woo).not.toMatch(/release\s+after\s+v0\.6\d\.\d/);
     expect(woo).not.toMatch(/not yet in a tagged release/);
   });
 });
