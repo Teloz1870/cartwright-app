@@ -174,23 +174,24 @@ describe('the storefront routes are named as the engine serves them', () => {
 });
 
 /**
- * Engine changes merged on main after v0.64.0 (8b134686), measured on engine origin/main f78f8859.
- * Each page says "from the release after v0.64.0" and, beside it, what v0.64.0 does, so both are
- * pinned whole: a dropped marker, a changed release number or a flipped verb turns them red.
+ * Engine changes merged after v0.64.0 (8b134686) and shipped in v0.65.0 (83700436; each commit
+ * checked with `git merge-base --is-ancestor`). Each page says "from v0.65.0" and, beside it, what
+ * v0.64.0 does, so both are pinned whole: a dropped marker, a changed release number or a flipped
+ * verb turns them red.
  */
-describe('the pages date the next release\'s AI model, magic-link and vibe changes beside v0.64.0', () => {
-  it('offers Claude Haiku 5.5 from the release after v0.64.0, with Haiku 4.5 kept as the default (engine #706, TREND37-a)', () => {
+describe('the pages date v0.65.0\'s AI model, magic-link and vibe changes beside v0.64.0', () => {
+  it('offers Claude Haiku 5.5 from v0.65.0, with Haiku 4.5 kept as the default (engine #706, TREND37-a)', () => {
     // lib/ai/anthropic-models.ts:14-17 lists haiku-4-5, haiku-5-5, sonnet-5-5, opus-5-5 (v0.64.0: the
     // same without haiku-5-5); lib/ai/model-capabilities.ts:56 gives claude-haiku-5-5 tools "all";
     // lib/ai/usage.ts:37 prices it { in: 0.1, out: 0.5 } flat (the >100k-token rate is not modelled);
     // lib/ai/client.ts:31 CHAT_MODEL stays "claude-haiku-4-5". app/api/assistant/chat/route.ts:297
     // resolves the chat model through chatModelResolved("chat"), which reads the saved anthropicModel.
     const model = lineWith(read('content/docs/features/ai-assistant.mdx'), '`/admin/integrations` → AI');
-    expect(model).toMatch(/^The model can also be picked without a code change, in `\/admin\/integrations` → AI: on v0\.64\.0 the list offers Claude Haiku 4\.5, Sonnet 5\.5 and Opus 5\.5 \(`lib\/ai\/anthropic-models\.ts`\)\. From the release after v0\.64\.0 it also offers Claude Haiku 5\.5 \(`claude-haiku-5-5`\), with the full admin tool set and metered at \$0\.10 in \/ \$0\.50 out per million tokens; a saved choice and a new shop keep Haiku 4\.5\./);
+    expect(model).toMatch(/^The model can also be picked without a code change, in `\/admin\/integrations` → AI: on v0\.64\.0 the list offers Claude Haiku 4\.5, Sonnet 5\.5 and Opus 5\.5 \(`lib\/ai\/anthropic-models\.ts`\)\. From v0\.65\.0 it also offers Claude Haiku 5\.5 \(`claude-haiku-5-5`\), with the full admin tool set and metered at \$0\.10 in \/ \$0\.50 out per million tokens; a saved choice and a new shop keep Haiku 4\.5\./);
     expect(model).toMatch(/The meter counts a prompt over 100,000 tokens at that price too, though Anthropic charges five times as much for one on Haiku 5\.5\./);
   });
 
-  it('says a magic link finds an account saved with capitals only from the release after v0.64.0 (engine #701, REG-EMAIL-CASE-c)', () => {
+  it('says a magic link finds an account saved with capitals only from v0.65.0 (engine #701, REG-EMAIL-CASE-c)', () => {
     // lib/auth.ts:60 wraps the adapter in withMagicLinkAccountBinding; :108-119 binds the account
     // (lib/auth/magic-link-account.ts → accountForAddress, the password-reset rule), sends nothing
     // when no account is picked (console.warn, no address), else mails target.identifier with the
@@ -199,14 +200,14 @@ describe('the pages date the next release\'s AI model, magic-link and vibe chang
     const magic = lineWith(read('content/docs/features/auth-magiclink.mdx'), 'Auth.js lowercases the address');
     expect(magic).toMatch(/^Auth\.js lowercases the address a customer types\. /);
     expect(magic).toMatch(/On v0\.64\.0 a link therefore signs in to the account spelled exactly that way, so for an account the shop holds as `Ada@Example\.com` the first link makes a second, password-less account `ada@example\.com`, and every later link signs in there, away from the account's orders and password\./);
-    expect(magic).toMatch(/From the release after v0\.64\.0 a link picks the account the way a password reset does: the one spelled exactly as given \(lowercased\), else the one a password login with that address signs in to, else the only one there is\./);
+    expect(magic).toMatch(/From v0\.65\.0 a link picks the account the way a password reset does: the one spelled exactly as given \(lowercased\), else the one a password login with that address signs in to, else the only one there is\./);
     expect(magic).toMatch(/The link names that account's stored spelling and is mailed to the address the account holds, so it signs in to that account and creates none \(`lib\/auth\/magic-link-account\.ts`\)\./);
     expect(magic).toMatch(/Where several accounts differ only in case and the rule cannot pick one, no link is sent, and the page still says to check the inbox\./);
     expect(magic).toMatch(/An address with no account gets its link as before\./);
     expect(magic).toMatch(/A customer whose earlier link already made the lowercased account keeps signing in there: nothing joins the two\./);
   });
 
-  it('dates the empty vibe tab fallback and the Sandbox keeping translations to the release after v0.64.0 (engine #702, #707)', () => {
+  it('dates the empty vibe tab fallback and the Sandbox keeping translations to v0.65.0 (engine #702, #707)', () => {
     // app/api/admin/vibe/translate/route.ts:67-73 writes translations[lang].vibeHtml, not a JSON map
     // in vibeHtml. #702 (4484bab6): app/[locale]/page.tsx:123 → lib/translated-field.ts:125-131
     // localizedVibeHtml returns the per-locale entry only when v.trim() is non-empty (v0.64.0: `??`,
@@ -217,7 +218,7 @@ describe('the pages date the next release\'s AI model, magic-link and vibe chang
     expect(vibe).toMatch(/For a page, the result lands in its `translations` field, one `vibeHtml` per locale next to the base `vibeHtml` \(`translations\.de\.vibeHtml`; `app\/api\/admin\/vibe\/translate\/route\.ts`\)\./);
     expect(vibe).toMatch(/\)\. The homepage renders the active locale's entry and falls back to the base on a miss\. From/);
     expect(read('content/docs/features/vibe-coding.mdx')).not.toMatch(/the field is a JSON map/);
-    expect(vibe).toMatch(/From the release after v0\.64\.0 an empty or whitespace-only entry counts as a miss — a Vibe Sandbox save with an empty English tab stores one — where on v0\.64\.0 `\/en` renders an empty container\./);
-    expect(vibe).toMatch(/Also from the release after v0\.64\.0, a Sandbox save that leaves the page's HTML as it is \(only the meta title or nav order changed\) keeps the translated vibe HTML; on v0\.64\.0 every Sandbox save drops it, so run the translation again after one\. A save that changes the HTML, even only its spaces, drops it on both; line endings alone \(CRLF against LF\) do not count as a change from the release after v0\.64\.0\./);
+    expect(vibe).toMatch(/From v0\.65\.0 an empty or whitespace-only entry counts as a miss — a Vibe Sandbox save with an empty English tab stores one — where on v0\.64\.0 `\/en` renders an empty container\./);
+    expect(vibe).toMatch(/Also from v0\.65\.0, a Sandbox save that leaves the page's HTML as it is \(only the meta title or nav order changed\) keeps the translated vibe HTML; on v0\.64\.0 every Sandbox save drops it, so run the translation again after one\. A save that changes the HTML, even only its spaces, drops it on both; line endings alone \(CRLF against LF\) do not count as a change from v0\.65\.0\./);
   });
 });

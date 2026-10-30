@@ -9,7 +9,7 @@ Every Cartwright shop has a chat assistant available to customers from a floatin
 
 The default model is **Claude Haiku 4.5** (`claude-haiku-4-5`), configured in `lib/ai/client.ts`. Haiku is the right pick for storefront chat: cheap, fast, capable enough to orchestrate tool calls and produce honest product recommendations.
 
-The model can also be picked without a code change, in `/admin/integrations` → AI: on v0.64.0 the list offers Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (`lib/ai/anthropic-models.ts`). From the release after v0.64.0 it also offers Claude Haiku 5.5 (`claude-haiku-5-5`), with the full admin tool set and metered at $0.10 in / $0.50 out per million tokens; a saved choice and a new shop keep Haiku 4.5. The meter counts a prompt over 100,000 tokens at that price too, though Anthropic charges five times as much for one on Haiku 5.5.
+The model can also be picked without a code change, in `/admin/integrations` → AI: on v0.64.0 the list offers Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (`lib/ai/anthropic-models.ts`). From v0.65.0 it also offers Claude Haiku 5.5 (`claude-haiku-5-5`), with the full admin tool set and metered at $0.10 in / $0.50 out per million tokens; a saved choice and a new shop keep Haiku 4.5. The meter counts a prompt over 100,000 tokens at that price too, though Anthropic charges five times as much for one on Haiku 5.5.
 
 Swapping providers or models is a one-file change. The client uses Vercel's AI SDK, so anywhere you can plug `ai-sdk/openai`, `ai-sdk/google`, or another provider, the storefront chat will follow.
 
