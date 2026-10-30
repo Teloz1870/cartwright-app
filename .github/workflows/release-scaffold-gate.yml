@@ -67,12 +67,12 @@ jobs:
         # 22 is the engine's floor (`engines`, `.nvmrc`) and the leg every
         # number on cartwright.app is quoted from. Node 26 became LTS on
         # 2026-10-28 and the engine allows it from v0.65.1
-        # (`engines: ">=22 <27"`), so a customer can scaffold on it: one extra
-        # leg on the default profile proves install → test → build → boot
-        # there. Only when the light leg runs, so a single-profile dispatch of
-        # full or site stays one job.
+        # (`engines: ">=22 <27"`), so a customer can scaffold on it: extra legs
+        # on the default profile and on full, the one with a shop catalogue,
+        # prove install → test → build → boot there. A single-profile dispatch
+        # adds only that profile's leg; site has none.
         node: [22]
-        include: ${{ fromJSON((inputs.profile == '' || inputs.profile == 'all' || inputs.profile == 'light') && '[{"profile":"light","node":26}]' || '[]') }}
+        include: ${{ fromJSON(inputs.profile == 'light' && '[{"profile":"light","node":26}]' || inputs.profile == 'full' && '[{"profile":"full","node":26}]' || inputs.profile == 'site' && '[]' || '[{"profile":"light","node":26},{"profile":"full","node":26}]') }}
     name: ${{ matrix.profile }} profile${{ matrix.node != 22 && format(' · Node {0}', matrix.node) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
