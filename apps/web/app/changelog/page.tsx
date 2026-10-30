@@ -43,14 +43,15 @@ const RELEASES: Release[] = [
         A security patch — <strong>upgrade</strong>: <code>pnpm audit --prod</code> on v0.65.0 lists one critical, nine
         high, ten moderate and two low findings, all in dependencies (CW-2026-012), and v0.65.1 lists none. The critical
         one needs a webpack build, and the engine builds with Turbopack; none of the others is known to be reachable
-        from a request in a shipped shop. Node 26, the new LTS, is supported. Run <code>pnpm install</code> after
-        pulling; no schema change and no new environment variable.
+        from a request in a shipped shop. Node 26, the new LTS, is supported, and on Vercel your next deployment of this
+        release runs on it. Run <code>pnpm install</code> after pulling; no schema change and no required new
+        environment variable.
       </>
     ),
     icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
     features: [
       'Dependency advisories closed (CW-2026-012) — @sentry/nextjs moves to ^10.76.2, and the overrides in pnpm-workspace.yaml raise the floors of undici, body-parser, qs, zod, fast-uri and ip-address, each version public for at least three days. The critical one, GHSA-mchm-gjx6-7h55 in @sentry/nextjs, skipped middleware for every path under the tunnelRoute path; the engine sets tunnelRoute: "/monitoring", but the advisory only affects webpack builds, and pnpm build uses Turbopack. A shop that builds with next build --webpack should upgrade now. To fix your own shop without upgrading: pnpm add @sentry/nextjs@^10.76.2, copy the overrides block into your pnpm-workspace.yaml, run pnpm install and confirm with pnpm audit --prod.',
-      'Node 26 is supported (NODE26-READY) — engines now reads >=22 <27. The unit suite was red on Node 26 because Node ≥ 25 puts its own empty localStorage on the global object, which hid the test browser’s; the shipped test setup now points it at jsdom’s. The engine’s PR check runs the unit suite on Node 26 next to the Node 22 floor, and the release scaffold gate scaffolds, tests, builds and boots a new shop on Node 26. On Vercel, deploys run Node 24 today and move to 26 when Vercel offers it, unless the project pins a Node version.',
+      'Node 26 is supported (NODE26-READY) — engines now reads >=22 <27. The unit suite was red on Node 26 because Node ≥ 25 puts its own empty localStorage on the global object, which hid the test browser’s; the shipped test setup now points it at jsdom’s. The engine’s PR check runs the unit suite on Node 26 next to the Node 22 floor, and the release scaffold gate scaffolds, tests, builds and boots a new shop on Node 26. On Vercel, this release moves production to Node 26: Vercel made 26 generally available on 2026-10-29, and a range that allows it builds and runs on 26 from the next deployment, whatever the project’s Node setting says. To stay on 24, set "engines": { "node": "24.x" } in package.json. Node 26’s fetch uses HTTP/2 by default; set VERCEL_FETCH_DISABLE_H2=1 and redeploy to keep HTTP/1.1 in Functions.',
       'An order cancelled before it was paid gives its discount-code use back (DRØM103-a) — checkout counts one use of a code when it creates the order, but cancelling an unpaid order only returned its stock, so every unpaid cancel used up one use of a limited code for good. The cancel now takes the use back in the same transaction, whichever path cancels it; paid orders and past counts are untouched.',
     ],
   },
