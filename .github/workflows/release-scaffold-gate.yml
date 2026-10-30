@@ -66,7 +66,7 @@ jobs:
         profile: ${{ fromJSON((inputs.profile != '' && inputs.profile != 'all') && format('["{0}"]', inputs.profile) || '["light","full","site"]') }}
         # 22 is the engine's floor (`engines`, `.nvmrc`) and the leg every
         # number on cartwright.app is quoted from. Node 26 became LTS on
-        # 2026-10-28 and the engine allows it from the release after v0.65.0
+        # 2026-10-28 and the engine allows it from v0.65.1
         # (`engines: ">=22 <27"`), so a customer can scaffold on it: one extra
         # leg on the default profile proves install → test → build → boot
         # there. Only when the light leg runs, so a single-profile dispatch of
@@ -80,7 +80,6 @@ jobs:
       # Dispatch inputs reach the shell only through these variables — never
       # interpolated into a `run:` script (GitHub's script-injection guidance).
       PROFILE: ${{ matrix.profile }}
-      NODE_MAJOR: ${{ matrix.node }}
       CLI_INPUT: ${{ inputs.cli || 'latest' }}
       REF_INPUT: ${{ inputs.ref || 'stable' }}
     steps:
