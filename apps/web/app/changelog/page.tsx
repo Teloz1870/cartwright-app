@@ -43,8 +43,12 @@ const RELEASES: Release[] = [
         A security release — <strong>upgrade if your site is a webshop</strong>. Since v0.1.0-beta, anyone could read a
         customer&rsquo;s last delivery name and address through the storefront chat by typing their email or phone
         number (CW-2026-013, High). <strong>Run <code>pnpm db:push</code> before deploying</strong>: it adds nullable
-        columns and one table, and on an existing database it asks about five new unique constraints, which you can
-        accept. Known and not fixed: two overlapping returns on one order line can still put back more stock than was
+        columns and one table. On an existing database it warns about five new unique constraints on columns that are
+        still empty (<code>permalink</code> and <code>(source, externalId)</code> on Page and Post,{' '}
+        <code>(source, externalId)</code> on ProductVariant): answer yes to exactly those, or pass{' '}
+        <code>--accept-data-loss</code> where nothing can answer; if it lists anything else, your database has drifted,
+        so stop and look. On Turso, which <code>prisma db push</code> cannot reach, apply the change with{' '}
+        <code>prisma migrate diff</code> and <code>turso db shell</code>. Known and not fixed: two overlapping returns on one order line can still put back more stock than was
         ordered, and <code>next</code> 16.4.5 follows in the next release. See{' '}
         <Link href="/docs/migrate/woocommerce" className="text-cw-terracotta hover:underline">
           Moving from WooCommerce
