@@ -35,6 +35,33 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.66.0',
+    date: 'November 2026',
+    title: 'Customer data out of the storefront chat, a checkout that refuses when Stripe keys cannot be read, and most of the road to moving a WooCommerce shop',
+    description: (
+      <>
+        A security release — <strong>upgrade if your site is a webshop</strong>. Since v0.1.0-beta, anyone could read a
+        customer&rsquo;s last delivery name and address through the storefront chat by typing their email or phone
+        number (CW-2026-013, High). <strong>Run <code>pnpm db:push</code> before deploying</strong>: it adds nullable
+        columns and one table, and on an existing database it asks about five new unique constraints, which you can
+        accept. Known and not fixed: two overlapping returns on one order line can still put back more stock than was
+        ordered, and <code>next</code> 16.4.5 follows in the next release. See{' '}
+        <Link href="/docs/migrate/woocommerce" className="text-cw-terracotta hover:underline">
+          Moving from WooCommerce
+        </Link>
+        .
+      </>
+    ),
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'The storefront chat and voice shop no longer look up customers (CW-2026-013, High) — two of their tools answered any email or phone number with that customer’s last delivery name and address, plus the email on a phone lookup. Both tools are gone from the anonymous chat and voice shop; an admin API key with customer:read can still call them. To fix your own shop without upgrading: delete customer.lookup_by_email and customer.lookup_by_phone from CUSTOMER_TOOL_ALLOWLIST in lib/ai/client.ts.',
+      'A shop whose Stripe keys cannot be read refuses the order (CW-2026-014, Moderate) — if the keys were stored but could not be decrypted, for example after AUTH_SECRET was rotated, or if only some of the three were set, checkout fell back to test mode and created a paid order without asking for a card. Such an order is now refused; a shop with no Stripe keys at all still uses test mode.',
+      'Refunding a return on an order charged in another currency now sends the right amount — 100 kr typed on a EUR order refunded €100; it now converts.',
+      'The road to moving a WooCommerce shop — pnpm woo:import previews an import from the terminal and writes nothing; /admin/migration (behind migrationDashboard, default off) checks that saved redirects land, that the new mail sender authenticates and that each old product page’s structured data survives. Nothing here imports a shop yet.',
+      'A quote can be an order status, behind a new quotes flag that is off by default, and an agent can ask a shop which order statuses it has. next moves to 16.4.3, which ends a random font build failure. One person’s contact details are gone from the engine’s comments and test fixtures; older tags keep them.',
+    ],
+  },
+  {
     engine: 'v0.65.1',
     date: 'October 2026',
     title: 'A dependency security patch, and Node 26',
