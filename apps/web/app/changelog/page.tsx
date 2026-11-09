@@ -35,6 +35,26 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    engine: 'v0.67.0',
+    date: 'November 2026',
+    title: 'Next.js 16.4.5, an agent that can tell a customer their parcel is on its way, and the first Shipmondo slices',
+    description: (
+      <>
+        <strong>Upgrade if you host your shop yourself</strong>: <code>next</code> moves to 16.4.5, which fixes seven
+        moderate Next.js advisories. Two of them reach a self-hosted shop, whether it runs <code>next start</code> or the
+        Dockerfile&rsquo;s <code>node server.js</code> (CW-2026-015); a shop on Vercel is not exposed to them. No schema
+        change: no <code>pnpm db:push</code> is needed.
+      </>
+    ),
+    icon: <ShieldCheck className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      'next 16.4.5 (CW-2026-015, Moderate) — the image optimiser could be made to process an SVG with SVG support off (GHSA-7qx7-33qx-rqx2), and a route that passes a fetched response straight through could mix up responses behind an HTTP/1.1 proxy (GHSA-pc58-hwjq-p385; no engine route does that). The other five concern use cache, Cache Components and Edge routes, which the engine does not use. Every next below 16.4.5 is affected, even where pnpm audit is clean.',
+      'orders.set_tracking — after booking a label outside the shop, an agent can write the carrier, tracking number, link and expected delivery days back on the order, and with notifyCustomer: true email the customer that it has shipped. It writes through the same code as the admin tracking form, refuses a quote, and is confirmed first in the admin chat.',
+      'The first slices of a Shipmondo plugin — a paid order goes to Shipmondo as a sales order, the shop books the label there, and a signed webhook brings the tracking back. It is off by default and marked not implemented: /admin/features offers no switch for it until it has been tested against a live Shipmondo account.',
+      'Returns on the same order line can no longer add up to more than was ordered, so stock is no longer put back twice.',
+    ],
+  },
+  {
     engine: 'v0.66.0',
     date: 'November 2026',
     title: 'Customer data out of the storefront chat, a checkout that refuses when Stripe keys cannot be read, and most of the road to moving a WooCommerce shop',
