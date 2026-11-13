@@ -21,7 +21,7 @@ Embeddings are produced by `lib/ai/embeddings.ts`, which routes by your AI confi
 
 | Provider | Model | Notes |
 |---|---|---|
-| Google Gemini | `gemini-embedding-2`, asked for 768 dimensions | Default when a Gemini key is set. Override with `GEMINI_EMBED_MODEL` (an override runs with that model's own dimensions). |
+| Google Gemini | `gemini-embedding-2`, asked for 768 dimensions | Default when a Gemini key is set. Override with `GEMINI_EMBED_MODEL`: an override runs with that model's own dimensions, so with pgvector the column must be that size. |
 | Ollama (local) | `nomic-embed-text` | On-device fallback — no cloud calls. |
 | _none_ | — | Returns `null` → search uses lexical-only ranking. |
 
@@ -34,7 +34,7 @@ pnpm embeddings:backfill
 New and updated products are re-embedded on a best-effort hook, so the index stays current as you edit the catalog.
 
 <Callout type="warn">
-Engine releases up to and including v0.67.0 default to `text-embedding-004`, which Google shut down on 14 January 2026. On those releases every embedding call fails and search runs on lexical ranking alone, with only a line in the server log. The release after v0.67.0 moves the default to `gemini-embedding-2`; after updating, run `pnpm embeddings:backfill` once, because vectors are stored per model. To fix an older engine without updating, set `GEMINI_EMBED_MODEL=gemini-embedding-2` and run the backfill: it then stores that model's full 3072 dimensions, which works on the default Turso/SQLite path but not with a `vector(768)` pgvector column.
+Engine releases up to and including v0.67.0 default to `text-embedding-004`, which Google shut down on 14 January 2026. On those releases every embedding call fails and search runs on lexical ranking alone, with only a line in the server log. The release after v0.67.0 moves the default to `gemini-embedding-2`; after updating, run `pnpm embeddings:backfill` once, because vectors are stored per model. To fix an older engine without updating, set `GEMINI_EMBED_MODEL=gemini-embedding-2` and run the backfill: the engine then stores that model's full 3072 dimensions, which works on the default Turso/SQLite path (cosine in TypeScript over `vectorJson`) but not with the `vector(768)` pgvector column. When you later update and remove the override, run the backfill again: the new default stores its vectors under its own id (`google:gemini-embedding-2@768`), so the 3072-dimension rows are replaced rather than compared.
 </Callout>
 
 <Callout type="info">
