@@ -48,12 +48,12 @@ export const DEFAULT_FITS = [
  */
 export const NOT_A_FIT = [
   'A page that must be edited at runtime without a database. `site` content is files in the repo; browser editing is the default profile\'s admin.',
-  'A static export for GitHub Pages or an S3 bucket. Every profile needs a Node.js 22+ host (Vercel, a container); `site` is not `next export`.',
+  'A static export for GitHub Pages or an S3 bucket. Every profile needs a Node.js 22.12+ host (Vercel, a container); `site` is not `next export`.',
   'A blog or docs site that needs Markdown-per-post authoring today. `site` ships pages and design packs, not a Markdown content pipeline; the runtime blog with RSS and `BlogPosting` JSON-LD is a default-profile plugin.',
   'A marketplace with many independent sellers, or per-seller payouts. Cartwright is single-merchant; multi-tenant billing is not in it.',
   'Extending an existing Shopify / Salesforce storefront. Cartwright replaces a storefront, it does not embed in one.',
   'A web app — a dashboard, an internal tool, a novel app. That is create-next-app; Cartwright builds websites and shops.',
-  'Anything that must run on PHP / WordPress hosting, or without Node.js 22+.',
+  'Anything that must run on PHP / WordPress hosting, or without Node.js 22.12+.',
   'A one-click WordPress / WooCommerce migration. There is no WordPress importer yet: today products move by CSV (simple products — no variants), pages and posts by the URL import (as drafts), and old URLs by admin-managed redirects (served from the database — no Redis needed) — exact paths, one at a time or many at once from a CSV (`from,to,status`) with a dry run first; query-string permalinks such as `/?p=123` are not matched yet. Orders and customers never move. Cartwright never runs on WordPress hosting — it replaces the site and imports from it.',
   'A one-off page that needs neither design nor discovery. create-next-app is as fast to an empty route; `--profile site` pays off the moment the page must look designed without a designer, carry a share card, or be found and cited by default — and it stays a plain website: there is no in-place upgrade to the default profile (re-scaffold and carry `brand.config.ts` + your design pack across).',
 ] as const;
@@ -187,7 +187,7 @@ export const ORIGINS: readonly Origin[] = [
     name: 'From scratch',
     minProfile: 'site',
     why: 'every profile starts from the scaffold',
-    needs: 'nothing beyond Node.js 22+',
+    needs: 'nothing beyond Node.js 22.12+',
     status: 'shipped',
     today: 'everything; the scaffold is the site, and the build methods above are how it gets its face',
     notYet: '',

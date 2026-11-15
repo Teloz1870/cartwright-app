@@ -114,7 +114,7 @@ Seven checks, no fixes, no mutations, no network:
 | Release marker | `.cartwright/release.json` — engine version, channel, release date |
 | Engine up to date | marker version vs the latest template tag **this CLI build** knows (offline compare — an older CLI knows an older latest) |
 | Scaffold profile | `.cartwright/profile.json` — light/full/site + retained modules or designs (absent = full or pre-profile, fine) |
-| Node version | major ≥ 22 (the engine's `engines` requirement) |
+| Node version | ≥ 22.12 (the engine's `engines` requirement) |
 | Environment | `.env.local` exists; `AUTH_SECRET` set (not a placeholder); `DATABASE_URL` or the `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` pair |
 | Database baseline | runs the project's own `db:verify` gate (exit 2 = migration-baseline drift); skipped on older engines |
 

@@ -16,7 +16,7 @@ export function InstallBand() {
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.1fr_1fr] items-center">
         <div className="min-w-0">
           <p className="mt-4 text-base text-cw-muted max-w-md">
-            Works on macOS, Linux, and Windows (via WSL). Node 22+ required.
+            Works on macOS, Linux, and Windows (via WSL). Node 22.12+ required.
             No GitHub token, no marketplace install — just npm.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
