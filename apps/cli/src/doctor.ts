@@ -13,7 +13,7 @@
  *                   an older CLI simply knows an older latest.
  *   4. profile    — parse .cartwright/profile.json (absent = full profile or
  *                   a pre-profile scaffold, not a failure).
- *   5. node       — process major version ≥ 22 (package.json engines).
+ *   5. node       — process version ≥ 22.12 (the engine's package.json engines).
  *   6. env        — .env.local exists; AUTH_SECRET non-empty non-placeholder;
  *                   DATABASE_URL present OR both TURSO_DATABASE_URL +
  *                   TURSO_AUTH_TOKEN (shallow line parse — no dotenv dep).
@@ -306,17 +306,25 @@ export function checkProfile(raw: string | null): CheckResult {
   };
 }
 
-/** Check 5 — Node major version (engine's package.json says >= 22). */
+/**
+ * Check 5 — Node version (engine's package.json says ">=22.12 <27"). The
+ * floor is a minor, not a major: Tailwind 4.3.4+ loads the ESM-only
+ * magic-string through require(esm), which Node 22 only has from 22.12, so a
+ * scaffold's `pnpm build` throws ERR_REQUIRE_ESM on 22.0–22.11.
+ */
 export function checkNode(nodeVersion: string): CheckResult {
-  const major = Number(/^v?(\d+)/.exec(nodeVersion)?.[1] ?? NaN);
-  const ok = Number.isFinite(major) && major >= 22;
+  const m = /^v?(\d+)(?:\.(\d+))?/.exec(nodeVersion);
+  const major = Number(m?.[1] ?? NaN);
+  const minor = Number(m?.[2] ?? 0);
+  const ok =
+    Number.isFinite(major) && (major > 22 || (major === 22 && minor >= 12));
   return {
     id: "node",
     label: "Node version",
     status: ok ? "ok" : "warn",
     detail: ok
       ? `Node ${nodeVersion}`
-      : `Node ${nodeVersion} — the engine needs Node ≥ 22 (package.json engines)`,
+      : `Node ${nodeVersion} — the engine needs Node ≥ 22.12 (package.json engines)`,
   };
 }
 
