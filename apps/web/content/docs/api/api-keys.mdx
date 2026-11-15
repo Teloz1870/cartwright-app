@@ -41,7 +41,7 @@ A database leak alone cannot forge a key: the HMAC pepper is `AUTH_SECRET`, whic
 5. **Last-used stamp** — `lastUsedAt` updated fire-and-forget; never fails the request.
 6. **Scopes** — the key's `scopes` JSON is parsed; malformed → `401`.
 
-The function never throws — it returns `{ actor }` or `{ error }`. `requireApiScope` then checks the key carries the tool's required scope (`hasScope`); missing → `403` naming the scope. See [Scopes & tools](/docs/api/mcp-tools).
+The function never throws — it returns `{ actor }` or `{ error }`. `requireApiScope` then checks the key carries the tool's required scope and any `extraScopes` it names (`hasScope` per scope); missing → `403` naming the first missing scope. See [Scopes & tools](/docs/api/mcp-tools).
 
 ## Audit identity & revocation
 

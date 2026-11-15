@@ -5,7 +5,7 @@ description: How Cartwright defines, validates, authorizes, and exposes AI-calla
 
 `lib/tools/registry.ts` is the one table of contents for Cartwright tools. It imports domain arrays such as `productsTools`, `ordersTools`, `settingsTools`, and `auditTools`, flattens them into `ALL_TOOLS`, and builds a `Map` keyed by canonical tool name. Duplicate names fail at module load.
 
-Each tool is a `ToolDefinition` from `lib/tools/types.ts`: `name`, `description`, required `scope`, Zod `input`, async `handler`, and optional `revertible` or `skipAudit` flags. The handler receives already parsed args plus `ToolCtx`, which can carry actor, request id, IP, user agent, cookies, and user id.
+Each tool is a `ToolDefinition` from `lib/tools/types.ts`: `name`, `description`, required `scope`, Zod `input`, async `handler`, and optional `extraScopes` (further scopes the caller must also hold, e.g. `discounts:write` on `marketing.create_campaign`), `revertible` or `skipAudit` flags. The handler receives already parsed args plus `ToolCtx`, which can carry actor, request id, IP, user agent, cookies, and user id.
 
 ```ts
 import { z } from "zod";
@@ -29,7 +29,7 @@ export const getProduct = defineTool({
 });
 ```
 
-`invokeTool(name, args, ctx, granted)` is the central dispatcher. It looks up the tool, checks `hasScope(granted, tool.scope)`, runs `tool.input.safeParse(args)`, and calls the handler. Failures are normalized to `404`, `403`, `422`, or `500` shaped results, so callers do not need to catch arbitrary exceptions.
+`invokeTool(name, args, ctx, granted)` is the central dispatcher. It looks up the tool, checks that `granted` covers `tool.scope` and every `tool.extraScopes` entry (`hasScope` per scope; the `403` names the first one missing), runs `tool.input.safeParse(args)`, and calls the handler. Failures are normalized to `404`, `403`, `422`, or `500` shaped results, so callers do not need to catch arbitrary exceptions.
 
 <Callout type="tip">
 Use `skipAudit: true` on read-only tools such as `products.search`, `products.get`, and `settings.get`. In the current implementation, the flag documents intent; audit rows are written by write handlers that explicitly wrap work in `withAudit()`.

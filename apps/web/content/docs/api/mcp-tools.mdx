@@ -9,7 +9,7 @@ This page is a reference catalogue. For the validation pipeline and audit-log be
 
 ## Authentication
 
-All MCP and REST calls require a bearer token from an API key created in `/admin/api-keys`. Each key carries an explicit list of scopes; tools verify scope before executing.
+All MCP and REST calls require a bearer token from an API key created in `/admin/api-keys`. Each key carries an explicit list of scopes; tools verify scope before executing. A tool that writes into another domain's data names that domain's scope as well (`extraScopes`): `marketing.create_campaign` needs `discounts:write` beside `marketing:write`. A key must hold every scope a tool names — otherwise REST answers `403` naming the missing one and MCP `tools/list` does not list the tool. The catalog shows them as `extraScopes`, `/openapi.json` as `x-cartwright-extra-scopes`.
 
 ```bash
 curl https://my-shop.com/api/mcp \
@@ -135,7 +135,7 @@ whole rule: [Checkout (Stripe)](/docs/features/checkout-stripe#cancelling-an-ord
 
 | Tool | Scope | Audit |
 |---|---|---|
-| `marketing.create_campaign` | `marketing:write` | yes |
+| `marketing.create_campaign` | `marketing:write` + `discounts:write` (it issues a discount code) | yes |
 
   </Tab>
   <Tab value="audit">
