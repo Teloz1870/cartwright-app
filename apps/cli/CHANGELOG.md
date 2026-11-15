@@ -1,5 +1,11 @@
 # create-cartwright
 
+## 2.9.21
+
+### Patch Changes
+
+- 728b896: `cartwright doctor` warns on Node 22.0–22.11: the engine's floor is 22.12, where `pnpm build` stops throwing ERR_REQUIRE_ESM.
+
 ## 2.9.20
 
 ### Patch Changes
