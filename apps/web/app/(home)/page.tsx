@@ -46,7 +46,7 @@ function buildJsonLd(engineVersion: string) {
         '@id': 'https://cartwright.app/#software',
         name: 'cartwright',
         applicationCategory: 'DeveloperApplication',
-        operatingSystem: 'Node.js 22+',
+        operatingSystem: 'Node.js 22.12+',
         description:
           'The build engine AIs reach for: an open-source, AI-first Next.js engine. Scaffold a real website with one command — with or without a database.',
         offers: {

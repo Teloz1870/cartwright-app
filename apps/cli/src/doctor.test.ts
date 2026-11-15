@@ -172,14 +172,21 @@ describe("checkProfile", () => {
 });
 
 describe("checkNode", () => {
-  it("ok on 22 and above", () => {
-    expect(checkNode("v22.11.0").status).toBe("ok");
+  it("ok on 22.12 and above", () => {
+    expect(checkNode("v22.12.0").status).toBe("ok");
+    expect(checkNode("v22.21.1").status).toBe("ok");
     expect(checkNode("v24.1.0").status).toBe("ok");
+    expect(checkNode("26.0.0").status).toBe("ok");
   });
   it("warns below 22", () => {
     const res = checkNode("v20.19.0");
     expect(res.status).toBe("warn");
-    expect(res.detail).toContain("≥ 22");
+    expect(res.detail).toContain("≥ 22.12");
+  });
+  it("warns on 22.0–22.11, where the engine's build throws ERR_REQUIRE_ESM", () => {
+    expect(checkNode("v22.11.0").status).toBe("warn");
+    expect(checkNode("v22.0.0").status).toBe("warn");
+    expect(checkNode("v22.2.0").status).toBe("warn");
   });
 });
 
@@ -427,7 +434,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       makeScaffold(dir);
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(0),
-        nodeVersion: "v22.11.0",
+        nodeVersion: "v22.12.0",
         processEnv: {}, // pin: host shell vars must not leak into the test
       });
       const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
@@ -456,7 +463,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       writeFileSync(join(dir, ".env.local"), "AUTH_SECRET=changeme\n");
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(2),
-        nodeVersion: "v22.11.0",
+        nodeVersion: "v22.12.0",
         processEnv: {},
       });
       const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
@@ -508,7 +515,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       writeFileSync(join(dir, ".env.local"), "AUTH_SECRET=changeme\n");
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(0),
-        nodeVersion: "v22.11.0",
+        nodeVersion: "v22.12.0",
         processEnv: {
           AUTH_SECRET: "real-inherited-secret-0123",
           DATABASE_URL: "libsql://ci.turso.io",
@@ -529,7 +536,7 @@ describe("collectChecks (integration against a fake scaffold)", () => {
       writeFileSync(join(dir, ".cartwright", "release.json"), '{"version": 39}');
       const { checks, ok } = collectChecks(dir, {
         run: stubRunner(0),
-        nodeVersion: "v22.11.0",
+        nodeVersion: "v22.12.0",
         processEnv: {},
       });
       const byId = Object.fromEntries(checks.map((c) => [c.id, c]));

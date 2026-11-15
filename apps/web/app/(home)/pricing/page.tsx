@@ -255,7 +255,7 @@ const pricingJsonLd = {
   '@type': 'SoftwareApplication',
   name: 'Cartwright',
   applicationCategory: 'DeveloperApplication',
-  operatingSystem: 'Node.js 22+',
+  operatingSystem: 'Node.js 22.12+',
   description:
     'Open-source, AI-first Next.js commerce engine. Free and MIT-licensed, with optional paid tiers (Plus, Cloud, Enterprise).',
   url: 'https://cartwright.app/pricing',
