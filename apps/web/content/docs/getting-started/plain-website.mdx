@@ -54,7 +54,7 @@ These are profile boundaries, not switched-off features. If a requirement crosse
 - **`/` redirects to your default locale** (`/en` in a new scaffold). There is no root page today.
 - **No map, timeline, weather or checklist sections.** The section vocabulary is marketing-shaped; components like these you write yourself — in the `blank` pack they are ordinary React.
 - **Only site-level structured data renders by itself.** `Organization`/`WebSite` JSON-LD are emitted out of the box; builders for `FAQPage`, `HowTo` and `ItemList` exist in `lib/builder/section-jsonld.ts` and the generic `<JsonLd>` renderer takes any type — `Event`, `Place` or `TouristTrip` you compose yourself.
-- **Not a static export.** It is a Node.js 22+ app (the OG route, the sitemap and the contact endpoint need a server) — Vercel, or any Node host. Not GitHub Pages.
+- **Not a static export.** It is a Node.js 22.12+ app (the OG route, the sitemap and the contact endpoint need a server) — Vercel, or any Node host. Not GitHub Pages.
 
 ## Scaffold
 

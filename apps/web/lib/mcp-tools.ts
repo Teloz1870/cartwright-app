@@ -206,7 +206,7 @@ export const MCP_TOOLS = {
               '/ redirects to /<defaultLocale> (/en in a new scaffold); there is no root page.',
               'No map, timeline or weather sections — write those components yourself.',
               'Organization/WebSite JSON-LD out of the box; no Event/TouristTrip builders.',
-              'Not a static export: needs a Node.js 22+ host (Vercel, a container).',
+              'Not a static export: needs a Node.js 22.12+ host (Vercel, a container).',
               'The default contact form needs RESEND_API_KEY + RESEND_FROM to deliver in production.',
             ],
             runbook: `${SITE_URL}/docs/getting-started/plain-website`,
