@@ -21,4 +21,18 @@ describe("shopBriefSchema", () => {
   it("afviser tomt produkt-array", () => {
     expect(shopBriefSchema.safeParse({ ...valid, products: [] }).success).toBe(false);
   });
+  // GHSA-mrhx-c7xc-m3w5: zod below 4.6.6 parsed every element of an array
+  // before checking `.max()`, and kept one issue per bad field, so parsing an
+  // oversized array cost memory in proportion to its length. From 4.6.6 the
+  // size bound is checked first and is the only issue. This pins the
+  // dependency's behaviour on our schema, not a CLI guard: the CLI does not
+  // parse the model's brief with this schema at run time
+  // (interview.ts returns it as-is).
+  it("rejects an oversized products array on its size alone, without parsing each element", () => {
+    const flood = { ...valid, products: Array.from({ length: 20_000 }, () => ({})) };
+    const result = shopBriefSchema.safeParse(flood);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toHaveLength(1);
+    expect(result.error?.issues[0]).toMatchObject({ code: "too_big", path: ["products"], maximum: 40 });
+  });
 });
