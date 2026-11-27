@@ -88,7 +88,27 @@ overrides:
   "dompurify@3": "^3.4.16"
   "protobufjs@7": "^7.6.5"
   "qs@6": "^6.16.0"
-  "hono@4": "^4.13.11"
   "ip-address@10": "^10.7.1"
   "esbuild@>=0.28.0 <0.28.1": "^0.28.1"
   "@babel/core@7": "^7.29.6"
+  # 2026-11-27 (APP-SEC-2026-11-27): the two highs and the hono moderates in
+  # `pnpm audit --prod`, mirroring the engine's overrides for the same
+  # advisories. zod GHSA-mrhx-c7xc-m3w5 (high, every zod below 4.6.6): apps/web,
+  # apps/cli and packages/shared now ask for ^4.6.7 directly; this selector
+  # lifts the copies fumadocs-mdx and the MCP SDK resolve themselves. The MCP
+  # route is public, so this one is treated as reachable. body-parser
+  # GHSA-27r3-jxmh-p828 (high) and hono/@hono/node-server (seven moderates, one
+  # low) sit in the MCP SDK's express and Node transport, which this site never
+  # imports (it uses only the web-standard transport). The hono and
+  # @hono/node-server selectors span the whole range their advisories name,
+  # not one major (hono's reach below 4.13.16 and back through 3.x,
+  # @hono/node-server's back to 1.19.10). Neither ships a patched line below
+  # the current one, so a consumer on an older line is lifted across it on
+  # purpose; today only hono 4 and @hono/node-server 2 are in the lockfile.
+  # zod's selector starts at 4.0.0, as the engine's does: zod 3 to 4 is an API
+  # break, and no zod 3 is in the lockfile. Drop each once its parent ships
+  # the patched line itself.
+  "zod@>=4.0.0 <4.6.6": "^4.6.7"
+  "body-parser@>=2.0.0 <2.4.0": "^2.4.0"
+  "hono@<4.13.16": "^4.13.16"
+  "@hono/node-server@>=1.19.10 <2.1.6": "^2.1.6"
