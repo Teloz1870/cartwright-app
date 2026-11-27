@@ -159,6 +159,7 @@ import { REF_ALIASES } from "./refs.js";
 import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
 import { prepareScaffoldTarget, resolveProjectArg } from "./target.js";
 import { publishSteps } from "./publish-steps.js";
+import { nextStepsLines } from "./next-steps.js";
 import {
   type Profile,
   PROFILES,
@@ -1129,46 +1130,9 @@ async function run(): Promise<void> {
     ? `\n  ${pc.dim("Add ANTHROPIC_API_KEY (+ optional GEMINI keys) to .env.local before pnpm dev,")}\n  ${pc.dim("or configure them later in /admin/integrations after first sign-in.")}`
     : "";
 
-  const siteSteps = [
-    pc.bold("Next steps:"),
-    `  cd ${cdDir}`,
-    `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en — no database, no login, just your site")}`,
-    pc.dim("  Content lives in brand.config.ts; design via designs/ and the shipped packs."),
-    pc.dim("  The guide for this profile: docs/simple-site.md"),
-    pc.dim("  (online: https://cartwright.app/docs/getting-started/plain-website)"),
-    "",
-    pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-    pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
-    pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
-    pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md —"),
-    pc.dim("  its first line says which sections this profile does not have."),
-  ];
-  const nextSteps = profile === "site"
-    ? siteSteps
-    : dbReady
-    ? [
-        pc.bold("Next steps:"),
-        `  cd ${cdDir}`,
-        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
-        pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
-        "",
-        pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-        pc.dim(`  Start the server NOW — run \`${runCmd} dev\` in the background from ${cdDir}/,`),
-        pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
-        pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
-      ]
-    : [
-        pc.bold("Next steps (required):"),
-        `  cd ${cdDir}`,
-        `  ${runCmd} db:setup           ${pc.dim("# create schema + seed admin/demo (robust; prints your login)")}`,
-        `  ${runCmd} dev                ${pc.dim("# http://localhost:3000/en")}`,
-        pc.dim("  English-only by default — add languages in brand.config.ts (locales)."),
-        "",
-        pc.bold("AI agents (Claude / Gemini / Codex) reading this:"),
-        pc.dim(`  Run \`${runCmd} db:setup\` and then \`${runCmd} dev\` in the background NOW,`),
-        pc.dim("  wait for http://localhost:3000/en to return 200, and hand your user a"),
-        pc.dim("  WORKING link instead of instructions. Then read .claude/CLAUDE.md."),
-      ];
+  // Human lines + the AI-agent block; the agent block follows the rules files
+  // ("Start the dev server (agents)": `dev:agent` + .cartwright/dev-url).
+  const nextSteps = nextStepsLines({ profile, dbReady, runCmd, cdDir });
 
   // Reality, not intent: `gh repo create` can half-fail, and --no-git skips the
   // repo entirely while still leaving ci.yml on disk.

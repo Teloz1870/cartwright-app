@@ -1,6 +1,18 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_REF } from "./refs";
 import { MODERN_WEB_MD } from "./inject";
+import { AGENT_RULES_SECTION, DEV_AGENT_SCRIPT, DEV_URL_FILE } from "./next-steps";
+import { LIGHT_EXCLUDED_PATHS } from "./profile-light";
+import {
+  SITE_PRUNED_SCRIPTS_FALLBACK,
+  SITE_PRUNED_ZONES,
+  computeMaterializationPlan,
+  pruneDeadScriptReferences,
+  resolveProfileModules,
+  rewritePackageJsonForSite,
+  sitePrunedScriptsFor,
+  type ScaffoldManifest,
+} from "./materializer";
 import {
   ENGINE_DOMAINS,
   patchAIStylistButtonContent,
@@ -45,6 +57,12 @@ const NEEDED = [
   "brand.config.ts",
   "components/AIStylistButton.tsx",
   "components/Footer.tsx",
+  // The agent block in "Next steps" (next-steps.ts) names these.
+  "package.json",
+  "scripts/dev-agent.mjs",
+  "AGENTS.md",
+  ".claude/CLAUDE.md",
+  "scaffold/manifest.json",
 ] as const;
 
 type NeededFile = (typeof NEEDED)[number];
@@ -227,6 +245,65 @@ describe(`scaffold anchors vs the real template @ ${DEFAULT_REF}`, () => {
       (flag) => !new RegExp(`^\\s*${flag}\\s*:`, "m").test(src),
     );
     expect(missing, `flags MODERN_WEB.md names that ${DEFAULT_REF} does not have`).toEqual([]);
+  });
+
+  it("ships what the agent block in Next steps tells agents to use, in every profile", (ctx) => {
+    const pkg = JSON.parse(templateFile(ctx, "package.json")) as {
+      scripts?: Record<string, string>;
+    };
+    const command = pkg.scripts?.[DEV_AGENT_SCRIPT];
+    expect(command, `${DEFAULT_REF} has no "${DEV_AGENT_SCRIPT}" script`).toBe(
+      "node scripts/dev-agent.mjs",
+    );
+    expect(templateFile(ctx, "scripts/dev-agent.mjs")).toContain(`"dev-url"`);
+
+    // No profile may remove it: not the engine-only ledger, not the light prune
+    // list, and not the site materializer — which removes paths (module claims,
+    // static seam variants, its own zones, sitePrunedScripts) AND script keys
+    // (its own hand-kept SITE_PRUNED_SCRIPT_KEYS, then every script whose file
+    // is gone). The site half replays that pipeline on the real template.
+    const manifestSrc = templateFile(ctx, "scaffold/manifest.json");
+    expect(manifestSrc, "the manifest names dev-agent.mjs — some profile drops it").not.toContain(
+      "scripts/dev-agent.mjs",
+    );
+    // A pruned path removes itself and, when it is a directory, all below it.
+    const under = (rel: string, pruned: string) => {
+      const dir = pruned.replace(/\/+$/, "");
+      return rel === dir || rel.startsWith(`${dir}/`);
+    };
+    const covers = (pruned: string) => under("scripts/dev-agent.mjs", pruned);
+    expect(LIGHT_EXCLUDED_PATHS.filter(covers)).toEqual([]);
+
+    const manifest = JSON.parse(manifestSrc) as ScaffoldManifest;
+    const plan = computeMaterializationPlan(
+      manifest,
+      resolveProfileModules(manifest, "site").included,
+    );
+    const siteRemoved = [
+      ...plan.deletePaths,
+      ...plan.staticCleanup,
+      ...SITE_PRUNED_ZONES,
+      ...sitePrunedScriptsFor(manifest),
+      ...SITE_PRUNED_SCRIPTS_FALLBACK,
+    ];
+    expect(siteRemoved.filter(covers), "--profile site deletes dev-agent.mjs").toEqual([]);
+    const sitePkg = pruneDeadScriptReferences(
+      rewritePackageJsonForSite(templateFile(ctx, "package.json")).src,
+      (rel) => !siteRemoved.some((pruned) => under(rel, pruned)),
+    ).src;
+    expect(
+      (JSON.parse(sitePkg) as { scripts?: Record<string, string> }).scripts?.[DEV_AGENT_SCRIPT],
+      `--profile site drops the "${DEV_AGENT_SCRIPT}" script the agent block names`,
+    ).toBe("node scripts/dev-agent.mjs");
+
+    for (const rules of ["AGENTS.md", ".claude/CLAUDE.md"] as const) {
+      const src = templateFile(ctx, rules);
+      expect(src, `${rules} has no "${AGENT_RULES_SECTION}" heading`).toMatch(
+        new RegExp(`^#+ ${AGENT_RULES_SECTION.replace(/[()]/g, "\\$&")}$`, "m"),
+      );
+      expect(src).toContain(DEV_URL_FILE);
+      expect(src).toContain(`pnpm ${DEV_AGENT_SCRIPT}`);
+    }
   });
 
   it("is not vacuous: a drifted anchor is caught, not silently tolerated", () => {
