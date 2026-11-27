@@ -19,8 +19,10 @@ import type { Profile } from "./profile-light.js";
  * terminal Next prints to.
  *
  * `dev:agent` ships in every profile, `--profile site` included: no module
- * claims `scripts/dev-agent.mjs` and the engine's `sitePrunedScripts` does not
- * list it (asserted against the real template in scaffold-anchor-drift.test.ts).
+ * claims `scripts/dev-agent.mjs`, the engine's `sitePrunedScripts` does not
+ * list it, and the site materializer's own script-key and path prunes keep
+ * both the file and the script (scaffold-anchor-drift.test.ts replays that
+ * pipeline on the real template's package.json and manifest).
  */
 
 /** The heading both AGENTS.md and .claude/CLAUDE.md give the agent recipe. */

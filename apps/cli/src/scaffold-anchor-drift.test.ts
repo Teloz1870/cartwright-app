@@ -4,6 +4,16 @@ import { MODERN_WEB_MD } from "./inject";
 import { AGENT_RULES_SECTION, DEV_AGENT_SCRIPT, DEV_URL_FILE } from "./next-steps";
 import { LIGHT_EXCLUDED_PATHS } from "./profile-light";
 import {
+  SITE_PRUNED_SCRIPTS_FALLBACK,
+  SITE_PRUNED_ZONES,
+  computeMaterializationPlan,
+  pruneDeadScriptReferences,
+  resolveProfileModules,
+  rewritePackageJsonForSite,
+  sitePrunedScriptsFor,
+  type ScaffoldManifest,
+} from "./materializer";
+import {
   ENGINE_DOMAINS,
   patchAIStylistButtonContent,
   patchBrandConfigContent,
@@ -247,15 +257,44 @@ describe(`scaffold anchors vs the real template @ ${DEFAULT_REF}`, () => {
     );
     expect(templateFile(ctx, "scripts/dev-agent.mjs")).toContain(`"dev-url"`);
 
-    // No profile may remove it: not the site materializer (a module claim or
-    // sitePrunedScripts), not the engine-only ledger, not the light prune list.
-    const manifest = templateFile(ctx, "scaffold/manifest.json");
-    expect(manifest, "the manifest names dev-agent.mjs — some profile drops it").not.toContain(
+    // No profile may remove it: not the engine-only ledger, not the light prune
+    // list, and not the site materializer — which removes paths (module claims,
+    // static seam variants, its own zones, sitePrunedScripts) AND script keys
+    // (its own hand-kept SITE_PRUNED_SCRIPT_KEYS, then every script whose file
+    // is gone). The site half replays that pipeline on the real template.
+    const manifestSrc = templateFile(ctx, "scaffold/manifest.json");
+    expect(manifestSrc, "the manifest names dev-agent.mjs — some profile drops it").not.toContain(
       "scripts/dev-agent.mjs",
     );
+    // A pruned path removes itself and, when it is a directory, all below it.
+    const under = (rel: string, pruned: string) => {
+      const dir = pruned.replace(/\/+$/, "");
+      return rel === dir || rel.startsWith(`${dir}/`);
+    };
+    const covers = (pruned: string) => under("scripts/dev-agent.mjs", pruned);
+    expect(LIGHT_EXCLUDED_PATHS.filter(covers)).toEqual([]);
+
+    const manifest = JSON.parse(manifestSrc) as ScaffoldManifest;
+    const plan = computeMaterializationPlan(
+      manifest,
+      resolveProfileModules(manifest, "site").included,
+    );
+    const siteRemoved = [
+      ...plan.deletePaths,
+      ...plan.staticCleanup,
+      ...SITE_PRUNED_ZONES,
+      ...sitePrunedScriptsFor(manifest),
+      ...SITE_PRUNED_SCRIPTS_FALLBACK,
+    ];
+    expect(siteRemoved.filter(covers), "--profile site deletes dev-agent.mjs").toEqual([]);
+    const sitePkg = pruneDeadScriptReferences(
+      rewritePackageJsonForSite(templateFile(ctx, "package.json")).src,
+      (rel) => !siteRemoved.some((pruned) => under(rel, pruned)),
+    ).src;
     expect(
-      LIGHT_EXCLUDED_PATHS.filter((p) => "scripts/dev-agent.mjs".startsWith(p)),
-    ).toEqual([]);
+      (JSON.parse(sitePkg) as { scripts?: Record<string, string> }).scripts?.[DEV_AGENT_SCRIPT],
+      `--profile site drops the "${DEV_AGENT_SCRIPT}" script the agent block names`,
+    ).toBe("node scripts/dev-agent.mjs");
 
     for (const rules of ["AGENTS.md", ".claude/CLAUDE.md"] as const) {
       const src = templateFile(ctx, rules);
