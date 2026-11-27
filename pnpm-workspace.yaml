@@ -99,16 +99,21 @@ overrides:
   # route is public, so this one is treated as reachable. body-parser
   # GHSA-27r3-jxmh-p828 (high) and hono/@hono/node-server (seven moderates, one
   # low) sit in the MCP SDK's express and Node transport, which this site never
-  # imports (it uses only the web-standard transport). The hono and
-  # @hono/node-server selectors span the whole range their advisories name,
-  # not one major (hono's reach below 4.13.16 and back through 3.x,
-  # @hono/node-server's back to 1.19.10). Neither ships a patched line below
-  # the current one, so a consumer on an older line is lifted across it on
-  # purpose; today only hono 4 and @hono/node-server 2 are in the lockfile.
+  # imports (it uses only the web-standard transport). Each selector covers
+  # the whole range its advisories name, not one major. hono's reach below
+  # 4.13.16 and back through 3.x. @hono/node-server's cover every 1.x: below
+  # 1.19.10 GHSA-wc8c-qw6v-h7f6 (high) and GHSA-jpvv-r467-5p4w, from 1.19.10
+  # GHSA-rmxm-3fg6-px4f, which has no 1.x fix, so even 1.19.18 (jpvv's 1.x
+  # fix) is not clean. Neither ships a clean line below the current one, so a
+  # consumer on an older line is lifted across it on purpose. body-parser
+  # does ship one: GHSA-27r3-jxmh-p828 is fixed on 1.x in 1.20.9, so 1.x stays
+  # on 1.x. Today only hono 4, @hono/node-server 2 and body-parser 2 are in
+  # the lockfile.
   # zod's selector starts at 4.0.0, as the engine's does: zod 3 to 4 is an API
   # break, and no zod 3 is in the lockfile. Drop each once its parent ships
   # the patched line itself.
   "zod@>=4.0.0 <4.6.6": "^4.6.7"
+  "body-parser@<1.20.9": "^1.20.9"
   "body-parser@>=2.0.0 <2.4.0": "^2.4.0"
   "hono@<4.13.16": "^4.13.16"
-  "@hono/node-server@>=1.19.10 <2.1.6": "^2.1.6"
+  "@hono/node-server@<2.1.6": "^2.1.6"
