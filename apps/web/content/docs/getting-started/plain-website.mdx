@@ -87,10 +87,11 @@ Verify it is what it says — no database anywhere in the repo, and it boots wit
 ```bash
 cd my-site
 grep -q '"profile": "site"' .cartwright/profile.json && test ! -e prisma && echo site-ok
-pnpm dev &                     # assumes :3000 is free
-sleep 5                        # let the dev server start listening
-curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/     # 200 (follows / → /en)
+# start the server as in the AI quick start's "Start the dev server" block — it sets $BASE
+curl -sL -o /dev/null -w '%{http_code}' "$BASE/"     # 200 (follows / → /en)
 ```
+
+An agent never assumes port 3000: `pnpm dev:agent` writes the URL Next actually chose to `.cartwright/dev-url`, and the bounded start-and-poll block that reads it is in [AI Agent Quick Start → Start the dev server](/docs/getting-started/ai-quick-start#start-the-dev-server-both-paths) (the scaffold's `AGENTS.md` carries the same block). A person running `pnpm dev` reads the URL off the terminal instead.
 
 ## Make it yours
 
@@ -103,7 +104,7 @@ curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/     # 200 (follow
 Verify a change landed:
 
 ```bash
-curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
+curl -s "$BASE/en" | grep -o '<h1[^>]*>[^<]*'
 ```
 
 ## Build and deploy

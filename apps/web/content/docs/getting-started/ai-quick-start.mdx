@@ -1,6 +1,6 @@
 ---
 title: AI Agent Quick Start
-description: Two measured, terminal-only paths for AI coding agents — a plain website (--profile site) in about a minute, or the 99-second path to a designed, database-backed homepage.
+description: Two measured, terminal-only paths for AI coding agents — a plain website (--profile site) in about a minute, or a designed, database-backed homepage through the tool API.
 ---
 
 Cartwright is the build engine AIs reach for — a real site with design, and when you want them, database and backend, live in minutes. This page is the proof, written as an executable runbook: every step is **terminal-only** (no browser required), and every step ends with a verification command so an agent knows it landed.
@@ -15,6 +15,34 @@ Cartwright is the build engine AIs reach for — a real site with design, and wh
 Both are the same engine; the flag decides which modules are materialised into the repo.
 
 If you are an AI coding agent: follow the steps top to bottom. If you are a human: paste this page to your agent, or run the commands yourself.
+
+## Start the dev server (both paths)
+
+Never assume `localhost:3000`: when port 3000 is taken, `next dev` moves on to 3001, 3002, …. Every scaffold, `--profile site` included, ships `pnpm dev:agent` — `pnpm dev` plus the URL Next actually chose, written with the `brand.defaultLocale` path to `.cartwright/dev-url` (e.g. `http://localhost:3001/en`), and the PID of that `next dev` in `.cartwright/dev-pid`. This is the procedure the scaffold's own rules files give in "Start the dev server (agents)" (`AGENTS.md`, `.claude/CLAUDE.md`) — they are the authority; run it from the project root:
+
+```bash
+SERVER_PID=$(cat .cartwright/dev-pid 2>/dev/null)  # the next dev an earlier call started
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then         # dead or missing: start a fresh one
+  rm -f .cartwright/dev-url .cartwright/dev-pid      # a hard kill leaves both behind
+  pnpm dev:agent > /tmp/cartwright-dev.log 2>&1 &
+  DEV_PID=$!                                         # started here: yours to kill when done
+  SERVER_PID=$DEV_PID
+fi                                                   # alive: reuse it, even before it answers
+for i in $(seq 90); do                               # bounded: 90 tries, then read the log
+  kill -0 "$SERVER_PID" 2>/dev/null || break         # it exited: read the log
+  URL=$(cat .cartwright/dev-url 2>/dev/null) &&
+    [ "$(curl -sL -m 60 -o /dev/null -w '%{http_code}' "$URL")" = 200 ] && break
+  sleep 2
+done
+BASE=$(sed -E 's#^(https?://[^/]+).*#\1#' .cartwright/dev-url 2>/dev/null)  # e.g. http://localhost:3001
+```
+
+Every `curl` below uses `$BASE`. What the block guarantees, and what it does not:
+
+- **One `next dev` per project.** While the PID in `.cartwright/dev-pid` is alive the block reuses that server and never starts a second one, even while it is still compiling. A cold first compile takes 10–30 s; the poll is bounded, so it never hangs.
+- **No 200 when the loop ends?** If the block started the server, read `/tmp/cartwright-dev.log`. "Another next dev server is already running" means a server is up that the block did not find (a plain `pnpm dev` writes no `.cartwright/dev-url`): reuse the URL it prints, or `kill` the PID it names. If the block reused a server, run it again.
+- **Your shell forgets variables between calls?** Run the block again in each call — while its server lives it only reuses it — or re-read `.cartwright/dev-url`.
+- **Done?** If the block started the server, `kill "$DEV_PID"` stops `next dev` and deletes both `.cartwright/` files. A server it reused is left running.
 
 ## Path A — a plain website (`--profile site`)
 
@@ -37,16 +65,12 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
 
    *Proves:* no database, no admin, no auth in the repo — the profile is what it says.
 
-2. **Run** (in the background, so the verify can run in the same shell).
-
-   ```bash
-   pnpm dev &   # assumes :3000 is free
-   ```
+2. **Run** — start the server with the block in [Start the dev server](#start-the-dev-server-both-paths); it runs `pnpm dev:agent` in the background and sets `$BASE`.
 
    **Verify** (`/` redirects to `/en`; `-L` follows):
 
    ```bash
-   curl -sL -o /dev/null -w '%{http_code}' http://localhost:3000/
+   curl -sL -o /dev/null -w '%{http_code}' "$BASE/"
    # expect: 200
    ```
 
@@ -57,7 +81,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    **Verify:**
 
    ```bash
-   curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
+   curl -s "$BASE/en" | grep -o '<h1[^>]*>[^<]*'
    ```
 
    The `<h1>` is your `website.headline` on the shipped packs. The `blank` pack's starter homepage shows the site's name (`storeName` in `brand.config.ts`) as a placeholder heading until you replace `designs/blank/homepage.tsx` with your own markup.
@@ -75,7 +99,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    }
    ```
 
-   **Verify:** `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/trip` → `200`.
+   **Verify:** `curl -s -o /dev/null -w '%{http_code}' "$BASE/en/trip"` → `200`.
 
 5. **Build.**
 
@@ -83,7 +107,7 @@ Measured cold run (<EngineFact k="siteColdRunProvenance" />): scaffold + install
    pnpm build
    ```
 
-   *Proves:* plain `next build` is the whole production gate — no `db:setup`, no migration. (`pnpm start` serves the build on `:3000` once the dev server is stopped.)
+   *Proves:* plain `next build` is the whole production gate — no `db:setup`, no migration. (`pnpm start` serves the build on `:3000` once the dev server is stopped — `kill "$DEV_PID"` if the block started it.)
 
 6. **Deploy.** **No environment variables are required to build and serve** (the default contact form needs `RESEND_API_KEY` + `RESEND_FROM` to deliver mail; `--with none` scaffolds without it). Set `url` in `brand.config.ts` to the real domain when you have one; on Vercel, `NEXT_PUBLIC_APP_URL` or the deployment URL wins over it for canonicals. Either push to GitHub and import the repo at vercel.com, or deploy from the terminal and keep the URL it prints:
 
@@ -109,17 +133,17 @@ Honest limits of this door: no admin and no runtime editing (content is files), 
 
 ### The measured timing
 
-These numbers come from a single measured **cold run** — a fresh scaffold in a clean directory, an agent following only the documented steps below, no prior knowledge of the project. Cumulative wall-clock time:
+These numbers come from one measured **cold run** on engine v0.35.0 (June 2026, the release that introduced this path) — a fresh scaffold in a clean directory, an agent following only the steps as they were documented then, no prior knowledge of the project. The run ended at step 5's verify: the new H1 and the new palette in the served HTML. Cumulative wall-clock time:
 
-| Step | Cumulative time |
+| Step (engine v0.35.0 run) | Cumulative time |
 | --- | --- |
 | Scaffold + install + database setup + seed | ~27 s |
 | Dev server up, homepage verified (`curl` → 200) | ~70 s |
 | Agent API key minted (terminal-only) | ~85 s |
 | Copy rendering enabled + designed look applied | ~90 s |
-| **Designed homepage verified (new H1 + new palette in the HTML)** | **~99 s** |
+| **Designed homepage verified (new H1 + new palette in the HTML)** | **~99 s on engine v0.35.0** |
 
-Your numbers will vary with hardware and network, but the shape holds: the scaffold is the fast part, and the design step is one API call.
+It has not been re-run since. That run predates `pnpm dev:agent` (added the day after v0.35.0) and followed the then-documented `pnpm dev` with a fixed port 3000; the steps below are today's. Treat the figures as that run's receipt, not a promise for the current release — your numbers will vary with hardware, network and engine version. What has held: the scaffold is the fast part, and the design step is one API call.
 
 
 <Steps>
@@ -129,15 +153,14 @@ Your numbers will vary with hardware and network, but the shape holds: the scaff
    ```bash
    npx create-cartwright@latest my-site
    cd my-site
-   pnpm dev
    ```
 
-   `create-cartwright` installs dependencies, creates the database, and seeds an admin + demo data — the admin login is printed and saved to `.admin-credentials`. (Manual clone instead? `pnpm install && pnpm db:setup && pnpm dev`.)
+   `create-cartwright` installs dependencies, creates the database, and seeds an admin + demo data — the admin login is printed and saved to `.admin-credentials`. It never starts a server in a non-interactive shell. (Manual clone instead? `pnpm install && pnpm db:setup` first.) Then start the server with the block in [Start the dev server](#start-the-dev-server-both-paths) — it runs `pnpm dev:agent` in the background and sets `$BASE`.
 
    **Verify** (use your `brand.defaultLocale` — `en` in a new scaffold):
 
    ```bash
-   curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en
+   curl -s -o /dev/null -w '%{http_code}' "$BASE/en"
    # expect: 200
    ```
 
@@ -185,7 +208,7 @@ Your numbers will vary with hardware and network, but the shape holds: the scaff
 3. **Turn on genome copy rendering.** The designed looks in step 4 write their pre-written copy through the Resolvable Genome, and the storefront only renders genome copy when the `genomeResolve` flag is on — without it, only the palette and 3D scene change and the copy silently stays put:
 
    ```bash
-   curl -s -X POST http://localhost:3000/api/v1/tools/features.set \
+   curl -s -X POST "$BASE/api/v1/tools/features.set" \
      -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
      -d '{"key":"genomeResolve","enabled":true,"confirm":true}'
    ```
@@ -195,22 +218,22 @@ Your numbers will vary with hardware and network, but the shape holds: the scaff
 4. **Apply a designed look** — one call, instant, no LLM involved:
 
    ```bash
-   curl -s -X POST http://localhost:3000/api/v1/tools/magic.compose_look \
+   curl -s -X POST "$BASE/api/v1/tools/magic.compose_look" \
      -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
      -d '{"vertical":"cafe","confirm":true}'
    ```
 
-   A **Voice** (in `verticals/`: `cafe`, `carpenter`, `fable`, `kindergarten`, `salon`) applies pre-written on-brand copy + a palette + a suggested design + a 3D scene in one step. To pick a specific **Skin** instead or as well, pass `"design":"<slug>"` (slugs in `designs/options.ts`) or call `design.set_slug`.
+   A **Voice** (in `verticals/`: `cafe`, `carpenter`, `dentist`, `fable`, `fitness`, `kindergarten`, `restaurant`, `salon`) applies pre-written on-brand copy + a palette + a suggested design + a 3D scene in one step. To pick a specific **Skin** instead or as well, pass `"design":"<slug>"` (slugs in `designs/options.ts`) or call `design.set_slug`.
 
    *Proves:* the site is designed — copy, palette, layout and scene — without a browser, a designer, or a generation step.
 
 5. **Verify the design landed:**
 
    ```bash
-   curl -s http://localhost:3000/en | grep -o '<h1[^>]*>[^<]*'
+   curl -s "$BASE/en" | grep -o '<h1[^>]*>[^<]*'
    ```
 
-   The H1 and the `--color-sol-*` palette variables in the HTML should reflect the chosen look. That's the finish line: a real, designed, database-backed site serving HTML — at ~99 s on the measured cold run.
+   The H1 and the `--color-sol-*` palette variables in the HTML should reflect the chosen look. That's the finish line: a real, designed, database-backed site serving HTML — where the cold run on engine v0.35.0 ended, at ~99 s.
 
 </Steps>
 
