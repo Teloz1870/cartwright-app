@@ -70,12 +70,34 @@ describe('agent runbooks start the dev server like the rules files', () => {
 
   it("the quick start's start block is the engine's: PID reuse, a bounded poll, BASE from dev-url before its first use", () => {
     const shell = shellLines(read(QUICK_START)).join('\n');
-    expect(shell).toContain('pnpm dev:agent > /tmp/cartwright-dev.log 2>&1 &');
-    // One `next dev` per project: reuse a live server, never start a second one.
-    expect(shell).toContain('kill -0 "$SERVER_PID"');
-    expect(shell).toContain('.cartwright/dev-pid');
-    // Bounded — an agent must never wait forever on a server that died.
-    expect(shell).toMatch(/for i in \$\(seq \d+\); do/);
+    // Each statement of the engine's block must be a whole line of its own, in
+    // the engine's order. A substring check is not enough: `kill -0 "$SERVER_PID"`
+    // and `.cartwright/dev-pid` also occur in the poll's liveness line and the
+    // stale-file rm, so the reuse gate itself could be dropped (`if true; then`)
+    // and the page would start a second `next dev` on every call, unnoticed.
+    const code = shell.split('\n').map((l) => l.replace(/\s+# .*$/, '').trim());
+    const ENGINE_BLOCK = [
+      // One `next dev` per project: read the PID, reuse a live server, start only when it is dead or missing.
+      'SERVER_PID=$(cat .cartwright/dev-pid 2>/dev/null)',
+      'if ! kill -0 "$SERVER_PID" 2>/dev/null; then',
+      'rm -f .cartwright/dev-url .cartwright/dev-pid',
+      'pnpm dev:agent > /tmp/cartwright-dev.log 2>&1 &',
+      'DEV_PID=$!',
+      'SERVER_PID=$DEV_PID',
+      'fi',
+      // Bounded — an agent must never wait forever, and stops at once on a server that died.
+      'for i in $(seq 90); do',
+      'kill -0 "$SERVER_PID" 2>/dev/null || break',
+      'URL=$(cat .cartwright/dev-url 2>/dev/null) &&',
+      `[ "$(curl -sL -m 60 -o /dev/null -w '%{http_code}' "$URL")" = 200 ] && break`,
+      'done',
+    ];
+    let at = -1;
+    for (const stmt of ENGINE_BLOCK) {
+      const next = code.indexOf(stmt, at + 1);
+      expect(next, `the start block is missing, or reorders, the engine line: ${stmt}`).toBeGreaterThan(at);
+      at = next;
+    }
     const define = shell.indexOf("BASE=$(sed -E 's#^(https?://[^/]+).*#\\1#' .cartwright/dev-url");
     expect(define, 'BASE is derived from .cartwright/dev-url').toBeGreaterThan(-1);
     expect(define, 'BASE is defined before the first step uses it').toBeLessThan(shell.indexOf('"$BASE'));
