@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   createLocalUrlWatcher,
   defaultLocaleFrom,
+  holdProcessSigint,
   parseLocalUrl,
   startDevServer,
   type StartDevServerDeps,
@@ -34,11 +35,14 @@ function fakeServer(chunks: string[], opts: { fail?: Error } = {}) {
   const err: string[] = [];
   const spawned: Array<{ cmd: string; args: string[]; options: Record<string, unknown> }> = [];
   let sigintHeld = 0;
+  /** The hold count while the server is still running (before it exits). */
+  let heldWhileRunning = -1;
   const spawn = ((cmd: string, args: string[], options: Record<string, unknown>) => {
     spawned.push({ cmd, args, options });
     const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter };
     child.stdout = new EventEmitter();
     setImmediate(() => {
+      heldWhileRunning = sigintHeld;
       if (opts.fail) {
         child.emit("error", opts.fail);
         return;
@@ -65,6 +69,7 @@ function fakeServer(chunks: string[], opts: { fail?: Error } = {}) {
     err: () => plain(err.join("")),
     spawned,
     sigintHeld: () => sigintHeld,
+    heldWhileRunning: () => heldWhileRunning,
   };
 }
 
@@ -127,13 +132,24 @@ describe("startDevServer — port 3000 taken", () => {
     expect(s.spawned[0].args).toEqual(["run", "dev"]);
     expect(s.spawned[0].options.cwd).toBe("/tmp/nord-kaffe");
     expect(s.spawned[0].options.stdio).toEqual(["inherit", "pipe", "inherit"]);
+    // Held while the server runs, released once it has exited.
+    expect(s.heldWhileRunning()).toBe(1);
     expect(s.sigintHeld()).toBe(0);
+  });
+
+  it("the default hold keeps a SIGINT listener (so Node does not exit) and the release removes it", () => {
+    const before = process.listenerCount("SIGINT");
+    const release = holdProcessSigint();
+    expect(process.listenerCount("SIGINT")).toBe(before + 1);
+    release();
+    expect(process.listenerCount("SIGINT")).toBe(before);
   });
 
   it("a server that cannot start says so and releases Ctrl+C", async () => {
     const s = fakeServer([], { fail: new Error("spawn pnpm ENOENT") });
     await startDevServer(INPUT, s.deps);
     expect(s.err()).toContain("Could not start pnpm dev: spawn pnpm ENOENT");
+    expect(s.heldWhileRunning()).toBe(1);
     expect(s.sigintHeld()).toBe(0);
   });
 });
@@ -170,6 +186,13 @@ describe("index.ts --start", () => {
   it("hands the start to startDevServer and hard-codes no dev URL", () => {
     expect(src).toContain("await startDevServer(");
     expect(src).not.toMatch(/localhost:3000/);
+  });
+  it("starts the server in the scaffold and passes it the scaffold's own brand.config.ts", () => {
+    const call = src.slice(src.indexOf("await startDevServer("));
+    const args = call.slice(0, call.indexOf("});"));
+    expect(args).toContain("cwd: targetDir,");
+    expect(src).toContain('const brandConfigPath = join(targetDir, "brand.config.ts");');
+    expect(args).toContain('brandConfigSrc: existsSync(brandConfigPath) ? readFileSync(brandConfigPath, "utf8") : null,');
   });
 });
 

@@ -98,17 +98,24 @@ export interface StartDevServerDeps {
   holdSigint: () => () => void;
 }
 
+/**
+ * While a SIGINT listener exists, Node does not exit on Ctrl+C, so the CLI
+ * outlives the server (which gets the same SIGINT from the terminal's process
+ * group). Returns the release.
+ */
+export function holdProcessSigint(): () => void {
+  const ignore = () => {};
+  process.on("SIGINT", ignore);
+  return () => process.off("SIGINT", ignore);
+}
+
 const defaultDeps = (): StartDevServerDeps => ({
   spawn: nodeSpawn,
   write: (s) => process.stdout.write(s),
   writeError: (s) => console.error(s),
   isTTY: process.stdout.isTTY === true,
   env: process.env,
-  holdSigint: () => {
-    const ignore = () => {};
-    process.on("SIGINT", ignore);
-    return () => process.off("SIGINT", ignore);
-  },
+  holdSigint: holdProcessSigint,
 });
 
 /**
