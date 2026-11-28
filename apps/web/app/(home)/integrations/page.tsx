@@ -221,7 +221,7 @@ const secondary: Secondary[] = [
     brand: 'phone-inc',
     name: 'Phone.inc',
     category: 'Telephony',
-    pitch: 'IVR, voicemail transcription, call routing scaffolded at /admin/telefon.',
+    pitch: 'Click-to-call widget behind a flag. The /admin/telefon page, token route and webhook are scaffolds that store nothing yet.',
     brandUrl: 'https://phone.inc',
     docsHref: '/docs/features/phone-inc-telephony',
     preview: true,

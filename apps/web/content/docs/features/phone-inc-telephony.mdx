@@ -1,100 +1,85 @@
 ---
 title: Phone.inc telephony
-description: IVR, voicemail transcription, and call routing scaffolded at /admin/telefon. Preview — the Phone.inc API spec is still evolving.
+description: A click-to-call widget behind the phoneWidget flag, plus an admin preview page, a token route and a webhook that are scaffolds. Nothing about calls is stored yet.
 ---
 
 <Callout type="warn">
-**Preview.** Phone.inc integration ships in code; the Phone.inc public API spec is still evolving, so some flows are scaffolded but not fully wired. Track readiness in the [roadmap](/docs/roadmap).
+**Preview.** The Phone.inc integration is a scaffold. The storefront widget is real, but the admin page shows sample data, the token route returns a placeholder token, and the webhook stores nothing. The Phone.inc API does not yet document everything the integration needs, so the rest waits on them. Track readiness in the [roadmap](/docs/roadmap).
 </Callout>
 
-Phone.inc is Cartwright's bridge between voice and the rest of the shop. The click-to-call/chat widget is gated by the `phoneWidget` flag (runtime, default off); the admin surface at `/admin/telefon` lets you configure an IVR menu, route calls by topic, and review transcribed voicemails alongside the same customer record that holds their orders and chat history.
+This page describes what engine **v0.68.0** ships. Phone.inc is meant to become Cartwright's bridge between voice and the rest of the shop: call history next to order history, and voicemails you can search. Today only the storefront widget does anything for a visitor. The other parts are the outline of that integration, and this page says which is which.
 
-## Why telephony belongs in commerce
+## The widget
 
-Most Cartwright shops eventually get a "can I just call someone?" customer. The platform's stance: don't push voice into a third-party silo. Surface call history next to order history, transcribe voicemails into searchable text, and let the AI assistant cite a recent phone call when answering a follow-up chat.
+The `phoneWidget` flag (runtime, **off by default**) mounts a floating phone button in the bottom-left corner of every storefront page. Turn it on in `/admin/features`.
 
-That's the destination. The preview shipping today covers the configuration surface and the inbound webhook; outbound calling and full call-recording playback land in subsequent releases.
+What the visitor sees depends on whether a Phone.inc workspace is configured:
+
+- **With `phoneIncWorkspaceId` set**, the page loads Phone.inc's widget script (`https://widget.phone.inc/v1/widget.js?workspace=<id>`) and shows a small "Phone.inc Active" badge.
+- **Without it**, the button opens a demo call panel. "Start Web Call" plays a ringing state and then a connected state, but no call is placed.
+
+The widget carries a `data-cw-phone-widget` attribute, so a custom design can restyle it without depending on its Tailwind classes.
 
 ## Configuration
 
-`IntegrationSettings` carries two fields:
+`IntegrationSettings` has two Phone.inc fields:
 
-| Field | Purpose |
+| Field | What reads it today |
 |---|---|
-| `phoneIncWorkspaceId` | Your Phone.inc workspace identifier |
-| `phoneIncApiKey` | API key — encrypted via `lib/secret-encryption.ts` |
+| `phoneIncWorkspaceId` | The storefront layout, which passes it to the widget |
+| `phoneIncApiKey` | Nothing yet. It is stored for the API calls that are still to come |
 
-Both are set in `/admin/integrations` → "Phone.inc". With them present, `/admin/telefon` becomes editable; without, the nav entry hides.
+Both are set in the setup wizard at `/admin/setup`, in its "Email & Domain" step. `/admin/integrations` has no Phone.inc card yet.
 
 ## /admin/telefon
 
-The admin surface has three tabs:
+The **Telephony** entry under "Marketing & contact" in the admin sidebar opens a preview of the dashboard. It has two tabs:
 
-1. **IVR menu** — define greetings (per locale), branch options (1 = Sales, 2 = Support…), and the routing per branch (forward to number, leave voicemail, AI receptionist).
-2. **Voicemails** — transcript list with filter by branch, date, and customer-match. Each row links to the matched `Customer` row when one exists.
-3. **Call log** — inbound call history. Phone.inc-side recording URLs surface here; playback is link-out for now.
+1. **Call History** shows three fixed sample rows, not calls from Phone.inc. The "Active Number" at the top is a sample too.
+2. **AI Answering Machine (IVR)** has one text box for the greeting Phone.inc's voice would read aloud. "Save IVR Settings" posts to `/api/admin/phone`, which answers that the save went through, but nothing is stored and nothing is sent to Phone.inc. Reload the page and the greeting is back to the default.
 
-The IVR editor saves to `PhoneIvrConfig.json` — a single JSON blob the inbound webhook reads on every call.
+`/api/admin/phone` requires an admin session for both `GET` and `POST`. Its `GET` returns one sample call.
 
 ## /api/phone/token
 
-Issues a short-lived token Phone.inc uses to open a media-server session. Server-side check ensures the requesting workspace matches `phoneIncWorkspaceId`. Without this endpoint, the admin's browser-based call-test feature can't connect.
+A `POST` returns a placeholder in the shape a browser call token would have:
 
-```bash
-# Internal — called by /admin/telefon test panel
-curl -X POST https://example-shop.app/api/phone/token \
-  -H "Authorization: Bearer <admin-session>" \
-  -H "Content-Type: application/json" \
-  -d '{ "purpose": "admin-test-call" }'
+```json
+{ "success": true, "token": "phone_inc_mock_…", "expires_in": 3600 }
 ```
+
+The token is not issued by Phone.inc and opens no session. The route checks no session, and nothing in the engine calls it yet. A real token needs Phone.inc to document how browser calls get one, and their API documentation does not cover that yet.
 
 ## /api/phone/webhook
 
-The inbound endpoint Phone.inc posts to on every IVR event: call start, branch choice, hang-up, voicemail-finished, transcript-ready.
+The endpoint you would give Phone.inc for call events. The handler reads the `event` and `data` fields of the JSON body and recognises seven event names: `call.initiated`, `call.answered`, `call.ended`, `call.lost`, `voicemail.new`, `call.transcription_done` and `call.outside_opening_hours`. It does nothing with any of them: nothing is stored, no customer is looked up and no event is de-duplicated. In v0.68.0 it writes the event name and its `data` object to the server log, then answers `{ "received": true }`.
 
-The handler is idempotent on Phone.inc's `event_id`. Out-of-order delivery is handled by sorting on `event_ts` per call session before writing to `PhoneCall` and `PhoneVoicemail` rows.
+### Authentication
 
-```bash
-# Phone.inc → Cartwright on every event
-POST /api/phone/webhook
-{
-  "event_id": "evt_2NjA...",
-  "event_type": "voicemail_transcribed",
-  "event_ts": "2026-05-25T10:14:22Z",
-  "call_id": "call_2NjA...",
-  "from": "+4520123456",
-  "transcript": "Hi, I'm calling about the order I placed yesterday...",
-  "audio_url": "https://phone.inc/.../audio.mp3"
-}
-```
+The webhook has an optional shared-secret check:
 
-Verification: HMAC-SHA256 over the raw body using `phoneIncWebhookSecret` (also in `IntegrationSettings`, also encrypted). Webhook rejected if the signature header doesn't match.
+- With the environment variable `PHONE_INC_WEBHOOK_SECRET` **unset**, the webhook accepts every request.
+- With it **set**, the request must carry the same value, either in the `x-phone-inc-signature` header or as a `?token=` query parameter. Anything else gets a `401` before the body is read. The comparison runs in constant time.
 
-## Customer matching
-
-When a call comes in, the handler matches the caller's E.164 number against `Customer.phone`. On match, the resulting `PhoneCall` row links to the customer; their `/admin/customers/<id>` page now shows the call alongside orders and chat sessions.
-
-The match is exact. International formatting variance is normalised before lookup (libphonenumber). No fuzzy matching — a transposed digit produces an unmatched call you can manually assign from the admin.
+The secret is compared as it is. It is not a signature computed over the request body.
 
 ## What's scaffolded vs wired
 
-Honest status per surface:
-
-| Surface | Status |
+| Surface | Status in v0.68.0 |
 |---|---|
-| IVR editor UI | ✓ wired, saves to PhoneIvrConfig |
-| Voicemail transcript list | ✓ wired, reads PhoneVoicemail rows |
-| Inbound webhook | ✓ wired, signature-verified |
-| Phone-token issuance | ✓ wired, used by admin test-call |
-| AI receptionist branch | preview — accepts the config, routes to Phone.inc's AI but the prompt-handoff to Cartwright tools is wire-only |
-| Outbound calling | preview — UI present, sends through but call-recording metadata isn't yet linked to PhoneCall |
-| Call recording playback | preview — link-out to Phone.inc; embedded player on roadmap |
+| Storefront widget | Wired, behind `phoneWidget`. Loads Phone.inc's script when a workspace id is set, otherwise shows a demo call panel |
+| Workspace id and API key fields | Stored. Only the workspace id is read |
+| `/admin/telefon` call history | Scaffold: fixed sample rows |
+| `/admin/telefon` IVR greeting | Scaffold: Save stores nothing |
+| `/api/phone/token` | Scaffold: placeholder token, no session check |
+| `/api/phone/webhook` | Scaffold: logs the event, stores nothing. Optional shared secret |
+| Call log, voicemails, transcripts | Not built: no tables for them |
+| Matching a caller to a customer | Not built |
+| Outbound calling, recording playback | Not built |
 
-The Phone.inc API documentation has gaps that will close as their product matures. We track the deltas; integration releases follow theirs.
+## Turning it off
 
-## Disabling
-
-Don't configure the keys, or set both to empty strings in `/admin/integrations`. The `/admin/telefon` nav entry disappears, `/api/phone/*` returns 503, and `Customer` rows simply don't gain call history. The schema fields exist but stay unpopulated — no migration needed.
+Set `phoneWidget` off in `/admin/features` and the widget leaves the storefront. The Telephony entry in the admin sidebar, `/admin/telefon` and the three API routes stay reachable with the flag off, and with no keys configured. None of them stores anything, so there is no data to clean up and no migration to run.
 
 <Cards>
   <Card title="Admin panels" href="/docs/features/admin-panels" />
