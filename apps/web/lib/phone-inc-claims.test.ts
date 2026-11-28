@@ -86,8 +86,8 @@ describe('Phone.inc claims match the engine scaffold', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('names only the IntegrationSettings fields the engine has', () => {
-    const named = new Set([...page.matchAll(/\bphoneInc[A-Z]\w*/g)].map((m) => m[0]));
+  it('names only the IntegrationSettings fields the engine has, on the page and the card', () => {
+    const named = new Set([...`${page}\n${card}`.matchAll(/\bphoneInc[A-Z]\w*/g)].map((m) => m[0]));
     expect([...named].filter((f) => !ENGINE_PHONE_FIELDS.includes(f))).toEqual([]);
     for (const field of ENGINE_PHONE_FIELDS) expect(page).toContain(field);
   });
@@ -99,6 +99,7 @@ describe('Phone.inc claims match the engine scaffold', () => {
 
   it('describes the webhook guard as the shared secret it is', () => {
     expect(page).not.toMatch(SIGNATURE_CLAIMS);
+    expect(card).not.toMatch(SIGNATURE_CLAIMS);
     expect(page).toContain('PHONE_INC_WEBHOOK_SECRET');
     expect(page).toContain('x-phone-inc-signature');
   });
