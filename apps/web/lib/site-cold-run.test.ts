@@ -18,6 +18,15 @@ describe('SITE_COLD_RUN — measured, with provenance', () => {
     expect(SITE_COLD_RUN.provenance).toMatch(/run \d{6,}/);
   });
 
+  it('names one engine release throughout — the --ref flag it ran with is the engine it cites', () => {
+    // The object is replaced whole from one record. A half-edited provenance
+    // (the engine moved, the flag still names the last release) would cite a
+    // run that never happened; `--ref=stable` names no version and is exempt.
+    const engine = /engine (v\d+\.\d+\.\d+)\b/.exec(SITE_COLD_RUN.provenance)?.[1];
+    const flag = /--ref=(v\d+\.\d+\.\d+)\b/.exec(SITE_COLD_RUN.provenance)?.[1];
+    if (flag) expect(flag).toBe(engine);
+  });
+
   it('renders every timing with the tilde — measured, not guaranteed', () => {
     for (const v of [SITE_COLD_RUN.scaffold, SITE_COLD_RUN.build, SITE_COLD_RUN.boot]) {
       // Bare durations: every surface supplies its own label, so a fact can never
