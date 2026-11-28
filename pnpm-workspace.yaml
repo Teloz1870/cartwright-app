@@ -11,30 +11,14 @@ allowBuilds:
   "@google/genai": false
   protobufjs: false
 
-minimumReleaseAgeExclude:
-  # next 16.4.1 (published 2026-10-14T17:43Z) fixes GHSA-673q-mjm6-r5xr
-  # (critical: RCE in `use cache` functions returning typed arrays),
-  # GHSA-2464-fhr4-w9xw (critical: RCE in Image Optimization with SVG files)
-  # and GHSA-p3m5-59mp-jv5r (high: App Router DoS via Server Actions). This site
-  # has no `use cache`, no `dangerouslyAllowSVG` and no `"use server"` file, so
-  # none is shown reachable — upgraded regardless (the engine's CW-2026-009).
-  # Too young for pnpm's release-age cutoff; these twelve exact versions are the
-  # release and the packages it pins; drop them once 16.4.1 is older than it.
-  - next@16.4.1
-  - eslint-config-next@16.4.1
-  - "@next/env@16.4.1"
-  - "@next/eslint-plugin-next@16.4.1"
-  - "@next/swc-darwin-arm64@16.4.1"
-  - "@next/swc-darwin-x64@16.4.1"
-  - "@next/swc-linux-arm64-gnu@16.4.1"
-  - "@next/swc-linux-arm64-musl@16.4.1"
-  - "@next/swc-linux-x64-gnu@16.4.1"
-  - "@next/swc-linux-x64-musl@16.4.1"
-  - "@next/swc-win32-arm64-msvc@16.4.1"
-  - "@next/swc-win32-x64-msvc@16.4.1"
-  - fumadocs-core@16.8.12
-  - fumadocs-mdx@15.0.7
-  - fumadocs-ui@16.8.12
+# Supply-chain cooldown, the engine's floor: pnpm refuses a version published
+# less than three days (4320 minutes) ago, so a compromised release that is
+# pulled within days never reaches this repo. pnpm 11 already waits one day by
+# default; setting the key also turns on minimumReleaseAgeStrict, so a version
+# younger than the cutoff fails the install (frozen or not) instead of slipping
+# in. A security fix that cannot wait goes in minimumReleaseAgeExclude as an
+# exact version, dated, with its advisory next to it; drop it once it is older.
+minimumReleaseAge: 4320
 
 # pnpm v11+ requires explicit approval for packages with build-scripts.
 # Listed packages run their postinstall; un-listed packages skip.
