@@ -91,12 +91,29 @@ describe('plain-website guide: "When you outgrow it" carries the engine recipe',
   });
 
   it('its in-page links land on headings this page has', () => {
-    for (const [anchor, heading] of [
-      ['#is-this-the-right-door', '## Is this the right door?'],
-      ['#when-you-outgrow-it', '## When you outgrow it'],
-    ]) {
+    for (const [anchor, heading] of [['#when-you-outgrow-it', '## When you outgrow it']]) {
       expect(page).toContain(`(${anchor})`);
       expect(page).toContain(`\n${heading}\n`);
+    }
+  });
+
+  it('every link in the section lands on a section that states what it is cited for', () => {
+    // A heading that exists is not enough: R1 caught a "see … above" that
+    // pointed at a section silent on the claim. Each link the section carries
+    // is listed with the fact its target must state; a new link must be added here.
+    const cited: Record<string, RegExp> = {
+      '/docs/features/industry-templates#generic': /Webshop mode/,
+    };
+    const links = [...outgrow.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]);
+    expect(links.sort()).toEqual(Object.keys(cited).sort());
+    for (const link of links) {
+      const [path, anchor] = link.split('#');
+      const src = path ? readFileSync(join(WEB, 'content', `${path}.mdx`), 'utf8') : page;
+      const heading = [...src.matchAll(/^## (.+)$/gm)]
+        .map((m) => m[1])
+        .find((h) => h.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') === anchor);
+      expect(heading, `${link}: no heading for #${anchor}`).toBeDefined();
+      expect(section(src, heading!), link).toMatch(cited[link]);
     }
   });
 });
