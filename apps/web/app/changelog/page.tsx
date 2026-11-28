@@ -33,7 +33,36 @@ type Release = {
   features: React.ReactNode[];
 };
 
+// The NEWEST entry goes first and must begin with its `engine:` line:
+// lib/changelog-engine-version.test.ts reads that line and requires it to equal
+// FALLBACK_ENGINE_VERSION (lib/engine.ts), which the template-bump PR moves.
 const RELEASES: Release[] = [
+  {
+    engine: 'v0.68.0',
+    date: 'November 2026',
+    title: 'A delivery step in checkout, semantic search that works again, and refused mail that no longer counts as sent',
+    description: (
+      <>
+        <strong>This release changes the schema: run <code>pnpm db:push</code> before deploying</strong> —{' '}
+        <code>ShippingRate</code> gains three columns and <code>Order</code> seven, each nullable or with a default;
+        against a database that has not been pushed, order and shipping queries fail. On Turso, which{' '}
+        <code>prisma db push</code> cannot reach, run the statements below through <code>turso db shell</code>. Run{' '}
+        <code>pnpm embeddings:backfill</code> once if the shop uses semantic search with a Gemini key. Node 22.12 is
+        now the floor. An API key that runs <code>marketing.create_campaign</code> now needs{' '}
+        <code>discounts:write</code> as well; a key&rsquo;s scopes cannot be edited, so mint a new key with both
+        before deploying. The <code>hono</code> advisories closed here sit in code the engine never loads.
+      </>
+    ),
+    icon: <Package className="w-5 h-5 text-cw-terracotta" />,
+    features: [
+      `Upgrading on Turso — run these through turso db shell, ShippingRate first: ALTER TABLE "ShippingRate" ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'delivery'; ALTER TABLE "ShippingRate" ADD COLUMN "carrierCode" TEXT; ALTER TABLE "ShippingRate" ADD COLUMN "shipmentTemplateId" INTEGER; ALTER TABLE "Order" ADD COLUMN "shippingRateId" TEXT; ALTER TABLE "Order" ADD COLUMN "shippingMethod" TEXT; ALTER TABLE "Order" ADD COLUMN "shippingCarrier" TEXT; ALTER TABLE "Order" ADD COLUMN "shipmentTemplateId" INTEGER; ALTER TABLE "Order" ADD COLUMN "pickupPointId" TEXT; ALTER TABLE "Order" ADD COLUMN "pickupPointName" TEXT; ALTER TABLE "Order" ADD COLUMN "pickupPointAddress" TEXT;`,
+      'Checkout charges your shipping rates, and the customer chooses between them — with shippingZones on in /admin/features (off by default) and a zone for the shop’s country, an order pays the rate the customer picked in checkout, or else the zone’s cheapest rate that fits the parcel, instead of the flat rate. When more than one rate fits, checkout lists them with name, delivery time and price, and the order records the choice; the cart, agent quotes and ACP sessions show the same price. Each rate in /admin/shipping now has a delivery type, a carrier code and a shipment template id. Pickup-point rates are neither offered nor charged yet. Zones that cannot be read refuse the order instead of quietly charging the flat rate.',
+      'Semantic product search works again on a shop with a Gemini key — Google shut down the old default embedding model, text-embedding-004, on 2026-01-14, and search had fallen back to word matching with nothing in the admin saying so. The default is now gemini-embedding-2 at 768 dimensions; run pnpm embeddings:backfill once to re-embed the catalogue. A shop that set GEMINI_EMBED_MODEL keeps its model, and the server log says when that model has been shut down.',
+      'A mail Resend refuses is no longer counted as sent — the receipt and the shipping, refund, return and owner-order mails pass Resend’s error on and log it, so the order is not stamped as having its receipt and “Resend receipt” answers with an error; the order still becomes paid. A refused sign-in or password-reset link is no longer written to .mail-previews/ on the production server, and the magic-link form now tells “Too many requests” apart from “We could not send the link”.',
+      'Tighter API-key discounts — behind the new apiDiscountBounds flag (off by default), a code an API key creates must have a usage limit and an expiry, and one above policies.apiDiscountCaps (default 50 % and 500 kr) is created switched off. marketing.create_campaign no longer switches on a code the owner switched off, revives an expired one or makes a dated one endless, and the refusals of discounts.create, discounts.toggle and marketing.create_campaign answer 404 or 409 with a code instead of a 500.',
+      'Shipmondo: SHIPMONDO_SHIPMENT_TEMPLATE_ID gives every sales order a shipment template, without which Shipmondo cannot book it in one click, and SHIPMONDO_SEND_MODE="manual" keeps orders out of Shipmondo until someone sends them from /admin/shipmondo. hono and @hono/node-server move to patched lines, and the other dependencies to their newest releases inside the current majors.',
+    ],
+  },
   {
     engine: 'v0.67.0',
     date: 'November 2026',
