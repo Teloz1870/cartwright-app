@@ -1,6 +1,6 @@
 import { AGENT_RESOURCES, SITE_URL } from '@/lib/agent-resources';
 import { WHEN_TO_USE } from '@/lib/when-to-use';
-import { FRONT_DOOR, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
+import { COLD_RUN, FRONT_DOOR, INSTALL_COMMAND, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
 import { ENGINE_FACTS } from '@/lib/engine-facts';
 
 export const revalidate = false;
@@ -39,7 +39,7 @@ const INTRO = `# Cartwright
     ${INSTALL_COMMAND_SITE}   # plain website: no database, no login
     ${INSTALL_COMMAND}                   # default: database + admin + AI agent tools
 
-Measured cold runs — \`site\`: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (${SITE_COLD_RUN.provenance}). Default: scaffold + install + db setup ~27 s; designed, verified homepage at ~99 s — terminal-only. Runbooks: [Build a plain website](${SITE_URL}/docs/getting-started/plain-website) · [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
+Measured cold runs — \`site\`: ${SITE_COLD_RUN.scaffold} to scaffold and install, ${SITE_COLD_RUN.build} to build, ${SITE_COLD_RUN.boot} to a rendered homepage (${SITE_COLD_RUN.provenance}). Default: ${COLD_RUN.running} (scaffold + install + db setup), ${COLD_RUN.designed} (a designed, verified homepage) — terminal-only (${COLD_RUN.provenance}). Runbooks: [Build a plain website](${SITE_URL}/docs/getting-started/plain-website) · [AI quick start](${SITE_URL}/docs/getting-started/ai-quick-start)
 
 ${FRONT_DOOR} Three choices before code — profile, build method, origin: [Choose your path](${SITE_URL}/docs/getting-started/choose-your-path)
 

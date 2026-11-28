@@ -1,5 +1,5 @@
 import { ENGINE_FACTS } from '@/lib/engine-facts';
-import { INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
+import { COLD_RUN, INSTALL_COMMAND_SITE, SITE_COLD_RUN } from '@/lib/home-copy';
 /**
  * Data for the /compare/[competitor] pages. Each entry renders an answer-first
  * comparison page with Article + FAQPage + BreadcrumbList JSON-LD — the kind of
@@ -152,7 +152,7 @@ const createNextApp: Comparison = {
     { dimension: 'Stack', cartwright: 'Next.js 16 + React 19 + Tailwind v4 + Prisma + Stripe + NextAuth — pre-wired.', them: 'Next.js + your choices; official, minimal, unopinionated.' },
     { dimension: 'Freedom', cartwright: 'Opinionated defaults you can rip out — it is a normal repo, not a framework on top.', them: 'Total — no opinions to remove. This is its genuine strength for novel apps.' },
     { dimension: 'AI-agent readiness', cartwright: 'Agent rules files, an MCP server, a REST tool surface and plan-first admin tools ship in the box.', them: 'The 16.3 next-dev-loop skill helps agents iterate, but there is no product surface to drive.' },
-    { dimension: 'Time to a shippable website/shop', cartwright: 'Minutes (measured 99 s to a designed homepage with an AI agent).', them: 'Days to weeks — auth, data, admin, checkout and SEO are all still ahead of you.' },
+    { dimension: 'Time to a shippable website/shop', cartwright: `Minutes: ${COLD_RUN.designed} with an AI agent (${COLD_RUN.provenance}).`, them: 'Days to weeks — auth, data, admin, checkout and SEO are all still ahead of you.' },
     { dimension: 'Ownership', cartwright: 'MIT; your repo from the first commit.', them: 'MIT; your repo from the first commit. Equal.' },
   ],
   faq: [

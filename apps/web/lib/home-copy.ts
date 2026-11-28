@@ -90,9 +90,17 @@ export const SITE_COLD_RUN = {
  * provenance. `llms.txt` and the AI quick-start doc quote the same two figures
  * as a *measured cold run*; bare numbers under a heading reading "Every claim
  * has a receipt" would read as a guarantee.
+ *
+ * One run, on engine v0.35.0 (the release dated 2026-06-11 in the engine's
+ * CHANGELOG, which quotes the 99 s; the AI quick-start doc's timing table
+ * carries both figures from that same run). It has not been re-run since, so
+ * the provenance names the date and the engine version — the same rule
+ * SITE_COLD_RUN follows. No source names a CLI version or a run id for it, so
+ * neither is given. Every surface that quotes ~27 s / ~99 s reads this object;
+ * `cold-run.test.ts` pins the shape and fails on a literal elsewhere.
  */
 export const COLD_RUN = {
-  provenance: 'Measured cold run',
+  provenance: 'Measured cold run, 2026-06-11, engine v0.35.0 — not re-run since',
   running: '~27 s to running',
   designed: '~99 s to designed',
 } as const;
