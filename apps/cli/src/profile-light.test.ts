@@ -146,6 +146,20 @@ describe("light design curation invariants", () => {
     }
   });
 
+  it("prunes the three site packs the outgrow guides name (DRØM31-c)", () => {
+    // The plain-website guide (apps/web/content/docs/getting-started/plain-website.mdx)
+    // and the engine's docs/simple-site.md both tell a site owner moving to
+    // light: "saas-dark, corporate-baseline and stack ship in site but not in
+    // light — run `design install <slug>` first". Un-pruning one makes that
+    // step wrong; change the two guides in the same PR.
+    const pruned = LIGHT_PRUNED_DESIGNS.map((d) => d.slug);
+    for (const slug of ["saas-dark", "corporate-baseline", "stack"]) {
+      expect(pruned).toContain(slug);
+      expect(LIGHT_KEPT_DESIGNS).not.toContain(slug);
+      expect(LIGHT_EXCLUDED_PATHS).toContain(`designs/${slug}`);
+    }
+  });
+
   it("kept and pruned sets are disjoint and total (27 packs at v0.36.0 — blank added)", () => {
     const pruned = LIGHT_PRUNED_DESIGNS.map((d) => d.slug);
     for (const slug of pruned) expect(LIGHT_KEPT_DESIGNS).not.toContain(slug);
