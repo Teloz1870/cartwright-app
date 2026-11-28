@@ -1,5 +1,14 @@
 # create-cartwright
 
+## 2.9.21
+
+### Patch Changes
+
+- 206eb4b: The "AI agents reading this" block after a scaffold now says what the project's own rules files say: read "Start the dev server (agents)" in AGENTS.md or .claude/CLAUDE.md first, start `pnpm dev:agent` in the background, and take the URL from `.cartwright/dev-url` instead of assuming `localhost:3000`. An agent no longer waits on port 3000 while the server it started runs on 3001.
+- 728b896: `cartwright doctor` warns on Node 22.0–22.11: the engine's floor is 22.12, where `pnpm build` stops throwing ERR_REQUIRE_ESM.
+- 55e0a72: Bump default template ref to v0.68.0 (was v0.67.0).
+- b7158f2: `create-cartwright` now depends on zod 4.6.7 (was 4.4.3), which closes GHSA-mrhx-c7xc-m3w5 in the installed dependency: zod before 4.6.6 parsed every element of an array before checking its size limit. The CLI itself was not exposed, because it declares its shop-brief schema with zod but does not parse the model's brief with it at run time. This is a patched dependency with no behaviour change: the CLI's test suite passes on the new version.
+
 ## 2.9.20
 
 ### Patch Changes
