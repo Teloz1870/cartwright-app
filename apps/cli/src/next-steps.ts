@@ -27,6 +27,15 @@ import type { Profile } from "./profile-light.js";
 
 /** The heading both AGENTS.md and .claude/CLAUDE.md give the agent recipe. */
 export const AGENT_RULES_SECTION = "Start the dev server (agents)";
+/**
+ * The label of the callouts .claude/CLAUDE.md opens its first-run sections
+ * with (`> **\`--profile site\` scaffold?** …`): they say which steps a site
+ * scaffold skips. The site agent block points at them by this label. It used
+ * to say the file's FIRST LINE named the missing sections; at v0.68.0 that
+ * line is the title heading, and the site materializer does not rewrite the
+ * file (scaffold-anchor-drift.test.ts pins both).
+ */
+export const SITE_PROFILE_CALLOUT = "--profile site scaffold?";
 /** Where `dev:agent` writes the URL Next actually chose. */
 export const DEV_URL_FILE = ".cartwright/dev-url";
 /** The package.json script agents start instead of `dev`. */
@@ -48,8 +57,9 @@ function agentBlock(s: NextStepsInput): string[] {
   const rules =
     s.profile === "site"
       ? [
-          `  Read the rules first: .claude/CLAUDE.md — its first line says which sections`,
-          `  this profile does not have — then its "${AGENT_RULES_SECTION}" section.`,
+          `  Read the rules first: .claude/CLAUDE.md — the "${SITE_PROFILE_CALLOUT}" notes`,
+          `  in it mark the first-run steps this profile skips — then its`,
+          `  "${AGENT_RULES_SECTION}" section.`,
         ]
       : [`  Read the rules first: "${AGENT_RULES_SECTION}" in AGENTS.md or .claude/CLAUDE.md.`];
   const start =

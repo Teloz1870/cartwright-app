@@ -21,7 +21,12 @@ pnpm dev
 
 That's it. The CLI installs dependencies, creates the database schema and seeds it —
 the **admin login** is printed at the end of scaffolding and saved to `.admin-credentials`
-(gitignored). Open `http://localhost:3000`, sign in at `/account/login`.
+(gitignored). Open the URL `pnpm dev` prints (`Local: http://localhost:3000` by default —
+Next moves to 3001, 3002, … when 3000 is taken), then sign in at `/account/login`.
+
+An AI agent starts `pnpm dev:agent` instead: it writes the URL Next actually chose,
+locale included, to `.cartwright/dev-url` (every profile ships it; see "Start the dev
+server (agents)" in the project's `AGENTS.md`).
 
 No prompts at all:
 

@@ -3,6 +3,7 @@ import {
   AGENT_BLOCK_HEADING,
   AGENT_RULES_SECTION,
   DEV_URL_FILE,
+  SITE_PROFILE_CALLOUT,
   nextStepsLines,
   type NextStepsInput,
 } from "./next-steps";
@@ -71,10 +72,19 @@ describe("nextStepsLines — the agent block says what the rules files say", () 
     expect(render({ profile: "site", dbReady: false }).agent).not.toContain("db:setup");
   });
 
-  it("site: the agent still learns the profile lacks sections", () => {
-    expect(render({ profile: "site" }).agent).toContain(
-      "its first line says which sections",
-    );
+  it("site: the agent is pointed at the site callouts, not at a first line that has none", () => {
+    const { agent } = render({ profile: "site" });
+    // At v0.68.0 line 1 of .claude/CLAUDE.md is the title; the site notes are
+    // the `--profile site` scaffold? callouts (pinned in scaffold-anchor-drift).
+    expect(agent).not.toMatch(/first line/i);
+    expect(agent).toContain(`"${SITE_PROFILE_CALLOUT}"`);
+    expect(agent).toContain("first-run steps this profile skips");
+    expect(agent.indexOf(SITE_PROFILE_CALLOUT)).toBeLessThan(agent.indexOf(AGENT_RULES_SECTION));
+  });
+
+  it("light/full: no site callout pointer", () => {
+    expect(render({ profile: "light" }).agent).not.toContain(SITE_PROFILE_CALLOUT);
+    expect(render({ profile: "full", dbReady: false }).agent).not.toContain(SITE_PROFILE_CALLOUT);
   });
 
   it("the human lines keep `dev` and the usual URL (DRØM119: the human line may stay)", () => {

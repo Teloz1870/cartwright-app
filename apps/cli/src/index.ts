@@ -76,7 +76,7 @@ import pc from "picocolors";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
-import { execSync, spawnSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
@@ -160,6 +160,7 @@ import { ARGV_ERROR_EXIT, argvErrorLine, isArgvError } from "./argv-error.js";
 import { prepareScaffoldTarget, resolveProjectArg } from "./target.js";
 import { publishSteps } from "./publish-steps.js";
 import { nextStepsLines } from "./next-steps.js";
+import { startDevServer } from "./dev-start.js";
 import {
   type Profile,
   PROFILES,
@@ -1274,14 +1275,16 @@ async function run(): Promise<void> {
           : false;
 
   if (startNow) {
-    console.log(
-      pc.dim(
-        `\nStarting ${runCmd} dev in ${cdDir}/ — open http://localhost:3000/en\n`,
-      ),
-    );
-    const [cmd, ...args] =
-      packageManager === "npm" ? ["npm", "run", "dev"] : [packageManager, "dev"];
-    spawnSync(cmd, args, { cwd: targetDir, stdio: "inherit" });
+    // No URL before the server runs: Next moves off 3000 when it is taken, so
+    // the real one is read from its own "Local:" line (dev-start.ts).
+    const brandConfigPath = join(targetDir, "brand.config.ts");
+    await startDevServer({
+      packageManager,
+      runCmd,
+      cdDir,
+      cwd: targetDir,
+      brandConfigSrc: existsSync(brandConfigPath) ? readFileSync(brandConfigPath, "utf8") : null,
+    });
   }
 }
 
