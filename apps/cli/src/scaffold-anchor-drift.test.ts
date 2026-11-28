@@ -1,7 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_REF } from "./refs";
 import { MODERN_WEB_MD } from "./inject";
-import { AGENT_RULES_SECTION, DEV_AGENT_SCRIPT, DEV_URL_FILE } from "./next-steps";
+import {
+  AGENT_RULES_SECTION,
+  DEV_AGENT_SCRIPT,
+  DEV_URL_FILE,
+  SITE_PROFILE_CALLOUT,
+} from "./next-steps";
 import { LIGHT_EXCLUDED_PATHS } from "./profile-light";
 import {
   SITE_PRUNED_SCRIPTS_FALLBACK,
@@ -304,6 +309,33 @@ describe(`scaffold anchors vs the real template @ ${DEFAULT_REF}`, () => {
       expect(src).toContain(DEV_URL_FILE);
       expect(src).toContain(`pnpm ${DEV_AGENT_SCRIPT}`);
     }
+  });
+
+  it("carries the site callouts the site agent block points at, in a file the site profile keeps", (ctx) => {
+    const src = templateFile(ctx, ".claude/CLAUDE.md");
+    // The block names the callouts by their bold label; backticks are markup.
+    const callouts = src
+      .split("\n")
+      .filter((l) => l.startsWith("> **"))
+      .map((l) => l.slice(4, l.indexOf("**", 4)).replaceAll("`", ""))
+      .filter((label) => label === SITE_PROFILE_CALLOUT);
+    expect(callouts.length, `.claude/CLAUDE.md has no "${SITE_PROFILE_CALLOUT}" callout`).toBeGreaterThan(0);
+    // The old sentence said the FIRST line named the missing sections; it is the title.
+    expect(src.split("\n")[0]).not.toContain("profile site");
+
+    const manifest = JSON.parse(templateFile(ctx, "scaffold/manifest.json")) as ScaffoldManifest;
+    const plan = computeMaterializationPlan(manifest, resolveProfileModules(manifest, "site").included);
+    const siteRemoved = [
+      ...plan.deletePaths,
+      ...plan.staticCleanup,
+      ...SITE_PRUNED_ZONES,
+      ...sitePrunedScriptsFor(manifest),
+      ...SITE_PRUNED_SCRIPTS_FALLBACK,
+    ].map((p) => p.replace(/\/+$/, ""));
+    const removesRules = siteRemoved.filter(
+      (p) => ".claude/CLAUDE.md" === p || ".claude/CLAUDE.md".startsWith(`${p}/`),
+    );
+    expect(removesRules, "--profile site deletes .claude/CLAUDE.md").toEqual([]);
   });
 
   it("is not vacuous: a drifted anchor is caught, not silently tolerated", () => {
