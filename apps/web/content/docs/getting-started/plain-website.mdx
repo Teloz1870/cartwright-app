@@ -46,7 +46,7 @@ The profile is the first of three choices — how the front gets built (a shippe
 
 ## What you do not get, on purpose
 
-These are profile boundaries, not switched-off features. If a requirement crosses one, scaffold the default profile instead of reassembling the removed runtime by hand.
+These are profile boundaries, not switched-off features. If a requirement crosses one, move the site to `light` or `full` ([When you outgrow it](#when-you-outgrow-it)) instead of reassembling the removed runtime by hand.
 
 - **No admin and no runtime editing.** Content lives in files: `brand.config.ts`, the design pack, `messages/*.json`. Browser editing is the default profile's admin.
 - **No database, auth, cart or checkout.** No `/admin`, no accounts, no orders.
@@ -135,7 +135,16 @@ Faster to a *finished* page, not to an *empty* one. `create-next-app` hands you 
 
 ## When you outgrow it
 
-There is no in-place profile upgrade today. Scaffold the default profile (`npx create-cartwright@latest my-site`) and carry over `brand.config.ts` and your `designs/<yours>/` folder — the design system, sections and routing are the same engine, so a pack written for `site` renders unchanged with the admin, database and tool surface behind it.
+There is no in-place profile upgrade today: you scaffold the bigger profile next to this one and carry your work across. The design system, sections and routing are the same engine, so what you wrote for `site` renders with the admin, database and tool surface behind it.
+
+1. **Scaffold the new project** in a new folder: `npx create-cartwright@latest my-site` for the default `light` profile. Going to be a shop? Use `--profile full`, which starts as a webshop (`--template generic`) by default. `light --template generic` starts as a shop today too (see [Is this the right door?](#is-this-the-right-door) above), but whether the default profile keeps that webshop foundation is not settled yet; `full` carries every module, commerce included.
+2. **Copy what is only yours, as it is:** the files you added to `public/`, the route folders you added under `app/[locale]/`, and your design pack's folder, `designs/<pack>/`.
+   - `saas-dark`, `corporate-baseline` and `stack` ship in `site` but not in `light`. Using one of them? Run `npx create-cartwright design install <slug>` in the new project first, then copy your folder over it. `full` keeps every pack.
+   - A pack you created under a new name also needs its registrations: copy its `import` line and its entry from `designs/index.ts`, and its entry from `designs/options.ts`, into the new project's files. Do not replace those two files — each profile registers a different set of packs.
+3. **Merge `brand.config.ts` and `messages/` — do not overwrite them.** Copy your values into the new project's files: in `brand.config.ts` the fields you edited (`storeName`, `url`, `website.*`, `designSlug`, `locales`, `defaultLocale`, your contact details); in `messages/<locale>.json` the strings you changed, key by key, plus any locale file you added, whole. The new files can come from a newer engine than yours, with fields and keys your copies lack. Keep the new file's `emails.admin`: it is the login the scaffold just seeded its admin user with. And name your design in `designSlug` (`aurora-site` if you never picked one): until a design is named or `/admin/setup` is finished, the new project's homepage shows Cartwright's first-run welcome page instead of yours.
+4. **Leave everything else in the new project as it is.** In a `site` scaffold, the files that `scaffold/manifest.json` lists as `seams` — `app/[locale]/layout.tsx`, `components/Header.tsx`, `app/api/inquiries/route.ts` and others — are the no-database variants. Copied across, they replace the database-backed ones: the site's `app/api/inquiries/route.ts`, for one, mails each inquiry and stores nothing.
+5. **Old inquiries stay in your mail.** The site's contact form sent each inquiry to your inbox and stored none of them, so the new project's `/admin/leads` starts empty and nothing imports the old ones. Inquiries the new project receives are stored there.
+6. **Deploy it where the old site ran.** With the same `url`, `locales` and route folders, the addresses you published stay the same. Unlike `site`, the new project needs a database and `AUTH_SECRET` in production; `DEPLOY.md` has the steps.
 
 <Cards>
   <Card title="Quick Start (default profile)" href="/docs/getting-started/quick-start" />
